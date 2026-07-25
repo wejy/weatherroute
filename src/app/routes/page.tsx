@@ -4,8 +4,15 @@ import { SideNav } from "@/components/layout/side-nav";
 import { BottomNav } from "@/components/layout/top-nav";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp } from "@/lib/utils";
+import { getDictionary, getLocale } from "@/i18n/get-dictionary";
+import { createTranslator } from "@/i18n/translate";
+import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 
-export const metadata = { title: "Route Planner" };
+export async function generateMetadata() {
+  const locale = await getLocale();
+  const t = createTranslator(getDictionary(locale));
+  return { title: t("nav.routes") };
+}
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -18,18 +25,23 @@ export default async function RoutesPage({
   const from = (Array.isArray(raw.from) ? raw.from[0] : raw.from) || "Helsinki";
   const to = (Array.isArray(raw.to) ? raw.to[0] : raw.to) || "Tampere";
   const route = await getRouteWeather(from, to);
+  const locale = await getLocale();
+  const t = createTranslator(getDictionary(locale));
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
       <SideNav active="/routes" />
 
       <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between bg-surface/80 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl md:hidden">
-        <h1 className="text-2xl font-bold text-primary">WeatherTrip</h1>
-        <Link href="/login">
-          <span className="material-symbols-outlined text-on-surface-variant">
-            account_circle
-          </span>
-        </Link>
+        <h1 className="text-2xl font-bold text-primary">{t("brand")}</h1>
+        <div className="flex items-center gap-3">
+          <LanguageSwitcher />
+          <Link href="/login">
+            <span className="material-symbols-outlined text-on-surface-variant">
+              account_circle
+            </span>
+          </Link>
+        </div>
       </header>
 
       <main className="relative flex h-full w-full flex-1 flex-col pt-16 md:flex-row md:pt-0 lg:ml-80">
@@ -59,10 +71,10 @@ export default async function RoutesPage({
             <div className="flex items-center justify-between rounded-xl border border-outline-variant/20 bg-surface-container-low p-5 shadow-sm">
               <div>
                 <h3 className="text-xl font-semibold text-on-surface">
-                  Dry Trip Guarantee
+                  {t("routes.dryTrip")}
                 </h3>
                 <p className="mt-1 text-base text-on-surface-variant">
-                  High probability of clear skies.
+                  {t("routes.dryTripDesc")}
                 </p>
               </div>
               <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-tertiary-container/20 bg-tertiary-container/10 text-2xl font-semibold text-tertiary-container">
@@ -79,7 +91,7 @@ export default async function RoutesPage({
               </span>
               <div>
                 <h4 className="mb-1 text-sm font-medium tracking-wider text-on-secondary-container uppercase">
-                  Best Departure Time
+                  {t("routes.bestDeparture")}
                 </h4>
                 <p className="text-base text-on-surface">{route.departureHint}</p>
               </div>
@@ -120,7 +132,7 @@ export default async function RoutesPage({
                   <div className="mt-2 rounded-lg bg-surface-container p-3">
                     <div className="mb-1 flex items-center justify-between">
                       <span className="text-sm font-medium text-on-surface-variant">
-                        Rain Probability
+                        {t("routes.rainProbability")}
                       </span>
                       <span className="text-[13px] font-semibold tracking-wider text-on-surface">
                         {wp.rainProbability}%

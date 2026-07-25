@@ -1,6 +1,8 @@
 import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import "./globals.css";
+import { LocaleProvider } from "@/components/i18n/locale-provider";
+import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -8,22 +10,28 @@ const inter = Inter({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "WeatherTrip — Find perfect weather",
-    template: "%s · WeatherTrip",
-  },
-  description:
-    "Discover destinations with the best weather for your next escape. Map-based trip planning with Open-Meteo forecasts.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  return {
+    title: {
+      default: dict.meta.titleDefault,
+      template: dict.meta.titleTemplate,
+    },
+    description: dict.meta.description,
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+
   return (
-    <html lang="en" className={`${inter.variable} h-full antialiased`}>
+    <html lang={locale} className={`${inter.variable} h-full antialiased`}>
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap"
@@ -31,7 +39,9 @@ export default function RootLayout({
         />
       </head>
       <body className="flex min-h-full flex-col bg-background font-sans text-on-surface">
-        {children}
+        <LocaleProvider locale={locale} dict={dict}>
+          {children}
+        </LocaleProvider>
       </body>
     </html>
   );

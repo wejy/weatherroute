@@ -1,24 +1,28 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { getDictionary, getLocale } from "@/i18n/get-dictionary";
+import { createTranslator } from "@/i18n/translate";
 
-const items = [
-  { href: "/map", label: "Destinations", icon: "location_on" },
-  { href: "/routes", label: "Route Info", icon: "route" },
-  { href: "/trips", label: "Saved", icon: "bookmark" },
-  { href: "/login", label: "Settings", icon: "settings" },
-];
-
-export function SideNav({
+export async function SideNav({
   active,
   children,
-  title = "Trip Planner",
-  subtitle = "Optimized Routing",
+  title,
+  subtitle,
 }: {
   active?: string;
   children?: React.ReactNode;
   title?: string;
   subtitle?: string;
 }) {
+  const locale = await getLocale();
+  const t = createTranslator(getDictionary(locale));
+  const items = [
+    { href: "/map", label: t("nav.sideDestinations"), icon: "location_on" },
+    { href: "/routes", label: t("nav.sideRouteInfo"), icon: "route" },
+    { href: "/trips", label: t("nav.sideSaved"), icon: "bookmark" },
+    { href: "/login", label: t("nav.sideSettings"), icon: "settings" },
+  ];
+
   return (
     <nav className="fixed top-0 left-0 z-40 hidden h-full w-80 flex-col rounded-r-xl border-r border-outline-variant bg-surface text-on-surface shadow-[0px_10px_30px_rgba(0,0,0,0.08)] lg:flex">
       <div className="flex items-center gap-4 border-b border-surface-variant p-6">
@@ -29,9 +33,11 @@ export function SideNav({
         </div>
         <div>
           <h1 className="m-0 text-[32px] leading-10 font-semibold text-primary">
-            {title}
+            {title ?? t("nav.sideTripPlanner")}
           </h1>
-          <p className="m-0 text-base text-on-surface-variant">{subtitle}</p>
+          <p className="m-0 text-base text-on-surface-variant">
+            {subtitle ?? t("brand")}
+          </p>
         </div>
       </div>
 
@@ -67,7 +73,7 @@ export function SideNav({
       </ul>
 
       {children && (
-        <div className="mt-auto flex flex-grow flex-col border-t border-surface-variant px-6 pt-4 pb-6">
+        <div className="mt-auto flex min-h-0 flex-grow flex-col overflow-hidden border-t border-surface-variant px-6 pt-4 pb-6">
           {children}
         </div>
       )}

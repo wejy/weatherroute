@@ -4,12 +4,20 @@ import { getCurrentUser } from "@/server/auth/session";
 import { listTripsForUser } from "@/server/dal/trips";
 import { deleteTripAction, loginDemoAction } from "@/server/actions/trips";
 import { MOCK_USER } from "@/server/integrations/mocks/data";
+import { getDictionary, getLocale } from "@/i18n/get-dictionary";
+import { createTranslator } from "@/i18n/translate";
 
-export const metadata = { title: "Saved Trips" };
+export async function generateMetadata() {
+  const locale = await getLocale();
+  const t = createTranslator(getDictionary(locale));
+  return { title: t("trips.title") };
+}
 
 export default async function TripsPage() {
   const user = (await getCurrentUser()) ?? MOCK_USER;
   const trips = await listTripsForUser(user.id);
+  const locale = await getLocale();
+  const t = createTranslator(getDictionary(locale));
 
   return (
     <>
@@ -18,10 +26,10 @@ export default async function TripsPage() {
         <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="text-4xl font-bold tracking-tight text-on-surface">
-              Saved Trips
+              {t("trips.title")}
             </h1>
             <p className="mt-2 text-lg text-on-surface-variant">
-              Your weather-optimized escapes · signed in as {user.displayName}
+              {t("trips.subtitle", { name: user.displayName })}
             </p>
           </div>
           <Link
@@ -29,7 +37,7 @@ export default async function TripsPage() {
             className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container"
           >
             <span className="material-symbols-outlined">add</span>
-            Discover more
+            {t("trips.discoverMore")}
           </Link>
         </div>
 
@@ -38,15 +46,13 @@ export default async function TripsPage() {
             <span className="material-symbols-outlined mb-4 text-5xl text-primary">
               bookmark
             </span>
-            <p className="mb-6 text-on-surface-variant">
-              No saved trips yet. Discover a sunny destination and save it.
-            </p>
+            <p className="mb-6 text-on-surface-variant">{t("trips.empty")}</p>
             <form action={loginDemoAction}>
               <button
                 type="submit"
                 className="rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary"
               >
-                Continue as demo user
+                {t("trips.continueDemo")}
               </button>
             </form>
           </div>
@@ -80,7 +86,9 @@ export default async function TripsPage() {
                     </span>
                   )}
                   <span>
-                    {new Date(trip.createdAt).toLocaleDateString()}
+                    {new Date(trip.createdAt).toLocaleDateString(
+                      locale === "fi" ? "fi-FI" : "en-GB",
+                    )}
                   </span>
                 </div>
                 <div className="flex gap-3">
@@ -88,7 +96,7 @@ export default async function TripsPage() {
                     href={`/routes?from=${encodeURIComponent(trip.originName)}&to=${encodeURIComponent(trip.destinationName)}`}
                     className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-on-primary"
                   >
-                    Open route
+                    {t("trips.openRoute")}
                   </Link>
                   <form action={deleteTripAction}>
                     <input type="hidden" name="tripId" value={trip.id} />
@@ -96,7 +104,7 @@ export default async function TripsPage() {
                       type="submit"
                       className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-medium text-on-surface-variant hover:bg-surface-container"
                     >
-                      Remove
+                      {t("trips.remove")}
                     </button>
                   </form>
                 </div>

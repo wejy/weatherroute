@@ -12,6 +12,31 @@ export interface DateWindow {
   rangeLabel: string;
 }
 
+export type DateLocale = "en" | "fi";
+
+const DATE_LABELS: Record<
+  DateLocale,
+  {
+    today: string;
+    tomorrow: string;
+    weekend: string;
+    custom: string;
+  }
+> = {
+  en: {
+    today: "Today",
+    tomorrow: "Tomorrow",
+    weekend: "This weekend",
+    custom: "Custom dates",
+  },
+  fi: {
+    today: "Tänään",
+    tomorrow: "Huomenna",
+    weekend: "Tämä viikonloppu",
+    custom: "Omat päivät",
+  },
+};
+
 function pad(n: number) {
   return String(n).padStart(2, "0");
 }
@@ -37,17 +62,18 @@ export function startOfLocalDay(d = new Date()): Date {
   return x;
 }
 
-function formatRangeLabel(start: Date, end: Date): string {
+function formatRangeLabel(start: Date, end: Date, locale: DateLocale): string {
   const sameDay = toDateKey(start) === toDateKey(end);
+  const tag = locale === "fi" ? "fi-FI" : "en-GB";
   const opts: Intl.DateTimeFormatOptions = {
     weekday: "short",
     day: "numeric",
     month: "short",
   };
   if (sameDay) {
-    return start.toLocaleDateString("en-GB", opts);
+    return start.toLocaleDateString(tag, opts);
   }
-  return `${start.toLocaleDateString("en-GB", opts)} – ${end.toLocaleDateString("en-GB", opts)}`;
+  return `${start.toLocaleDateString(tag, opts)} – ${end.toLocaleDateString(tag, opts)}`;
 }
 
 /** Upcoming / current Sat–Sun based on local day-of-week. */
@@ -66,10 +92,12 @@ export function getWeekendBounds(now = new Date()): { start: Date; end: Date } {
   return { start: sat, end: addDays(sat, 1) };
 }
 
-export function weekendOptionLabel(now = new Date()): string {
-  const dow = now.getDay();
-  if (dow === 0 || dow === 6) return "This weekend";
-  return "This weekend";
+export function weekendOptionLabel(
+  now = new Date(),
+  locale: DateLocale = "en",
+): string {
+  void now;
+  return DATE_LABELS[locale].weekend;
 }
 
 export function resolveDateWindow(input: {
@@ -77,17 +105,20 @@ export function resolveDateWindow(input: {
   startDate?: string;
   endDate?: string;
   now?: Date;
+  locale?: DateLocale;
 }): DateWindow {
   const now = input.now ?? new Date();
   const today = startOfLocalDay(now);
+  const locale = input.locale ?? "en";
+  const labels = DATE_LABELS[locale];
 
   if (input.preset === "today") {
     return {
       preset: "today",
       startDate: toDateKey(today),
       endDate: toDateKey(today),
-      label: "Today",
-      rangeLabel: formatRangeLabel(today, today),
+      label: labels.today,
+      rangeLabel: formatRangeLabel(today, today, locale),
     };
   }
 
@@ -97,8 +128,8 @@ export function resolveDateWindow(input: {
       preset: "tomorrow",
       startDate: toDateKey(tom),
       endDate: toDateKey(tom),
-      label: "Tomorrow",
-      rangeLabel: formatRangeLabel(tom, tom),
+      label: labels.tomorrow,
+      rangeLabel: formatRangeLabel(tom, tom, locale),
     };
   }
 
@@ -108,8 +139,8 @@ export function resolveDateWindow(input: {
       preset: "weekend",
       startDate: toDateKey(start),
       endDate: toDateKey(end),
-      label: weekendOptionLabel(now),
-      rangeLabel: formatRangeLabel(start, end),
+      label: labels.weekend,
+      rangeLabel: formatRangeLabel(start, end, locale),
     };
   }
 
@@ -124,8 +155,8 @@ export function resolveDateWindow(input: {
     preset: "custom",
     startDate: toDateKey(ordered.start),
     endDate: toDateKey(ordered.end),
-    label: "Custom dates",
-    rangeLabel: formatRangeLabel(ordered.start, ordered.end),
+    label: labels.custom,
+    rangeLabel: formatRangeLabel(ordered.start, ordered.end, locale),
   };
 }
 

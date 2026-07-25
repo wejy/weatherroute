@@ -33,9 +33,18 @@ export const discoverQuerySchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
   distance: z
-    .enum(["near", "region", "country", "continent", "global"])
+    .enum([
+      "near",
+      "semi",
+      "surroundings",
+      "neighborhood",
+      "region",
+      "continent",
+      "custom",
+    ])
     .optional()
     .default("region"),
+  radiusKm: z.coerce.number().min(0).max(2000).optional(),
   weatherGoal: z
     .enum(["sun", "dry", "mild", "warm", "calm", "cloudy"])
     .optional()

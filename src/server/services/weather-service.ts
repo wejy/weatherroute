@@ -26,10 +26,13 @@ import {
   findPlace,
 } from "@/server/integrations/mocks/data";
 import {
-  DISTANCE_RADIUS_KM,
   citiesWithinRadius,
   placeholderImageFor,
 } from "@/server/integrations/places/candidates";
+import {
+  resolveRadiusKm,
+  candidateLimitForRadius,
+} from "@/lib/distance";
 
 function scoreWeather(
   goal: WeatherGoal,
@@ -106,6 +109,7 @@ export function summarizePeriod(
     rangeLabel: string;
     startDate: string;
     endDate: string;
+    preset?: string;
   },
 ): PeriodWeatherDto {
   const days = pickDaysForWindow(
@@ -120,6 +124,7 @@ export function summarizePeriod(
       rangeLabel: window.rangeLabel,
       startDate: window.startDate,
       endDate: window.endDate,
+      preset: window.preset,
       temperatureC: weather.current.temperatureC,
       tempMinC: weather.current.temperatureC - 3,
       tempMaxC: weather.current.temperatureC,
@@ -153,6 +158,7 @@ export function summarizePeriod(
     rangeLabel: window.rangeLabel,
     startDate: window.startDate,
     endDate: window.endDate,
+    preset: window.preset,
     temperatureC: Math.round((tempMaxC + tempMinC) / 2),
     tempMinC: Math.round(tempMinC),
     tempMaxC: Math.round(tempMaxC),
@@ -198,6 +204,7 @@ function emptyDiscoverResult(
     endDate: query.endDate,
   });
   const distance = (query.distance ?? "region") as DistanceRange;
+  const radiusKm = resolveRadiusKm(distance, query.radiusKm);
 
   return {
     origin: {
@@ -214,7 +221,7 @@ function emptyDiscoverResult(
     dateRangeLabel: dateWindow.rangeLabel,
     startDate: dateWindow.startDate,
     endDate: dateWindow.endDate,
-    radiusKm: DISTANCE_RADIUS_KM[distance],
+    radiusKm,
     destinations: [],
     mapMarkers: [],
   };
@@ -229,7 +236,7 @@ export async function discoverDestinations(
   }
 
   const distance = (query.distance ?? "region") as DistanceRange;
-  const radiusKm = DISTANCE_RADIUS_KM[distance];
+  const radiusKm = resolveRadiusKm(distance, query.radiusKm);
   const goal = query.weatherGoal ?? "sun";
 
   const dateWindow = resolveDateWindow({
@@ -240,7 +247,7 @@ export async function discoverDestinations(
 
   const candidates = citiesWithinRadius(origin, radiusKm, {
     excludeName: origin.name,
-    limit: distance === "global" ? 24 : distance === "near" ? 12 : 18,
+    limit: candidateLimitForRadius(radiusKm),
   });
 
   const catalogById = new Map(DESTINATION_CATALOG.map((d) => [d.id, d]));
@@ -374,17 +381,39 @@ export async function getWeatherForPlace(input: {
   return fetchWeather(input);
 }
 
-export function buildSuitability(weather: WeatherDto): SuitabilityBadgeDto[] {
+export function buildSuitability(
+  weather: WeatherDto,
+  t?: (key: string, vars?: Record<string, string | number>) => string,
+): SuitabilityBadgeDto[] {
   const badges: SuitabilityBadgeDto[] = [];
   const { current, daily } = weather;
+  const tr =
+    t ??
+    ((key: string, vars?: Record<string, string | number>) => {
+      const fallback: Record<string, string> = {
+        "suitability.outdoorTitle": "Perfect for Outdoor BBQ",
+        "suitability.outdoorDesc": "Low wind and clear skies expected.",
+        "suitability.photoTitle": "Great for Photography",
+        "suitability.photoDesc": "Excellent visibility and soft light.",
+        "suitability.wetTitle": "Pack a raincoat",
+        "suitability.wetDesc": "{pct}% chance of heavy showers.",
+      };
+      let s = fallback[key] ?? key;
+      if (vars) {
+        s = s.replace(/\{(\w+)\}/g, (_, k: string) =>
+          vars[k] != null ? String(vars[k]) : `{${k}}`,
+        );
+      }
+      return s;
+    });
 
   if (current.precipitationProbability < 20 && current.windSpeedKmh < 20) {
     badges.push({
       id: "bbq",
       tone: "success",
       icon: "outdoor_grill",
-      title: "Perfect for Outdoor BBQ",
-      description: "Low wind, no rain expected today.",
+      title: tr("suitability.outdoorTitle"),
+      description: tr("suitability.outdoorDesc"),
     });
   }
 
@@ -393,8 +422,8 @@ export function buildSuitability(weather: WeatherDto): SuitabilityBadgeDto[] {
       id: "drive",
       tone: "info",
       icon: "directions_car",
-      title: "Safe for Driving",
-      description: "Excellent visibility, dry roads.",
+      title: tr("suitability.photoTitle"),
+      description: tr("suitability.photoDesc"),
     });
   }
 
@@ -404,8 +433,10 @@ export function buildSuitability(weather: WeatherDto): SuitabilityBadgeDto[] {
       id: "umbrella",
       tone: "warning",
       icon: "umbrella",
-      title: `Bring an Umbrella ${wetDay.dayLabel}`,
-      description: `${wetDay.precipitationProbability}% chance of heavy showers.`,
+      title: `${tr("suitability.wetTitle")} · ${wetDay.dayLabel}`,
+      description: tr("suitability.wetDesc", {
+        pct: wetDay.precipitationProbability,
+      }),
     });
   }
 

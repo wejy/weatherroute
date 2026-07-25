@@ -97,15 +97,16 @@ export const WORLD_CITIES: PlaceDto[] = [
   { id: "singapore", name: "Singapore", placeName: "Singapore", country: "Singapore", countryCode: "SG", lat: 1.3521, lon: 103.8198 },
 ];
 
-export const DISTANCE_RADIUS_KM = {
-  near: 50,
-  region: 300,
-  country: 800,
-  continent: 2000,
-  global: 20000,
-} as const;
-
-export type DistanceKey = keyof typeof DISTANCE_RADIUS_KM;
+export {
+  DISTANCE_RADIUS_KM,
+  DISTANCE_PRESET_KEYS,
+  CUSTOM_RADIUS_MIN_KM,
+  CUSTOM_RADIUS_MAX_KM,
+  CUSTOM_RADIUS_DEFAULT_KM,
+  resolveRadiusKm,
+  candidateLimitForRadius,
+  type DistanceKey,
+} from "@/lib/distance";
 
 const PLACEHOLDER_IMAGES = [
   "/images/naantali.jpg",

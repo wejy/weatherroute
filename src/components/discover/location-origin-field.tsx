@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import type { PlaceDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/i18n/locale-provider";
 
 type LocStatus = "idle" | "locating" | "ready" | "denied" | "error";
 
@@ -20,6 +21,7 @@ export function LocationOriginField({
   onGeolocated?: (place: PlaceDto) => void;
   autoDetect?: boolean;
 }) {
+  const { t } = useI18n();
   const listId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -152,11 +154,11 @@ export function LocationOriginField({
 
   const hint =
     status === "locating"
-      ? "Detecting your location…"
+      ? t("location.detecting")
       : status === "denied"
-        ? "Location blocked — type a city"
+        ? t("location.denied")
         : status === "error"
-          ? "Couldn’t detect location — type a city"
+          ? t("location.failed")
           : null;
 
   return (
@@ -166,8 +168,8 @@ export function LocationOriginField({
           type="button"
           onClick={() => detectLocation()}
           disabled={status === "locating"}
-          title="Use my current location"
-          aria-label="Use my current location"
+          title={t("location.useMyLocation")}
+          aria-label={t("location.useMyLocation")}
           className={cn(
             "shrink-0 rounded-full p-0.5 transition-colors hover:text-primary",
             status === "locating" && "animate-pulse text-primary",
@@ -188,7 +190,9 @@ export function LocationOriginField({
           }
           className="w-full truncate border-none bg-transparent p-0 text-xl font-semibold text-on-surface placeholder:text-outline focus:outline-none focus:ring-0"
           placeholder={
-            status === "locating" ? "Detecting…" : "City or town…"
+            status === "locating"
+              ? t("location.detecting")
+              : t("location.placeholder")
           }
           value={value}
           onChange={(e) => {

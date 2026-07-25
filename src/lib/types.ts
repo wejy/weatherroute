@@ -17,10 +17,12 @@ export type WeatherGoal =
 
 export type DistanceRange =
   | "near"
+  | "semi"
+  | "surroundings"
+  | "neighborhood"
   | "region"
-  | "country"
   | "continent"
-  | "global";
+  | "custom";
 
 export interface Coordinates {
   lat: number;
@@ -67,6 +69,7 @@ export interface PeriodWeatherDto {
   rangeLabel: string;
   startDate: string;
   endDate: string;
+  preset?: string;
   temperatureC: number;
   tempMinC: number;
   tempMaxC: number;

@@ -9,6 +9,9 @@ import { DiscoverMap } from "@/components/map/discover-map";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp } from "@/lib/utils";
 import { getMapboxPublicToken, getMapboxServerToken } from "@/lib/env";
+import { getDictionary, getLocale } from "@/i18n/get-dictionary";
+import { createTranslator, translateCondition } from "@/i18n/translate";
+import { resolveDateWindow, type DatePreset } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +30,15 @@ export default async function HomePage({
   const result = await discoverDestinations(parsed);
   const mapboxToken = getMapboxPublicToken();
   const serverToken = getMapboxServerToken();
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const t = createTranslator(dict);
+  const dateWindow = resolveDateWindow({
+    preset: (result.datePreset as DatePreset) || "weekend",
+    startDate: result.startDate,
+    endDate: result.endDate,
+    locale,
+  });
 
   return (
     <>
@@ -53,12 +65,11 @@ export default async function HomePage({
           <section className="relative z-40 mt-8 mb-12 flex flex-col items-center text-center md:mt-12 md:mb-16">
             <div className="mb-8 inline-block max-w-4xl rounded-[2rem] border border-outline-variant/20 bg-surface/85 p-8 shadow-lg backdrop-blur-xl">
               <h1 className="mb-4 text-4xl leading-tight font-bold tracking-tight text-on-surface md:text-5xl md:leading-[56px]">
-                Find perfect weather,
-                <br className="hidden md:block" /> no matter where you go.
+                {t("home.headline")}
+                <br className="hidden md:block" /> {t("home.headlineBreak")}
               </h1>
               <p className="mx-auto max-w-2xl text-lg text-on-surface-variant">
-                Let our climate models discover the
-                best destinations for your weekend escape.
+                {t("home.subhead")}
               </p>
             </div>
 
@@ -66,6 +77,7 @@ export default async function HomePage({
               defaults={{
                 origin: flat.origin ?? parsed.origin,
                 distance: parsed.distance,
+                radiusKm: parsed.radiusKm,
                 weatherGoal: parsed.weatherGoal,
                 lat: parsed.lat,
                 lon: parsed.lon,
@@ -88,18 +100,20 @@ export default async function HomePage({
           >
             <div className="mb-6 rounded-2xl border border-outline-variant/20 bg-surface/90 p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.06)] backdrop-blur-xl md:p-6">
               <h2 className="text-2xl font-semibold text-on-surface md:text-[32px] md:leading-10">
-                Best weather · {result.dateLabel}
+                {t("home.bestWeather")} · {dateWindow.label}
               </h2>
               <p className="mt-2 text-on-surface-variant">
                 {result.origin.id === "pending" ? (
-                  <>Waiting for your location to load results…</>
+                  <>{t("home.waitingLocation")}</>
                 ) : (
                   <>
-                    {result.dateRangeLabel} · within{" "}
-                    {result.radiusKm.toLocaleString()} km of{" "}
-                    {result.origin.placeName}
+                    {dateWindow.rangeLabel} ·{" "}
+                    {t("home.withinOf", {
+                      radius: result.radiusKm.toLocaleString(locale === "fi" ? "fi-FI" : "en-GB"),
+                      place: result.origin.placeName,
+                    })}
                     {result.destinations.length > 0
-                      ? ` · ${result.destinations.length} places`
+                      ? ` · ${t("home.places", { count: result.destinations.length })}`
                       : ""}
                   </>
                 )}
@@ -116,11 +130,14 @@ export default async function HomePage({
                       </span>
                       <div>
                         <p className="text-xs font-medium tracking-wide text-on-surface-variant uppercase">
-                          Now in {result.origin.name}
+                          {t("home.nowIn", { name: result.origin.name })}
                         </p>
                         <p className="font-semibold text-on-surface">
                           {formatTemp(result.originCurrent.temperatureC)}C ·{" "}
-                          {result.originCurrent.conditionLabel}
+                          {translateCondition(
+                            dict,
+                            result.originCurrent.condition,
+                          )}
                         </p>
                       </div>
                     </div>
@@ -134,15 +151,24 @@ export default async function HomePage({
                       </span>
                       <div>
                         <p className="text-xs font-medium tracking-wide text-secondary uppercase">
-                          {result.originForecast.label} in {result.origin.name}
+                          {t("home.forecastIn", {
+                            label: dateWindow.label,
+                            name: result.origin.name,
+                          })}
                         </p>
                         <p className="font-semibold text-on-surface">
                           {formatTemp(result.originForecast.tempMinC)}–
                           {formatTemp(result.originForecast.tempMaxC)}C ·{" "}
-                          {result.originForecast.conditionLabel}
+                          {translateCondition(
+                            dict,
+                            result.originForecast.condition,
+                          )}
                           <span className="font-normal text-on-surface-variant">
                             {" "}
-                            · rain {result.originForecast.rainProbability}%
+                            ·{" "}
+                            {t("home.rain", {
+                              pct: result.originForecast.rainProbability,
+                            })}
                           </span>
                         </p>
                       </div>
@@ -160,8 +186,8 @@ export default async function HomePage({
             {result.destinations.length === 0 && (
               <p className="rounded-2xl border border-outline-variant/20 bg-surface/90 p-8 text-center text-on-surface-variant backdrop-blur-xl">
                 {result.origin.id === "pending"
-                  ? "Detecting your location to center the map… Allow location access, or type a city and search."
-                  : "No destinations inside this circle. Try a wider radius."}
+                  ? t("home.detecting")
+                  : t("home.noDestinations")}
               </p>
             )}
           </section>

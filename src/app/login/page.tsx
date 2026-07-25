@@ -2,11 +2,19 @@ import Link from "next/link";
 import { TopNav } from "@/components/layout/top-nav";
 import { loginDemoAction, logoutAction } from "@/server/actions/trips";
 import { getCurrentUser } from "@/server/auth/session";
+import { getDictionary, getLocale } from "@/i18n/get-dictionary";
+import { createTranslator } from "@/i18n/translate";
 
-export const metadata = { title: "Sign in" };
+export async function generateMetadata() {
+  const locale = await getLocale();
+  const t = createTranslator(getDictionary(locale));
+  return { title: t("login.title") };
+}
 
 export default async function LoginPage() {
   const user = await getCurrentUser();
+  const locale = await getLocale();
+  const t = createTranslator(getDictionary(locale));
 
   return (
     <>
@@ -18,12 +26,12 @@ export default async function LoginPage() {
               partly_cloudy_day
             </span>
             <h1 className="text-3xl font-bold text-on-surface">
-              {user ? "You're signed in" : "Welcome to WeatherTrip"}
+              {user ? t("login.signedIn") : t("login.welcome")}
             </h1>
             <p className="mt-2 text-on-surface-variant">
               {user
-                ? `Demo session as ${user.displayName}`
-                : "Supabase Auth is ready to wire — use demo mode for now (no API keys required)."}
+                ? t("login.demoSession", { name: user.displayName })
+                : t("login.demoHint")}
             </p>
           </div>
 
@@ -33,14 +41,14 @@ export default async function LoginPage() {
                 href="/trips"
                 className="block w-full rounded-lg bg-primary py-3 text-center font-semibold text-on-primary"
               >
-                Go to Saved Trips
+                {t("login.goTrips")}
               </Link>
               <form action={logoutAction}>
                 <button
                   type="submit"
                   className="w-full rounded-lg border border-outline-variant py-3 font-semibold text-on-surface-variant"
                 >
-                  Sign out
+                  {t("login.signOut")}
                 </button>
               </form>
             </div>
@@ -50,14 +58,13 @@ export default async function LoginPage() {
                 type="submit"
                 className="w-full rounded-lg bg-primary py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container"
               >
-                Continue with demo account
+                {t("login.continueDemo")}
               </button>
             </form>
           )}
 
           <p className="mt-6 text-center text-sm text-on-surface-variant">
-            Set <code className="text-primary">NEXT_PUBLIC_SUPABASE_URL</code>{" "}
-            later to enable real auth.
+            {t("login.supabaseHint")}
           </p>
         </div>
       </main>

@@ -1,20 +1,32 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import type { DestinationDto } from "@/lib/types";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp } from "@/lib/utils";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { translateCondition } from "@/i18n/translate";
+import { resolveDateWindow, type DatePreset } from "@/lib/dates";
 
 export function DestinationCard({
   destination,
 }: {
   destination: DestinationDto;
 }) {
+  const { t, dict, locale } = useI18n();
   const forecast = destination.forecast;
   const current = destination.current;
+  const dateLabel = resolveDateWindow({
+    preset: (forecast.preset as DatePreset) || "custom",
+    startDate: forecast.startDate,
+    endDate: forecast.endDate,
+    locale,
+  }).label;
 
   return (
     <Link
-      href={`/destinations/${destination.slug}?startDate=${forecast.startDate}&endDate=${forecast.endDate}`}
+      href={`/destinations/${destination.slug}?datePreset=${encodeURIComponent(forecast.preset ?? "custom")}&startDate=${forecast.startDate}&endDate=${forecast.endDate}`}
     >
       <article className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0px_10px_30px_rgba(0,0,0,0.08)]">
         <div className="relative aspect-[4/3] w-full overflow-hidden">
@@ -37,7 +49,7 @@ export function DestinationCard({
               </span>
             </div>
             <span className="rounded-full bg-primary/90 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-on-primary uppercase backdrop-blur-md">
-              {forecast.label}
+              {dateLabel}
             </span>
           </div>
         </div>
@@ -47,7 +59,8 @@ export function DestinationCard({
               {destination.placeName}
             </h3>
             <p className="text-sm text-on-surface-variant">
-              {forecast.conditionLabel} · rain {forecast.rainProbability}%
+              {translateCondition(dict, forecast.condition)} ·{" "}
+              {t("card.rain", { pct: forecast.rainProbability })}
               {destination.distanceKm > 0 && (
                 <span> · {destination.distanceKm} km</span>
               )}
@@ -57,7 +70,7 @@ export function DestinationCard({
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="rounded-xl bg-surface-container-low px-3 py-2">
               <p className="text-[11px] font-medium tracking-wide text-on-surface-variant uppercase">
-                Now
+                {t("card.now")}
               </p>
               <p className="mt-0.5 flex items-center gap-1 font-semibold text-on-surface">
                 <span
@@ -70,7 +83,7 @@ export function DestinationCard({
             </div>
             <div className="rounded-xl bg-secondary/10 px-3 py-2">
               <p className="text-[11px] font-medium tracking-wide text-secondary uppercase">
-                Forecast
+                {t("card.forecast")}
               </p>
               <p className="mt-0.5 flex items-center gap-1 font-semibold text-on-surface">
                 <span

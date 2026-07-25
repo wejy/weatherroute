@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import {
   buildSuitability,
@@ -8,15 +9,40 @@ import {
   summarizePeriod,
 } from "@/server/services/weather-service";
 import { TopNav, BottomNav } from "@/components/layout/top-nav";
+import { ForecastCharts } from "@/components/destinations/forecast-charts";
+import { DestinationDateFilters } from "@/components/destinations/date-filters";
 import { saveTripAction } from "@/server/actions/trips";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp } from "@/lib/utils";
-import { resolveDateWindow } from "@/lib/dates";
+import {
+  resolveDateWindow,
+  type DatePreset,
+} from "@/lib/dates";
+import { getDictionary, getLocale } from "@/i18n/get-dictionary";
+import { createTranslator, translateCondition } from "@/i18n/translate";
 
 export const dynamic = "force-dynamic";
 
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+function first(
+  value: string | string[] | undefined,
+): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function parseDatePreset(raw: string | undefined): DatePreset | undefined {
+  if (
+    raw === "today" ||
+    raw === "tomorrow" ||
+    raw === "weekend" ||
+    raw === "custom"
+  ) {
+    return raw;
+  }
+  return undefined;
+}
 
 export async function generateMetadata({ params }: { params: Params }) {
   const { slug } = await params;
@@ -33,10 +59,11 @@ export default async function DestinationPage({
 }) {
   const { slug } = await params;
   const raw = await searchParams;
-  const startDate = Array.isArray(raw.startDate)
-    ? raw.startDate[0]
-    : raw.startDate;
-  const endDate = Array.isArray(raw.endDate) ? raw.endDate[0] : raw.endDate;
+  const startDate = first(raw.startDate);
+  const endDate = first(raw.endDate);
+  const datePreset =
+    parseDatePreset(first(raw.datePreset)) ??
+    (startDate ? "custom" : "weekend");
 
   const dest = await getDestinationBySlug(slug);
   if (!dest) notFound();
@@ -46,15 +73,23 @@ export default async function DestinationPage({
     lon: dest.lon,
     name: dest.placeName,
   });
-  const badges = buildSuitability(weather);
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const t = createTranslator(dict);
+  const badges = buildSuitability(weather, t);
 
   const window = resolveDateWindow({
-    preset: startDate ? "custom" : "today",
+    preset: datePreset,
     startDate,
     endDate: endDate || startDate,
+    locale,
   });
   const period = summarizePeriod(weather, window);
   const chartDays = weather.daily.slice(0, 10);
+  const countryLabel =
+    dest.country === "Suomi" || dest.country === "Finland"
+      ? t("destination.finland")
+      : dest.country;
 
   return (
     <>
@@ -73,12 +108,14 @@ export default async function DestinationPage({
           <div className="relative z-20 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
             <div className="text-on-tertiary">
               <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
-                {dest.name},{" "}
-                {dest.country === "Suomi" ? "Finland" : dest.country}
+                {dest.name}, {countryLabel}
               </h1>
               <p className="mt-2 text-lg text-on-tertiary/80">
-                Now: {weather.current.conditionLabel} • Feels like{" "}
-                {formatTemp(weather.current.feelsLikeC)}C
+                {t("destination.nowPrefix")}{" "}
+                {translateCondition(dict, weather.current.condition)} •{" "}
+                {t("destination.feelsLike", {
+                  temp: formatTemp(weather.current.feelsLikeC),
+                })}
               </p>
             </div>
             <div className="flex items-center gap-4">
@@ -95,10 +132,21 @@ export default async function DestinationPage({
           </div>
         </section>
 
+        <Suspense
+          fallback={
+            <div className="h-28 animate-pulse rounded-xl bg-surface-container" />
+          }
+        >
+          <DestinationDateFilters
+            key={`${window.preset}-${window.startDate}-${window.endDate}`}
+            initial={window}
+          />
+        </Suspense>
+
         <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="rounded-xl border border-surface-variant bg-surface-container-lowest p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
             <p className="text-sm font-medium tracking-wide text-on-surface-variant uppercase">
-              Current conditions
+              {t("destination.currentConditions")}
             </p>
             <div className="mt-3 flex items-center gap-3">
               <span
@@ -111,15 +159,17 @@ export default async function DestinationPage({
                   {formatTemp(weather.current.temperatureC)}C
                 </p>
                 <p className="text-on-surface-variant">
-                  {weather.current.conditionLabel} · rain{" "}
-                  {weather.current.precipitationProbability}%
+                  {translateCondition(dict, weather.current.condition)} ·{" "}
+                  {t("home.rain", {
+                    pct: weather.current.precipitationProbability,
+                  })}
                 </p>
               </div>
             </div>
           </div>
           <div className="rounded-xl border border-primary/20 bg-primary/5 p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
             <p className="text-sm font-medium tracking-wide text-primary uppercase">
-              Forecast · {period.rangeLabel}
+              {t("destination.forecast")} · {period.rangeLabel}
             </p>
             <div className="mt-3 flex items-center gap-3">
               <span
@@ -132,8 +182,9 @@ export default async function DestinationPage({
                   {formatTemp(period.tempMinC)}–{formatTemp(period.tempMaxC)}C
                 </p>
                 <p className="text-on-surface-variant">
-                  {period.conditionLabel} · rain {period.rainProbability}% · sun
-                  score {period.sunshineScore}
+                  {translateCondition(dict, period.condition)} ·{" "}
+                  {t("home.rain", { pct: period.rainProbability })} ·{" "}
+                  {t("destination.sunScore", { score: period.sunshineScore })}
                 </p>
               </div>
             </div>
@@ -142,78 +193,34 @@ export default async function DestinationPage({
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-12">
           <div className="space-y-8 lg:col-span-8">
-            <section className="rounded-xl border border-surface-variant bg-surface-container-lowest p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-on-surface">
-                  Forecast · Precipitation & Cloud Cover
-                </h2>
-                <div className="flex gap-4">
-                  <span className="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
-                    <span className="h-3 w-3 rounded-sm bg-secondary-container" />
-                    Precip
-                  </span>
-                  <span className="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
-                    <span className="h-3 w-3 rounded-sm bg-surface-variant" />
-                    Clouds
-                  </span>
-                </div>
-              </div>
-              <div className="relative flex h-[300px] w-full items-end justify-between overflow-hidden rounded-lg bg-surface-container p-4">
-                {chartDays.map((day) => {
-                  const inPeriod =
-                    day.date >= period.startDate && day.date <= period.endDate;
-                  return (
-                    <div
-                      key={day.date}
-                      className={`relative flex h-full flex-1 flex-col items-center justify-end gap-1 px-1 ${
-                        inPeriod ? "opacity-100" : "opacity-40"
-                      }`}
-                    >
-                      <div
-                        className="w-full rounded-t-sm bg-surface-variant opacity-50"
-                        style={{ height: `${Math.max(8, day.cloudCover)}%` }}
-                      />
-                      <div
-                        className="absolute bottom-0 w-[70%] rounded-t-sm bg-secondary-container opacity-80"
-                        style={{
-                          height: `${Math.max(4, day.precipitationProbability)}%`,
-                        }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-              <div className="mt-4 flex justify-between px-1 text-[13px] font-semibold tracking-wider text-on-surface-variant">
-                {chartDays.map((day) => (
-                  <span key={day.date}>{day.dayLabel}</span>
-                ))}
-              </div>
-              <p className="mt-3 text-xs text-on-surface-variant">
-                Source: {weather.provider} · highlighted days match your trip
-                window
-              </p>
-            </section>
+            <ForecastCharts
+              key={`charts-${period.startDate}-${period.endDate}`}
+              days={chartDays}
+              periodStart={period.startDate}
+              periodEnd={period.endDate}
+              provider={weather.provider}
+            />
 
             <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {[
                 {
                   icon: "air",
-                  label: "Wind",
+                  label: t("destination.wind"),
                   value: `${Math.round(weather.current.windSpeedKmh)} km/h`,
                 },
                 {
                   icon: "humidity_percentage",
-                  label: "Humidity",
+                  label: t("destination.humidity"),
                   value: `${weather.current.humidity}%`,
                 },
                 {
                   icon: "visibility",
-                  label: "Visibility",
+                  label: t("destination.visibility"),
                   value: `${weather.current.visibilityKm} km`,
                 },
                 {
                   icon: "device_thermostat",
-                  label: "UV Index",
+                  label: t("destination.uvIndex"),
                   value: weather.current.uvLabel,
                 },
               ].map((m) => (
@@ -244,7 +251,7 @@ export default async function DestinationPage({
                 >
                   check_circle
                 </span>
-                Trip Suitability
+                {t("destination.tripSuitability")}
               </h2>
               <div className="space-y-4">
                 {badges.map((badge) => (
@@ -316,7 +323,7 @@ export default async function DestinationPage({
                   <span className="material-symbols-outlined text-[18px]">
                     bookmark
                   </span>
-                  Save Destination
+                  {t("destination.saveDestination")}
                 </button>
               </form>
               <Link
@@ -326,7 +333,7 @@ export default async function DestinationPage({
                 <span className="material-symbols-outlined text-[18px]">
                   route
                 </span>
-                Plan Route
+                {t("destination.planRoute")}
               </Link>
             </section>
           </div>

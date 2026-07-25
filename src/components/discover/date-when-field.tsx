@@ -5,18 +5,18 @@ import {
   maxForecastDateKey,
   minForecastDateKey,
   resolveDateWindow,
-  weekendOptionLabel,
   type DatePreset,
   type DateWindow,
 } from "@/lib/dates";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/components/i18n/locale-provider";
 
-const PRESETS: { value: DatePreset; label: (now?: Date) => string }[] = [
-  { value: "today", label: () => "Today" },
-  { value: "tomorrow", label: () => "Tomorrow" },
-  { value: "weekend", label: () => weekendOptionLabel() },
-  { value: "custom", label: () => "Pick a date…" },
-];
+const PRESET_ICONS: Record<DatePreset, string> = {
+  today: "today",
+  tomorrow: "event",
+  weekend: "date_range",
+  custom: "edit_calendar",
+};
 
 export function DateWhenField({
   value,
@@ -25,11 +25,19 @@ export function DateWhenField({
   value: DateWindow;
   onChange: (next: DateWindow) => void;
 }) {
+  const { t, locale } = useI18n();
   const listId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const min = useMemo(() => minForecastDateKey(), []);
   const max = useMemo(() => maxForecastDateKey(), []);
+
+  const presets: { value: DatePreset; label: string }[] = [
+    { value: "today", label: t("dates.today") },
+    { value: "tomorrow", label: t("dates.tomorrow") },
+    { value: "weekend", label: t("dates.weekend") },
+    { value: "custom", label: t("dates.pickDate") },
+  ];
 
   useEffect(() => {
     function onDoc(e: MouseEvent) {
@@ -45,12 +53,13 @@ export function DateWhenField({
         preset: "custom",
         startDate: value.startDate || min,
         endDate: value.endDate || value.startDate || min,
+        locale,
       });
       onChange(base);
       setOpen(true);
       return;
     }
-    onChange(resolveDateWindow({ preset }));
+    onChange(resolveDateWindow({ preset, locale }));
     setOpen(false);
   }
 
@@ -87,7 +96,7 @@ export function DateWhenField({
           className="absolute top-full left-0 z-50 mt-3 w-[min(100vw-2rem,18rem)] rounded-xl border border-outline-variant/30 bg-surface-container-lowest p-2 shadow-[0px_10px_30px_rgba(0,0,0,0.12)]"
         >
           <ul className="flex flex-col">
-            {PRESETS.map((p) => {
+            {presets.map((p) => {
               const active = value.preset === p.value;
               return (
                 <li key={p.value}>
@@ -100,15 +109,9 @@ export function DateWhenField({
                     onClick={() => selectPreset(p.value)}
                   >
                     <span className="material-symbols-outlined text-secondary">
-                      {p.value === "today"
-                        ? "today"
-                        : p.value === "tomorrow"
-                          ? "event"
-                          : p.value === "weekend"
-                            ? "date_range"
-                            : "edit_calendar"}
+                      {PRESET_ICONS[p.value]}
                     </span>
-                    {p.label()}
+                    {p.label}
                   </button>
                 </li>
               );
@@ -118,7 +121,7 @@ export function DateWhenField({
           {value.preset === "custom" && (
             <div className="mt-2 space-y-2 border-t border-outline-variant/20 px-2 pt-3 pb-1">
               <label className="block text-xs font-medium text-on-surface-variant">
-                Start
+                {t("dates.start")}
                 <input
                   type="date"
                   min={min}
@@ -133,13 +136,14 @@ export function DateWhenField({
                         startDate,
                         endDate:
                           value.endDate < startDate ? startDate : value.endDate,
+                        locale,
                       }),
                     );
                   }}
                 />
               </label>
               <label className="block text-xs font-medium text-on-surface-variant">
-                End
+                {t("dates.end")}
                 <input
                   type="date"
                   min={value.startDate || min}
@@ -152,6 +156,7 @@ export function DateWhenField({
                         preset: "custom",
                         startDate: value.startDate,
                         endDate: e.target.value,
+                        locale,
                       }),
                     );
                   }}
@@ -162,7 +167,7 @@ export function DateWhenField({
                 className="w-full rounded-lg bg-primary py-2 text-sm font-semibold text-on-primary"
                 onClick={() => setOpen(false)}
               >
-                Apply dates
+                {t("dates.apply")}
               </button>
             </div>
           )}
