@@ -1,58 +1,59 @@
 # WeatherTrip
 
-Map-based weather trip planner SaaS (MVP). Find sunny destinations, inspect forecasts, and plan dry driving routes.
+Map-based weather trip planner — **npm workspaces monorepo**.
 
-## Stack
-
-- **Next.js App Router** + TypeScript
-- **Tailwind CSS** (WeatherTrip design tokens from `designs/`)
-- **Zod** validation on API routes
-- **Drizzle** schema ready for Supabase Postgres
-- **Open-Meteo** weather (no API key) with **yr.no**-shaped fallback + mocks
-- **Mapbox** search/map stubs until a token is set
-- **Mock auth** cookie session until Supabase keys are set
+| Package | Path | Role |
+|---|---|---|
+| `@weathertrip/web` | `apps/web` | Next.js App Router web app + API |
+| `@weathertrip/mobile` | `apps/mobile` | Expo (React Native) mobile app |
+| `@weathertrip/i18n` | `packages/i18n` | Shared EN + FI dictionaries |
 
 ## Quick start
 
 ```bash
 npm install
-cp .env.example .env.local
-npm run dev
+cp apps/web/.env.example apps/web/.env.local
+cp apps/mobile/.env.example apps/mobile/.env
+
+# Terminal 1 — API + web UI
+npm run dev:web
+
+# Terminal 2 — Expo
+npm run dev:mobile
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Web: [http://localhost:3000](http://localhost:3000).
 
-## Pages
+For a physical phone, set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to your machine’s LAN IP (e.g. `http://192.168.1.10:3000`).
+
+## Agent / contributor rules
+
+See [AGENTS.md](./AGENTS.md) and `.cursor/rules/dual-platform-i18n.mdc`:
+
+- Always update **English and Finnish** in `packages/i18n`.
+- Always keep **web and Expo** in sync for user-facing changes.
+
+## Web pages
 
 | Route | Description |
 |---|---|
-| `/` | Discover — search island, weather filters, weekend picks |
-| `/map` | Map explorer with destination list (mock map) |
-| `/routes` | Route weather timeline (Helsinki → Tampere demo) |
-| `/destinations/[slug]` | Detailed forecast + trip suitability |
-| `/trips` | Saved trips (in-memory demo store) |
-| `/login` | Demo sign-in (no keys) |
+| `/` | Discover — search, weather filters, ranked destinations |
+| `/map` | Map explorer |
+| `/routes` | Route weather timeline |
+| `/destinations/[slug]` | Detailed forecast |
+| `/trips` | Saved trips |
+| `/login` | Demo sign-in |
 
-## API
+## API (consumed by web + mobile)
 
 | Endpoint | Purpose |
 |---|---|
-| `GET /api/weather?lat=&lon=` | Weather DTO (cached ~10 min) |
-| `GET /api/search?q=` | Place search (Open-Meteo geocoding, free) |
-| `GET /api/geocode/reverse?lat=&lon=` | Reverse geocode (OSM Nominatim, free) |
+| `GET /api/weather?lat=&lon=` | Weather DTO |
+| `GET /api/search?q=` | Place search |
+| `GET /api/geocode/reverse?lat=&lon=` | Reverse geocode |
 | `GET /api/discover?...` | Ranked destinations |
 | `GET /api/routes?from=&to=` | Route weather plan |
 
-### Free place APIs used
+## Design
 
-- **[Open-Meteo Geocoding](https://open-meteo.com/en/docs/geocoding-api)** — city/town search worldwide, no API key
-- **[OSM Nominatim](https://nominatim.org/)** — reverse geocode (coords → place); fair-use / User-Agent required
-- Mapbox remains optional when a token is set later
-
-## Env
-
-See `.env.example`. With `USE_MOCKS=true` (default) the app runs fully without Supabase/Mapbox/DB keys. Open-Meteo is still attempted for live forecasts when the network is available.
-
-## Design source
-
-UI patterns and tokens come from `designs/` (WeatherTripPlanner + Luminous Navigation systems and HTML mockups).
+UI tokens and mockups live under `designs/`.
