@@ -21,6 +21,8 @@ export const yrProvider: WeatherProvider = {
         tempMaxC: baseTemp + 2 - (i % 3),
         tempMinC: baseTemp - 4,
         precipitationProbability: (seed + i * 7) % 40,
+        precipitationMm:
+          Math.round((((seed + i * 7) % 40) / 40) * 8 * 10) / 10,
         cloudCover: 30 + ((seed + i * 5) % 50),
         condition: i % 3 === 0 ? "sunny" : i % 3 === 1 ? "partly_cloudy" : "cloudy",
         conditionLabel:

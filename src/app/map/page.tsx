@@ -58,9 +58,9 @@ export default async function MapPage({
     <div className="h-screen w-full overflow-hidden bg-background text-on-background">
       <SideNav active="/map">
         <div className="mb-4 min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
-          <h2 className="text-xl font-semibold text-on-surface">
+          <h1 className="text-xl font-semibold text-on-surface">
             {t("map.nearbyIdeal")}
-          </h2>
+          </h1>
           {!hasOrigin && (
             <p className="rounded-xl border border-outline-variant/30 bg-surface-container-low p-3 text-sm text-on-surface-variant">
               {t("map.detecting")}
@@ -110,18 +110,22 @@ export default async function MapPage({
       </SideNav>
 
       <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between bg-surface/80 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl md:hidden">
-        <h1 className="text-2xl font-bold text-primary">{t("brand")}</h1>
+        <p className="text-2xl font-bold text-primary">{t("brand")}</p>
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
-          <Link href="/login">
-            <span className="material-symbols-outlined text-on-surface-variant">
+          <Link
+            href="/login"
+            aria-label={t("nav.profile")}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/30 bg-surface-container-low text-on-surface-variant"
+          >
+            <span className="material-symbols-outlined text-2xl" aria-hidden="true">
               account_circle
             </span>
           </Link>
         </div>
       </header>
 
-      <main className="relative z-0 h-full w-full pt-16 lg:pt-0 lg:pl-80">
+      <main id="main-content" className="relative z-0 h-full w-full pt-16 lg:pt-0 lg:pl-80">
         <DiscoverMap
           markers={hasOrigin ? result.mapMarkers : []}
           origin={hasOrigin ? result.origin : undefined}
@@ -140,21 +144,12 @@ export default async function MapPage({
             />
           </Suspense>
 
-          <div className="pointer-events-auto hidden shrink-0 flex-col gap-3 lg:flex">
-            <button
-              type="button"
-              className="flex items-center justify-center rounded-full border border-outline-variant/30 bg-surface/90 p-3 text-on-surface shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl transition-colors hover:bg-surface-container"
-              aria-label="Recenter"
-            >
-              <span className="material-symbols-outlined">my_location</span>
-            </button>
-            <button
-              type="button"
-              className="flex items-center justify-center rounded-full border border-outline-variant/30 bg-surface/90 p-3 text-on-surface shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl transition-colors hover:bg-surface-container"
-              aria-label="Layers"
-            >
-              <span className="material-symbols-outlined">layers</span>
-            </button>
+          <div className="pointer-events-auto hidden shrink-0 lg:block">
+            <p className="rounded-xl border border-outline-variant/30 bg-surface/90 px-3 py-2 text-xs text-on-surface-variant shadow-sm backdrop-blur-xl">
+              {hasOrigin
+                ? result.origin.placeName
+                : t("map.detecting")}
+            </p>
           </div>
         </div>
       </main>

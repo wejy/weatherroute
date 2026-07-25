@@ -43,7 +43,7 @@ export default async function HomePage({
   return (
     <>
       <TopNav active="/" />
-      <main className="relative z-20 w-full pt-16 pb-24 md:pb-32">
+      <main id="main-content" className="relative z-20 w-full pt-16 pb-24 md:pb-32">
         <div className="pointer-events-none fixed inset-0 z-0">
           <div className="pointer-events-auto h-full w-full">
             <DiscoverMap
@@ -63,7 +63,7 @@ export default async function HomePage({
 
         <div className="relative z-20 mx-auto w-full max-w-[1280px] px-margin-mobile md:px-margin-desktop">
           <section className="relative z-40 mt-8 mb-12 flex flex-col items-center text-center md:mt-12 md:mb-16">
-            <div className="mb-8 inline-block max-w-4xl rounded-[2rem] border border-outline-variant/20 bg-surface/85 p-8 shadow-lg backdrop-blur-xl">
+            <div className="mb-8 inline-block max-w-4xl rounded-[2rem] border border-outline-variant/30 bg-surface/95 p-8 shadow-lg backdrop-blur-xl">
               <h1 className="mb-4 text-4xl leading-tight font-bold tracking-tight text-on-surface md:text-5xl md:leading-[56px]">
                 {t("home.headline")}
                 <br className="hidden md:block" /> {t("home.headlineBreak")}
@@ -98,7 +98,7 @@ export default async function HomePage({
             id="results"
             className="relative z-30 mx-auto mb-12 w-full max-w-5xl"
           >
-            <div className="mb-6 rounded-2xl border border-outline-variant/20 bg-surface/90 p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.06)] backdrop-blur-xl md:p-6">
+            <div className="mb-6 rounded-2xl border border-outline-variant/30 bg-surface/95 p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.06)] backdrop-blur-xl md:p-6">
               <h2 className="text-2xl font-semibold text-on-surface md:text-[32px] md:leading-10">
                 {t("home.bestWeather")} · {dateWindow.label}
               </h2>
@@ -125,6 +125,7 @@ export default async function HomePage({
                     <div className="inline-flex items-center gap-3 rounded-2xl border border-outline-variant/20 bg-surface-container-lowest/90 px-4 py-3 text-left">
                       <span
                         className={`material-symbols-outlined fill-icon text-2xl ${weatherIconClass(result.originCurrent.condition)}`}
+                        aria-hidden="true"
                       >
                         {weatherIcon(result.originCurrent.condition)}
                       </span>
@@ -146,6 +147,7 @@ export default async function HomePage({
                     <div className="inline-flex items-center gap-3 rounded-2xl border border-outline-variant/20 bg-secondary/10 px-4 py-3 text-left">
                       <span
                         className={`material-symbols-outlined fill-icon text-2xl ${weatherIconClass(result.originForecast.condition)}`}
+                        aria-hidden="true"
                       >
                         {weatherIcon(result.originForecast.condition)}
                       </span>

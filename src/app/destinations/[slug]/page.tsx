@@ -94,7 +94,7 @@ export default async function DestinationPage({
   return (
     <>
       <TopNav active="/" />
-      <main className="mx-auto max-w-[1280px] space-y-8 px-margin-mobile pt-24 pb-24 md:px-margin-desktop">
+      <main id="main-content" className="mx-auto max-w-[1280px] space-y-8 px-margin-mobile pt-24 pb-24 md:px-margin-desktop">
         <section className="relative flex h-[400px] w-full flex-col justify-end overflow-hidden rounded-xl bg-surface-container-low p-8 shadow-[0px_10px_30px_rgba(0,0,0,0.08)] md:h-[500px]">
           <Image
             src={dest.imageUrl}

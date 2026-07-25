@@ -19,7 +19,7 @@ export default async function LoginPage() {
   return (
     <>
       <TopNav />
-      <main className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-margin-mobile pt-16 pb-16">
+      <main id="main-content" className="mx-auto flex min-h-screen max-w-lg flex-col justify-center px-margin-mobile pt-16 pb-16">
         <div className="rounded-[2rem] border border-outline-variant/20 bg-surface-container-lowest p-8 shadow-[0px_10px_30px_rgba(0,0,0,0.08)]">
           <div className="mb-8 text-center">
             <span className="material-symbols-outlined fill-icon mb-4 text-5xl text-primary">

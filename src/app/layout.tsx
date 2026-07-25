@@ -2,6 +2,7 @@ import { Inter } from "next/font/google";
 import type { Metadata } from "next";
 import "./globals.css";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
+import { SkipLink } from "@/components/a11y/skip-link";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 
 const inter = Inter({
@@ -40,6 +41,7 @@ export default async function RootLayout({
       </head>
       <body className="flex min-h-full flex-col bg-background font-sans text-on-surface">
         <LocaleProvider locale={locale} dict={dict}>
+          <SkipLink />
           {children}
         </LocaleProvider>
       </body>

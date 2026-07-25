@@ -59,6 +59,8 @@ export interface DailyForecastDto {
   tempMaxC: number;
   tempMinC: number;
   precipitationProbability: number;
+  /** Expected precipitation amount in mm, when the provider supplies it. */
+  precipitationMm?: number;
   cloudCover: number;
   condition: WeatherCondition;
   conditionLabel: string;

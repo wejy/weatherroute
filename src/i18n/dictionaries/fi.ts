@@ -26,6 +26,13 @@ const fi = {
     en: "English",
     fi: "Suomi",
   },
+  a11y: {
+    skipToContent: "Siirry pääsisältöön",
+    searchDestinations: "Hae kohteita",
+    mapMarker: "{name}, {temp} °C",
+    youAreHere: "Olet tässä",
+    forecast: "ennuste",
+  },
   home: {
     headline: "Löydä täydellinen sää,",
     headlineBreak: "minne tahansa menetkin.",
@@ -119,9 +126,11 @@ const fi = {
     chartsPrecip: "Ennuste · Sade ja pilvisyys",
     high: "Ylin",
     low: "Alin",
-    precip: "Sade",
+    precip: "Todennäk.",
+    precipMm: "Sade mm",
     clouds: "Pilvet",
     rainPct: "Sade {pct} %",
+    rainMm: "{mm} mm",
     cloudsPct: "Pilvet {pct} %",
     tripWindow: "matkan jakso",
     source:
@@ -146,6 +155,10 @@ const fi = {
     dryTripDesc: "Korkea todennäköisyys selkeälle taivaalle.",
     bestDeparture: "Paras lähtöaika",
     rainProbability: "Sadetodennäköisyys",
+    conditions: "Reittiolosuhteet",
+    clearRoute: "Selkeä reitti",
+    cloudyCaution: "Pilvistä / varovaisuus",
+    rainWarning: "Sade / varoitus",
   },
   trips: {
     title: "Tallennetut matkat",

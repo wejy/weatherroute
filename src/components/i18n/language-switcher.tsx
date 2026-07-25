@@ -23,21 +23,22 @@ export function LanguageSwitcher({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "inline-flex items-center rounded-full border border-outline-variant/30 bg-surface-container-low p-0.5 text-sm font-semibold",
-        pending && "opacity-60",
+        "inline-flex items-center rounded-full border border-outline-variant/40 bg-surface-container-low p-1 text-sm font-semibold",
         className,
       )}
       role="group"
       aria-label={t("language.label")}
+      aria-busy={pending || undefined}
     >
       {(["en", "fi"] as const).map((code) => (
         <button
           key={code}
           type="button"
           disabled={pending}
+          aria-pressed={locale === code}
           onClick={() => switchTo(code)}
           className={cn(
-            "rounded-full px-2.5 py-1 transition-colors",
+            "min-h-9 min-w-11 rounded-full px-3 py-1.5 transition-colors disabled:cursor-wait",
             locale === code
               ? "bg-primary text-on-primary shadow-sm"
               : "text-on-surface-variant hover:text-primary",

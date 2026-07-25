@@ -33,24 +33,28 @@ export default async function RoutesPage({
       <SideNav active="/routes" />
 
       <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between bg-surface/80 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl md:hidden">
-        <h1 className="text-2xl font-bold text-primary">{t("brand")}</h1>
+        <p className="text-2xl font-bold text-primary">{t("brand")}</p>
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
-          <Link href="/login">
-            <span className="material-symbols-outlined text-on-surface-variant">
+          <Link
+            href="/login"
+            aria-label={t("nav.profile")}
+            className="flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/30 bg-surface-container-low text-on-surface-variant"
+          >
+            <span className="material-symbols-outlined text-2xl" aria-hidden="true">
               account_circle
             </span>
           </Link>
         </div>
       </header>
 
-      <main className="relative flex h-full w-full flex-1 flex-col pt-16 md:flex-row md:pt-0 lg:ml-80">
+      <main id="main-content" className="relative flex h-full w-full flex-1 flex-col pt-16 md:flex-row md:pt-0 lg:ml-80">
         <section className="z-10 flex h-full w-full flex-col overflow-y-auto bg-surface-bright shadow-[10px_0_30px_rgba(0,0,0,0.03)] md:w-2/5 lg:w-[450px]">
           <div className="flex flex-col gap-8 p-6 md:p-8">
             <div>
-              <h2 className="mb-2 text-[32px] leading-10 font-semibold text-on-surface">
+              <h1 className="mb-2 text-[32px] leading-10 font-semibold text-on-surface">
                 {route.title}
-              </h2>
+              </h1>
               <div className="flex items-center gap-4 text-sm font-medium text-on-surface-variant">
                 <span className="flex items-center gap-1">
                   <span className="material-symbols-outlined text-[18px]">
@@ -86,6 +90,7 @@ export default async function RoutesPage({
               <span
                 className="material-symbols-outlined mt-1 text-secondary"
                 style={{ fontVariationSettings: "'FILL' 1" }}
+                aria-hidden="true"
               >
                 lightbulb
               </span>
@@ -164,6 +169,8 @@ export default async function RoutesPage({
               className="h-full max-h-[80%] w-full max-w-md drop-shadow-lg"
               viewBox="0 0 200 400"
               preserveAspectRatio="xMidYMid meet"
+              aria-hidden="true"
+              focusable="false"
             >
               <defs>
                 <linearGradient id="route-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
@@ -184,33 +191,24 @@ export default async function RoutesPage({
             </svg>
           </div>
 
-          <div className="absolute top-6 right-6 rounded-xl border border-outline-variant/10 bg-surface/90 p-4 shadow-[0px_10px_30px_rgba(0,0,0,0.08)] backdrop-blur-md">
-            <h4 className="mb-2 text-sm font-medium tracking-wider text-on-surface-variant uppercase">
-              Route Conditions
-            </h4>
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-tertiary-fixed-dim" />
-                <span className="text-base text-on-surface">Clear Route</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-amber-400" />
-                <span className="text-base text-on-surface">Cloudy / Caution</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-error" />
-                <span className="text-base text-on-surface">Rain / Warning</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="absolute right-6 bottom-6 flex flex-col gap-2">
-            <button
-              type="button"
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-surface text-on-surface shadow-[0px_4px_20px_rgba(0,0,0,0.1)] hover:bg-surface-container"
-            >
-              <span className="material-symbols-outlined">my_location</span>
-            </button>
+          <div className="absolute top-6 right-6 rounded-xl border border-outline-variant/20 bg-surface/95 p-4 shadow-[0px_10px_30px_rgba(0,0,0,0.08)] backdrop-blur-md">
+            <h2 className="mb-2 text-sm font-medium tracking-wider text-on-surface-variant uppercase">
+              {t("routes.conditions")}
+            </h2>
+            <ul className="flex flex-col gap-2">
+              <li className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-tertiary-fixed-dim" aria-hidden="true" />
+                <span className="text-base text-on-surface">{t("routes.clearRoute")}</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-amber-400" aria-hidden="true" />
+                <span className="text-base text-on-surface">{t("routes.cloudyCaution")}</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="h-3 w-3 rounded-full bg-error" aria-hidden="true" />
+                <span className="text-base text-on-surface">{t("routes.rainWarning")}</span>
+              </li>
+            </ul>
           </div>
         </section>
       </main>

@@ -91,7 +91,11 @@ export function DestinationDateFilters({
         )}
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      <div
+        className="flex flex-wrap gap-2"
+        role="group"
+        aria-label={t("dates.tripTimeframe")}
+      >
         {PRESET_META.map((p) => {
           const active = draft.preset === p.value;
           return (
@@ -99,14 +103,17 @@ export function DestinationDateFilters({
               key={p.value}
               type="button"
               onClick={() => selectPreset(p.value)}
+              aria-pressed={active}
               className={cn(
-                "flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all hover:-translate-y-0.5 active:scale-95",
+                "flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all hover:-translate-y-0.5 active:scale-95 motion-reduce:transform-none",
                 active
                   ? "border-primary-fixed bg-primary text-on-primary shadow-md shadow-primary/25"
                   : "border-outline-variant/30 bg-surface text-on-surface hover:bg-surface-container-low",
               )}
             >
-              <span className="material-symbols-outlined text-lg">{p.icon}</span>
+              <span className="material-symbols-outlined text-lg" aria-hidden="true">
+                {p.icon}
+              </span>
               {t(p.labelKey)}
             </button>
           );
@@ -122,7 +129,7 @@ export function DestinationDateFilters({
               min={min}
               max={max}
               value={draft.startDate}
-              className="mt-1 w-full rounded-lg border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               onChange={(e) => {
                 const startDate = e.target.value;
                 const next = resolveDateWindow({
@@ -143,7 +150,7 @@ export function DestinationDateFilters({
               min={draft.startDate || min}
               max={max}
               value={draft.endDate}
-              className="mt-1 w-full rounded-lg border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none"
+              className="mt-1 w-full rounded-lg border border-outline-variant/40 bg-surface-container-low px-3 py-2.5 text-sm text-on-surface focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               onChange={(e) => {
                 applyWindow(
                   resolveDateWindow({

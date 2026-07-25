@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useRef, useState, useTransition } from "react";
+import { useCallback, useId, useMemo, useRef, useState, useTransition } from "react";
 import type { PlaceDto } from "@/lib/types";
 import {
   resolveDateWindow,
@@ -62,6 +62,10 @@ export function DiscoverSearch({
     !Number.isNaN(defaults.lon);
   const shouldAutoDetect = autoDetect ?? !hasCoords;
   const stack = variant === "stack";
+  const distanceId = useId();
+  const goalId = useId();
+  const whenLabelId = useId();
+  const originLabelId = useId();
 
   const initialWindow = useMemo(
     () =>
@@ -192,8 +196,8 @@ export function DiscoverSearch({
     : "mb-1 block text-left text-sm font-medium text-on-surface-variant transition-colors group-hover:text-primary";
 
   const selectClass = stack
-    ? "w-full cursor-pointer appearance-none border-none bg-transparent p-0 text-base font-semibold text-on-surface focus:outline-none"
-    : "w-full cursor-pointer appearance-none border-none bg-transparent p-0 pr-4 text-xl font-semibold text-on-surface focus:outline-none";
+    ? "w-full cursor-pointer appearance-none border-none bg-transparent p-0 text-base font-semibold text-on-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+    : "w-full cursor-pointer appearance-none border-none bg-transparent p-0 pr-4 text-xl font-semibold text-on-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
   return (
     <form
@@ -211,7 +215,9 @@ export function DiscoverSearch({
             "rounded-t-2xl lg:rounded-l-2xl lg:rounded-tr-none",
         )}
       >
-        <label className={labelClass}>{t("search.whereFrom")}</label>
+        <label id={originLabelId} className={labelClass}>
+          {t("search.whereFrom")}
+        </label>
         <LocationOriginField
           value={origin}
           onChange={(v) => {
@@ -223,22 +229,32 @@ export function DiscoverSearch({
           autoDetect={shouldAutoDetect}
         />
         {error && (
-          <p className="mt-1 text-left text-xs text-error">{error}</p>
+          <p className="mt-1 text-left text-xs text-error" role="alert">
+            {error}
+          </p>
         )}
       </div>
 
       <div className={fieldClass}>
-        <label className={labelClass}>{t("search.whenGoing")}</label>
+        <label id={whenLabelId} className={labelClass}>
+          {t("search.whenGoing")}
+        </label>
         <DateWhenField value={when} onChange={setWhen} />
       </div>
 
       <div className={fieldClass}>
-        <label className={labelClass}>{t("search.howFar")}</label>
+        <label htmlFor={distanceId} className={labelClass}>
+          {t("search.howFar")}
+        </label>
         <div className="flex items-center gap-2 overflow-hidden">
-          <span className="material-symbols-outlined text-xl text-secondary">
+          <span
+            className="material-symbols-outlined text-xl text-secondary"
+            aria-hidden="true"
+          >
             radar
           </span>
           <select
+            id={distanceId}
             className={selectClass}
             value={distance}
             onChange={(e) => onDistanceChange(e.target.value)}
@@ -293,12 +309,18 @@ export function DiscoverSearch({
             "cursor-pointer rounded-b-2xl lg:rounded-r-2xl lg:rounded-bl-none",
         )}
       >
-        <label className={labelClass}>{t("search.weatherGoal")}</label>
+        <label htmlFor={goalId} className={labelClass}>
+          {t("search.weatherGoal")}
+        </label>
         <div className="flex items-center gap-2 overflow-hidden">
-          <span className="material-symbols-outlined text-xl text-secondary">
+          <span
+            className="material-symbols-outlined text-xl text-secondary"
+            aria-hidden="true"
+          >
             wb_sunny
           </span>
           <select
+            id={goalId}
             className={selectClass}
             value={weatherGoal}
             onChange={(e) => setWeatherGoal(e.target.value)}
@@ -322,14 +344,18 @@ export function DiscoverSearch({
         <button
           type="submit"
           disabled={pending}
+          aria-label={t("a11y.searchDestinations")}
+          aria-busy={pending || undefined}
           className={cn(
-            "flex items-center justify-center gap-2 bg-primary text-on-primary shadow-md transition-all hover:bg-on-primary-fixed-variant active:scale-95 disabled:opacity-70",
+            "flex items-center justify-center gap-2 bg-primary text-on-primary shadow-md transition-all hover:bg-on-primary-fixed-variant disabled:cursor-wait disabled:bg-primary/80",
             stack
               ? "h-11 w-full rounded-xl text-sm font-semibold"
               : "h-14 w-full rounded-xl lg:h-16 lg:w-16 lg:rounded-full",
           )}
         >
-          <span className="material-symbols-outlined text-2xl">search</span>
+          <span className="material-symbols-outlined text-2xl" aria-hidden="true">
+            search
+          </span>
           <span
             className={cn(
               "font-semibold",

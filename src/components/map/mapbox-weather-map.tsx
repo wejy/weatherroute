@@ -104,14 +104,22 @@ export function MapboxWeatherMap({
         const el = document.createElement("button");
         el.type = "button";
         el.className = "weathertrip-map-marker";
+        el.setAttribute(
+          "aria-label",
+          isOrigin
+            ? `${marker.name}`
+            : `${marker.name}, ${Math.round(marker.temperatureC)}C`,
+        );
         el.style.cursor = "pointer";
         el.style.border = "none";
         el.style.background = "transparent";
         el.style.padding = "0";
+        el.style.minWidth = "44px";
+        el.style.minHeight = "32px";
 
         el.innerHTML = isOrigin
-          ? `<div style="background:#3525cd;color:#fff;border-radius:999px;padding:6px 10px;font:600 12px/1 Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.18);border:2px solid #fff;">You</div>`
-          : `<div style="display:flex;align-items:center;gap:4px;background:rgba(252,248,255,.95);border-radius:999px;padding:6px 10px;font:600 13px/1 Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.12);border:1px solid rgba(199,196,216,.5);color:#1b1b24;">
+          ? `<div style="background:#3525cd;color:#fff;border-radius:999px;padding:8px 12px;font:600 12px/1 Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.18);border:2px solid #fff;">●</div>`
+          : `<div style="display:flex;align-items:center;gap:4px;background:rgba(252,248,255,.98);border-radius:999px;padding:8px 12px;font:600 13px/1 Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.12);border:1px solid rgba(199,196,216,.5);color:#1b1b24;">
               <span>${Math.round(marker.temperatureC)}°</span>
             </div>`;
 

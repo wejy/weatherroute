@@ -24,17 +24,23 @@ export async function SideNav({
   ];
 
   return (
-    <nav className="fixed top-0 left-0 z-40 hidden h-full w-80 flex-col rounded-r-xl border-r border-outline-variant bg-surface text-on-surface shadow-[0px_10px_30px_rgba(0,0,0,0.08)] lg:flex">
+    <nav
+      className="fixed top-0 left-0 z-40 hidden h-full w-80 flex-col rounded-r-xl border-r border-outline-variant bg-surface text-on-surface shadow-[0px_10px_30px_rgba(0,0,0,0.08)] lg:flex"
+      aria-label={t("nav.sideTripPlanner")}
+    >
       <div className="flex items-center gap-4 border-b border-surface-variant p-6">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-container/20 text-primary">
-          <span className="material-symbols-outlined fill-icon text-2xl">
+          <span
+            className="material-symbols-outlined fill-icon text-2xl"
+            aria-hidden="true"
+          >
             partly_cloudy_day
           </span>
         </div>
         <div>
-          <h1 className="m-0 text-[32px] leading-10 font-semibold text-primary">
+          <p className="m-0 text-[32px] leading-10 font-semibold text-primary">
             {title ?? t("nav.sideTripPlanner")}
-          </h1>
+          </p>
           <p className="m-0 text-base text-on-surface-variant">
             {subtitle ?? t("brand")}
           </p>
@@ -48,8 +54,9 @@ export async function SideNav({
             <li key={item.href}>
               <Link
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "flex items-center gap-4 rounded-lg px-4 py-3 transition-all",
+                  "flex min-h-11 items-center gap-4 rounded-lg px-4 py-3 transition-colors",
                   isActive
                     ? "border-r-4 border-primary bg-primary/5 font-bold text-primary"
                     : "text-on-surface-variant hover:bg-surface-container-high",
@@ -57,6 +64,7 @@ export async function SideNav({
               >
                 <span
                   className="material-symbols-outlined"
+                  aria-hidden="true"
                   style={
                     isActive
                       ? { fontVariationSettings: "'FILL' 1" }

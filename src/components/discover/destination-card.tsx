@@ -41,6 +41,7 @@ export function DestinationCard({
             <div className="flex items-center gap-1.5 rounded-full border border-outline-variant/10 bg-surface/90 px-3 py-1.5 shadow-sm backdrop-blur-md">
               <span
                 className={`material-symbols-outlined fill-icon text-lg ${weatherIconClass(forecast.condition)}`}
+                aria-hidden="true"
               >
                 {weatherIcon(forecast.condition)}
               </span>
@@ -75,6 +76,7 @@ export function DestinationCard({
               <p className="mt-0.5 flex items-center gap-1 font-semibold text-on-surface">
                 <span
                   className={`material-symbols-outlined text-base ${weatherIconClass(current.condition)}`}
+                  aria-hidden="true"
                 >
                   {weatherIcon(current.condition)}
                 </span>
@@ -88,6 +90,7 @@ export function DestinationCard({
               <p className="mt-0.5 flex items-center gap-1 font-semibold text-on-surface">
                 <span
                   className={`material-symbols-outlined text-base ${weatherIconClass(forecast.condition)}`}
+                  aria-hidden="true"
                 >
                   {weatherIcon(forecast.condition)}
                 </span>

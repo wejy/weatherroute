@@ -91,6 +91,7 @@ function TemperatureTooltip({
 function PrecipTooltip({
   t,
   tripWindowLabel,
+  showMm,
   ...props
 }: {
   active?: boolean;
@@ -98,6 +99,7 @@ function PrecipTooltip({
   label?: string;
   t: Translator;
   tripWindowLabel: string;
+  showMm: boolean;
 }) {
   return (
     <ChartTooltipShell {...props} tripWindowLabel={tripWindowLabel}>
@@ -106,6 +108,11 @@ function PrecipTooltip({
           <p className="font-semibold text-on-surface">
             {t("destination.rainPct", { pct: day.precipitationProbability })}
           </p>
+          {showMm && day.precipitationMm != null && (
+            <p className="font-semibold text-secondary">
+              {t("destination.rainMm", { mm: day.precipitationMm })}
+            </p>
+          )}
           <p className="text-on-surface-variant">
             {t("destination.cloudsPct", { pct: day.cloudCover })}
           </p>
@@ -132,6 +139,17 @@ export function ForecastCharts({
     ...day,
     inPeriod: day.date >= periodStart && day.date <= periodEnd,
   }));
+
+  const hasPrecipMm = data.some(
+    (d) => d.precipitationMm != null && !Number.isNaN(d.precipitationMm),
+  );
+  const maxMm = hasPrecipMm
+    ? Math.max(
+        2,
+        ...data.map((d) => d.precipitationMm ?? 0),
+      )
+    : 0;
+  const mmDomainMax = Math.ceil(maxMm * 1.15 * 2) / 2;
 
   const temps = data.flatMap((d) => [d.tempMinC, d.tempMaxC]);
   const tempMin = Math.floor(Math.min(...temps) - 2);
@@ -263,7 +281,7 @@ export function ForecastCharts({
           <h2 className="text-xl font-semibold text-on-surface">
             {t("destination.chartsPrecip")}
           </h2>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <span className="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
               <span className="h-3 w-3 rounded-sm bg-secondary-container" />
               {t("destination.precip")}
@@ -272,6 +290,12 @@ export function ForecastCharts({
               <span className="h-3 w-3 rounded-sm bg-surface-variant" />
               {t("destination.clouds")}
             </span>
+            {hasPrecipMm && (
+              <span className="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
+                <span className="h-0.5 w-4 rounded-full bg-secondary" />
+                {t("destination.precipMm")}
+              </span>
+            )}
           </div>
         </div>
 
@@ -279,7 +303,12 @@ export function ForecastCharts({
           <ResponsiveContainer width="100%" height="100%">
             <ComposedChart
               data={data}
-              margin={{ top: 12, right: 8, left: -12, bottom: 0 }}
+              margin={{
+                top: 12,
+                right: hasPrecipMm ? 8 : 8,
+                left: -12,
+                bottom: 0,
+              }}
               barGap={4}
               barCategoryGap="22%"
             >
@@ -310,6 +339,7 @@ export function ForecastCharts({
                 dy={8}
               />
               <YAxis
+                yAxisId="pct"
                 domain={[0, 100]}
                 tick={{ fill: COLORS.onSurfaceVariant, fontSize: 12 }}
                 axisLine={false}
@@ -317,13 +347,30 @@ export function ForecastCharts({
                 tickFormatter={(v: number) => `${v}%`}
                 width={40}
               />
+              {hasPrecipMm && (
+                <YAxis
+                  yAxisId="mm"
+                  orientation="right"
+                  domain={[0, mmDomainMax]}
+                  tick={{ fill: COLORS.secondary, fontSize: 12 }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v: number) => `${v}mm`}
+                  width={44}
+                />
+              )}
               <Tooltip
                 content={
-                  <PrecipTooltip t={t} tripWindowLabel={tripWindowLabel} />
+                  <PrecipTooltip
+                    t={t}
+                    tripWindowLabel={tripWindowLabel}
+                    showMm={hasPrecipMm}
+                  />
                 }
                 cursor={{ fill: "rgba(57, 184, 253, 0.08)" }}
               />
               <Bar
+                yAxisId="pct"
                 dataKey="cloudCover"
                 name="Clouds"
                 fill={COLORS.surfaceVariant}
@@ -341,6 +388,7 @@ export function ForecastCharts({
                 ))}
               </Bar>
               <Bar
+                yAxisId="pct"
                 dataKey="precipitationProbability"
                 name="Precip"
                 fill="url(#precipFill)"
@@ -361,6 +409,30 @@ export function ForecastCharts({
                   />
                 ))}
               </Bar>
+              {hasPrecipMm && (
+                <Line
+                  yAxisId="mm"
+                  type="monotone"
+                  dataKey="precipitationMm"
+                  name="mm"
+                  stroke={COLORS.secondary}
+                  strokeWidth={2.5}
+                  dot={{
+                    r: 3,
+                    fill: COLORS.secondary,
+                    strokeWidth: 0,
+                  }}
+                  activeDot={{
+                    r: 5,
+                    strokeWidth: 2,
+                    stroke: "#fff",
+                    fill: COLORS.secondary,
+                  }}
+                  animationDuration={1100}
+                  animationEasing="ease-out"
+                  connectNulls
+                />
+              )}
             </ComposedChart>
           </ResponsiveContainer>
         </div>

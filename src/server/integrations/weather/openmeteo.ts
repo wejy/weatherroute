@@ -25,6 +25,7 @@ interface OpenMeteoResponse {
     temperature_2m_max: number[];
     temperature_2m_min: number[];
     precipitation_probability_max: number[];
+    precipitation_sum?: number[];
     cloud_cover_mean?: number[];
     uv_index_max?: number[];
   };
@@ -41,7 +42,7 @@ export const openMeteoProvider: WeatherProvider = {
       current:
         "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,cloud_cover",
       daily:
-        "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,cloud_cover_mean",
+        "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,cloud_cover_mean",
       timezone: "auto",
       forecast_days: "16",
     });
@@ -75,6 +76,10 @@ export const openMeteoProvider: WeatherProvider = {
         tempMinC: data.daily!.temperature_2m_min[i] ?? 0,
         precipitationProbability:
           data.daily!.precipitation_probability_max[i] ?? 0,
+        precipitationMm:
+          data.daily!.precipitation_sum?.[i] != null
+            ? Math.round((data.daily!.precipitation_sum[i] ?? 0) * 10) / 10
+            : undefined,
         cloudCover: data.daily!.cloud_cover_mean?.[i] ?? 40,
         condition,
         conditionLabel: label,

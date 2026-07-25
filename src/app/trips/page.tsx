@@ -22,7 +22,7 @@ export default async function TripsPage() {
   return (
     <>
       <TopNav active="/trips" />
-      <main className="mx-auto min-h-screen max-w-[1280px] px-margin-mobile pt-24 pb-24 md:px-margin-desktop">
+      <main id="main-content" className="mx-auto min-h-screen max-w-[1280px] px-margin-mobile pt-24 pb-24 md:px-margin-desktop">
         <div className="mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="text-4xl font-bold tracking-tight text-on-surface">

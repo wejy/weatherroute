@@ -136,6 +136,12 @@ export function LocationOriginField({
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Escape") {
+      setOpen(false);
+      setActiveIndex(-1);
+      return;
+    }
+
     if (!open || results.length === 0) return;
 
     if (e.key === "ArrowDown") {
@@ -147,8 +153,6 @@ export function LocationOriginField({
     } else if (e.key === "Enter" && activeIndex >= 0) {
       e.preventDefault();
       selectPlace(results[activeIndex]!);
-    } else if (e.key === "Escape") {
-      setOpen(false);
     }
   }
 
@@ -171,24 +175,28 @@ export function LocationOriginField({
           title={t("location.useMyLocation")}
           aria-label={t("location.useMyLocation")}
           className={cn(
-            "shrink-0 rounded-full p-0.5 transition-colors hover:text-primary",
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-full transition-colors hover:text-primary",
             status === "locating" && "animate-pulse text-primary",
             status === "ready" && "text-secondary",
             (status === "denied" || status === "error") && "text-outline",
             status === "idle" && "text-secondary",
           )}
         >
-          <span className="material-symbols-outlined text-xl">my_location</span>
+          <span className="material-symbols-outlined text-xl" aria-hidden="true">
+            my_location
+          </span>
         </button>
         <input
+          id="origin-location-input"
           role="combobox"
           aria-expanded={open}
           aria-controls={listId}
           aria-autocomplete="list"
+          aria-label={t("location.placeholder")}
           aria-activedescendant={
             activeIndex >= 0 ? `${listId}-opt-${activeIndex}` : undefined
           }
-          className="w-full truncate border-none bg-transparent p-0 text-xl font-semibold text-on-surface placeholder:text-outline focus:outline-none focus:ring-0"
+          className="w-full truncate border-none bg-transparent p-0 text-xl font-semibold text-on-surface placeholder:text-on-surface-variant focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           placeholder={
             status === "locating"
               ? t("location.detecting")
@@ -208,9 +216,12 @@ export function LocationOriginField({
           autoComplete="off"
         />
         {searching && (
-          <span className="material-symbols-outlined shrink-0 animate-spin text-lg text-outline">
-            progress_activity
-          </span>
+          <>
+            <span className="material-symbols-outlined shrink-0 animate-spin text-lg text-outline" aria-hidden="true">
+              progress_activity
+            </span>
+            <span className="sr-only">{t("search.searching")}</span>
+          </>
         )}
       </div>
 

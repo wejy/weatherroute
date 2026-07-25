@@ -12,13 +12,13 @@ export const mockWeatherProvider: WeatherProvider = {
     const baseTemp = isTurku ? 21 : 18 + Math.round((lat % 5) + (lon % 3));
 
     const patterns = [
-      { precip: 20, cloud: 40, cond: "partly_cloudy" as const, label: "Partly cloudy" },
-      { precip: 15, cloud: 30, cond: "sunny" as const, label: "Sunny" },
-      { precip: 60, cloud: 90, cond: "rainy" as const, label: "Rainy" },
-      { precip: 10, cloud: 20, cond: "sunny" as const, label: "Sunny" },
-      { precip: 5, cloud: 15, cond: "sunny" as const, label: "Sunny" },
-      { precip: 30, cloud: 50, cond: "partly_cloudy" as const, label: "Partly cloudy" },
-      { precip: 50, cloud: 60, cond: "cloudy" as const, label: "Cloudy" },
+      { precip: 20, cloud: 40, mm: 0.4, cond: "partly_cloudy" as const, label: "Partly cloudy" },
+      { precip: 15, cloud: 30, mm: 0, cond: "sunny" as const, label: "Sunny" },
+      { precip: 60, cloud: 90, mm: 6.2, cond: "rainy" as const, label: "Rainy" },
+      { precip: 10, cloud: 20, mm: 0, cond: "sunny" as const, label: "Sunny" },
+      { precip: 5, cloud: 15, mm: 0, cond: "sunny" as const, label: "Sunny" },
+      { precip: 30, cloud: 50, mm: 1.5, cond: "partly_cloudy" as const, label: "Partly cloudy" },
+      { precip: 50, cloud: 60, mm: 3.8, cond: "cloudy" as const, label: "Cloudy" },
     ];
 
     const days: DailyForecastDto[] = Array.from({ length: 16 }, (_, i) => {
@@ -31,6 +31,7 @@ export const mockWeatherProvider: WeatherProvider = {
         tempMaxC: baseTemp + (i % 3),
         tempMinC: baseTemp - 5,
         precipitationProbability: d.precip,
+        precipitationMm: d.mm,
         cloudCover: d.cloud,
         condition: d.cond,
         conditionLabel: d.label,

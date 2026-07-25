@@ -69,6 +69,8 @@ export function MockMap({
       <svg
         className="absolute inset-0 h-full w-full opacity-30"
         xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+        focusable="false"
       >
         <defs>
           <pattern
@@ -112,34 +114,42 @@ export function MockMap({
           <Link
             key={marker.id}
             href={isOrigin ? "/#" : `/destinations/${marker.id}`}
-            className="group absolute z-20 flex -translate-x-1/2 -translate-y-1/2 cursor-pointer flex-col items-center transition-all hover:z-30"
+            aria-label={
+              isOrigin
+                ? `${marker.name} (origin)`
+                : `${marker.name}, ${formatTemp(marker.temperatureC)}`
+            }
+            className="group absolute z-20 flex min-h-11 min-w-11 -translate-x-1/2 -translate-y-1/2 cursor-pointer flex-col items-center transition-all hover:z-30 focus-visible:z-30"
             style={{ left: `${left}%`, top: `${top}%` }}
           >
             <div
               className={cn(
-                "mb-1 flex items-center gap-2 rounded-full border px-3 py-1.5 shadow-lg backdrop-blur-md transition-transform group-hover:scale-105",
+                "mb-1 flex items-center gap-2 rounded-full border px-3 py-1.5 shadow-lg backdrop-blur-md transition-transform group-hover:scale-105 group-focus-visible:scale-105",
                 isOrigin
                   ? "border-primary/40 bg-primary text-on-primary"
-                  : "border-outline-variant/30 bg-surface/90",
+                  : "border-outline-variant/30 bg-surface/95",
               )}
             >
               {!isOrigin && (
                 <>
-                  <span className="text-xl font-semibold text-on-surface">
+                  <span className="text-xl font-semibold text-on-surface" aria-hidden="true">
                     {formatTemp(marker.temperatureC)}
                   </span>
                   <span
                     className={`material-symbols-outlined fill-icon text-lg ${weatherIconClass(marker.condition)}`}
+                    aria-hidden="true"
                   >
                     {weatherIcon(marker.condition)}
                   </span>
                 </>
               )}
               {isOrigin && (
-                <span className="text-sm font-semibold">You</span>
+                <span className="text-sm font-semibold" aria-hidden="true">
+                  ●
+                </span>
               )}
             </div>
-            <div className="pointer-events-none rounded-lg border border-outline-variant/20 bg-surface/95 p-2 text-center opacity-0 shadow-xl backdrop-blur-xl transition-opacity group-hover:opacity-100">
+            <div className="pointer-events-none rounded-lg border border-outline-variant/20 bg-surface/95 p-2 text-center opacity-0 shadow-xl backdrop-blur-xl transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
               <p className="text-sm font-semibold text-on-surface">
                 {marker.name}
               </p>
