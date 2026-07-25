@@ -1,26 +1,135 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fcf8ff;
+  --foreground: #1b1b24;
+  --surface: #fcf8ff;
+  --surface-dim: #dcd8e5;
+  --surface-bright: #fcf8ff;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f5f2ff;
+  --surface-container: #f0ecf9;
+  --surface-container-high: #eae6f4;
+  --surface-container-highest: #e4e1ee;
+  --surface-variant: #e4e1ee;
+  --on-surface: #1b1b24;
+  --on-surface-variant: #464555;
+  --inverse-surface: #302f39;
+  --inverse-on-surface: #f3effc;
+  --outline: #777587;
+  --outline-variant: #c7c4d8;
+  --primary: #3525cd;
+  --on-primary: #ffffff;
+  --primary-container: #4f46e5;
+  --on-primary-container: #dad7ff;
+  --primary-fixed: #e2dfff;
+  --primary-fixed-dim: #c3c0ff;
+  --on-primary-fixed: #0f0069;
+  --on-primary-fixed-variant: #3323cc;
+  --inverse-primary: #c3c0ff;
+  --secondary: #006591;
+  --on-secondary: #ffffff;
+  --secondary-container: #39b8fd;
+  --on-secondary-container: #004666;
+  --secondary-fixed: #c9e6ff;
+  --secondary-fixed-dim: #89ceff;
+  --tertiary: #005338;
+  --on-tertiary: #ffffff;
+  --tertiary-container: #006e4b;
+  --on-tertiary-container: #67f4b7;
+  --tertiary-fixed: #6ffbbe;
+  --tertiary-fixed-dim: #4edea3;
+  --error: #ba1a1a;
+  --on-error: #ffffff;
+  --error-container: #ffdad6;
+  --on-error-container: #93000a;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-dim: var(--surface-dim);
+  --color-surface-bright: var(--surface-bright);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-surface-variant: var(--surface-variant);
+  --color-on-surface: var(--on-surface);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-inverse-surface: var(--inverse-surface);
+  --color-inverse-on-surface: var(--inverse-on-surface);
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-primary-container: var(--primary-container);
+  --color-on-primary-container: var(--on-primary-container);
+  --color-primary-fixed: var(--primary-fixed);
+  --color-primary-fixed-dim: var(--primary-fixed-dim);
+  --color-on-primary-fixed: var(--on-primary-fixed);
+  --color-on-primary-fixed-variant: var(--on-primary-fixed-variant);
+  --color-inverse-primary: var(--inverse-primary);
+  --color-secondary: var(--secondary);
+  --color-on-secondary: var(--on-secondary);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary-container: var(--on-secondary-container);
+  --color-secondary-fixed: var(--secondary-fixed);
+  --color-secondary-fixed-dim: var(--secondary-fixed-dim);
+  --color-tertiary: var(--tertiary);
+  --color-on-tertiary: var(--on-tertiary);
+  --color-tertiary-container: var(--tertiary-container);
+  --color-on-tertiary-container: var(--on-tertiary-container);
+  --color-tertiary-fixed: var(--tertiary-fixed);
+  --color-tertiary-fixed-dim: var(--tertiary-fixed-dim);
+  --color-error: var(--error);
+  --color-on-error: var(--on-error);
+  --color-error-container: var(--error-container);
+  --color-on-error-container: var(--on-error-container);
+  --font-sans: var(--font-inter);
+  --spacing-margin-mobile: 16px;
+  --spacing-margin-desktop: 64px;
+  --spacing-gutter: 16px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+.material-symbols-outlined {
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  vertical-align: middle;
+}
+
+.material-symbols-outlined.fill-icon {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0) rotate(0deg);
   }
+  50% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+.animate-float-slow {
+  animation: float 15s ease-in-out infinite;
+}
+
+.animate-float-fast {
+  animation: float 10s ease-in-out infinite reverse;
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--on-background, var(--foreground));
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+::selection {
+  background: var(--primary-container);
+  color: var(--on-primary-container);
 }

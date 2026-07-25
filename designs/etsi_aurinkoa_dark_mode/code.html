@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WeatherTrip Planner - Discover Your Perfect Weather</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config injected via source of truth -->
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        "colors": {
+                "surface-container-low": "#131b2e",
+                "on-secondary-fixed-variant": "#2f3aa3",
+                "tertiary-fixed": "#ffdadb",
+                "primary-container": "#8083ff",
+                "secondary": "#bdc2ff",
+                "on-tertiary-fixed": "#40000d",
+                "on-surface-variant": "#c7c4d7",
+                "surface-container-lowest": "#060e20",
+                "on-tertiary-container": "#5b0017",
+                "surface-container-highest": "#2d3449",
+                "on-error-container": "#ffdad6",
+                "surface": "#0b1326",
+                "surface-container-high": "#222a3d",
+                "tertiary": "#ffb2b7",
+                "secondary-container": "#2f3aa3",
+                "error": "#ffb4ab",
+                "on-secondary-fixed": "#000767",
+                "surface-variant": "#2d3449",
+                "on-tertiary": "#67001b",
+                "on-primary": "#1000a9",
+                "on-background": "#dae2fd",
+                "inverse-on-surface": "#283044",
+                "inverse-surface": "#dae2fd",
+                "background": "#0b1326",
+                "primary-fixed": "#e1e0ff",
+                "secondary-fixed-dim": "#bdc2ff",
+                "error-container": "#93000a",
+                "on-primary-fixed": "#07006c",
+                "surface-container": "#171f33",
+                "on-primary-container": "#0d0096",
+                "outline-variant": "#464554",
+                "primary-fixed-dim": "#c0c1ff",
+                "primary": "#c0c1ff",
+                "on-surface": "#dae2fd",
+                "secondary-fixed": "#e0e0ff",
+                "inverse-primary": "#494bd6",
+                "outline": "#908fa0",
+                "surface-dim": "#0b1326",
+                "on-tertiary-fixed-variant": "#92002a",
+                "surface-tint": "#c0c1ff",
+                "on-secondary-container": "#a8afff",
+                "on-secondary": "#131e8c",
+                "tertiary-fixed-dim": "#ffb2b7",
+                "tertiary-container": "#ff516a",
+                "on-error": "#690005",
+                "on-primary-fixed-variant": "#2f2ebe",
+                "surface-bright": "#31394d"
+        },
+        "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+        },
+        "spacing": {
+                "md": "16px",
+                "lg": "24px",
+                "xs": "4px",
+                "margin-mobile": "16px",
+                "sm": "8px",
+                "gutter": "24px",
+                "margin-desktop": "48px",
+                "unit": "4px",
+                "xl": "40px",
+                "max-width": "1280px"
+        },
+        "fontFamily": {
+                "body-lg": [
+                        "Plus Jakarta Sans"
+                ],
+                "label-md": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-lg": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-md": [
+                        "Plus Jakarta Sans"
+                ],
+                "body-md": [
+                        "Plus Jakarta Sans"
+                ],
+                "display-lg": [
+                        "Plus Jakarta Sans"
+                ],
+                "display-lg-mobile": [
+                        "Plus Jakarta Sans"
+                ],
+                "label-sm": [
+                        "Plus Jakarta Sans"
+                ],
+                "title-md": [
+                        "Plus Jakarta Sans"
+                ],
+                "headline-lg-mobile": [
+                        "Plus Jakarta Sans"
+                ],
+                "data-mono": [
+                        "Plus Jakarta Sans"
+                ]
+        },
+        "fontSize": {
+                "body-lg": [
+                        "18px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "label-md": [
+                        "14px",
+                        {
+                                "lineHeight": "20px",
+                                "letterSpacing": "0.01em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-lg": [
+                        "32px",
+                        {
+                                "lineHeight": "40px",
+                                "letterSpacing": "-0.01em",
+                                "fontWeight": "700"
+                        }
+                ],
+                "headline-md": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "700"
+                        }
+                ],
+                "body-md": [
+                        "16px",
+                        {
+                                "lineHeight": "24px",
+                                "fontWeight": "400"
+                        }
+                ],
+                "display-lg": [
+                        "48px",
+                        {
+                                "lineHeight": "56px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "800"
+                        }
+                ],
+                "display-lg-mobile": [
+                        "36px",
+                        {
+                                "lineHeight": "44px",
+                                "letterSpacing": "-0.02em",
+                                "fontWeight": "800"
+                        }
+                ],
+                "label-sm": [
+                        "12px",
+                        {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.02em",
+                                "fontWeight": "600"
+                        }
+                ],
+                "title-md": [
+                        "20px",
+                        {
+                                "lineHeight": "28px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "headline-lg-mobile": [
+                        "24px",
+                        {
+                                "lineHeight": "32px",
+                                "fontWeight": "600"
+                        }
+                ],
+                "data-mono": [
+                        "13px",
+                        {
+                                "lineHeight": "16px",
+                                "letterSpacing": "0.05em",
+                                "fontWeight": "600"
+                        }
+                ]
+        }
+},
+    },
+  }
+</script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill-icon {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2d3449;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #464554;
+        }
+        
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen overflow-x-hidden selection:bg-primary-container selection:text-on-primary-container relative">
+<!-- Mapbox Background & Weather Markers -->
+<div class="fixed inset-0 z-0 w-full h-full bg-surface-container-lowest">
+<img alt="Map of Northern Europe" class="w-full h-full object-cover opacity-40 invert-[0.95] hue-rotate-[200deg]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC_OIYsDHLwb007s1WOrqPBK3Jtmozz68bwTliEO6JapVVqlxwync4brG_NC1dWaCl4XTin148N6M3qlVlav9iYWzL8_T7PHPN_WEX6GHD-Uhl3VyFhNIjxUBTk8U3z94t9mh7YGZc4Gv2jxfpQOWHvUtKwfhdkpf_2eFFUxdNxZ5DcF1CNl9E_U9_9nmP7xQD0vKQK1hkk1sh7SImcUNQyfTocns_176rS7hcUd7Hl5y9oTjDNFzX0e-sfD8GFEoE2gc6FcSUXQvw3"/>
+<!-- Map overlay for better contrast -->
+<div class="absolute inset-0 bg-gradient-to-b from-surface/80 via-surface/40 to-surface/90 mix-blend-overlay pointer-events-none"></div>
+<!-- Weather Marker: Helsinki -->
+<div class="absolute top-[35%] right-[25%] flex flex-col items-center group cursor-pointer hover:z-20 transition-all">
+<div class="bg-surface/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-outline-variant/30 flex items-center gap-2 mb-1 group-hover:scale-105 transition-transform">
+<span class="font-title-md text-title-md text-on-surface">22°</span>
+<span class="material-symbols-outlined text-secondary fill-icon text-lg">partly_cloudy_day</span>
+</div>
+<div class="bg-surface/95 backdrop-blur-xl rounded-lg p-2 shadow-xl border border-outline-variant/20 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+<p class="font-label-sm text-label-sm text-on-surface font-semibold">Helsinki</p>
+<p class="font-data-mono text-data-mono text-on-surface-variant">Tom: +24°</p>
+</div>
+</div>
+<!-- Weather Marker: Stockholm -->
+<div class="absolute top-[45%] right-[40%] flex flex-col items-center group cursor-pointer hover:z-20 transition-all">
+<div class="bg-surface/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-outline-variant/30 flex items-center gap-2 mb-1 group-hover:scale-105 transition-transform">
+<span class="font-title-md text-title-md text-on-surface">21°</span>
+<span class="material-symbols-outlined text-tertiary-container fill-icon text-lg">wb_sunny</span>
+</div>
+<div class="bg-surface/95 backdrop-blur-xl rounded-lg p-2 shadow-xl border border-outline-variant/20 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+<p class="font-label-sm text-label-sm text-on-surface font-semibold">Stockholm</p>
+<p class="font-data-mono text-data-mono text-on-surface-variant">Tom: +22°</p>
+</div>
+</div>
+<!-- Weather Marker: Copenhagen -->
+<div class="absolute top-[65%] right-[45%] flex flex-col items-center group cursor-pointer hover:z-20 transition-all">
+<div class="bg-surface/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-outline-variant/30 flex items-center gap-2 mb-1 group-hover:scale-105 transition-transform">
+<span class="font-title-md text-title-md text-on-surface">19°</span>
+<span class="material-symbols-outlined text-primary fill-icon text-lg">rainy</span>
+</div>
+<div class="bg-surface/95 backdrop-blur-xl rounded-lg p-2 shadow-xl border border-outline-variant/20 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+<p class="font-label-sm text-label-sm text-on-surface font-semibold">Copenhagen</p>
+<p class="font-data-mono text-data-mono text-on-surface-variant">Tom: +21°</p>
+</div>
+</div>
+<!-- Weather Marker: Oslo -->
+<div class="absolute top-[40%] right-[55%] flex flex-col items-center group cursor-pointer hover:z-20 transition-all">
+<div class="bg-surface/90 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-outline-variant/30 flex items-center gap-2 mb-1 group-hover:scale-105 transition-transform">
+<span class="font-title-md text-title-md text-on-surface">18°</span>
+<span class="material-symbols-outlined text-outline fill-icon text-lg">cloud</span>
+</div>
+<div class="bg-surface/95 backdrop-blur-xl rounded-lg p-2 shadow-xl border border-outline-variant/20 text-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+<p class="font-label-sm text-label-sm text-on-surface font-semibold">Oslo</p>
+<p class="font-data-mono text-data-mono text-on-surface-variant">Tom: +19°</p>
+</div>
+</div>
+</div>
+<!-- TopNavBar (Shared Component) -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 md:px-margin-desktop bg-surface/90 backdrop-blur-2xl shadow-sm border-b border-outline-variant/20 transition-all duration-300" id="top-nav">
+<!-- Brand Logo -->
+<a class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg font-bold text-primary flex items-center gap-2 group" href="#">
+<span class="material-symbols-outlined fill-icon text-3xl group-hover:scale-110 transition-transform duration-300">partly_cloudy_day</span>
+            WeatherTrip
+        </a>
+<!-- Desktop Navigation Links -->
+<nav class="hidden md:flex items-center gap-8">
+<a class="text-on-surface hover:text-primary transition-colors font-title-md text-title-md py-1 relative after:content-[''] after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary after:scale-x-0 hover:after:scale-x-100 after:transition-transform after:origin-left" href="#">
+                Saved Trips
+            </a>
+</nav>
+<!-- Actions -->
+<div class="flex items-center gap-4">
+<button aria-label="Profile" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface hover:text-primary bg-surface-container-low hover:bg-surface-container transition-colors active:scale-95 shadow-sm border border-outline-variant/30">
+<span class="material-symbols-outlined text-2xl" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Content Area -->
+<main class="pt-24 pb-20 md:pb-32 px-margin-mobile md:px-margin-desktop max-w-[max-width] mx-auto w-full relative z-10">
+<!-- Hero Section & Giant Search Bar -->
+<section class="mt-8 md:mt-12 mb-12 md:mb-16 flex flex-col items-center text-center">
+<div class="bg-surface/80 backdrop-blur-xl p-8 rounded-[2rem] shadow-lg border border-outline-variant/20 mb-8 max-w-4xl inline-block">
+<h1 class="font-display-lg text-display-lg text-on-surface mb-4 leading-tight drop-shadow-sm">
+                Find perfect weather,<br class="hidden md:block"/> no matter where you go.
+            </h1>
+<p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl mx-auto">
+                Enter your constraints and let our climate models discover the best destinations for your weekend escape.
+            </p>
+</div>
+<!-- Search 'Island' Container -->
+<div class="w-full max-w-5xl bg-surface/90 backdrop-blur-2xl rounded-[2rem] shadow-2xl border border-outline-variant/30 p-2 md:p-4 flex flex-col lg:flex-row relative z-10">
+<!-- Input Group: Starting Location -->
+<div class="flex-1 px-4 py-3 md:px-6 md:py-4 border-b lg:border-b-0 lg:border-r border-outline-variant/30 hover:bg-surface-container-low/50 transition-colors rounded-t-2xl lg:rounded-l-2xl lg:rounded-tr-none cursor-pointer group relative">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1 cursor-pointer group-hover:text-primary transition-colors">Where are you starting from?</label>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-xl">my_location</span>
+<input class="w-full bg-transparent border-none p-0 font-title-md text-title-md text-on-surface focus:ring-0 placeholder:text-outline truncate" placeholder="e.g. London, UK" type="text" value="London, UK"/>
+</div>
+</div>
+<!-- Input Group: Dates -->
+<div class="flex-1 px-4 py-3 md:px-6 md:py-4 border-b lg:border-b-0 lg:border-r border-outline-variant/30 hover:bg-surface-container-low/50 transition-colors cursor-pointer group relative">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1 cursor-pointer group-hover:text-primary transition-colors">When are you going?</label>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-xl">calendar_month</span>
+<input class="w-full bg-transparent border-none p-0 font-title-md text-title-md text-on-surface focus:ring-0 placeholder:text-outline truncate" placeholder="Add dates" readonly="" type="text" value="This Weekend"/>
+</div>
+</div>
+<!-- Input Group: Distance -->
+<div class="flex-1 px-4 py-3 md:px-6 md:py-4 border-b lg:border-b-0 lg:border-r border-outline-variant/30 hover:bg-surface-container-low/50 transition-colors cursor-pointer group relative">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1 cursor-pointer group-hover:text-primary transition-colors">How far?</label>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-secondary text-xl">moving</span>
+<select class="w-full bg-transparent border-none p-0 font-title-md text-title-md text-on-surface focus:ring-0 appearance-none cursor-pointer pr-4 [&amp;&gt;option]:bg-surface">
+<option class="text-body-md" value="near">Near me &lt;50km</option>
+<option class="text-body-md" selected="" value="region">Region &lt;300km</option>
+<option class="text-body-md" value="country">Same Country</option>
+<option class="text-body-md" value="continent">Continent</option>
+<option class="text-body-md" value="global">Global</option>
+</select>
+</div>
+<span class="material-symbols-outlined text-outline-variant pointer-events-none absolute right-4 md:right-6">expand_more</span>
+</div>
+</div>
+<!-- Input Group: Weather Goal -->
+<div class="flex-1 px-4 py-3 md:px-6 md:py-4 hover:bg-surface-container-low/50 transition-colors rounded-b-2xl lg:rounded-r-2xl lg:rounded-bl-none cursor-pointer group relative flex flex-col justify-center">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1 cursor-pointer group-hover:text-primary transition-colors">Weather goal</label>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2 overflow-hidden">
+<span class="material-symbols-outlined text-secondary text-xl">wb_sunny</span>
+<select class="w-full bg-transparent border-none p-0 font-title-md text-title-md text-on-surface focus:ring-0 appearance-none cursor-pointer pr-4 [&amp;&gt;option]:bg-surface">
+<option class="text-body-md" selected="" value="sun">Most Sun</option>
+<option class="text-body-md" value="dry">Least Rain</option>
+<option class="text-body-md" value="mild">Mild Temperature</option>
+</select>
+</div>
+<span class="material-symbols-outlined text-outline-variant pointer-events-none absolute right-4 md:right-6">expand_more</span>
+</div>
+</div>
+<!-- Search Button -->
+<div class="p-2 md:p-3 lg:absolute lg:-right-4 lg:top-1/2 lg:-translate-y-1/2 lg:pl-0 flex justify-center w-full lg:w-auto mt-2 lg:mt-0">
+<button class="w-full lg:w-16 h-14 lg:h-16 bg-primary hover:bg-primary-container text-on-primary rounded-xl lg:rounded-full shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 group/btn border border-white/10">
+<span class="material-symbols-outlined text-2xl group-hover/btn:scale-110 transition-transform">search</span>
+<span class="lg:hidden font-title-md text-title-md">Search Destinations</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Viikonlopun aurinkoisimmat Section -->
+<div class="flex flex-wrap justify-center gap-3 mb-10">
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary text-on-primary shadow-lg shadow-primary/20 transition-all hover:-translate-y-0.5 active:scale-95 border border-primary-fixed/30">
+<span class="material-symbols-outlined text-xl fill-icon">wb_sunny</span>
+<span class="font-label-sm">Aurinkoinen</span>
+</button>
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-surface/90 backdrop-blur-xl hover:bg-surface-container text-on-surface border border-outline-variant/30 shadow-sm transition-all hover:-translate-y-0.5 active:scale-95">
+<span class="material-symbols-outlined text-xl text-secondary">water_drop</span>
+<span class="font-label-sm">Vähiten sadetta</span>
+</button>
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-surface/90 backdrop-blur-xl hover:bg-surface-container text-on-surface border border-outline-variant/30 shadow-sm transition-all hover:-translate-y-0.5 active:scale-95">
+<span class="material-symbols-outlined text-xl text-error">thermostat</span>
+<span class="font-label-sm">Lämmin</span>
+</button>
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-surface/90 backdrop-blur-xl hover:bg-surface-container text-on-surface border border-outline-variant/30 shadow-sm transition-all hover:-translate-y-0.5 active:scale-95">
+<span class="material-symbols-outlined text-xl text-secondary-container">air</span>
+<span class="font-label-sm">Tyyni</span>
+</button>
+<button class="flex items-center gap-2 px-5 py-2.5 rounded-full bg-surface/90 backdrop-blur-xl hover:bg-surface-container text-on-surface border border-outline-variant/30 shadow-sm transition-all hover:-translate-y-0.5 active:scale-95">
+<span class="material-symbols-outlined text-xl text-outline">cloud</span>
+<span class="font-label-sm">Pilvinen</span>
+</button>
+</div>
+<section class="w-full max-w-5xl mx-auto z-10 relative">
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-6 md:mb-8 text-left bg-surface/80 backdrop-blur-xl inline-block px-4 py-2 rounded-2xl shadow-sm border border-outline-variant/20">Viikonlopun aurinkoisimmat</h2>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+<!-- Card 1 -->
+<article class="group bg-surface/95 backdrop-blur-2xl rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl shadow-black/20 transition-all duration-300 border border-outline-variant/30 flex flex-col cursor-pointer hover:-translate-y-1">
+<div class="relative w-full aspect-[4/3] overflow-hidden p-2 pb-0">
+<img alt="Naantali, Suomi" class="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4BkHSWuY3eBv09fFNDoTtb8_4Vk7f-_slr787qFx6FM0wBSUPww_DOs2lwuWmc_3idhRcqAicO3LM7X84-WpvD8cdZNrSlKxbG89mbHKesnlfAzHB7oe1cLI1rlWTvFoMlUpAawK4gTYs70B-9kCzsGhAppgecJ0kIs78eb82WfbPai__CT13uL9ZHGMOPDzN7_87l3iGz6z3HKiVOYNLZ8vmzNfFrTskJIDTL1F80jO8dN5MNypRzTFufnA8pvSEravIqPgqCeAM"/>
+<div class="absolute top-4 right-4 bg-surface/90 backdrop-blur-xl px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-md border border-outline-variant/30">
+<span class="material-symbols-outlined text-tertiary-container text-lg fill-icon">wb_sunny</span>
+<span class="font-label-sm text-label-sm text-on-surface font-bold">24°C</span>
+</div>
+</div>
+<div class="p-5 flex flex-col">
+<h3 class="font-title-md text-title-md text-on-surface mb-1 font-bold">Naantali, Suomi</h3>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-tertiary-container text-sm">wb_sunny</span>
+                        Aurinkoista
+                    </p>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="group bg-surface/95 backdrop-blur-2xl rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl shadow-black/20 transition-all duration-300 border border-outline-variant/30 flex flex-col cursor-pointer hover:-translate-y-1">
+<div class="relative w-full aspect-[4/3] overflow-hidden p-2 pb-0">
+<img alt="Tukholma, Ruotsi" class="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC72KzVuL6TQQbPviX1AYcYntF-_L-7nFBqhcyFLP9-plPZeNOK2JOKxMD2Iz8_1PlbVJXCri82SWKmhSc7mBKP0MaDyGqesq8jHupFpN8eAM2v-N09di2dAJHKyGY8-RkIpwF3ZUA5LfKBR3liTn1hU-Lt4dm2CFkuNYbIsxL9bp3d7-ecLjiLiIsnV7SQb80kk8i_6SmSfBiLnZLw5Ftfn1aAZomYJUitrVb1ib5exDiIN3ZoF7b1-OJyGVeKTflDfMiDVfpQ7_Ay"/>
+<div class="absolute top-4 right-4 bg-surface/90 backdrop-blur-xl px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-md border border-outline-variant/30">
+<span class="material-symbols-outlined text-secondary text-lg fill-icon">partly_cloudy_day</span>
+<span class="font-label-sm text-label-sm text-on-surface font-bold">22°C</span>
+</div>
+</div>
+<div class="p-5 flex flex-col">
+<h3 class="font-title-md text-title-md text-on-surface mb-1 font-bold">Tukholma, Ruotsi</h3>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-secondary text-sm">partly_cloudy_day</span>
+                        Puolipilvistä
+                    </p>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="group bg-surface/95 backdrop-blur-2xl rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl shadow-black/20 transition-all duration-300 border border-outline-variant/30 flex flex-col cursor-pointer hover:-translate-y-1">
+<div class="relative w-full aspect-[4/3] overflow-hidden p-2 pb-0">
+<img alt="Kööpenhamina, Tanska" class="w-full h-full object-cover rounded-2xl group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNaBJqyL6dhCutV8z08oRIKL_Q_pu1_nXDMmkdmPSYBCYPiaEEdMFCMyP2IChLvBSyfbLvONUhIriNA2QOBZELRYGMwABGl8gDk5Hgzk2czcCVrCdCZyD40qhtofN1OH7btkVzf7-LEngSn5W7v9LMzjb4RFWYRtTQjDV4d3c4Y5U23JdowlBbNVGmDmBreOcgCzPCnsjEod7s5d4ixot4sqInQutuXCfFMBTwh3o0US-v04dBX6OOXT04jQE98Y7zcQQLR5MZs6dU"/>
+<div class="absolute top-4 right-4 bg-surface/90 backdrop-blur-xl px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-md border border-outline-variant/30">
+<span class="material-symbols-outlined text-tertiary-container text-lg fill-icon">wb_sunny</span>
+<span class="font-label-sm text-label-sm text-on-surface font-bold">21°C</span>
+</div>
+</div>
+<div class="p-5 flex flex-col">
+<h3 class="font-title-md text-title-md text-on-surface mb-1 font-bold">Kööpenhamina, Tanska</h3>
+<p class="font-body-md text-body-md text-on-surface-variant flex items-center gap-1.5">
+<span class="material-symbols-outlined text-tertiary-container text-sm">wb_sunny</span>
+                        Aurinkoista
+                    </p>
+</div>
+</article>
+</div>
+</section>
+</main>
+</body></html>

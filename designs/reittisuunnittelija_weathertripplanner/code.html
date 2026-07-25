@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>WeatherTrip - Route Planner</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline": "#777587",
+                      "on-tertiary-fixed-variant": "#005236",
+                      "error-container": "#ffdad6",
+                      "primary": "#3525cd",
+                      "tertiary": "#005338",
+                      "on-primary-fixed-variant": "#3323cc",
+                      "inverse-surface": "#302f39",
+                      "tertiary-fixed-dim": "#4edea3",
+                      "surface-bright": "#fcf8ff",
+                      "error": "#ba1a1a",
+                      "tertiary-container": "#006e4b",
+                      "surface-variant": "#e4e1ee",
+                      "surface-container-low": "#f5f2ff",
+                      "on-tertiary": "#ffffff",
+                      "on-surface": "#1b1b24",
+                      "on-tertiary-container": "#67f4b7",
+                      "on-primary-container": "#dad7ff",
+                      "surface-container": "#f0ecf9",
+                      "primary-fixed-dim": "#c3c0ff",
+                      "surface-container-high": "#eae6f4",
+                      "surface-tint": "#4d44e3",
+                      "secondary-fixed-dim": "#89ceff",
+                      "surface-container-highest": "#e4e1ee",
+                      "on-secondary-container": "#004666",
+                      "on-primary": "#ffffff",
+                      "on-secondary-fixed": "#001e2f",
+                      "background": "#fcf8ff",
+                      "inverse-on-surface": "#f3effc",
+                      "secondary-container": "#39b8fd",
+                      "surface-dim": "#dcd8e5",
+                      "surface": "#fcf8ff",
+                      "on-secondary-fixed-variant": "#004c6e",
+                      "on-primary-fixed": "#0f0069",
+                      "primary-fixed": "#e2dfff",
+                      "on-error": "#ffffff",
+                      "surface-container-lowest": "#ffffff",
+                      "on-surface-variant": "#464555",
+                      "primary-container": "#4f46e5",
+                      "secondary": "#006591",
+                      "secondary-fixed": "#c9e6ff",
+                      "on-secondary": "#ffffff",
+                      "on-tertiary-fixed": "#002113",
+                      "inverse-primary": "#c3c0ff",
+                      "on-error-container": "#93000a",
+                      "on-background": "#1b1b24",
+                      "tertiary-fixed": "#6ffbbe",
+                      "outline-variant": "#c7c4d8"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "sm": "1rem",
+                      "margin-mobile": "16px",
+                      "base": "4px",
+                      "xl": "3rem",
+                      "xs": "0.5rem",
+                      "lg": "2rem",
+                      "gutter": "16px",
+                      "margin-desktop": "64px",
+                      "md": "1.5rem",
+                      "max-width": "1280px"
+              },
+              "fontFamily": {
+                      "headline-lg": [
+                              "Inter"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "title-md": [
+                              "Inter"
+                      ],
+                      "label-sm": [
+                              "Inter"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "headline-lg-mobile": [
+                              "Inter"
+                      ],
+                      "data-mono": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "title-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "label-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0.01em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "data-mono": [
+                              "13px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+    </script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md h-screen overflow-hidden flex flex-col md:flex-row">
+<!-- SideNavBar (Desktop) -->
+<nav class="hidden lg:flex flex-col fixed left-0 top-0 h-full z-40 h-full w-80 rounded-r-xl border-r border-outline-variant dark:border-outline shadow-[0px_10px_30px_rgba(0,0,0,0.08)] bg-surface dark:bg-surface-dim">
+<div class="p-6 border-b border-outline-variant/30 flex items-center gap-4">
+<img class="w-12 h-12 rounded-full object-cover" data-alt="A clean, modern profile picture of a traveler wearing a lightweight, stylish rain jacket, looking off-camera against a soft, airy blue sky background with volumetric lighting. The image should feel bright, highly detailed, and professional, aligning with a premium travel app aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA30UKJQQqpX4y76V3EOk3QbOf07zdeuxCuR_C-sw4soufT48wPpk8l-3Ejh_idJqiOmEx83C3dx8u-oHRSmMJBR2gkzcTtbiH_BhxfXNMUCTFfeyE08aojTgrs1y932Zg00GBb-YZIaR0JLAwwPNAYYr7iEJdpYCI9Xk-jyzj9jqhFwY5SVc-qSNSAPJQfvOeuwyhijGSwyqpogtPeOkpp5xuFTYmQsS439FqUH9mFnk_WRAA1Ie0RwdF_uKfHZEMBJLDFaP7_lDeS"/>
+<div>
+<h1 class="font-headline-lg text-headline-lg text-primary tracking-tight">Trip Planner</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Optimized Routing</p>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto py-4">
+<ul class="flex flex-col gap-2 px-4">
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="location_on" data-weight="fill" style="font-variation-settings: 'FILL' 1;">location_on</span>
+<span class="font-title-md text-title-md">Destinations</span>
+</a>
+</li>
+<li>
+<!-- ACTIVE STATE -->
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-primary dark:text-primary-fixed-dim font-bold border-r-4 border-primary bg-primary/5 hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all active:translate-x-1 duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="route" data-weight="fill" style="font-variation-settings: 'FILL' 1;">route</span>
+<span class="font-title-md text-title-md">Route Info</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="bookmark" data-weight="fill" style="font-variation-settings: 'FILL' 1;">bookmark</span>
+<span class="font-title-md text-title-md">Saved</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 px-4 py-3 rounded-lg text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="settings" data-weight="fill" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-title-md text-title-md">Settings</span>
+</a>
+</li>
+</ul>
+</div>
+<div class="p-6 border-t border-outline-variant/30">
+<button class="w-full bg-primary text-on-primary py-3 rounded-lg font-title-md text-title-md shadow-md hover:bg-primary/90 transition-colors active:scale-95">
+                Generate Route
+            </button>
+</div>
+</nav>
+<!-- TopNavBar (Mobile) -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile h-16 md:hidden bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-xl shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary-fixed">WeatherTrip</h1>
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-primary-container dark:hover:text-primary-fixed transition-colors" data-icon="account_circle">account_circle</span>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col md:flex-row w-full lg:ml-80 pt-16 md:pt-0 h-full relative">
+<!-- Left Panel: Route Details -->
+<section class="w-full md:w-2/5 lg:w-[450px] h-full overflow-y-auto bg-surface-bright flex flex-col shadow-[10px_0_30px_rgba(0,0,0,0.03)] z-10">
+<div class="p-6 md:p-8 flex flex-col gap-8">
+<!-- Header / Journey -->
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-2">Helsinki to Tampere</h2>
+<div class="flex items-center gap-4 text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">directions_car</span> 178 km</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span class="flex items-center gap-1"><span class="material-symbols-outlined text-[18px]">schedule</span> 2h 10m</span>
+</div>
+</div>
+<!-- Guarantee Score -->
+<div class="bg-surface-container-low rounded-xl p-5 border border-outline-variant/20 shadow-sm flex items-center justify-between">
+<div>
+<h3 class="font-title-md text-title-md text-on-surface">Dry Trip Guarantee</h3>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">High probability of clear skies.</p>
+</div>
+<div class="flex items-center justify-center w-16 h-16 rounded-full bg-tertiary-container/10 text-tertiary-container font-headline-lg text-headline-lg-mobile border-4 border-tertiary-container/20">
+                        94%
+                    </div>
+</div>
+<!-- Departure Suggestion -->
+<div class="bg-secondary/5 rounded-xl p-5 border border-secondary/20 flex gap-4 items-start">
+<span class="material-symbols-outlined text-secondary mt-1" data-icon="lightbulb" data-weight="fill" style="font-variation-settings: 'FILL' 1;">lightbulb</span>
+<div>
+<h4 class="font-label-sm text-label-sm text-on-secondary-fixed-variant uppercase tracking-wider mb-1">Best Departure Time</h4>
+<p class="font-body-md text-body-md text-on-surface">Leave at <strong>10:00 AM</strong> to avoid afternoon showers near Hämeenlinna.</p>
+</div>
+</div>
+<!-- Weather Timeline -->
+<div class="relative pl-4 border-l-2 border-surface-variant mt-4 space-y-8 pb-8">
+<!-- Start -->
+<div class="relative">
+<div class="absolute -left-[23px] top-1 w-3 h-3 rounded-full bg-primary border-4 border-surface-bright"></div>
+<div class="flex justify-between items-start mb-2">
+<div>
+<h5 class="font-title-md text-title-md text-on-surface">Helsinki</h5>
+<span class="font-label-sm text-label-sm text-on-surface-variant">10:00 AM • Start</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">18°</span>
+<span class="material-symbols-outlined text-secondary" data-icon="sunny">sunny</span>
+</div>
+</div>
+<div class="bg-surface-container rounded-lg p-3 mt-2">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Rain Probability</span>
+<span class="font-data-mono text-data-mono text-on-surface">0%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
+<div class="w-0 h-full bg-secondary"></div>
+</div>
+</div>
+</div>
+<!-- Midpoint -->
+<div class="relative">
+<div class="absolute -left-[23px] top-1 w-3 h-3 rounded-full bg-outline border-4 border-surface-bright"></div>
+<div class="flex justify-between items-start mb-2">
+<div>
+<h5 class="font-title-md text-title-md text-on-surface">Hämeenlinna</h5>
+<span class="font-label-sm text-label-sm text-on-surface-variant">11:15 AM • Midpoint</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">17°</span>
+<span class="material-symbols-outlined text-outline" data-icon="cloud">cloud</span>
+</div>
+</div>
+<div class="bg-surface-container rounded-lg p-3 mt-2">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Rain Probability</span>
+<span class="font-data-mono text-data-mono text-on-surface">15%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
+<div class="w-[15%] h-full bg-secondary opacity-50"></div>
+</div>
+</div>
+</div>
+<!-- End -->
+<div class="relative">
+<div class="absolute -left-[23px] top-1 w-3 h-3 rounded-full bg-tertiary border-4 border-surface-bright"></div>
+<div class="flex justify-between items-start mb-2">
+<div>
+<h5 class="font-title-md text-title-md text-on-surface">Tampere</h5>
+<span class="font-label-sm text-label-sm text-on-surface-variant">12:10 PM • Destination</span>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">19°</span>
+<span class="material-symbols-outlined text-secondary" data-icon="partly_cloudy_day">partly_cloudy_day</span>
+</div>
+</div>
+<div class="bg-surface-container rounded-lg p-3 mt-2">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Rain Probability</span>
+<span class="font-data-mono text-data-mono text-on-surface">5%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-variant rounded-full overflow-hidden">
+<div class="w-[5%] h-full bg-secondary opacity-30"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Right Panel: Interactive Map Background -->
+<section class="flex-1 relative h-[512px] md:h-full bg-surface-container-low overflow-hidden">
+<!-- Map Placeholder Image (would be a real map in prod) -->
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A clean, minimalist vector map of southern Finland showing the route between Helsinki and Tampere. The map uses a very light color palette of soft whites and cool grays, evoking an airy, high-end travel aesthetic. The route is subtly highlighted, avoiding heavy clutter, with a modern light-mode interface look." data-location="Finland" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAUmbBWjKhEJ8cS4QYtIjKjvxNQyxhlwLfLwRTL6QH0m7Z7GLIlGBCt5--O7SAG92_YT1vWYXu7VpEowqgf2cuo_4WV-cCtIfvknGG6BGI5ikeUEE6_vTLw58JL8EizVYH6KcLiJ68FJobol-JlQmgSsucx8FPQy049eo1Ysj6iQVgJTAzdMXvcmxR86ghUxrF95tGoJYPE_-ffbea35gkOpLYVxToD3Y0q-GK9BUhRhld9_LkCqvV6KiwwdW5_YQqLjdQr4xMwUm98'); opacity: 0.6;"></div>
+<!-- Simulated Route Path Overlay -->
+<div class="absolute inset-0 flex items-center justify-center pointer-events-none p-12">
+<!-- Abstract Representation of the route -->
+<svg class="w-full h-full max-w-md max-h-[80%] drop-shadow-lg" preserveaspectratio="xMidYMid meet" viewbox="0 0 200 400">
+<!-- Helsinki Dot -->
+<circle cx="150" cy="350" fill="#3525cd" r="6"></circle>
+<!-- Route Line (Green for clear, Yellow for cloudy, Red for rain - blending) -->
+<path d="M150,350 Q130,250 100,200 T50,50" fill="none" stroke="url(#route-gradient)" stroke-linecap="round" stroke-width="4"></path>
+<!-- Tampere Dot -->
+<circle cx="50" cy="50" fill="#005338" r="6"></circle>
+<!-- Weather Markers on Route -->
+<!-- Sun at start -->
+<g transform="translate(135, 280)">
+<circle class="shadow-sm" cx="0" cy="0" fill="white" r="14"></circle>
+<path d="M-5,-1 A4,4 0 1,1 5,-1" fill="none" stroke="#006591" stroke-width="2"></path>
+<circle cx="0" cy="0" fill="#006591" r="4"></circle>
+</g>
+<!-- Cloud at midpoint -->
+<g transform="translate(100, 180)">
+<circle class="shadow-sm" cx="0" cy="0" fill="white" r="14"></circle>
+<path d="M-4,2 Q-4,-2 -1,-2 Q0,-5 3,-2 Q6,-2 6,1 Z" fill="#777587"></path>
+</g>
+<!-- Sun/Cloud at end -->
+<g transform="translate(65, 90)">
+<circle class="shadow-sm" cx="0" cy="0" fill="white" r="14"></circle>
+<circle cx="-3" cy="-3" fill="#006591" r="3"></circle>
+<path d="M0,4 Q0,0 3,0 Q4,-3 7,0 Q10,0 10,3 Z" fill="#777587"></path>
+</g>
+<defs>
+<lineargradient id="route-gradient" x1="0%" x2="0%" y1="100%" y2="0%">
+<stop offset="0%" stop-color="#4edea3"></stop> <!-- Green (Clear) -->
+<stop offset="50%" stop-color="#f59e0b"></stop> <!-- Yellow (Cloudy) - Hardcoded just for demo gradient -->
+<stop offset="100%" stop-color="#4edea3"></stop> <!-- Green (Clear) -->
+</lineargradient>
+</defs>
+</svg>
+</div>
+<!-- Floating Map Controls -->
+<div class="absolute bottom-6 right-6 flex flex-col gap-2">
+<button class="w-12 h-12 bg-surface text-on-surface rounded-full shadow-[0px_4px_20px_rgba(0,0,0,0.1)] flex items-center justify-center hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined" data-icon="my_location">my_location</span>
+</button>
+<div class="bg-surface rounded-full shadow-[0px_4px_20px_rgba(0,0,0,0.1)] flex flex-col overflow-hidden">
+<button class="w-12 h-12 text-on-surface flex items-center justify-center hover:bg-surface-container transition-colors border-b border-outline-variant/20">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</button>
+<button class="w-12 h-12 text-on-surface flex items-center justify-center hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined" data-icon="remove">remove</span>
+</button>
+</div>
+</div>
+<!-- Floating Legend -->
+<div class="absolute top-6 right-6 bg-surface/90 backdrop-blur-md rounded-xl p-4 shadow-[0px_10px_30px_rgba(0,0,0,0.08)] border border-outline-variant/10">
+<h4 class="font-label-sm text-label-sm text-on-surface-variant mb-2 uppercase tracking-wider">Route Conditions</h4>
+<div class="flex flex-col gap-2">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-tertiary-fixed-dim"></span>
+<span class="font-body-md text-body-md text-on-surface">Clear Route</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-amber-400"></span> <!-- Hardcoded for legend context -->
+<span class="font-body-md text-body-md text-on-surface">Cloudy / Caution</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-error"></span>
+<span class="font-body-md text-body-md text-on-surface">Rain / Warning</span>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-2 lg:hidden bg-surface/80 dark:bg-surface-dim/80 backdrop-blur-xl shadow-[0px_-4px_20px_rgba(0,0,0,0.05)] rounded-t-xl">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-label-sm text-label-sm mt-1">Map</span>
+</button>
+<!-- ACTIVE STATE -->
+<button class="flex flex-col items-center justify-center bg-primary-container/20 dark:bg-primary-container/40 text-primary dark:text-on-primary-container rounded-full px-4 py-1 hover:text-primary dark:hover:text-primary-fixed transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="edit_calendar" data-weight="fill" style="font-variation-settings: 'FILL' 1;">edit_calendar</span>
+<span class="font-label-sm text-label-sm mt-1">Plan</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant hover:text-primary dark:hover:text-primary-fixed transition-all active:scale-90 duration-150">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-sm text-label-sm mt-1">Profile</span>
+</button>
+</nav>
+</body></html>

@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# WeatherTrip
 
-## Getting Started
+Map-based weather trip planner SaaS (MVP). Find sunny destinations, inspect forecasts, and plan dry driving routes.
 
-First, run the development server:
+## Stack
+
+- **Next.js App Router** + TypeScript
+- **Tailwind CSS** (WeatherTrip design tokens from `designs/`)
+- **Zod** validation on API routes
+- **Drizzle** schema ready for Supabase Postgres
+- **Open-Meteo** weather (no API key) with **yr.no**-shaped fallback + mocks
+- **Mapbox** search/map stubs until a token is set
+- **Mock auth** cookie session until Supabase keys are set
+
+## Quick start
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Pages
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Route | Description |
+|---|---|
+| `/` | Discover — search island, weather filters, weekend picks |
+| `/map` | Map explorer with destination list (mock map) |
+| `/routes` | Route weather timeline (Helsinki → Tampere demo) |
+| `/destinations/[slug]` | Detailed forecast + trip suitability |
+| `/trips` | Saved trips (in-memory demo store) |
+| `/login` | Demo sign-in (no keys) |
 
-## Learn More
+## API
 
-To learn more about Next.js, take a look at the following resources:
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/weather?lat=&lon=` | Weather DTO (cached ~10 min) |
+| `GET /api/search?q=` | Place search (mock / Mapbox) |
+| `GET /api/discover?...` | Ranked destinations |
+| `GET /api/routes?from=&to=` | Route weather plan |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Env
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+See `.env.example`. With `USE_MOCKS=true` (default) the app runs fully without Supabase/Mapbox/DB keys. Open-Meteo is still attempted for live forecasts when the network is available.
 
-## Deploy on Vercel
+## Design source
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+UI patterns and tokens come from `designs/` (WeatherTripPlanner + Luminous Navigation systems and HTML mockups).
