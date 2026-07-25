@@ -11,11 +11,12 @@ export const yrProvider: WeatherProvider = {
     const seed = Math.abs(Math.round(lat * 10 + lon));
     const baseTemp = 12 + (seed % 12);
     const placeName = name ?? `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
-    const days: DailyForecastDto[] = Array.from({ length: 7 }, (_, i) => {
+    const days: DailyForecastDto[] = Array.from({ length: 16 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() + i);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
       return {
-        date: date.toISOString().slice(0, 10),
+        date: key,
         dayLabel: date.toLocaleDateString("en", { weekday: "short" }),
         tempMaxC: baseTemp + 2 - (i % 3),
         tempMinC: baseTemp - 4,

@@ -5,7 +5,10 @@ import { TopNav, BottomNav } from "@/components/layout/top-nav";
 import { DiscoverSearch } from "@/components/discover/search-island";
 import { DestinationCard } from "@/components/discover/destination-card";
 import { WeatherFilters } from "@/components/discover/weather-filters";
-import { MockMap } from "@/components/map/mock-map";
+import { DiscoverMap } from "@/components/map/discover-map";
+import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
+import { formatTemp } from "@/lib/utils";
+import { getMapboxPublicToken, getMapboxServerToken } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
@@ -22,59 +25,143 @@ export default async function HomePage({
   );
   const parsed = discoverQuerySchema.parse(flat);
   const result = await discoverDestinations(parsed);
+  const mapboxToken = getMapboxPublicToken();
+  const serverToken = getMapboxServerToken();
 
   return (
     <>
       <TopNav active="/" />
-      <main className="relative w-full overflow-x-hidden pt-16 pb-24 md:pb-32">
-        <div className="fixed inset-0 z-0">
-          <MockMap markers={result.mapMarkers} className="opacity-70" />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-surface/40 via-surface/10 to-surface/80 mix-blend-overlay" />
+      <main className="relative z-20 w-full pt-16 pb-24 md:pb-32">
+        <div className="pointer-events-none fixed inset-0 z-0">
+          <div className="pointer-events-auto h-full w-full">
+            <DiscoverMap
+              markers={result.mapMarkers}
+              origin={
+                result.origin.id === "pending" ? undefined : result.origin
+              }
+              radiusKm={result.radiusKm}
+              showRadius={result.origin.id !== "pending"}
+              mapboxToken={mapboxToken}
+              hasSecretToken={serverToken.startsWith("sk.")}
+              className="h-full w-full opacity-90"
+            />
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-b from-surface/35 via-transparent to-surface/80" />
         </div>
 
-        <div className="relative z-10 mx-auto w-full max-w-[1280px] px-margin-mobile md:px-margin-desktop">
-          <div className="pointer-events-none absolute top-0 left-0 -z-10 h-[614px] w-full overflow-hidden opacity-40">
-            <div className="animate-float-slow absolute top-[-10%] right-[-5%] h-96 w-96 rounded-full bg-primary-container/20 blur-[100px]" />
-            <div className="animate-float-fast absolute top-[20%] left-[-10%] h-[500px] w-[500px] rounded-full bg-secondary-container/10 blur-[120px]" />
-          </div>
-
-          <section className="mt-8 mb-12 flex flex-col items-center text-center md:mt-12 md:mb-16">
-            <div className="mb-8 inline-block max-w-4xl rounded-[2rem] border border-outline-variant/20 bg-surface/80 p-8 shadow-lg backdrop-blur-xl">
+        <div className="relative z-20 mx-auto w-full max-w-[1280px] px-margin-mobile md:px-margin-desktop">
+          <section className="relative z-40 mt-8 mb-12 flex flex-col items-center text-center md:mt-12 md:mb-16">
+            <div className="mb-8 inline-block max-w-4xl rounded-[2rem] border border-outline-variant/20 bg-surface/85 p-8 shadow-lg backdrop-blur-xl">
               <h1 className="mb-4 text-4xl leading-tight font-bold tracking-tight text-on-surface md:text-5xl md:leading-[56px]">
                 Find perfect weather,
                 <br className="hidden md:block" /> no matter where you go.
               </h1>
               <p className="mx-auto max-w-2xl text-lg text-on-surface-variant">
-                Enter your constraints and let our climate models discover the
+                Let our climate models discover the
                 best destinations for your weekend escape.
               </p>
             </div>
 
             <DiscoverSearch
               defaults={{
-                origin: parsed.origin,
+                origin: flat.origin ?? parsed.origin,
                 distance: parsed.distance,
                 weatherGoal: parsed.weatherGoal,
+                lat: parsed.lat,
+                lon: parsed.lon,
+                datePreset: parsed.datePreset,
+                startDate: parsed.startDate,
+                endDate: parsed.endDate,
               }}
             />
           </section>
 
-          <Suspense fallback={null}>
-            <WeatherFilters active={parsed.weatherGoal} />
-          </Suspense>
+          <div className="relative z-30">
+            <Suspense fallback={null}>
+              <WeatherFilters active={parsed.weatherGoal} />
+            </Suspense>
+          </div>
 
-          <section id="results" className="relative z-10 mx-auto mb-12 w-full max-w-5xl">
-            <h2 className="mb-6 inline-block rounded-2xl border border-outline-variant/20 bg-surface/80 px-4 py-2 text-2xl font-semibold text-on-surface shadow-sm backdrop-blur-xl md:mb-8 md:text-[32px] md:leading-10">
-              Viikonlopun aurinkoisimmat
-            </h2>
+          <section
+            id="results"
+            className="relative z-30 mx-auto mb-12 w-full max-w-5xl"
+          >
+            <div className="mb-6 rounded-2xl border border-outline-variant/20 bg-surface/90 p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.06)] backdrop-blur-xl md:p-6">
+              <h2 className="text-2xl font-semibold text-on-surface md:text-[32px] md:leading-10">
+                Best weather · {result.dateLabel}
+              </h2>
+              <p className="mt-2 text-on-surface-variant">
+                {result.origin.id === "pending" ? (
+                  <>Waiting for your location to load results…</>
+                ) : (
+                  <>
+                    {result.dateRangeLabel} · within{" "}
+                    {result.radiusKm.toLocaleString()} km of{" "}
+                    {result.origin.placeName}
+                    {result.destinations.length > 0
+                      ? ` · ${result.destinations.length} places`
+                      : ""}
+                  </>
+                )}
+              </p>
+
+              {(result.originCurrent || result.originForecast) && (
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {result.originCurrent && (
+                    <div className="inline-flex items-center gap-3 rounded-2xl border border-outline-variant/20 bg-surface-container-lowest/90 px-4 py-3 text-left">
+                      <span
+                        className={`material-symbols-outlined fill-icon text-2xl ${weatherIconClass(result.originCurrent.condition)}`}
+                      >
+                        {weatherIcon(result.originCurrent.condition)}
+                      </span>
+                      <div>
+                        <p className="text-xs font-medium tracking-wide text-on-surface-variant uppercase">
+                          Now in {result.origin.name}
+                        </p>
+                        <p className="font-semibold text-on-surface">
+                          {formatTemp(result.originCurrent.temperatureC)}C ·{" "}
+                          {result.originCurrent.conditionLabel}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {result.originForecast && (
+                    <div className="inline-flex items-center gap-3 rounded-2xl border border-outline-variant/20 bg-secondary/10 px-4 py-3 text-left">
+                      <span
+                        className={`material-symbols-outlined fill-icon text-2xl ${weatherIconClass(result.originForecast.condition)}`}
+                      >
+                        {weatherIcon(result.originForecast.condition)}
+                      </span>
+                      <div>
+                        <p className="text-xs font-medium tracking-wide text-secondary uppercase">
+                          {result.originForecast.label} in {result.origin.name}
+                        </p>
+                        <p className="font-semibold text-on-surface">
+                          {formatTemp(result.originForecast.tempMinC)}–
+                          {formatTemp(result.originForecast.tempMaxC)}C ·{" "}
+                          {result.originForecast.conditionLabel}
+                          <span className="font-normal text-on-surface-variant">
+                            {" "}
+                            · rain {result.originForecast.rainProbability}%
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
-              {result.destinations.slice(0, 6).map((dest) => (
+              {result.destinations.slice(0, 9).map((dest) => (
                 <DestinationCard key={dest.id} destination={dest} />
               ))}
             </div>
             {result.destinations.length === 0 && (
               <p className="rounded-2xl border border-outline-variant/20 bg-surface/90 p-8 text-center text-on-surface-variant backdrop-blur-xl">
-                No destinations in range. Try a wider distance filter.
+                {result.origin.id === "pending"
+                  ? "Detecting your location to center the map… Allow location access, or type a city and search."
+                  : "No destinations inside this circle. Try a wider radius."}
               </p>
             )}
           </section>

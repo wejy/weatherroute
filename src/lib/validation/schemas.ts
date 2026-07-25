@@ -11,14 +11,27 @@ export const searchQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(10).optional().default(5),
 });
 
+export const reverseQuerySchema = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lon: z.coerce.number().min(-180).max(180),
+});
+
 export const discoverQuerySchema = z.object({
-  origin: z.string().min(1).max(120).optional().default("Helsinki, FI"),
+  origin: z.string().min(1).max(120).optional(),
   lat: z.coerce.number().min(-90).max(90).optional(),
   lon: z.coerce.number().min(-180).max(180).optional(),
   datePreset: z
-    .enum(["today", "weekend", "week", "custom"])
+    .enum(["today", "tomorrow", "weekend", "custom"])
     .optional()
     .default("weekend"),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   distance: z
     .enum(["near", "region", "country", "continent", "global"])
     .optional()
@@ -36,5 +49,6 @@ export const routeQuerySchema = z.object({
 
 export type WeatherQuery = z.infer<typeof weatherQuerySchema>;
 export type SearchQuery = z.infer<typeof searchQuerySchema>;
+export type ReverseQuery = z.infer<typeof reverseQuerySchema>;
 export type DiscoverQuery = z.infer<typeof discoverQuerySchema>;
 export type RouteQuery = z.infer<typeof routeQuerySchema>;

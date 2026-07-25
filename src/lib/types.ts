@@ -62,6 +62,21 @@ export interface DailyForecastDto {
   conditionLabel: string;
 }
 
+export interface PeriodWeatherDto {
+  label: string;
+  rangeLabel: string;
+  startDate: string;
+  endDate: string;
+  temperatureC: number;
+  tempMinC: number;
+  tempMaxC: number;
+  condition: WeatherCondition;
+  conditionLabel: string;
+  rainProbability: number;
+  sunshineScore: number;
+  cloudCover: number;
+}
+
 export interface WeatherDto {
   place: PlaceDto;
   provider: "open-meteo" | "yr.no" | "mock";
@@ -79,6 +94,7 @@ export interface DestinationDto {
   lat: number;
   lon: number;
   distanceKm: number;
+  /** Forecast for the selected travel window (used for ranking). */
   temperatureC: number;
   condition: WeatherCondition;
   conditionLabel: string;
@@ -86,15 +102,38 @@ export interface DestinationDto {
   sunshineScore: number;
   imageUrl: string;
   description?: string;
+  /** Live / now conditions at the destination. */
+  current: {
+    temperatureC: number;
+    condition: WeatherCondition;
+    conditionLabel: string;
+    rainProbability: number;
+  };
+  /** Aggregated prediction for the selected dates. */
+  forecast: PeriodWeatherDto;
 }
 
 export interface DiscoverResultDto {
   origin: PlaceDto;
   weatherGoal: WeatherGoal;
   distance: DistanceRange;
+  /** Search radius in km (great-circle / haversine). */
+  radiusKm: number;
   datePreset: string;
+  dateLabel: string;
+  dateRangeLabel: string;
+  startDate: string;
+  endDate: string;
   destinations: DestinationDto[];
   mapMarkers: MapMarkerDto[];
+  /** Current weather at the starting point, when available. */
+  originCurrent?: {
+    temperatureC: number;
+    condition: WeatherCondition;
+    conditionLabel: string;
+  };
+  /** Forecast for the selected dates at the starting point. */
+  originForecast?: PeriodWeatherDto;
 }
 
 export interface MapMarkerDto {

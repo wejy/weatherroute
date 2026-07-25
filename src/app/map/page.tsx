@@ -2,9 +2,10 @@ import Link from "next/link";
 import { discoverDestinations } from "@/server/services/weather-service";
 import { SideNav } from "@/components/layout/side-nav";
 import { BottomNav } from "@/components/layout/top-nav";
-import { MockMap } from "@/components/map/mock-map";
+import { DiscoverMap } from "@/components/map/discover-map";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp } from "@/lib/utils";
+import { getMapboxPublicToken, getMapboxServerToken } from "@/lib/env";
 
 export const metadata = { title: "Map Explorer" };
 
@@ -15,6 +16,8 @@ export default async function MapPage() {
     weatherGoal: "sun",
     datePreset: "weekend",
   });
+  const mapboxToken = getMapboxPublicToken();
+  const serverToken = getMapboxServerToken();
 
   return (
     <div className="h-screen w-full overflow-hidden bg-background text-on-background">
@@ -77,7 +80,15 @@ export default async function MapPage() {
       </header>
 
       <main className="relative z-0 h-full w-full pt-16 lg:pt-0 lg:pl-80">
-        <MockMap markers={result.mapMarkers} showRadius className="absolute inset-0" />
+        <DiscoverMap
+          markers={result.mapMarkers}
+          origin={result.origin}
+          radiusKm={result.radiusKm}
+          showRadius
+          mapboxToken={mapboxToken}
+          hasSecretToken={serverToken.startsWith("sk.")}
+          className="absolute inset-0"
+        />
 
         <div className="absolute top-4 right-4 z-20 flex gap-4 lg:top-4">
           <button

@@ -23,7 +23,7 @@ export function WeatherFilters({ active }: { active: string }) {
   }
 
   return (
-    <div className="mb-10 flex flex-wrap justify-center gap-3">
+    <div className="relative z-30 mb-10 flex flex-wrap justify-center gap-3">
       {FILTERS.map((f) => {
         const isActive = active === f.value;
         return (
@@ -32,10 +32,10 @@ export function WeatherFilters({ active }: { active: string }) {
             type="button"
             onClick={() => select(f.value)}
             className={cn(
-              "flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-medium shadow-sm transition-all hover:-translate-y-0.5 active:scale-95",
+              "relative flex items-center gap-2 rounded-full border px-5 py-2.5 text-sm font-medium shadow-sm transition-all hover:-translate-y-0.5 active:scale-95",
               isActive
                 ? "border-primary-fixed bg-primary text-on-primary shadow-lg shadow-primary/30"
-                : "border-outline-variant/30 bg-surface/90 text-on-surface backdrop-blur-xl hover:bg-surface",
+                : "border-outline-variant/30 bg-surface/95 text-on-surface shadow-[0px_4px_16px_rgba(0,0,0,0.08)] backdrop-blur-xl hover:bg-surface",
             )}
           >
             <span
@@ -56,7 +56,7 @@ export function WeatherFilters({ active }: { active: string }) {
       })}
       <Link
         href="/map"
-        className="flex items-center gap-2 rounded-full border border-outline-variant/30 bg-surface/90 px-5 py-2.5 text-sm font-medium text-on-surface shadow-sm backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:bg-surface"
+        className="relative flex items-center gap-2 rounded-full border border-outline-variant/30 bg-surface/95 px-5 py-2.5 text-sm font-medium text-on-surface shadow-[0px_4px_16px_rgba(0,0,0,0.08)] backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:bg-surface"
       >
         <span className="material-symbols-outlined text-xl text-primary">
           map

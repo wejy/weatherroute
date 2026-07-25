@@ -41,9 +41,9 @@ export const openMeteoProvider: WeatherProvider = {
       current:
         "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,cloud_cover",
       daily:
-        "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max",
+        "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,cloud_cover_mean",
       timezone: "auto",
-      forecast_days: "7",
+      forecast_days: "16",
     });
 
     const res = await fetch(

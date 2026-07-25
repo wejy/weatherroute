@@ -7,6 +7,8 @@ import type {
   WeatherCondition,
 } from "@/lib/types";
 
+export type CatalogDestination = Omit<DestinationDto, "current" | "forecast">;
+
 export const MOCK_USER: UserDto = {
   id: "00000000-0000-4000-8000-000000000001",
   email: "demo@weathertrip.app",
@@ -98,7 +100,7 @@ export const PLACES: PlaceDto[] = [
   },
 ];
 
-export const DESTINATION_CATALOG: DestinationDto[] = [
+export const DESTINATION_CATALOG: CatalogDestination[] = [
   {
     id: "naantali",
     slug: "naantali",

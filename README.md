@@ -38,9 +38,16 @@ Open [http://localhost:3000](http://localhost:3000).
 | Endpoint | Purpose |
 |---|---|
 | `GET /api/weather?lat=&lon=` | Weather DTO (cached ~10 min) |
-| `GET /api/search?q=` | Place search (mock / Mapbox) |
+| `GET /api/search?q=` | Place search (Open-Meteo geocoding, free) |
+| `GET /api/geocode/reverse?lat=&lon=` | Reverse geocode (OSM Nominatim, free) |
 | `GET /api/discover?...` | Ranked destinations |
 | `GET /api/routes?from=&to=` | Route weather plan |
+
+### Free place APIs used
+
+- **[Open-Meteo Geocoding](https://open-meteo.com/en/docs/geocoding-api)** — city/town search worldwide, no API key
+- **[OSM Nominatim](https://nominatim.org/)** — reverse geocode (coords → place); fair-use / User-Agent required
+- Mapbox remains optional when a token is set later
 
 ## Env
 

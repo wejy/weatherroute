@@ -4,10 +4,19 @@ import type { DestinationDto } from "@/lib/types";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp } from "@/lib/utils";
 
-export function DestinationCard({ destination }: { destination: DestinationDto }) {
+export function DestinationCard({
+  destination,
+}: {
+  destination: DestinationDto;
+}) {
+  const forecast = destination.forecast;
+  const current = destination.current;
+
   return (
-    <Link href={`/destinations/${destination.slug}`}>
-      <article className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm transition-all duration-300 hover:shadow-[0px_10px_30px_rgba(0,0,0,0.08)] hover:-translate-y-1">
+    <Link
+      href={`/destinations/${destination.slug}?startDate=${forecast.startDate}&endDate=${forecast.endDate}`}
+    >
+      <article className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0px_10px_30px_rgba(0,0,0,0.08)]">
         <div className="relative aspect-[4/3] w-full overflow-hidden">
           <Image
             src={destination.imageUrl}
@@ -16,27 +25,63 @@ export function DestinationCard({ destination }: { destination: DestinationDto }
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, 33vw"
           />
-          <div className="absolute top-4 right-4 flex items-center gap-1.5 rounded-full border border-outline-variant/10 bg-surface/90 px-3 py-1.5 shadow-sm backdrop-blur-md">
-            <span
-              className={`material-symbols-outlined fill-icon text-lg ${weatherIconClass(destination.condition)}`}
-            >
-              {weatherIcon(destination.condition)}
-            </span>
-            <span className="text-sm font-semibold text-on-surface">
-              {formatTemp(destination.temperatureC)}C
+          <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
+            <div className="flex items-center gap-1.5 rounded-full border border-outline-variant/10 bg-surface/90 px-3 py-1.5 shadow-sm backdrop-blur-md">
+              <span
+                className={`material-symbols-outlined fill-icon text-lg ${weatherIconClass(forecast.condition)}`}
+              >
+                {weatherIcon(forecast.condition)}
+              </span>
+              <span className="text-sm font-semibold text-on-surface">
+                {formatTemp(forecast.tempMinC)}–{formatTemp(forecast.tempMaxC)}
+              </span>
+            </div>
+            <span className="rounded-full bg-primary/90 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-on-primary uppercase backdrop-blur-md">
+              {forecast.label}
             </span>
           </div>
         </div>
-        <div className="flex flex-col p-5">
-          <h3 className="mb-1 text-xl font-semibold text-on-surface">
-            {destination.placeName}
-          </h3>
-          <p className="flex items-center gap-1.5 text-base text-on-surface-variant">
-            <span className="material-symbols-outlined text-sm text-outline">
-              {weatherIcon(destination.condition)}
-            </span>
-            {destination.conditionLabel}
-          </p>
+        <div className="flex flex-col gap-3 p-5">
+          <div>
+            <h3 className="mb-1 text-xl font-semibold text-on-surface">
+              {destination.placeName}
+            </h3>
+            <p className="text-sm text-on-surface-variant">
+              {forecast.conditionLabel} · rain {forecast.rainProbability}%
+              {destination.distanceKm > 0 && (
+                <span> · {destination.distanceKm} km</span>
+              )}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="rounded-xl bg-surface-container-low px-3 py-2">
+              <p className="text-[11px] font-medium tracking-wide text-on-surface-variant uppercase">
+                Now
+              </p>
+              <p className="mt-0.5 flex items-center gap-1 font-semibold text-on-surface">
+                <span
+                  className={`material-symbols-outlined text-base ${weatherIconClass(current.condition)}`}
+                >
+                  {weatherIcon(current.condition)}
+                </span>
+                {formatTemp(current.temperatureC)}C
+              </p>
+            </div>
+            <div className="rounded-xl bg-secondary/10 px-3 py-2">
+              <p className="text-[11px] font-medium tracking-wide text-secondary uppercase">
+                Forecast
+              </p>
+              <p className="mt-0.5 flex items-center gap-1 font-semibold text-on-surface">
+                <span
+                  className={`material-symbols-outlined text-base ${weatherIconClass(forecast.condition)}`}
+                >
+                  {weatherIcon(forecast.condition)}
+                </span>
+                {formatTemp(forecast.tempMaxC)}C
+              </p>
+            </div>
+          </div>
         </div>
       </article>
     </Link>

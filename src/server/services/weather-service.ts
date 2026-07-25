@@ -5,112 +5,364 @@ import type {
   DiscoverResultDto,
   MapMarkerDto,
   SuitabilityBadgeDto,
+  WeatherCondition,
   WeatherDto,
   WeatherGoal,
   DistanceRange,
+  PlaceDto,
+  PeriodWeatherDto,
+  DailyForecastDto,
 } from "@/lib/types";
 import type { DiscoverQuery } from "@/lib/validation/schemas";
+import {
+  listDateKeys,
+  resolveDateWindow,
+  type DatePreset,
+} from "@/lib/dates";
 import { fetchWeather } from "@/server/integrations/weather";
 import { reverseGeocode, searchPlaces } from "@/server/integrations/mapbox";
 import {
   DESTINATION_CATALOG,
   findPlace,
-  haversineKm,
-  PLACES,
 } from "@/server/integrations/mocks/data";
+import {
+  DISTANCE_RADIUS_KM,
+  citiesWithinRadius,
+  placeholderImageFor,
+} from "@/server/integrations/places/candidates";
 
-const DISTANCE_MAX_KM: Record<DistanceRange, number> = {
-  near: 50,
-  region: 300,
-  country: 900,
-  continent: 2500,
-  global: 20000,
-};
-
-function scoreDestination(dest: DestinationDto, goal: WeatherGoal): number {
+function scoreWeather(
+  goal: WeatherGoal,
+  weather: {
+    temperatureC: number;
+    rainProbability: number;
+    sunshineScore: number;
+    condition: WeatherCondition;
+  },
+): number {
   switch (goal) {
     case "sun":
-      return dest.sunshineScore - dest.rainProbability;
+      return weather.sunshineScore - weather.rainProbability;
     case "dry":
-      return 100 - dest.rainProbability;
+      return 100 - weather.rainProbability;
     case "mild":
-      return 100 - Math.abs(dest.temperatureC - 20) * 5;
+      return 100 - Math.abs(weather.temperatureC - 20) * 5;
     case "warm":
-      return dest.temperatureC * 3 + dest.sunshineScore / 2;
+      return weather.temperatureC * 3 + weather.sunshineScore / 2;
     case "calm":
-      return 80 - dest.rainProbability + (dest.condition === "cloudy" ? 10 : 0);
+      return (
+        80 -
+        weather.rainProbability +
+        (weather.condition === "cloudy" ? 10 : 0)
+      );
     case "cloudy":
-      return dest.condition === "cloudy" || dest.condition === "partly_cloudy"
+      return weather.condition === "cloudy" ||
+        weather.condition === "partly_cloudy"
         ? 90
         : 40;
     default:
-      return dest.sunshineScore;
+      return weather.sunshineScore;
   }
+}
+
+function sunshineFromDay(day: DailyForecastDto): number {
+  const clearBoost =
+    day.condition === "sunny" ? 30 : day.condition === "partly_cloudy" ? 15 : 0;
+  return Math.max(
+    0,
+    Math.min(
+      100,
+      100 - day.cloudCover + clearBoost - day.precipitationProbability / 2,
+    ),
+  );
+}
+
+function pickDaysForWindow(
+  daily: DailyForecastDto[],
+  startDate: string,
+  endDate: string,
+): DailyForecastDto[] {
+  const keys = new Set(listDateKeys(startDate, endDate));
+  let days = daily.filter((d) => keys.has(d.date));
+
+  if (days.length === 0) {
+    // Timezone / date-key mismatch — fall back to nearest days by index.
+    const startIdx = daily.findIndex((d) => d.date >= startDate);
+    const count = Math.max(1, listDateKeys(startDate, endDate).length);
+    if (startIdx >= 0) {
+      days = daily.slice(startIdx, startIdx + count);
+    } else {
+      days = daily.slice(0, count);
+    }
+  }
+
+  return days;
+}
+
+export function summarizePeriod(
+  weather: WeatherDto,
+  window: {
+    label: string;
+    rangeLabel: string;
+    startDate: string;
+    endDate: string;
+  },
+): PeriodWeatherDto {
+  const days = pickDaysForWindow(
+    weather.daily,
+    window.startDate,
+    window.endDate,
+  );
+
+  if (days.length === 0) {
+    return {
+      label: window.label,
+      rangeLabel: window.rangeLabel,
+      startDate: window.startDate,
+      endDate: window.endDate,
+      temperatureC: weather.current.temperatureC,
+      tempMinC: weather.current.temperatureC - 3,
+      tempMaxC: weather.current.temperatureC,
+      condition: weather.current.condition,
+      conditionLabel: weather.current.conditionLabel,
+      rainProbability: weather.current.precipitationProbability,
+      sunshineScore: 50,
+      cloudCover: weather.current.cloudCover,
+    };
+  }
+
+  const rainProbability = Math.round(
+    days.reduce((s, d) => s + d.precipitationProbability, 0) / days.length,
+  );
+  const cloudCover = Math.round(
+    days.reduce((s, d) => s + d.cloudCover, 0) / days.length,
+  );
+  const tempMaxC = Math.max(...days.map((d) => d.tempMaxC));
+  const tempMinC = Math.min(...days.map((d) => d.tempMinC));
+  const sunshineScore = Math.round(
+    days.reduce((s, d) => s + sunshineFromDay(d), 0) / days.length,
+  );
+
+  // Representative condition: sunniest day if goal-agnostic display.
+  const representative = [...days].sort(
+    (a, b) => sunshineFromDay(b) - sunshineFromDay(a),
+  )[0]!;
+
+  return {
+    label: window.label,
+    rangeLabel: window.rangeLabel,
+    startDate: window.startDate,
+    endDate: window.endDate,
+    temperatureC: Math.round((tempMaxC + tempMinC) / 2),
+    tempMinC: Math.round(tempMinC),
+    tempMaxC: Math.round(tempMaxC),
+    condition: representative.condition,
+    conditionLabel: representative.conditionLabel,
+    rainProbability,
+    sunshineScore,
+    cloudCover,
+  };
+}
+
+async function resolveOrigin(query: DiscoverQuery): Promise<PlaceDto | null> {
+  if (query.lat != null && query.lon != null) {
+    const name = query.origin?.trim();
+    if (name && name.length > 1) {
+      return {
+        id: `origin-${query.lat.toFixed(3)},${query.lon.toFixed(3)}`,
+        name: name.split(",")[0]?.trim() || name,
+        placeName: name,
+        lat: query.lat,
+        lon: query.lon,
+      };
+    }
+    return reverseGeocode(query.lat, query.lon);
+  }
+
+  const originText = query.origin?.trim();
+  if (!originText) return null;
+
+  const known = findPlace(originText);
+  if (known) return known;
+
+  const matches = await searchPlaces(originText, 1);
+  return matches[0] ?? null;
+}
+
+function emptyDiscoverResult(
+  query: DiscoverQuery,
+): DiscoverResultDto {
+  const dateWindow = resolveDateWindow({
+    preset: (query.datePreset ?? "weekend") as DatePreset,
+    startDate: query.startDate,
+    endDate: query.endDate,
+  });
+  const distance = (query.distance ?? "region") as DistanceRange;
+
+  return {
+    origin: {
+      id: "pending",
+      name: "Your location",
+      placeName: "Detecting location…",
+      lat: 64.0,
+      lon: 26.0,
+    },
+    weatherGoal: query.weatherGoal ?? "sun",
+    distance,
+    datePreset: dateWindow.preset,
+    dateLabel: dateWindow.label,
+    dateRangeLabel: dateWindow.rangeLabel,
+    startDate: dateWindow.startDate,
+    endDate: dateWindow.endDate,
+    radiusKm: DISTANCE_RADIUS_KM[distance],
+    destinations: [],
+    mapMarkers: [],
+  };
 }
 
 export async function discoverDestinations(
   query: DiscoverQuery,
 ): Promise<DiscoverResultDto> {
-  let origin = findPlace(query.origin ?? "Helsinki");
-
-  if (!origin && query.lat != null && query.lon != null) {
-    origin = await reverseGeocode(query.lat, query.lon);
-  }
-
+  const origin = await resolveOrigin(query);
   if (!origin) {
-    const matches = await searchPlaces(query.origin ?? "Helsinki", 1);
-    origin = matches[0] ?? PLACES[0];
+    return emptyDiscoverResult(query);
   }
 
-  const maxKm = DISTANCE_MAX_KM[query.distance ?? "region"];
+  const distance = (query.distance ?? "region") as DistanceRange;
+  const radiusKm = DISTANCE_RADIUS_KM[distance];
   const goal = query.weatherGoal ?? "sun";
 
-  const destinations = DESTINATION_CATALOG.map((d) => ({
-    ...d,
-    distanceKm: haversineKm(origin!, d),
-  }))
-    .filter((d) => d.distanceKm <= maxKm || query.distance === "global")
-    .map((d) => ({ d, score: scoreDestination(d, goal) }))
-    .sort((a, b) => b.score - a.score)
-    .map(({ d }) => d);
+  const dateWindow = resolveDateWindow({
+    preset: (query.datePreset ?? "weekend") as DatePreset,
+    startDate: query.startDate,
+    endDate: query.endDate,
+  });
+
+  const candidates = citiesWithinRadius(origin, radiusKm, {
+    excludeName: origin.name,
+    limit: distance === "global" ? 24 : distance === "near" ? 12 : 18,
+  });
+
+  const catalogById = new Map(DESTINATION_CATALOG.map((d) => [d.id, d]));
+
+  const [originWeatherResult, ...weatherSettled] = await Promise.all([
+    fetchWeather({
+      lat: origin.lat,
+      lon: origin.lon,
+      name: origin.placeName,
+    }).then(
+      (w) => ({ ok: true as const, w }),
+      () => ({ ok: false as const }),
+    ),
+    ...candidates.map(async (city) => {
+      try {
+        const weather = await fetchWeather({
+          lat: city.lat,
+          lon: city.lon,
+          name: city.placeName,
+        });
+        return { ok: true as const, city, weather };
+      } catch {
+        return { ok: false as const, city };
+      }
+    }),
+  ]);
+
+  const destinations: DestinationDto[] = weatherSettled
+    .flatMap((result) => {
+      if (!result.ok || !("weather" in result)) return [];
+      const { city, weather } = result;
+      const catalog = catalogById.get(city.id);
+      const forecast = summarizePeriod(weather, dateWindow);
+
+      const dest: DestinationDto = {
+        id: city.id,
+        slug: city.id,
+        name: city.name,
+        country: city.country ?? catalog?.country ?? "",
+        placeName: city.placeName,
+        lat: city.lat,
+        lon: city.lon,
+        distanceKm: city.distanceKm,
+        temperatureC: forecast.tempMaxC,
+        condition: forecast.condition,
+        conditionLabel: forecast.conditionLabel,
+        rainProbability: forecast.rainProbability,
+        sunshineScore: forecast.sunshineScore,
+        imageUrl: catalog?.imageUrl ?? placeholderImageFor(city.id),
+        description:
+          catalog?.description ??
+          `${Math.round(city.distanceKm)} km from ${origin.name}`,
+        current: {
+          temperatureC: weather.current.temperatureC,
+          condition: weather.current.condition,
+          conditionLabel: weather.current.conditionLabel,
+          rainProbability: weather.current.precipitationProbability,
+        },
+        forecast,
+      };
+
+      return [
+        {
+          dest,
+          score: scoreWeather(goal, {
+            temperatureC: forecast.tempMaxC,
+            rainProbability: forecast.rainProbability,
+            sunshineScore: forecast.sunshineScore,
+            condition: forecast.condition,
+          }),
+        },
+      ];
+    })
+    .sort((a, b) => b.score - a.score || a.dest.distanceKm - b.dest.distanceKm)
+    .map(({ dest }) => dest);
 
   const mapMarkers: MapMarkerDto[] = [
-    ...destinations.slice(0, 6).map((d) => ({
+    {
+      id: `origin-${origin.id}`,
+      name: origin.name,
+      lat: origin.lat,
+      lon: origin.lon,
+      temperatureC: originWeatherResult.ok
+        ? originWeatherResult.w.current.temperatureC
+        : (destinations[0]?.current.temperatureC ?? 18),
+      condition: originWeatherResult.ok
+        ? originWeatherResult.w.current.condition
+        : "partly_cloudy",
+    },
+    ...destinations.slice(0, 8).map((d) => ({
       id: d.id,
       name: d.name,
       lat: d.lat,
       lon: d.lon,
-      temperatureC: d.temperatureC,
-      condition: d.condition,
-      tomorrowTempC: d.temperatureC + 1,
+      temperatureC: d.forecast.tempMaxC,
+      condition: d.forecast.condition,
+      tomorrowTempC: d.current.temperatureC,
     })),
-    {
-      id: "helsinki-marker",
-      name: "Helsinki",
-      lat: 60.1699,
-      lon: 24.9384,
-      temperatureC: 22,
-      condition: "partly_cloudy",
-      tomorrowTempC: 24,
-    },
-    {
-      id: "oslo-marker",
-      name: "Oslo",
-      lat: 59.9139,
-      lon: 10.7522,
-      temperatureC: 18,
-      condition: "cloudy",
-      tomorrowTempC: 19,
-    },
   ];
 
   return {
     origin,
     weatherGoal: goal,
-    distance: query.distance ?? "region",
-    datePreset: query.datePreset ?? "weekend",
+    distance,
+    datePreset: dateWindow.preset,
+    dateLabel: dateWindow.label,
+    dateRangeLabel: dateWindow.rangeLabel,
+    startDate: dateWindow.startDate,
+    endDate: dateWindow.endDate,
+    radiusKm,
     destinations,
     mapMarkers,
+    originCurrent: originWeatherResult.ok
+      ? {
+          temperatureC: originWeatherResult.w.current.temperatureC,
+          condition: originWeatherResult.w.current.condition,
+          conditionLabel: originWeatherResult.w.current.conditionLabel,
+        }
+      : undefined,
+    originForecast: originWeatherResult.ok
+      ? summarizePeriod(originWeatherResult.w, dateWindow)
+      : undefined,
   };
 }
 
@@ -161,5 +413,31 @@ export function buildSuitability(weather: WeatherDto): SuitabilityBadgeDto[] {
 }
 
 export async function getDestinationBySlug(slug: string) {
-  return DESTINATION_CATALOG.find((d) => d.slug === slug || d.id === slug);
+  const fromCatalog = DESTINATION_CATALOG.find(
+    (d) => d.slug === slug || d.id === slug,
+  );
+  if (fromCatalog) return fromCatalog;
+
+  const { WORLD_CITIES } = await import(
+    "@/server/integrations/places/candidates"
+  );
+  const city = WORLD_CITIES.find((c) => c.id === slug);
+  if (!city) return undefined;
+
+  return {
+    id: city.id,
+    slug: city.id,
+    name: city.name,
+    country: city.country ?? "",
+    placeName: city.placeName,
+    lat: city.lat,
+    lon: city.lon,
+    distanceKm: 0,
+    temperatureC: 18,
+    condition: "partly_cloudy" as const,
+    conditionLabel: "Partly cloudy",
+    rainProbability: 20,
+    sunshineScore: 60,
+    imageUrl: placeholderImageFor(city.id),
+  };
 }
