@@ -7,7 +7,15 @@ export type WeatherCondition =
   | "snow"
   | "fog";
 
-export type WeatherGoal = "sun" | "dry" | "mild" | "warm" | "calm" | "cloudy";
+export type WeatherGoal =
+  | "best"
+  | "sun"
+  | "dry"
+  | "mild"
+  | "rain"
+  | "warm"
+  | "calm"
+  | "cloudy";
 
 export interface PlaceDto {
   id: string;

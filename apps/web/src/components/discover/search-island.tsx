@@ -1,7 +1,15 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useCallback, useId, useMemo, useRef, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import type { PlaceDto } from "@/lib/types";
 import {
   resolveDateWindow,
@@ -17,12 +25,15 @@ import {
   resolveRadiusKm,
   type DistanceKey,
 } from "@/lib/distance";
-import { LocationOriginField, type GeoDetectMeta } from "@/components/discover/location-origin-field";
+import {
+  LocationOriginField,
+  type GeoDetectMeta,
+} from "@/components/discover/location-origin-field";
 import { DateWhenField } from "@/components/discover/date-when-field";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
-const GOAL_KEYS = ["sun", "dry", "mild", "warm"] as const;
+const GOAL_KEYS = ["best", "sun", "dry", "mild", "rain", "warm"] as const;
 
 const DISTANCE_OPTIONS = [...DISTANCE_PRESET_KEYS, "custom" as const];
 
@@ -32,6 +43,8 @@ export function DiscoverSearch({
   hash = "#results",
   variant = "island",
   autoDetect,
+  /** Hide the weather-goal dropdown when chips are shown separately. */
+  showGoalField = true,
 }: {
   defaults?: {
     origin?: string;
@@ -44,15 +57,15 @@ export function DiscoverSearch({
     startDate?: string;
     endDate?: string;
   };
-  /** Where search updates should navigate (e.g. `/` or `/map`). */
   basePath?: string;
   hash?: string;
   variant?: "island" | "stack";
-  /** Override geolocation auto-detect (default: when coords missing). */
   autoDetect?: boolean;
+  showGoalField?: boolean;
 }) {
   const { t, locale } = useI18n();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
   const geoSynced = useRef(false);
   const hasCoords =
@@ -96,9 +109,41 @@ export function DiscoverSearch({
     defaults?.radiusKm ?? CUSTOM_RADIUS_DEFAULT_KM,
   );
   const [weatherGoal, setWeatherGoal] = useState(
-    defaults?.weatherGoal ?? "sun",
+    defaults?.weatherGoal ?? "best",
   );
   const [error, setError] = useState<string | null>(null);
+
+  // Keep local fields in sync when URL/query defaults change (chips ↔ form ↔ map).
+  useEffect(() => {
+    if (defaults?.weatherGoal) setWeatherGoal(defaults.weatherGoal);
+  }, [defaults?.weatherGoal]);
+
+  useEffect(() => {
+    if (defaults?.distance) setDistance(defaults.distance);
+  }, [defaults?.distance]);
+
+  useEffect(() => {
+    if (defaults?.radiusKm != null) setCustomRadiusKm(defaults.radiusKm);
+  }, [defaults?.radiusKm]);
+
+  useEffect(() => {
+    if (defaults?.origin) setOrigin(defaults.origin);
+    if (
+      defaults?.lat != null &&
+      defaults?.lon != null &&
+      !Number.isNaN(defaults.lat) &&
+      !Number.isNaN(defaults.lon)
+    ) {
+      setPlace({
+        id: `url-${defaults.lat.toFixed(3)},${defaults.lon.toFixed(3)}`,
+        name: defaults.origin?.split(",")[0]?.trim() || "Origin",
+        placeName: defaults.origin || "",
+        lat: defaults.lat,
+        lon: defaults.lon,
+      });
+      geoSynced.current = true;
+    }
+  }, [defaults?.origin, defaults?.lat, defaults?.lon]);
 
   const effectiveRadiusKm = resolveRadiusKm(
     distance,
@@ -108,37 +153,52 @@ export function DiscoverSearch({
   const buildParams = useCallback(
     (
       resolved: PlaceDto,
-      overrides?: { distance?: string; radiusKm?: number },
+      overrides?: {
+        distance?: string;
+        radiusKm?: number;
+        weatherGoal?: string;
+        when?: DateWindow;
+      },
     ) => {
       const nextDistance = overrides?.distance ?? distance;
       const nextRadius = overrides?.radiusKm ?? customRadiusKm;
-      const params = new URLSearchParams({
-        origin: resolved.placeName,
-        lat: String(resolved.lat),
-        lon: String(resolved.lon),
-        distance: nextDistance,
-        weatherGoal,
-        datePreset: when.preset,
-        startDate: when.startDate,
-        endDate: when.endDate,
-      });
+      const nextGoal = overrides?.weatherGoal ?? weatherGoal;
+      const nextWhen = overrides?.when ?? when;
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("origin", resolved.placeName);
+      params.set("lat", String(resolved.lat));
+      params.set("lon", String(resolved.lon));
+      params.set("distance", nextDistance);
+      params.set("weatherGoal", nextGoal);
+      params.set("datePreset", nextWhen.preset);
+      params.set("startDate", nextWhen.startDate);
+      params.set("endDate", nextWhen.endDate);
       if (nextDistance === "custom") {
         params.set("radiusKm", String(nextRadius));
+      } else {
+        params.delete("radiusKm");
       }
       return params;
     },
-    [distance, customRadiusKm, weatherGoal, when],
+    [customRadiusKm, distance, searchParams, weatherGoal, when],
   );
 
   const navigateWith = useCallback(
     (
       resolved: PlaceDto,
       replace = false,
-      overrides?: { distance?: string; radiusKm?: number },
+      overrides?: {
+        distance?: string;
+        radiusKm?: number;
+        weatherGoal?: string;
+        when?: DateWindow;
+      },
     ) => {
       const url = `${basePath}?${buildParams(resolved, overrides).toString()}${hash || ""}`;
-      if (replace) router.replace(url);
-      else router.push(url);
+      startTransition(() => {
+        if (replace) router.replace(url);
+        else router.push(url);
+      });
     },
     [basePath, buildParams, hash, router],
   );
@@ -160,6 +220,17 @@ export function DiscoverSearch({
     },
     [hasCoords, navigateWith],
   );
+
+  function onPlaceSelect(next: PlaceDto | null) {
+    setPlace(next);
+    setError(null);
+    if (next) {
+      setOrigin(next.placeName);
+      geoSynced.current = true;
+      // Commit to URL so filter chips + Map link keep the typed/selected origin.
+      navigateWith(next, true);
+    }
+  }
 
   async function resolvePlace(): Promise<PlaceDto | null> {
     if (place) return place;
@@ -201,6 +272,31 @@ export function DiscoverSearch({
     if (next !== "custom" && next in DISTANCE_RADIUS_KM) {
       setCustomRadiusKm(DISTANCE_RADIUS_KM[next as DistanceKey]);
     }
+    if (place) {
+      navigateWith(place, true, {
+        distance: next,
+        radiusKm:
+          next === "custom"
+            ? customRadiusKm
+            : DISTANCE_RADIUS_KM[next as DistanceKey],
+      });
+    }
+  }
+
+  function onGoalChange(next: string) {
+    setWeatherGoal(next);
+    if (place) {
+      navigateWith(place, true, { weatherGoal: next });
+      return;
+    }
+    // No place yet — still sync goal into the URL for chips / map link.
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("weatherGoal", next);
+    startTransition(() => {
+      router.replace(
+        `${basePath}?${params.toString()}${hash || ""}`,
+      );
+    });
   }
 
   const fieldClass = stack
@@ -227,8 +323,7 @@ export function DiscoverSearch({
       <div
         className={cn(
           fieldClass,
-          !stack &&
-            "rounded-t-2xl lg:rounded-l-2xl lg:rounded-tr-none",
+          !stack && "rounded-t-2xl lg:rounded-l-2xl lg:rounded-tr-none",
         )}
       >
         <label id={originLabelId} className={labelClass}>
@@ -240,7 +335,7 @@ export function DiscoverSearch({
             setOrigin(v);
             setError(null);
           }}
-          onPlaceSelect={setPlace}
+          onPlaceSelect={onPlaceSelect}
           onGeolocated={onGeolocated}
           autoDetect={shouldAutoDetect}
         />
@@ -255,7 +350,13 @@ export function DiscoverSearch({
         <label id={whenLabelId} className={labelClass}>
           {t("search.whenGoing")}
         </label>
-        <DateWhenField value={when} onChange={setWhen} />
+        <DateWhenField
+          value={when}
+          onChange={(next) => {
+            setWhen(next);
+            if (place) navigateWith(place, true, { when: next });
+          }}
+        />
       </div>
 
       <div className={fieldClass}>
@@ -299,7 +400,26 @@ export function DiscoverSearch({
               max={CUSTOM_RADIUS_MAX_KM}
               step={10}
               value={customRadiusKm}
-              onChange={(e) => setCustomRadiusKm(Number(e.target.value))}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                setCustomRadiusKm(value);
+              }}
+              onMouseUp={() => {
+                if (place) {
+                  navigateWith(place, true, {
+                    distance: "custom",
+                    radiusKm: customRadiusKm,
+                  });
+                }
+              }}
+              onTouchEnd={() => {
+                if (place) {
+                  navigateWith(place, true, {
+                    distance: "custom",
+                    radiusKm: customRadiusKm,
+                  });
+                }
+              }}
               className="h-2 w-full cursor-pointer appearance-none rounded-full bg-surface-container accent-primary"
               aria-label={t("search.customRadius")}
             />
@@ -318,37 +438,39 @@ export function DiscoverSearch({
         )}
       </div>
 
-      <div
-        className={cn(
-          fieldClass,
-          !stack &&
-            "cursor-pointer rounded-b-2xl lg:rounded-r-2xl lg:rounded-bl-none",
-        )}
-      >
-        <label htmlFor={goalId} className={labelClass}>
-          {t("search.weatherGoal")}
-        </label>
-        <div className="flex items-center gap-2 overflow-hidden">
-          <span
-            className="material-symbols-outlined text-xl text-secondary"
-            aria-hidden="true"
-          >
-            wb_sunny
-          </span>
-          <select
-            id={goalId}
-            className={selectClass}
-            value={weatherGoal}
-            onChange={(e) => setWeatherGoal(e.target.value)}
-          >
-            {GOAL_KEYS.map((key) => (
-              <option key={key} value={key}>
-                {t(`search.goals.${key}`)}
-              </option>
-            ))}
-          </select>
+      {showGoalField && (
+        <div
+          className={cn(
+            fieldClass,
+            !stack &&
+              "cursor-pointer rounded-b-2xl lg:rounded-r-2xl lg:rounded-bl-none",
+          )}
+        >
+          <label htmlFor={goalId} className={labelClass}>
+            {t("search.weatherGoal")}
+          </label>
+          <div className="flex items-center gap-2 overflow-hidden">
+            <span
+              className="material-symbols-outlined text-xl text-secondary"
+              aria-hidden="true"
+            >
+              wb_sunny
+            </span>
+            <select
+              id={goalId}
+              className={selectClass}
+              value={weatherGoal}
+              onChange={(e) => onGoalChange(e.target.value)}
+            >
+              {GOAL_KEYS.map((key) => (
+                <option key={key} value={key}>
+                  {t(`search.goals.${key}`)}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
+      )}
 
       <div
         className={cn(
@@ -369,7 +491,10 @@ export function DiscoverSearch({
               : "h-14 w-full rounded-xl lg:h-16 lg:w-16 lg:rounded-full",
           )}
         >
-          <span className="material-symbols-outlined text-2xl" aria-hidden="true">
+          <span
+            className="material-symbols-outlined text-2xl"
+            aria-hidden="true"
+          >
             search
           </span>
           <span

@@ -29,6 +29,7 @@ import {
   citiesWithinRadius,
   placeholderImageFor,
 } from "@/server/integrations/places/candidates";
+import { fetchNearbySettlements } from "@/server/integrations/places/nearby-overpass";
 import {
   resolveRadiusKm,
   candidateLimitForRadius,
@@ -44,12 +45,21 @@ function scoreWeather(
   },
 ): number {
   switch (goal) {
+    case "best":
+      // Sunny + warm: sunshine dominates, heat helps, rain hurts lightly.
+      return (
+        weather.sunshineScore * 1.4 +
+        weather.temperatureC * 3.5 -
+        weather.rainProbability * 0.35
+      );
     case "sun":
       return weather.sunshineScore - weather.rainProbability;
     case "dry":
       return 100 - weather.rainProbability;
     case "mild":
       return 100 - Math.abs(weather.temperatureC - 20) * 5;
+    case "rain":
+      return weather.rainProbability * 2 + (weather.condition === "rainy" || weather.condition === "storm" ? 20 : 0);
     case "warm":
       return weather.temperatureC * 3 + weather.sunshineScore / 2;
     case "calm":
@@ -170,6 +180,40 @@ export function summarizePeriod(
   };
 }
 
+function mergePlaceCandidates(
+  curated: Array<PlaceDto & { distanceKm: number }>,
+  live: Array<PlaceDto & { distanceKm: number }>,
+  limit: number,
+): Array<PlaceDto & { distanceKm: number }> {
+  const byName = new Map<string, PlaceDto & { distanceKm: number }>();
+
+  // Prefer curated hubs when names collide (stable IDs / catalog images).
+  for (const place of [...live, ...curated]) {
+    const key = place.name.toLowerCase().trim();
+    const existing = byName.get(key);
+    if (!existing) {
+      byName.set(key, place);
+      continue;
+    }
+    const curatedWins =
+      !place.id.startsWith("osm-") && existing.id.startsWith("osm-");
+    if (curatedWins) {
+      byName.set(key, {
+        ...place,
+        distanceKm: Math.min(place.distanceKm, existing.distanceKm),
+      });
+      continue;
+    }
+    if (place.distanceKm < existing.distanceKm) {
+      byName.set(key, place);
+    }
+  }
+
+  return [...byName.values()]
+    .sort((a, b) => a.distanceKm - b.distanceKm)
+    .slice(0, limit);
+}
+
 async function resolveOrigin(query: DiscoverQuery): Promise<PlaceDto | null> {
   if (query.lat != null && query.lon != null) {
     const name = query.origin?.trim();
@@ -214,7 +258,7 @@ function emptyDiscoverResult(
       lat: 64.0,
       lon: 26.0,
     },
-    weatherGoal: query.weatherGoal ?? "sun",
+    weatherGoal: query.weatherGoal ?? "best",
     distance,
     datePreset: dateWindow.preset,
     dateLabel: dateWindow.label,
@@ -237,7 +281,7 @@ export async function discoverDestinations(
 
   const distance = (query.distance ?? "region") as DistanceRange;
   const radiusKm = resolveRadiusKm(distance, query.radiusKm);
-  const goal = query.weatherGoal ?? "sun";
+  const goal = query.weatherGoal ?? "best";
 
   const dateWindow = resolveDateWindow({
     preset: (query.datePreset ?? "weekend") as DatePreset,
@@ -245,10 +289,24 @@ export async function discoverDestinations(
     endDate: query.endDate,
   });
 
-  const candidates = citiesWithinRadius(origin, radiusKm, {
+  const limit = candidateLimitForRadius(radiusKm);
+  const curated = citiesWithinRadius(origin, radiusKm, {
     excludeName: origin.name,
-    limit: candidateLimitForRadius(radiusKm),
+    limit,
   });
+
+  // Live OSM settlements around the user (soft-fail; curated catalog always used).
+  // Keep Overpass radius modest — large rings time out on public mirrors.
+  const overpassRadius = Math.min(radiusKm, 150);
+  const live =
+    overpassRadius >= 15
+      ? await fetchNearbySettlements(origin, overpassRadius, {
+          excludeName: origin.name,
+          limit: Math.min(Math.max(limit, 24), 36),
+        })
+      : [];
+
+  const candidates = mergePlaceCandidates(curated, live, limit);
 
   const catalogById = new Map(DESTINATION_CATALOG.map((d) => [d.id, d]));
 

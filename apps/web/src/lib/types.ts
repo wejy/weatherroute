@@ -8,9 +8,11 @@ export type WeatherCondition =
   | "fog";
 
 export type WeatherGoal =
+  | "best"
   | "sun"
   | "dry"
   | "mild"
+  | "rain"
   | "warm"
   | "calm"
   | "cloudy";

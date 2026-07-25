@@ -112,7 +112,7 @@ export function MapFloatingFilters({
           basePath="/map"
           hash=""
           variant="stack"
-          autoDetect
+          showGoalField={false}
         />
         <div>
           <p className="mb-2 text-xs font-medium tracking-wide text-on-surface-variant uppercase">

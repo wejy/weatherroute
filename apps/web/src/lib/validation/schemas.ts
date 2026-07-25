@@ -46,9 +46,9 @@ export const discoverQuerySchema = z.object({
     .default("region"),
   radiusKm: z.coerce.number().min(0).max(2000).optional(),
   weatherGoal: z
-    .enum(["sun", "dry", "mild", "warm", "calm", "cloudy"])
+    .enum(["best", "sun", "dry", "mild", "rain", "warm", "calm", "cloudy"])
     .optional()
-    .default("sun"),
+    .default("best"),
 });
 
 export const routeQuerySchema = z.object({

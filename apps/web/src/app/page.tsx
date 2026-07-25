@@ -85,6 +85,7 @@ export default async function HomePage({
                 startDate: parsed.startDate,
                 endDate: parsed.endDate,
               }}
+              showGoalField={false}
             />
           </section>
 

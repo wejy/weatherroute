@@ -310,7 +310,7 @@ export default async function DestinationPage({
                 />
                 <input type="hidden" name="destinationLat" value={dest.lat} />
                 <input type="hidden" name="destinationLon" value={dest.lon} />
-                <input type="hidden" name="weatherGoal" value="sun" />
+                <input type="hidden" name="weatherGoal" value="best" />
                 <input
                   type="hidden"
                   name="distanceKm"

@@ -29,7 +29,7 @@ import { colors } from "@/constants/Colors";
 import { DestinationCard } from "@/components/DestinationCard";
 import type { DiscoverResultDto, PlaceDto, WeatherGoal } from "@/lib/types";
 
-const GOALS: WeatherGoal[] = ["sun", "dry", "mild", "warm"];
+const GOALS: WeatherGoal[] = ["best", "sun", "dry", "mild", "rain", "warm"];
 const DATE_PRESETS = ["today", "tomorrow", "weekend"] as const;
 type DatePreset = (typeof DATE_PRESETS)[number];
 type DistanceOption = (typeof DISTANCE_PRESET_KEYS)[number] | "custom";
@@ -48,7 +48,7 @@ export default function DiscoverScreen() {
     null,
   );
   const [coarseHint, setCoarseHint] = useState(false);
-  const [goal, setGoal] = useState<WeatherGoal>("sun");
+  const [goal, setGoal] = useState<WeatherGoal>("best");
   const [datePreset, setDatePreset] = useState<DatePreset>("weekend");
   const [distance, setDistance] = useState<DistanceOption>("region");
   const [customRadiusKm, setCustomRadiusKm] = useState(CUSTOM_RADIUS_DEFAULT_KM);

@@ -1,16 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/components/i18n/locale-provider";
+import { DiscoverQueryLink } from "@/components/discover/discover-query-link";
 
 const FILTERS = [
-  { value: "sun", key: "sun", icon: "wb_sunny", filled: true },
+  { value: "best", key: "best", icon: "auto_awesome" },
+  { value: "sun", key: "sun", icon: "wb_sunny" },
   { value: "dry", key: "dry", icon: "water_drop" },
+  { value: "mild", key: "mild", icon: "device_thermostat" },
+  { value: "rain", key: "rain", icon: "rainy" },
   { value: "warm", key: "warm", icon: "thermostat" },
-  { value: "calm", key: "calm", icon: "air" },
-  { value: "cloudy", key: "cloudy", icon: "cloud" },
 ] as const;
 
 export function WeatherFilters({
@@ -66,10 +67,12 @@ export function WeatherFilters({
                 "material-symbols-outlined",
                 compact ? "text-base" : "text-xl",
                 isActive && "fill-icon",
+                !isActive && f.value === "best" && "text-primary",
+                !isActive && f.value === "sun" && "text-amber-500",
                 !isActive && f.value === "dry" && "text-secondary",
+                !isActive && f.value === "mild" && "text-tertiary",
+                !isActive && f.value === "rain" && "text-secondary",
                 !isActive && f.value === "warm" && "text-error",
-                !isActive && f.value === "calm" && "text-secondary-container",
-                !isActive && f.value === "cloudy" && "text-outline",
               )}
               aria-hidden="true"
             >
@@ -80,8 +83,8 @@ export function WeatherFilters({
         );
       })}
       {showMapLink && (
-        <Link
-          href={`/map?${searchParams.toString()}`}
+        <DiscoverQueryLink
+          href="/map"
           className={cn(
             "relative flex items-center gap-2 rounded-full border border-outline-variant/30 bg-surface/95 font-medium text-on-surface shadow-[0px_4px_16px_rgba(0,0,0,0.08)] backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:bg-surface",
             compact ? "px-3 py-1.5 text-xs" : "px-5 py-2.5 text-sm",
@@ -92,11 +95,12 @@ export function WeatherFilters({
               "material-symbols-outlined text-primary",
               compact ? "text-base" : "text-xl",
             )}
+            aria-hidden="true"
           >
             map
           </span>
           {t("filters.map")}
-        </Link>
+        </DiscoverQueryLink>
       )}
     </div>
   );

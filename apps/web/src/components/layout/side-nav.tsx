@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { cn } from "@/lib/utils";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
+import { DiscoverQueryLink } from "@/components/discover/discover-query-link";
 
 export async function SideNav({
   active,
@@ -17,10 +19,36 @@ export async function SideNav({
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
   const items = [
-    { href: "/map", label: t("nav.sideDestinations"), icon: "location_on" },
-    { href: "/routes", label: t("nav.sideRouteInfo"), icon: "route" },
-    { href: "/trips", label: t("nav.sideSaved"), icon: "bookmark" },
-    { href: "/login", label: t("nav.sideSettings"), icon: "settings" },
+    {
+      href: "/",
+      label: t("nav.discover"),
+      icon: "travel_explore",
+      preserve: true,
+    },
+    {
+      href: "/map",
+      label: t("nav.sideDestinations"),
+      icon: "location_on",
+      preserve: true,
+    },
+    {
+      href: "/routes",
+      label: t("nav.sideRouteInfo"),
+      icon: "route",
+      preserve: false,
+    },
+    {
+      href: "/trips",
+      label: t("nav.sideSaved"),
+      icon: "bookmark",
+      preserve: false,
+    },
+    {
+      href: "/login",
+      label: t("nav.sideSettings"),
+      icon: "settings",
+      preserve: false,
+    },
   ];
 
   return (
@@ -48,20 +76,17 @@ export async function SideNav({
       </div>
 
       <ul className="flex flex-col gap-2 overflow-y-auto px-2 py-4">
-        {items.map((item) => {
-          const isActive = active === item.href;
-          return (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                aria-current={isActive ? "page" : undefined}
-                className={cn(
-                  "flex min-h-11 items-center gap-4 rounded-lg px-4 py-3 transition-colors",
-                  isActive
-                    ? "border-r-4 border-primary bg-primary/5 font-bold text-primary"
-                    : "text-on-surface-variant hover:bg-surface-container-high",
-                )}
-              >
+        <Suspense fallback={null}>
+          {items.map((item) => {
+            const isActive = active === item.href;
+            const className = cn(
+              "flex min-h-11 items-center gap-4 rounded-lg px-4 py-3 transition-colors",
+              isActive
+                ? "border-r-4 border-primary bg-primary/5 font-bold text-primary"
+                : "text-on-surface-variant hover:bg-surface-container-high",
+            );
+            const content = (
+              <>
                 <span
                   className="material-symbols-outlined"
                   aria-hidden="true"
@@ -74,10 +99,31 @@ export async function SideNav({
                   {item.icon}
                 </span>
                 <span className="text-xl font-semibold">{item.label}</span>
-              </Link>
-            </li>
-          );
-        })}
+              </>
+            );
+            return (
+              <li key={item.href}>
+                {item.preserve ? (
+                  <DiscoverQueryLink
+                    href={item.href}
+                    aria-current={isActive ? "page" : undefined}
+                    className={className}
+                  >
+                    {content}
+                  </DiscoverQueryLink>
+                ) : (
+                  <Link
+                    href={item.href}
+                    aria-current={isActive ? "page" : undefined}
+                    className={className}
+                  >
+                    {content}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+        </Suspense>
       </ul>
 
       {children && (

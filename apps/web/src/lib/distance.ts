@@ -35,8 +35,10 @@ export function resolveRadiusKm(
 }
 
 export function candidateLimitForRadius(radiusKm: number): number {
-  if (radiusKm <= 60) return 12;
-  if (radiusKm <= 300) return 18;
-  if (radiusKm <= 1000) return 22;
-  return 28;
+  if (radiusKm <= 30) return 20;
+  if (radiusKm <= 60) return 28;
+  if (radiusKm <= 120) return 36;
+  if (radiusKm <= 300) return 40;
+  if (radiusKm <= 1000) return 36;
+  return 40;
 }
