@@ -1,0 +1,22 @@
+---
+description: Always update EN+FI i18n and both web + Expo apps
+alwaysApply: true
+---
+
+# Dual-platform + bilingual strings
+
+WeatherTrip is a monorepo: `apps/web` (Next.js), `apps/mobile` (Expo), shared copy in `packages/i18n`.
+
+## Required on every product change
+
+1. **English and Finnish** — edit `packages/i18n/src/en.ts` and `packages/i18n/src/fi.ts` together. Same keys in both; never leave FI (or EN) missing.
+2. **Web and Expo** — implement user-facing features in both apps unless the change is inherently platform-only (document why if skipped).
+3. **No local-only dictionaries** — do not add strings only under `apps/web/src/i18n` or hardcode mobile UI text; use `@weathertrip/i18n`.
+
+## Quick checklist
+
+- [ ] New/changed key in `en.ts`
+- [ ] Matching key in `fi.ts`
+- [ ] Web UI updated (`apps/web`)
+- [ ] Mobile UI updated (`apps/mobile`) when the feature applies
+- [ ] API changes stay compatible for mobile (`EXPO_PUBLIC_API_URL` clients)

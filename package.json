@@ -2,39 +2,22 @@
   "name": "weathertrip",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint",
-    "db:generate": "drizzle-kit generate",
-    "db:studio": "drizzle-kit studio"
+    "dev": "npm run dev -w @weathertrip/web",
+    "dev:web": "npm run dev -w @weathertrip/web",
+    "dev:mobile": "npm run start -w @weathertrip/mobile",
+    "build": "npm run build -w @weathertrip/web",
+    "build:web": "npm run build -w @weathertrip/web",
+    "lint": "npm run lint -w @weathertrip/web",
+    "typecheck": "npm run typecheck -w @weathertrip/i18n && npm run typecheck -w @weathertrip/web && npm run typecheck -w @weathertrip/mobile",
+    "db:generate": "npm run db:generate -w @weathertrip/web",
+    "db:studio": "npm run db:studio -w @weathertrip/web"
   },
-  "dependencies": {
-    "clsx": "^2.1.1",
-    "drizzle-orm": "^0.45.2",
-    "lucide-react": "^1.26.0",
-    "mapbox-gl": "^3.27.0",
-    "nanoid": "^6.0.0",
-    "next": "16.2.11",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
-    "recharts": "^3.10.0",
-    "server-only": "^0.0.1",
-    "tailwind-merge": "^3.6.0",
-    "zod": "^4.4.3"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/geojson": "^7946.0.16",
-    "@types/mapbox-gl": "^3.4.1",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "drizzle-kit": "^0.31.10",
-    "eslint": "^9",
-    "eslint-config-next": "16.2.11",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+  "engines": {
+    "node": ">=20"
   }
 }
