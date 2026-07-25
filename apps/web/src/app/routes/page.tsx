@@ -2,8 +2,10 @@ import Link from "next/link";
 import { getRouteWeather } from "@/server/services/location-service";
 import { SideNav } from "@/components/layout/side-nav";
 import { BottomNav } from "@/components/layout/top-nav";
+import { RouteMap } from "@/components/map/route-map";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp } from "@/lib/utils";
+import { getMapboxPublicToken } from "@/lib/env";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
@@ -16,17 +18,25 @@ export async function generateMetadata() {
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+function first(
+  value: string | string[] | undefined,
+): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
 export default async function RoutesPage({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
   const raw = await searchParams;
-  const from = (Array.isArray(raw.from) ? raw.from[0] : raw.from) || "Helsinki";
-  const to = (Array.isArray(raw.to) ? raw.to[0] : raw.to) || "Tampere";
+  const from =
+    first(raw.from)?.trim() || first(raw.origin)?.trim() || "Helsinki";
+  const to = first(raw.to)?.trim() || "Tampere";
   const route = await getRouteWeather(from, to);
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
+  const mapboxToken = getMapboxPublicToken();
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
@@ -49,7 +59,7 @@ export default async function RoutesPage({
       </header>
 
       <main id="main-content" className="relative flex h-full w-full flex-1 flex-col pt-16 md:flex-row md:pt-0 lg:ml-80">
-        <section className="z-10 flex h-full w-full flex-col overflow-y-auto bg-surface-bright shadow-[10px_0_30px_rgba(0,0,0,0.03)] md:w-2/5 lg:w-[450px]">
+        <section className="z-10 flex max-h-[48vh] w-full shrink-0 flex-col overflow-y-auto bg-surface-bright shadow-[10px_0_30px_rgba(0,0,0,0.03)] md:max-h-none md:h-full md:w-2/5 lg:w-[450px]">
           <div className="flex flex-col gap-8 p-6 md:p-8">
             <div>
               <h1 className="mb-2 text-[32px] leading-10 font-semibold text-on-surface">
@@ -156,42 +166,20 @@ export default async function RoutesPage({
           </div>
         </section>
 
-        <section className="relative h-[512px] flex-1 overflow-hidden bg-surface-container-low md:h-full">
-          <div
-            className="absolute inset-0 bg-cover bg-center opacity-60"
-            style={{
-              backgroundImage:
-                "radial-gradient(circle at 40% 70%, #c5d8ef, transparent 50%), linear-gradient(160deg, #e8f1f8, #d4e4f5 60%, #cfe0d8)",
-            }}
+        <section
+          className="relative min-h-[52vh] flex-1 overflow-hidden bg-surface-container-low md:min-h-0 md:h-full"
+          aria-label={route.title}
+        >
+          <RouteMap
+            from={route.from}
+            to={route.to}
+            waypoints={route.waypoints}
+            geometry={route.geometry}
+            mapboxToken={mapboxToken}
+            className="absolute inset-0 h-full w-full"
           />
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-12">
-            <svg
-              className="h-full max-h-[80%] w-full max-w-md drop-shadow-lg"
-              viewBox="0 0 200 400"
-              preserveAspectRatio="xMidYMid meet"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <defs>
-                <linearGradient id="route-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
-                  <stop offset="0%" stopColor="#4edea3" />
-                  <stop offset="50%" stopColor="#f59e0b" />
-                  <stop offset="100%" stopColor="#4edea3" />
-                </linearGradient>
-              </defs>
-              <circle cx="150" cy="350" r="6" fill="#3525cd" />
-              <path
-                d="M150,350 Q130,250 100,200 T50,50"
-                fill="none"
-                stroke="url(#route-gradient)"
-                strokeWidth="4"
-                strokeLinecap="round"
-              />
-              <circle cx="50" cy="50" r="6" fill="#005338" />
-            </svg>
-          </div>
 
-          <div className="absolute top-6 right-6 rounded-xl border border-outline-variant/20 bg-surface/95 p-4 shadow-[0px_10px_30px_rgba(0,0,0,0.08)] backdrop-blur-md">
+          <div className="pointer-events-none absolute top-6 right-6 z-10 rounded-xl border border-outline-variant/20 bg-surface/95 p-4 shadow-[0px_10px_30px_rgba(0,0,0,0.08)] backdrop-blur-md">
             <h2 className="mb-2 text-sm font-medium tracking-wider text-on-surface-variant uppercase">
               {t("routes.conditions")}
             </h2>

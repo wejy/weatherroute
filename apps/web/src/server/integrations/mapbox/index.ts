@@ -117,3 +117,52 @@ function nearestMock(lat: number, lon: number): PlaceDto {
     lon,
   };
 }
+
+export type DrivingRoute = {
+  distanceKm: number;
+  durationSeconds: number;
+  /** [lon, lat] pairs along the road network. */
+  geometry: [number, number][];
+};
+
+/** Mapbox Directions — driving route along real roads. */
+export async function getDrivingRoute(
+  from: { lon: number; lat: number },
+  to: { lon: number; lat: number },
+): Promise<DrivingRoute | null> {
+  if (!hasMapbox()) return null;
+
+  const coords = `${from.lon},${from.lat};${to.lon},${to.lat}`;
+  const url = new URL(
+    `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}`,
+  );
+  url.searchParams.set("access_token", env.mapboxToken);
+  url.searchParams.set("geometries", "geojson");
+  url.searchParams.set("overview", "full");
+  url.searchParams.set("steps", "false");
+
+  const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
+  if (!res.ok) {
+    throw new Error(`Mapbox directions ${res.status}`);
+  }
+
+  const data = (await res.json()) as {
+    code?: string;
+    routes?: Array<{
+      distance: number;
+      duration: number;
+      geometry: { type: string; coordinates: [number, number][] };
+    }>;
+  };
+
+  const route = data.routes?.[0];
+  if (!route?.geometry?.coordinates?.length) {
+    return null;
+  }
+
+  return {
+    distanceKm: Math.round(route.distance / 1000),
+    durationSeconds: Math.round(route.duration),
+    geometry: route.geometry.coordinates,
+  };
+}

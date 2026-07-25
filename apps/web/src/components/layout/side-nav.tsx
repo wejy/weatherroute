@@ -35,7 +35,7 @@ export async function SideNav({
       href: "/routes",
       label: t("nav.sideRouteInfo"),
       icon: "route",
-      preserve: false,
+      preserve: true,
     },
     {
       href: "/trips",

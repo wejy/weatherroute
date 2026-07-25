@@ -44,4 +44,10 @@ export type WeatherMapProps = {
   className?: string;
   /** Public Mapbox token (pk.…). */
   token: string;
+  /** Manual origin query to carry into destination links. */
+  locationQuery?: {
+    origin?: string;
+    lat?: number;
+    lon?: number;
+  };
 };

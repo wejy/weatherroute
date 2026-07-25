@@ -12,6 +12,7 @@ import { getMapboxPublicToken, getMapboxServerToken } from "@/lib/env";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import { destinationHref, routesHref } from "@/lib/discover-query";
 
 export const dynamic = "force-dynamic";
 
@@ -41,6 +42,11 @@ export default async function MapPage({
   const hasOrigin = result.origin.id !== "pending";
   const routeFrom = hasOrigin ? result.origin.name : "";
   const routeTo = result.destinations[0]?.name ?? "";
+  const originQuery = {
+    origin: flat.origin ?? parsed.origin ?? (hasOrigin ? result.origin.name : undefined),
+    lat: parsed.lat ?? (hasOrigin ? result.origin.lat : undefined),
+    lon: parsed.lon ?? (hasOrigin ? result.origin.lon : undefined),
+  };
 
   const filterDefaults = {
     origin: flat.origin ?? parsed.origin,
@@ -71,7 +77,12 @@ export default async function MapPage({
             {result.destinations.slice(0, 8).map((d) => (
               <Link
                 key={d.id}
-                href={`/destinations/${d.slug}?datePreset=${encodeURIComponent(parsed.datePreset)}&startDate=${result.startDate}&endDate=${result.endDate}`}
+                href={destinationHref(d.slug, {
+                  datePreset: parsed.datePreset,
+                  startDate: result.startDate,
+                  endDate: result.endDate,
+                  ...originQuery,
+                })}
                 className="cursor-pointer rounded-xl border border-surface-variant bg-surface-container-lowest p-4 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] transition-colors hover:border-primary/50"
               >
                 <div className="mb-2 flex items-start justify-between">
@@ -100,8 +111,12 @@ export default async function MapPage({
         <Link
           href={
             routeFrom && routeTo
-              ? `/routes?from=${encodeURIComponent(routeFrom)}&to=${encodeURIComponent(routeTo)}`
-              : "/routes"
+              ? routesHref({
+                  from: routeFrom,
+                  to: routeTo,
+                  ...originQuery,
+                })
+              : routesHref(originQuery)
           }
           className="mt-4 block w-full shrink-0 rounded-lg bg-primary py-3 text-center text-xl font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container hover:text-on-primary-container"
         >
@@ -133,6 +148,7 @@ export default async function MapPage({
           showRadius={hasOrigin}
           mapboxToken={mapboxToken}
           hasSecretToken={serverToken.startsWith("sk.")}
+          locationQuery={originQuery}
           className="absolute inset-0"
         />
 

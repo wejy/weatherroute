@@ -175,6 +175,8 @@ export interface RouteDto {
   bestDeparture: string;
   departureHint: string;
   waypoints: RouteWaypointDto[];
+  /** Road geometry as [lon, lat] pairs from Mapbox Directions (when available). */
+  geometry?: [number, number][];
 }
 
 export interface TripDto {

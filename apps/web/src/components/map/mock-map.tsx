@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { MapMarkerDto, PlaceDto } from "@/lib/types";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp, cn } from "@/lib/utils";
+import { destinationHref } from "@/lib/discover-query";
 
 /** Project lat/lon into map % coords relative to origin + radius circle. */
 function project(
@@ -34,12 +35,18 @@ export function MockMap({
   showRadius,
   origin,
   radiusKm = 300,
+  locationQuery,
 }: {
   markers: MapMarkerDto[];
   className?: string;
   showRadius?: boolean;
   origin?: PlaceDto;
   radiusKm?: number;
+  locationQuery?: {
+    origin?: string;
+    lat?: number;
+    lon?: number;
+  };
 }) {
   const center = origin ?? {
     id: "center",
@@ -113,7 +120,11 @@ export function MockMap({
         return (
           <Link
             key={marker.id}
-            href={isOrigin ? "/#" : `/destinations/${marker.id}`}
+            href={
+              isOrigin
+                ? "/#"
+                : destinationHref(marker.id, locationQuery)
+            }
             aria-label={
               isOrigin
                 ? `${marker.name} (origin)`

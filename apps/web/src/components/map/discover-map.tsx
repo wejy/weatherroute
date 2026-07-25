@@ -28,6 +28,7 @@ export function DiscoverMap({
   className,
   mapboxToken,
   hasSecretToken = false,
+  locationQuery,
 }: {
   markers: MapMarkerDto[];
   origin?: PlaceDto;
@@ -38,6 +39,11 @@ export function DiscoverMap({
   mapboxToken?: string;
   /** True when MAPBOX_ACCESS_TOKEN is an sk. secret token */
   hasSecretToken?: boolean;
+  locationQuery?: {
+    origin?: string;
+    lat?: number;
+    lon?: number;
+  };
 }) {
   const token = mapboxToken?.trim() || "";
   const canUseMapbox = token.startsWith("pk.");
@@ -51,6 +57,7 @@ export function DiscoverMap({
         showRadius={showRadius}
         className={className}
         token={token}
+        locationQuery={locationQuery}
       />
     );
   }
@@ -63,6 +70,7 @@ export function DiscoverMap({
         radiusKm={radiusKm}
         showRadius={showRadius}
         className="h-full w-full"
+        locationQuery={locationQuery}
       />
       <div className="absolute right-4 bottom-16 z-30 max-w-sm rounded-xl border border-outline-variant/30 bg-surface/95 p-3 text-left text-xs leading-relaxed text-on-surface-variant shadow-lg backdrop-blur-md md:bottom-4">
         {hasSecretToken || token.startsWith("sk.") ? (

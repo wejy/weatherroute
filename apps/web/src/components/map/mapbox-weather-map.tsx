@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { cn, formatTemp } from "@/lib/utils";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { circlePolygon, type WeatherMapProps } from "@/components/map/geo";
+import { destinationHref } from "@/lib/discover-query";
 
 const STYLE = "mapbox://styles/mapbox/light-v11";
 
@@ -18,11 +19,14 @@ export function MapboxWeatherMap({
   showRadius = true,
   className,
   token,
+  locationQuery,
 }: WeatherMapProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const router = useRouter();
+  const locationQueryRef = useRef(locationQuery);
+  locationQueryRef.current = locationQuery;
 
   useEffect(() => {
     if (!containerRef.current || !token) return;
@@ -125,7 +129,9 @@ export function MapboxWeatherMap({
 
         el.addEventListener("click", (e) => {
           e.stopPropagation();
-          if (!isOrigin) router.push(`/destinations/${marker.id}`);
+          if (!isOrigin) {
+            router.push(destinationHref(marker.id, locationQueryRef.current));
+          }
         });
 
         const m = new mapboxgl.Marker({ element: el, anchor: "bottom" })
@@ -161,7 +167,13 @@ export function MapboxWeatherMap({
       <ul className="sr-only">
         {markers.map((m) => (
           <li key={m.id}>
-            <Link href={m.id.startsWith("origin-") ? "/#" : `/destinations/${m.id}`}>
+            <Link
+              href={
+                m.id.startsWith("origin-")
+                  ? "/#"
+                  : destinationHref(m.id, locationQuery)
+              }
+            >
               {m.name} {formatTemp(m.temperatureC)}
               <span className={weatherIconClass(m.condition)}>
                 {weatherIcon(m.condition)}

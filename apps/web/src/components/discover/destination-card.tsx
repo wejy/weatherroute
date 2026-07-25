@@ -8,11 +8,18 @@ import { formatTemp } from "@/lib/utils";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { translateCondition } from "@/i18n/translate";
 import { resolveDateWindow, type DatePreset } from "@/lib/dates";
+import { destinationHref } from "@/lib/discover-query";
 
 export function DestinationCard({
   destination,
+  origin,
+  lat,
+  lon,
 }: {
   destination: DestinationDto;
+  origin?: string;
+  lat?: number;
+  lon?: number;
 }) {
   const { t, dict, locale } = useI18n();
   const forecast = destination.forecast;
@@ -26,7 +33,14 @@ export function DestinationCard({
 
   return (
     <Link
-      href={`/destinations/${destination.slug}?datePreset=${encodeURIComponent(forecast.preset ?? "custom")}&startDate=${forecast.startDate}&endDate=${forecast.endDate}`}
+      href={destinationHref(destination.slug, {
+        datePreset: forecast.preset ?? "custom",
+        startDate: forecast.startDate,
+        endDate: forecast.endDate,
+        origin,
+        lat,
+        lon,
+      })}
     >
       <article className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0px_10px_30px_rgba(0,0,0,0.08)]">
         <div className="relative aspect-[4/3] w-full overflow-hidden">

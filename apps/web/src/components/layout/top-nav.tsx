@@ -16,7 +16,8 @@ function NavLinks({
   return (
     <nav className="hidden items-center gap-8 md:flex" aria-label="WeatherTrip">
       {links.map((link) => {
-        const preserve = link.href === "/" || link.href === "/map";
+        const preserve =
+          link.href === "/" || link.href === "/map" || link.href === "/routes";
         const className = cn(
           "relative py-1 text-xl font-semibold transition-colors after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform hover:after:scale-x-100",
           active === link.href
@@ -115,7 +116,8 @@ export async function BottomNav({ active }: { active?: string }) {
       <Suspense fallback={null}>
         {items.map((item) => {
           const isActive = active === item.href;
-          const preserve = item.href === "/" || item.href === "/map";
+          const preserve =
+            item.href === "/" || item.href === "/map" || item.href === "/routes";
           const className = cn(
             "flex min-h-11 min-w-14 flex-col items-center justify-center px-2 py-1 transition-colors",
             isActive

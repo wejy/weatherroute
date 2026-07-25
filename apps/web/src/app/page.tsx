@@ -55,6 +55,24 @@ export default async function HomePage({
               showRadius={result.origin.id !== "pending"}
               mapboxToken={mapboxToken}
               hasSecretToken={serverToken.startsWith("sk.")}
+              locationQuery={{
+                origin:
+                  flat.origin ??
+                  parsed.origin ??
+                  (result.origin.id !== "pending"
+                    ? result.origin.name
+                    : undefined),
+                lat:
+                  parsed.lat ??
+                  (result.origin.id !== "pending"
+                    ? result.origin.lat
+                    : undefined),
+                lon:
+                  parsed.lon ??
+                  (result.origin.id !== "pending"
+                    ? result.origin.lon
+                    : undefined),
+              }}
               className="h-full w-full opacity-90"
             />
           </div>
@@ -183,7 +201,29 @@ export default async function HomePage({
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
               {result.destinations.slice(0, 9).map((dest) => (
-                <DestinationCard key={dest.id} destination={dest} />
+                <DestinationCard
+                  key={dest.id}
+                  destination={dest}
+                  origin={
+                    flat.origin ??
+                    parsed.origin ??
+                    (result.origin.id !== "pending"
+                      ? result.origin.name
+                      : undefined)
+                  }
+                  lat={
+                    parsed.lat ??
+                    (result.origin.id !== "pending"
+                      ? result.origin.lat
+                      : undefined)
+                  }
+                  lon={
+                    parsed.lon ??
+                    (result.origin.id !== "pending"
+                      ? result.origin.lon
+                      : undefined)
+                  }
+                />
               ))}
             </div>
             {result.destinations.length === 0 && (
