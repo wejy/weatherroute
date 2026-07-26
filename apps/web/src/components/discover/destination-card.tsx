@@ -15,11 +15,13 @@ export function DestinationCard({
   origin,
   lat,
   lon,
+  mode,
 }: {
   destination: DestinationDto;
   origin?: string;
   lat?: number;
   lon?: number;
+  mode?: string;
 }) {
   const { t, dict, locale } = useI18n();
   const forecast = destination.forecast;
@@ -40,6 +42,7 @@ export function DestinationCard({
         origin,
         lat,
         lon,
+        mode,
       })}
     >
       <article className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0px_10px_30px_rgba(0,0,0,0.08)]">
@@ -79,6 +82,20 @@ export function DestinationCard({
               {destination.distanceKm > 0 && (
                 <span> · {destination.distanceKm} km</span>
               )}
+              {destination.driveDurationLabel ? (
+                <span className="inline-flex items-center gap-0.5">
+                  {" · "}
+                  <span
+                    className="material-symbols-outlined text-[14px] align-middle"
+                    aria-hidden="true"
+                  >
+                    {destination.travelMode === "cycling"
+                      ? "directions_bike"
+                      : "directions_car"}
+                  </span>
+                  {destination.driveDurationLabel}
+                </span>
+              ) : null}
             </p>
           </div>
 

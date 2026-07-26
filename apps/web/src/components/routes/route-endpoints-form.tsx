@@ -34,7 +34,7 @@ export function RouteEndpointsForm({
   );
   const [error, setError] = useState<string | null>(null);
 
-  function applyRoute() {
+  function applyRoute(nextMode: TravelMode = mode) {
     if (!from || !to) {
       setError(t("routes.pickBoth"));
       return;
@@ -50,10 +50,17 @@ export function RouteEndpointsForm({
     params.set("fromLon", String(from.lon));
     params.set("toLat", String(to.lat));
     params.set("toLon", String(to.lon));
-    params.set("mode", mode);
+    params.set("mode", nextMode);
     startTransition(() => {
       router.push(`/routes?${params.toString()}`);
     });
+  }
+
+  function onModeChange(next: TravelMode) {
+    setMode(next);
+    if (from && to) {
+      applyRoute(next);
+    }
   }
 
   return (
@@ -62,7 +69,7 @@ export function RouteEndpointsForm({
         <p className="mb-1.5 text-sm font-medium tracking-wide text-on-surface-variant uppercase">
           {t("routes.travelMode")}
         </p>
-        <TravelModeSelector value={mode} onChange={setMode} />
+        <TravelModeSelector value={mode} onChange={onModeChange} />
       </div>
 
       <div>
@@ -115,7 +122,7 @@ export function RouteEndpointsForm({
 
       <button
         type="button"
-        onClick={applyRoute}
+        onClick={() => applyRoute()}
         disabled={pending}
         className={cn(
           "flex w-full min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-base font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container",

@@ -7,6 +7,7 @@ import { RouteMap } from "@/components/map/route-map";
 import { RouteEndpointsForm } from "@/components/routes/route-endpoints-form";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp } from "@/lib/utils";
+import { travelModeIcon } from "@/lib/types";
 import { getMapboxPublicToken } from "@/lib/env";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
@@ -89,15 +90,15 @@ export default async function RoutesPage({
               </h1>
               <div className="flex items-center gap-4 text-sm font-medium text-on-surface-variant">
                 <span className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[18px]">
-                    directions_car
+                  <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                    straighten
                   </span>
                   {route.distanceKm} km
                 </span>
                 <span className="h-1 w-1 rounded-full bg-outline-variant" />
                 <span className="flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[18px]">
-                    schedule
+                  <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                    {travelModeIcon(mode)}
                   </span>
                   {route.durationLabel}
                 </span>

@@ -23,7 +23,7 @@ import { places } from "../src/db/schema";
  *   GEONAMES_MIN_POP=0          extra population floor
  *   GEONAMES_CACHE_DIR=apps/web/.cache/geonames
  *
- * IDs: gn:{geonameid} — does not collide with city_index ids.
+ * IDs: gn-{geonameid} (URL-safe; legacy gn: also resolved at read time).
  */
 
 const FILE = (process.env.GEONAMES_FILE || "cities15000").replace(/\.zip$/i, "");
@@ -132,7 +132,7 @@ function parseCitiesTxt(
     const placeName = country ? `${name}, ${country}` : name;
 
     rows.push({
-      id: `gn:${geonameId}`,
+      id: `gn-${geonameId}`,
       name,
       placeName,
       country,

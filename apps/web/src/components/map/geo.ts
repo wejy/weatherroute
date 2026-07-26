@@ -49,5 +49,6 @@ export type WeatherMapProps = {
     origin?: string;
     lat?: number;
     lon?: number;
+    mode?: string;
   };
 };

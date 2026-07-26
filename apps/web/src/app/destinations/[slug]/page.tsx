@@ -68,6 +68,9 @@ export default async function DestinationPage({
   const originName = first(raw.origin) || first(raw.from) || "Helsinki";
   const originLat = first(raw.lat);
   const originLon = first(raw.lon);
+  const modeRaw = first(raw.mode);
+  const mode =
+    modeRaw === "cycling" || modeRaw === "driving" ? modeRaw : undefined;
 
   const dest = await getDestinationBySlug(slug);
   if (!dest) notFound();
@@ -338,6 +341,7 @@ export default async function DestinationPage({
                   origin: originName,
                   lat: originLat,
                   lon: originLon,
+                  mode,
                 })}
                 className="flex w-full items-center justify-center gap-2 rounded-lg border border-secondary bg-transparent px-4 py-3 text-sm font-medium text-secondary transition-colors hover:bg-secondary-container/10"
               >

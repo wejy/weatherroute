@@ -34,15 +34,41 @@ export function resolveRadiusKm(
   return DISTANCE_RADIUS_KM.region;
 }
 
-export function candidateLimitForRadius(radiusKm: number): number {
-  // Pre-weather scan cap (index is static; keep modest for ranking).
-  if (radiusKm <= 30) return 16;
-  if (radiusKm <= 60) return 16;
-  if (radiusKm <= 120) return 16;
-  if (radiusKm <= 300) return 16;
-  if (radiusKm <= 1000) return 16;
-  return 16;
+/** Anon / not signed in */
+export const DISCOVER_ANON_DISPLAY = 10;
+export const DISCOVER_ANON_WEATHER = 14;
+
+/** Signed-in free tier */
+export const DISCOVER_FREE_DISPLAY = 20;
+export const DISCOVER_FREE_WEATHER = 24;
+
+/** Paid (Stripe later) — settings can raise display up to max */
+export const DISCOVER_PRO_DISPLAY_DEFAULT = 30;
+export const DISCOVER_PRO_DISPLAY_MAX = 50;
+export const DISCOVER_PRO_WEATHER_BASE = 36;
+
+/**
+ * Scale weather candidate pool by radius, anchored to a tier base.
+ * Wider radius → slightly larger pre-weather pool (capped).
+ */
+export function weatherCandidateLimit(
+  radiusKm: number,
+  tierWeatherBase: number,
+): number {
+  let bump = 0;
+  if (radiusKm > 200) bump = 4;
+  if (radiusKm > 500) bump = 8;
+  if (radiusKm > 1000) bump = 12;
+  return Math.min(60, tierWeatherBase + bump);
 }
 
-/** Hard cap on Open-Meteo locations per discover (batch). */
-export const DISCOVER_WEATHER_CANDIDATE_LIMIT = 14;
+/** @deprecated Prefer tier-aware resolveDiscoverLimits */
+export function candidateLimitForRadius(radiusKm: number): number {
+  return weatherCandidateLimit(radiusKm, DISCOVER_FREE_WEATHER);
+}
+
+/** @deprecated Prefer DISCOVER_FREE_WEATHER / resolveDiscoverLimits */
+export const DISCOVER_WEATHER_CANDIDATE_LIMIT = DISCOVER_FREE_WEATHER;
+
+/** @deprecated Prefer DISCOVER_FREE_DISPLAY / resolveDiscoverLimits */
+export const DISCOVER_DISPLAY_LIMIT = DISCOVER_FREE_DISPLAY;

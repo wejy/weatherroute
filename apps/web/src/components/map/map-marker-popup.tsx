@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { MapMarkerDto } from "@/lib/types";
+import { travelModeIcon } from "@/lib/types";
 import { formatTemp, cn } from "@/lib/utils";
 import { TempSparkline } from "@/components/map/map-nearby-card";
 import { useI18n } from "@/components/i18n/locale-provider";
@@ -142,11 +143,20 @@ export function MapMarkerPopup({
         </div>
 
         {marker.distanceKm != null && (
-          <p className="text-sm text-on-surface-variant">
-            {t("map.hoverAway", {
-              km: Math.round(marker.distanceKm),
-              duration: marker.driveDurationLabel || "",
-            })}
+          <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-on-surface-variant">
+            <span>{Math.round(marker.distanceKm)} km</span>
+            {marker.driveDurationLabel ? (
+              <span className="inline-flex items-center gap-0.5">
+                <span aria-hidden="true">·</span>
+                <span
+                  className="material-symbols-outlined text-[16px]"
+                  aria-hidden="true"
+                >
+                  {travelModeIcon(marker.travelMode)}
+                </span>
+                ~{marker.driveDurationLabel}
+              </span>
+            ) : null}
           </p>
         )}
 

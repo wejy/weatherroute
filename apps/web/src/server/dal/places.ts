@@ -87,10 +87,35 @@ export async function placesWithinRadius(
 }
 
 export async function getPlaceById(id: string) {
+  const candidates = placeIdCandidates(id);
   const db = getDb();
   if (db) {
-    const [row] = await db.select().from(places).where(eq(places.id, id)).limit(1);
-    if (row) return row;
+    for (const candidate of candidates) {
+      const [row] = await db
+        .select()
+        .from(places)
+        .where(eq(places.id, candidate))
+        .limit(1);
+      if (row) return row;
+    }
   }
-  return CITY_INDEX.find((c) => c.id === id) ?? null;
+  for (const candidate of candidates) {
+    const city = CITY_INDEX.find((c) => c.id === candidate);
+    if (city) return city;
+  }
+  return null;
+}
+
+/** Normalize URL / legacy geonames ids: gn:123 ↔ gn-123. */
+export function placeIdCandidates(raw: string): string[] {
+  let id = raw;
+  try {
+    id = decodeURIComponent(raw);
+  } catch {
+    // keep raw
+  }
+  const out = [id];
+  if (id.startsWith("gn:")) out.push(`gn-${id.slice(3)}`);
+  if (id.startsWith("gn-")) out.push(`gn:${id.slice(3)}`);
+  return [...new Set(out)];
 }

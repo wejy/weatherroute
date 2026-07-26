@@ -43,6 +43,7 @@ export function DiscoverMap({
     origin?: string;
     lat?: number;
     lon?: number;
+    mode?: string;
   };
 }) {
   const token = mapboxToken?.trim() || "";

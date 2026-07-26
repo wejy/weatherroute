@@ -12,7 +12,6 @@ import {
 } from "@/db/schema";
 
 const ANON_COOKIE = "wt_anon";
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 const DEDUPE_WINDOW_MS = 10 * 60 * 1000;
 
 function discoverFingerprint(meta?: Record<string, unknown>): string {
@@ -42,17 +41,9 @@ async function ensureAnonSession(): Promise<{
   if (!db) return null;
 
   const jar = await cookies();
-  let cookieId = jar.get(ANON_COOKIE)?.value;
-  if (!cookieId) {
-    cookieId = nanoid(24);
-    jar.set(ANON_COOKIE, cookieId, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      secure: process.env.NODE_ENV === "production",
-      maxAge: COOKIE_MAX_AGE,
-    });
-  }
+  const cookieId = jar.get(ANON_COOKIE)?.value;
+  // Cookie is set in middleware — never jar.set() from RSC (logout → home crash).
+  if (!cookieId) return null;
 
   const [existing] = await db
     .select()

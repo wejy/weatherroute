@@ -40,6 +40,11 @@ export function isTravelMode(value: string | undefined | null): value is TravelM
   return value === "driving" || value === "cycling";
 }
 
+/** Material Symbols icon name for a travel mode. */
+export function travelModeIcon(mode: TravelMode | string | undefined | null): string {
+  return mode === "cycling" ? "directions_bike" : "directions_car";
+}
+
 export interface Coordinates {
   lat: number;
   lon: number;
@@ -129,8 +134,10 @@ export interface DestinationDto {
   sunshineScore: number;
   imageUrl: string;
   description?: string;
-  /** Estimated drive time label from distance (e.g. "20 min"). */
+  /** Estimated travel time label from distance (e.g. "20 min"). */
   driveDurationLabel?: string;
+  /** Mode used for `driveDurationLabel`. */
+  travelMode?: TravelMode;
   /** Daily max temps in the selected window (for mini charts). */
   tempSeries?: number[];
   /** Live / now conditions at the destination. */
@@ -185,6 +192,7 @@ export interface MapMarkerDto {
   conditionLabel?: string;
   distanceKm?: number;
   driveDurationLabel?: string;
+  travelMode?: TravelMode;
   tempSeries?: number[];
 }
 

@@ -97,6 +97,7 @@ export default async function HomePage({
                   (result.origin.id !== "pending"
                     ? result.origin.lon
                     : undefined),
+                mode: parsed.mode,
               }}
               className="h-full w-full opacity-90"
             />
@@ -258,7 +259,7 @@ export default async function HomePage({
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
-                  {result.destinations.slice(0, 9).map((dest) => (
+                  {result.destinations.map((dest) => (
                     <DestinationCard
                       key={dest.id}
                       destination={dest}
@@ -281,6 +282,7 @@ export default async function HomePage({
                           ? result.origin.lon
                           : undefined)
                       }
+                      mode={parsed.mode}
                     />
                   ))}
                 </div>

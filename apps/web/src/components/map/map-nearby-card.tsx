@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import type { DestinationDto } from "@/lib/types";
+import { travelModeIcon } from "@/lib/types";
 import { cn, formatTemp } from "@/lib/utils";
 import {
   temperatureColor,
@@ -94,6 +95,7 @@ export function MapNearbyCard({
   const d = destination;
   const duration = d.driveDurationLabel ?? "";
   const series = d.tempSeries ?? [];
+  const modeIcon = travelModeIcon(d.travelMode);
 
   return (
     <Link
@@ -119,12 +121,18 @@ export function MapNearbyCard({
           {weatherIcon(d.condition)}
         </span>
       </div>
-      <p className="mb-2 text-sm text-on-surface-variant">
-        {t("map.kmAway", {
-          km: Math.round(d.distanceKm),
-          duration,
-          temp: formatTemp(d.temperatureC),
-        })}
+      <p className="mb-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm text-on-surface-variant">
+        <span>{Math.round(d.distanceKm)} km</span>
+        {duration ? (
+          <span className="inline-flex items-center gap-0.5">
+            <span aria-hidden="true">·</span>
+            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
+              {modeIcon}
+            </span>
+            ~{duration}
+          </span>
+        ) : null}
+        <span>· {formatTemp(d.temperatureC)}C</span>
       </p>
       {!compact && (
         <div className="mb-2 flex flex-col gap-1">

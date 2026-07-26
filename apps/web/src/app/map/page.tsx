@@ -123,7 +123,7 @@ export default async function MapPage({
                 </p>
               )}
               <div className="flex flex-col gap-3 pb-1">
-                {result.destinations.slice(0, 8).map((d) => (
+                {result.destinations.map((d) => (
                   <MapNearbyCard
                     key={d.id}
                     destination={d}
@@ -188,7 +188,7 @@ export default async function MapPage({
         {hasOrigin && result.destinations.length > 0 && (
           <div className="pointer-events-none absolute inset-x-0 bottom-20 z-20 lg:hidden">
             <div className="pointer-events-auto flex gap-3 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {result.destinations.slice(0, 8).map((d) => (
+              {result.destinations.map((d) => (
                 <MapNearbyCard
                   key={`m-${d.id}`}
                   destination={d}

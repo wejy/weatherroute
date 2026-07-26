@@ -32,9 +32,10 @@ import {
 import { placeholderImageFor } from "@/server/integrations/places/candidates";
 import { placesWithinRadius } from "@/server/dal/places";
 import {
-  resolveRadiusKm,
-  DISCOVER_WEATHER_CANDIDATE_LIMIT,
-} from "@/lib/distance";
+  resolveDiscoverLimits,
+  weatherLimitForRadius,
+} from "@/server/dal/discover-limits";
+import { resolveRadiusKm } from "@/lib/distance";
 import { formatTravelDuration } from "@/lib/utils";
 
 function scoreWeather(
@@ -271,9 +272,12 @@ export async function discoverDestinations(
     locale,
   });
 
+  const limits = await resolveDiscoverLimits();
+  const weatherLimit = weatherLimitForRadius(radiusKm, limits.weather);
+
   const candidates = await placesWithinRadius(origin, radiusKm, {
     excludeName: origin.name,
-    limit: DISCOVER_WEATHER_CANDIDATE_LIMIT,
+    limit: weatherLimit,
   });
 
   const catalogById = new Map(DESTINATION_CATALOG.map((d) => [d.id, d]));
@@ -322,6 +326,7 @@ export async function discoverDestinations(
           catalog?.description ??
           `${Math.round(city.distanceKm)} km from ${origin.name}`,
         driveDurationLabel: formatTravelDuration(city.distanceKm, travelMode),
+        travelMode,
         tempSeries,
         current: {
           temperatureC: weather.current.temperatureC,
@@ -345,7 +350,8 @@ export async function discoverDestinations(
       ];
     })
     .sort((a, b) => b.score - a.score || a.dest.distanceKm - b.dest.distanceKm)
-    .map(({ dest }) => dest);
+    .map(({ dest }) => dest)
+    .slice(0, limits.display);
 
   const mapMarkers: MapMarkerDto[] = [
     {
@@ -359,7 +365,7 @@ export async function discoverDestinations(
         18,
       condition: originWeather?.current.condition ?? "partly_cloudy",
     },
-    ...destinations.slice(0, 8).map((d) => ({
+    ...destinations.map((d) => ({
       id: d.id,
       name: d.name,
       lat: d.lat,
@@ -376,6 +382,7 @@ export async function discoverDestinations(
       conditionLabel: d.forecast.conditionLabel,
       distanceKm: d.distanceKm,
       driveDurationLabel: d.driveDurationLabel,
+      travelMode: d.travelMode,
       tempSeries: d.tempSeries,
     })),
   ];
@@ -484,26 +491,37 @@ export async function getDestinationBySlug(slug: string) {
   );
   if (fromCatalog) return fromCatalog;
 
-  const { WORLD_CITIES } = await import(
+  const { getPlaceById } = await import("@/server/dal/places");
+  const { placeholderImageFor } = await import(
     "@/server/integrations/places/candidates"
   );
-  const city = WORLD_CITIES.find((c) => c.id === slug);
-  if (!city) return undefined;
+  const place = await getPlaceById(slug);
+  if (!place) return undefined;
+
+  const id = "id" in place ? place.id : slug;
+  const name = place.name;
+  const placeName = "placeName" in place ? place.placeName : name;
+  const country =
+    ("country" in place && place.country) ||
+    ("countryCode" in place && place.countryCode) ||
+    "";
+  const lat = place.lat;
+  const lon = place.lon;
 
   return {
-    id: city.id,
-    slug: city.id,
-    name: city.name,
-    country: city.country ?? "",
-    placeName: city.placeName,
-    lat: city.lat,
-    lon: city.lon,
+    id,
+    slug: id,
+    name,
+    country,
+    placeName,
+    lat,
+    lon,
     distanceKm: 0,
     temperatureC: 18,
     condition: "partly_cloudy" as const,
     conditionLabel: "Partly cloudy",
     rainProbability: 20,
     sunshineScore: 60,
-    imageUrl: placeholderImageFor(city.id),
+    imageUrl: placeholderImageFor(id),
   };
 }

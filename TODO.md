@@ -21,10 +21,15 @@ Expo app (`apps/mobile`, ~57) talks to web `/api/*` but is behind the web client
 
 Do this after web auth + quota + places seed are stable.
 
-## Places density
+## Discover result caps (tiered)
 
-- [x] Geonames world seed (`cities15000`) → upsert `places` (`npm run db:seed:geonames`)
-- [ ] Optional `GEONAMES_FILE=cities5000` / `GEONAMES_MIN_POP` tuning for denser Nordic coverage
+| Tier | Display | Weather pool |
+|------|---------|--------------|
+| Anon | 10 | ~14 (+ radius bump) |
+| Signed-in free | 20 | ~24–28 |
+| Pro (`subscriptions.status` active/trial) | default 30, max 50 | ~display×1.2 |
+
+Logic: [`discover-limits.ts`](apps/web/src/server/dal/discover-limits.ts). Pro settings UI later.
 
 ## Ops
 

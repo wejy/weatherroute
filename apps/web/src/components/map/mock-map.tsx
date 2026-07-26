@@ -51,6 +51,7 @@ export function MockMap({
     origin?: string;
     lat?: number;
     lon?: number;
+    mode?: string;
   };
 }) {
   const { locale, t } = useI18n();

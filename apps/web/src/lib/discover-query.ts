@@ -80,7 +80,8 @@ export function destinationHref(
     mode?: string;
   } = {},
 ): string {
-  return withQuery(`/destinations/${slug}`, {
+  // encodeURIComponent keeps geonames ids like gn:123 URL-safe (colon → %3A).
+  return withQuery(`/destinations/${encodeURIComponent(slug)}`, {
     datePreset: opts.datePreset,
     startDate: opts.startDate,
     endDate: opts.endDate,
