@@ -52,12 +52,12 @@ function MockRouteMap({
         >
           <defs>
             <linearGradient id="route-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
-              <stop offset="0%" stopColor="#4edea3" />
+              <stop offset="0%" stopColor="#38bdf8" />
               <stop offset="50%" stopColor="#f59e0b" />
-              <stop offset="100%" stopColor="#4edea3" />
+              <stop offset="100%" stopColor="#38bdf8" />
             </linearGradient>
           </defs>
-          <circle cx="150" cy="350" r="6" fill="#3525cd" />
+          <circle cx="150" cy="350" r="6" fill="#4f46e5" />
           <path
             d="M150,350 Q130,250 100,200 T50,50"
             fill="none"
@@ -65,7 +65,7 @@ function MockRouteMap({
             strokeWidth="4"
             strokeLinecap="round"
           />
-          <circle cx="50" cy="50" r="6" fill="#005338" />
+          <circle cx="50" cy="50" r="6" fill="#38bdf8" />
         </svg>
       </div>
       {waypoints.length > 0 ? (

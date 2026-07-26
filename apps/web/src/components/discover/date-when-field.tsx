@@ -111,7 +111,7 @@ export function DateWhenField({
                     type="button"
                     className={cn(
                       "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-base transition-colors hover:bg-surface-container-low",
-                      active && "bg-primary/5 font-semibold text-primary",
+                      active && "bg-accent/15 font-semibold text-on-accent",
                     )}
                     onClick={() => selectPreset(p.value)}
                   >

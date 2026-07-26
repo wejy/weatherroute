@@ -132,11 +132,11 @@ export default async function DestinationPage({
           />
           <div className="absolute inset-0 z-10 bg-gradient-to-t from-inverse-surface/80 via-inverse-surface/30 to-transparent" />
           <div className="relative z-20 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <div className="text-on-tertiary">
+            <div className="text-inverse-on-surface">
               <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
                 {dest.name}, {countryLabel}
               </h1>
-              <p className="mt-2 text-lg text-on-tertiary/80">
+              <p className="mt-2 text-lg text-inverse-on-surface/80">
                 {t("destination.nowPrefix")}{" "}
                 {translateCondition(dict, weather.current.condition)} •{" "}
                 {t("destination.feelsLike", {
@@ -151,7 +151,7 @@ export default async function DestinationPage({
               >
                 {weatherIcon(weather.current.condition)}
               </span>
-              <span className="text-4xl font-bold text-on-tertiary md:text-5xl">
+              <span className="text-4xl font-bold text-inverse-on-surface md:text-5xl">
                 {formatTemp(weather.current.temperatureC)}C
               </span>
             </div>

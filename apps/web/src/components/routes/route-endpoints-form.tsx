@@ -263,7 +263,7 @@ export function RouteEndpointsForm({
         onClick={() => applyRoute()}
         disabled={pending}
         className={cn(
-          "flex w-full min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-base font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container",
+          "flex w-full min-h-11 items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-base font-semibold text-on-accent shadow-sm transition-colors hover:bg-accent-container hover:text-on-accent-container",
           pending && "opacity-70",
         )}
       >

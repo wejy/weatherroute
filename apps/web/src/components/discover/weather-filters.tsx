@@ -58,7 +58,7 @@ export function WeatherFilters({
               "relative flex min-h-11 items-center gap-2 rounded-full border font-medium shadow-sm transition-all hover:-translate-y-0.5 motion-reduce:transform-none",
               compact ? "px-3 py-2 text-xs" : "px-5 py-2.5 text-sm",
               isActive
-                ? "border-primary-fixed bg-primary text-on-primary shadow-lg shadow-primary/30"
+                ? "border-accent-fixed bg-accent text-on-accent shadow-lg shadow-accent/30"
                 : "border-outline-variant/30 bg-surface/95 text-on-surface shadow-[0px_4px_16px_rgba(0,0,0,0.08)] backdrop-blur-xl hover:bg-surface",
             )}
           >
