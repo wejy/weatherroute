@@ -15,7 +15,11 @@
     "lint": "npm run lint -w @weathertrip/web",
     "typecheck": "npm run typecheck -w @weathertrip/i18n && npm run typecheck -w @weathertrip/web && npm run typecheck -w @weathertrip/mobile",
     "db:generate": "npm run db:generate -w @weathertrip/web",
-    "db:studio": "npm run db:studio -w @weathertrip/web"
+    "db:migrate": "npm run db:migrate -w @weathertrip/web",
+    "db:seed": "npm run db:seed -w @weathertrip/web",
+    "db:studio": "npm run db:studio -w @weathertrip/web",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down"
   },
   "engines": {
     "node": ">=20"

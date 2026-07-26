@@ -209,14 +209,24 @@ const fi = {
     title: "Kirjaudu",
     welcome: "Tervetuloa WeatherTripiin",
     signedIn: "Olet kirjautunut sisään",
-    demoSession: "Demoistunto: {name}",
+    demoSession: "Kirjautunut: {name}",
     demoHint:
-      "Supabase Auth on valmis kytkettäväksi — käytä demotilaa toistaiseksi (ei API-avaimia).",
+      "Demotila ilman tietokantaa. Käytä sähköpostikirjautumista kun Postgres on käytössä.",
+    otpHint: "Syötä sähköposti — lähetämme 6-numeroisen koodin. Ei salasanaa.",
+    emailLabel: "Sähköposti",
+    sendCode: "Lähetä koodi",
+    codeLabel: "Kertakäyttökoodi",
+    verifyCode: "Vahvista ja kirjaudu",
+    codeSent:
+      "Koodi lähetetty osoitteeseen {email}. Tarkista inbox (tai palvelimen konsoli lokalisti).",
+    errorEmail: "Anna kelvollinen sähköposti.",
+    errorSend: "Koodin lähetys epäonnistui. Yritä uudelleen.",
+    errorCode: "Virheellinen tai vanhentunut koodi.",
     goTrips: "Siirry tallennettuihin",
     signOut: "Kirjaudu ulos",
     continueDemo: "Jatka demotilillä",
-    supabaseHint:
-      "Aseta NEXT_PUBLIC_SUPABASE_URL myöhemmin oikeaa kirjautumista varten.",
+    supabaseHint: "Aseta DATABASE_URL ja USE_MOCKS=false email-OTP:lle.",
+    otpFooter: "Lokalisti: EMAIL_MODE=console tulostaa koodin palvelimen lokiin.",
   },
   conditions: {
     sunny: "Aurinkoista",

@@ -29,10 +29,8 @@ import {
   DESTINATION_CATALOG,
   findPlace,
 } from "@/server/integrations/mocks/data";
-import {
-  citiesWithinRadius,
-  placeholderImageFor,
-} from "@/server/integrations/places/candidates";
+import { placeholderImageFor } from "@/server/integrations/places/candidates";
+import { placesWithinRadius } from "@/server/dal/places";
 import {
   resolveRadiusKm,
   DISCOVER_WEATHER_CANDIDATE_LIMIT,
@@ -273,7 +271,7 @@ export async function discoverDestinations(
     locale,
   });
 
-  const candidates = citiesWithinRadius(origin, radiusKm, {
+  const candidates = await placesWithinRadius(origin, radiusKm, {
     excludeName: origin.name,
     limit: DISCOVER_WEATHER_CANDIDATE_LIMIT,
   });

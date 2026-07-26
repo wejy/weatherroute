@@ -8,3 +8,26 @@
 - [ ] Show legs (walk → bus/train → walk), duration, transfers; graceful “unavailable outside coverage”
 
 Related: car + bike already use Mapbox `driving` / `cycling` via `getMapboxRoute`.
+
+## Mobile Expo parity (phase 2–3)
+
+Expo app (`apps/mobile`, ~57) talks to web `/api/*` but is behind the web client.
+
+- [ ] Travel mode (`driving` / `cycling`) + route screen parity
+- [ ] Anon quota / soft paywall (handle HTTP 402 from `/api/discover`) + share redeem
+- [ ] Auth.js session (SecureStore + cookie/header) / deep-link to web login
+- [ ] Map / nearby / Wikipedia popup (does not need 1:1 Mapbox on day one)
+- [ ] Keep DTO/types in sync with `apps/web`
+
+Do this after web auth + quota + places seed are stable.
+
+## Places density
+
+- [ ] Geonames world seed (`cities5000` / `cities15000`) → upsert `places` (same discover query)
+- [ ] Optional population threshold env for seed filtering
+
+## Ops
+
+- [ ] UpCloud VPS + Managed Postgres + Caddy TLS
+- [ ] `CRON_ENABLED=true` in production
+- [ ] Resend (`EMAIL_MODE=resend`) for OTP email

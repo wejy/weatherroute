@@ -2,11 +2,43 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireUser, signInDemo, signOut } from "@/server/auth/session";
+import {
+  requireUser,
+  signInDemo,
+  signInWithOtp,
+  signOut,
+} from "@/server/auth/session";
+import { requestEmailOtp } from "@/server/auth/otp";
 import { createTrip, deleteTrip } from "@/server/dal/trips";
 
 export async function loginDemoAction() {
   await signInDemo();
+  redirect("/trips");
+}
+
+export async function requestOtpAction(formData: FormData) {
+  const email = String(formData.get("email") || "").trim();
+  if (!email) {
+    redirect("/login?error=email");
+  }
+  try {
+    await requestEmailOtp(email);
+  } catch {
+    redirect("/login?error=send");
+  }
+  redirect(`/login?email=${encodeURIComponent(email)}&sent=1`);
+}
+
+export async function verifyOtpAction(formData: FormData) {
+  const email = String(formData.get("email") || "").trim();
+  const code = String(formData.get("code") || "").trim();
+  try {
+    await signInWithOtp(email, code);
+  } catch {
+    redirect(
+      `/login?email=${encodeURIComponent(email)}&error=code`,
+    );
+  }
   redirect("/trips");
 }
 

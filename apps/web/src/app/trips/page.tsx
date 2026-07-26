@@ -2,10 +2,12 @@ import Link from "next/link";
 import { TopNav, BottomNav } from "@/components/layout/top-nav";
 import { getCurrentUser } from "@/server/auth/session";
 import { listTripsForUser } from "@/server/dal/trips";
-import { deleteTripAction, loginDemoAction } from "@/server/actions/trips";
-import { MOCK_USER } from "@/server/integrations/mocks/data";
+import { deleteTripAction } from "@/server/actions/trips";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
+import { env, hasDatabase } from "@/lib/env";
+
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata() {
   const locale = await getLocale();
@@ -14,11 +16,34 @@ export async function generateMetadata() {
 }
 
 export default async function TripsPage() {
-  const user = (await getCurrentUser()) ?? MOCK_USER;
-  const trips = await listTripsForUser(user.id);
+  const user = await getCurrentUser();
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
+  const demoMode = !(hasDatabase() && !env.useMocks);
 
+  if (!user) {
+    return (
+      <>
+        <TopNav active="/trips" />
+        <main
+          id="main-content"
+          className="mx-auto min-h-screen max-w-lg px-margin-mobile pt-24 pb-24"
+        >
+          <h1 className="text-3xl font-bold text-on-surface">{t("trips.title")}</h1>
+          <p className="mt-3 text-on-surface-variant">{t("trips.empty")}</p>
+          <Link
+            href="/login"
+            className="mt-6 inline-flex rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary"
+          >
+            {demoMode ? t("trips.continueDemo") : t("login.title")}
+          </Link>
+        </main>
+        <BottomNav active="/trips" />
+      </>
+    );
+  }
+
+  const trips = await listTripsForUser(user.id);
   return (
     <>
       <TopNav active="/trips" />
@@ -47,14 +72,12 @@ export default async function TripsPage() {
               bookmark
             </span>
             <p className="mb-6 text-on-surface-variant">{t("trips.empty")}</p>
-            <form action={loginDemoAction}>
-              <button
-                type="submit"
-                className="rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary"
-              >
-                {t("trips.continueDemo")}
-              </button>
-            </form>
+            <Link
+              href="/"
+              className="inline-flex rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary"
+            >
+              {t("trips.discoverMore")}
+            </Link>
           </div>
         ) : (
           <ul className="grid grid-cols-1 gap-6 md:grid-cols-2">

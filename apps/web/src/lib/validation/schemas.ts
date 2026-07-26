@@ -75,6 +75,7 @@ export const wikipediaQuerySchema = z.object({
   lat: z.coerce.number().min(-90).max(90).optional(),
   lon: z.coerce.number().min(-180).max(180).optional(),
   lang: z.enum(["en", "fi"]).optional().default("en"),
+  placeId: z.string().min(1).max(120).optional(),
 });
 
 export type WeatherQuery = z.infer<typeof weatherQuerySchema>;
