@@ -24,6 +24,7 @@ export interface PlaceDto {
   country?: string;
   lat: number;
   lon: number;
+  kind?: "address" | "poi" | "place" | "locality" | "region" | "other";
 }
 
 export interface PeriodWeatherDto {

@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import { getRouteWeather } from "@/server/services/location-service";
 import { SideNav } from "@/components/layout/side-nav";
 import { BottomNav } from "@/components/layout/top-nav";
 import { RouteMap } from "@/components/map/route-map";
+import { RouteEndpointsForm } from "@/components/routes/route-endpoints-form";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp } from "@/lib/utils";
 import { getMapboxPublicToken } from "@/lib/env";
@@ -24,6 +26,12 @@ function first(
   return Array.isArray(value) ? value[0] : value;
 }
 
+function parseCoord(raw: string | undefined): number | undefined {
+  if (raw == null || raw === "") return undefined;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 export default async function RoutesPage({
   searchParams,
 }: {
@@ -33,7 +41,17 @@ export default async function RoutesPage({
   const from =
     first(raw.from)?.trim() || first(raw.origin)?.trim() || "Helsinki";
   const to = first(raw.to)?.trim() || "Tampere";
-  const route = await getRouteWeather(from, to);
+  const fromLat = parseCoord(first(raw.fromLat)) ?? parseCoord(first(raw.lat));
+  const fromLon = parseCoord(first(raw.fromLon)) ?? parseCoord(first(raw.lon));
+  const toLat = parseCoord(first(raw.toLat));
+  const toLon = parseCoord(first(raw.toLon));
+
+  const route = await getRouteWeather(from, to, {
+    fromLat,
+    fromLon,
+    toLat,
+    toLon,
+  });
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
   const mapboxToken = getMapboxPublicToken();
@@ -81,6 +99,16 @@ export default async function RoutesPage({
                 </span>
               </div>
             </div>
+
+            <Suspense fallback={null}>
+              <RouteEndpointsForm
+                key={`${route.from.id}-${route.to.id}`}
+                initialFrom={from}
+                initialTo={to}
+                fromPlace={route.from}
+                toPlace={route.to}
+              />
+            </Suspense>
 
             <div className="flex items-center justify-between rounded-xl border border-outline-variant/20 bg-surface-container-low p-5 shadow-sm">
               <div>

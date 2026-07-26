@@ -39,6 +39,8 @@ export interface PlaceDto {
   countryCode?: string;
   lat: number;
   lon: number;
+  /** Mapbox / search result type for UI icons. */
+  kind?: "address" | "poi" | "place" | "locality" | "region" | "other";
 }
 
 export interface CurrentWeatherDto {

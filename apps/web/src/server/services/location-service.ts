@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { RouteDto } from "@/lib/types";
+import type { PlaceDto, RouteDto } from "@/lib/types";
 import { MOCK_ROUTE, findPlace, haversineKm } from "@/server/integrations/mocks/data";
 import {
   getDrivingRoute,
@@ -29,18 +29,54 @@ function pointAlong(
   return { lon, lat };
 }
 
+async function resolveEndpoint(
+  query: string,
+  coords?: { lat: number; lon: number },
+): Promise<PlaceDto> {
+  if (
+    coords &&
+    Number.isFinite(coords.lat) &&
+    Number.isFinite(coords.lon)
+  ) {
+    return {
+      id: `coord-${coords.lat.toFixed(5)},${coords.lon.toFixed(5)}`,
+      name: query.split(",")[0]?.trim() || query,
+      placeName: query,
+      lat: coords.lat,
+      lon: coords.lon,
+      kind: "address",
+    };
+  }
+
+  return (
+    findPlace(query) ??
+    (await searchPlaces(query, { limit: 1, mode: "precise" }))[0] ??
+    MOCK_ROUTE.from
+  );
+}
+
 export async function getRouteWeather(
   fromQuery: string,
   toQuery: string,
+  opts?: {
+    fromLat?: number;
+    fromLon?: number;
+    toLat?: number;
+    toLon?: number;
+  },
 ): Promise<RouteDto> {
-  const from =
-    findPlace(fromQuery) ??
-    (await searchPlaces(fromQuery, 1))[0] ??
-    MOCK_ROUTE.from;
-  const to =
-    findPlace(toQuery) ??
-    (await searchPlaces(toQuery, 1))[0] ??
-    MOCK_ROUTE.to;
+  const from = await resolveEndpoint(
+    fromQuery,
+    opts?.fromLat != null && opts?.fromLon != null
+      ? { lat: opts.fromLat, lon: opts.fromLon }
+      : undefined,
+  );
+  const to = await resolveEndpoint(
+    toQuery,
+    opts?.toLat != null && opts?.toLon != null
+      ? { lat: opts.toLat, lon: opts.toLon }
+      : undefined,
+  );
 
   let driving: Awaited<ReturnType<typeof getDrivingRoute>> = null;
   try {
@@ -65,7 +101,6 @@ export async function getRouteWeather(
         lon: (from.lon + to.lon) / 2,
       };
 
-  // Keep curated Helsinki→Tampere copy when directions aren't available.
   if (
     !driving &&
     from.name.toLowerCase().includes("helsinki") &&

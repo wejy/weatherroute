@@ -113,9 +113,10 @@ export default function DiscoverScreen() {
       try {
         const data = await apiGet<{ results?: PlaceDto[] }>("/api/search", {
           q,
-          limit: 6,
+          limit: 8,
+          mode: "precise",
         });
-        setSuggestions(data.results?.slice(0, 6) ?? []);
+        setSuggestions(data.results?.slice(0, 8) ?? []);
       } catch {
         setSuggestions([]);
       } finally {

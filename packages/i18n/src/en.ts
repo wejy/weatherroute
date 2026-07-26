@@ -46,7 +46,7 @@ const en = {
     forecastIn: "{label} in {name}",
     rain: "rain {pct}%",
     detecting:
-      "Detecting your location to center the map… Allow location access, or type a city and search.",
+      "Detecting your location to center the map… Allow location access, or type an address or city and search.",
     noDestinations: "No destinations inside this circle. Try a wider radius.",
   },
   search: {
@@ -102,10 +102,10 @@ const en = {
   location: {
     detecting: "Detecting your location…",
     detectingCoarse: "Estimating your region…",
-    placeholder: "City or town…",
+    placeholder: "City, address, or place…",
     useMyLocation: "Use my precise location",
-    denied: "Location access denied. Type a city instead.",
-    failed: "Couldn’t detect location. Type a city instead.",
+    denied: "Location access denied. Type an address or city instead.",
+    failed: "Couldn’t detect location. Type an address or city instead.",
     coarseHint: "Using an approximate region — tap the pinpoint for GPS.",
   },
   card: {
@@ -162,6 +162,12 @@ const en = {
     clearRoute: "Clear route",
     cloudyCaution: "Cloudy / caution",
     rainWarning: "Rain / warning",
+    from: "From",
+    to: "To",
+    fromPlaceholder: "Address, landmark, or city…",
+    toPlaceholder: "Address, landmark, or city…",
+    updateRoute: "Show route",
+    pickBoth: "Pick both start and destination from the suggestions.",
   },
   trips: {
     title: "Saved Trips",

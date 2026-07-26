@@ -20,6 +20,15 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const places = await searchPlaces(parsed.data.q, parsed.data.limit);
+  const { q, limit, mode, lang, proximityLat, proximityLon } = parsed.data;
+  const places = await searchPlaces(q, {
+    limit,
+    mode,
+    lang,
+    proximity:
+      proximityLat != null && proximityLon != null
+        ? { lat: proximityLat, lon: proximityLon }
+        : undefined,
+  });
   return NextResponse.json({ results: places });
 }

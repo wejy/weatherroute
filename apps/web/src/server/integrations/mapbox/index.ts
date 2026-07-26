@@ -9,24 +9,77 @@ import { nominatimReverse } from "@/server/integrations/geocoding/nominatim";
 const reverseCache = new Map<string, { expiresAt: number; value: PlaceDto }>();
 const REVERSE_TTL_MS = 24 * 60 * 60 * 1000;
 
+/** Types for street addresses, POIs, and cities. */
+const PRECISE_TYPES =
+  "address,poi,place,locality,neighborhood,district,region";
+/** City / region only (discover-style). */
+const CITY_TYPES = "place,locality,region";
+
+export type PlaceSearchMode = "precise" | "cities";
+
+export type PlaceSearchOptions = {
+  limit?: number;
+  mode?: PlaceSearchMode;
+  lang?: "en" | "fi";
+  proximity?: { lat: number; lon: number };
+};
+
+function kindFromMapboxId(id: string): PlaceDto["kind"] {
+  const prefix = id.split(".")[0];
+  if (
+    prefix === "address" ||
+    prefix === "poi" ||
+    prefix === "place" ||
+    prefix === "locality" ||
+    prefix === "region"
+  ) {
+    return prefix;
+  }
+  if (prefix === "neighborhood" || prefix === "district") return "locality";
+  return "other";
+}
+
 export async function searchPlaces(
   query: string,
-  limit = 5,
+  limitOrOpts: number | PlaceSearchOptions = 5,
 ): Promise<PlaceDto[]> {
+  const opts: PlaceSearchOptions =
+    typeof limitOrOpts === "number" ? { limit: limitOrOpts } : limitOrOpts;
+  const limit = opts.limit ?? 5;
+  const mode = opts.mode ?? "precise";
   const q = query.trim();
   if (q.length < 2) return [];
 
-  // Prefer free Open-Meteo geocoding (no key) for worldwide cities/towns.
+  if (mode === "precise" && hasMapbox()) {
+    try {
+      const results = await mapboxSearch(q, limit, {
+        types: PRECISE_TYPES,
+        lang: opts.lang,
+        proximity: opts.proximity,
+      });
+      if (results.length > 0) return results;
+    } catch (error) {
+      console.warn("[geocode] Mapbox precise search failed", error);
+    }
+  }
+
+  // Cities mode, or precise fallback when Mapbox miss/unavailable.
   try {
     const results = await openMeteoSearchPlaces(q, limit);
-    if (results.length > 0) return results;
+    if (results.length > 0) {
+      return results.map((p) => ({ ...p, kind: "place" as const }));
+    }
   } catch (error) {
     console.warn("[geocode] Open-Meteo search failed", error);
   }
 
   if (hasMapbox()) {
     try {
-      return await mapboxSearch(q, limit);
+      return await mapboxSearch(q, limit, {
+        types: mode === "cities" ? CITY_TYPES : PRECISE_TYPES,
+        lang: opts.lang,
+        proximity: opts.proximity,
+      });
     } catch (error) {
       console.warn("[geocode] Mapbox search failed", error);
     }
@@ -35,13 +88,29 @@ export async function searchPlaces(
   return mockSearch(q, limit);
 }
 
-async function mapboxSearch(query: string, limit: number): Promise<PlaceDto[]> {
+async function mapboxSearch(
+  query: string,
+  limit: number,
+  opts: {
+    types: string;
+    lang?: "en" | "fi";
+    proximity?: { lat: number; lon: number };
+  },
+): Promise<PlaceDto[]> {
   const url = new URL(
     `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json`,
   );
   url.searchParams.set("access_token", env.mapboxToken);
   url.searchParams.set("limit", String(limit));
-  url.searchParams.set("types", "place,locality,region");
+  url.searchParams.set("types", opts.types);
+  url.searchParams.set("autocomplete", "true");
+  if (opts.lang) url.searchParams.set("language", opts.lang);
+  if (opts.proximity) {
+    url.searchParams.set(
+      "proximity",
+      `${opts.proximity.lon},${opts.proximity.lat}`,
+    );
+  }
 
   const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
   if (!res.ok) throw new Error(`Mapbox geocode ${res.status}`);
@@ -52,12 +121,16 @@ async function mapboxSearch(query: string, limit: number): Promise<PlaceDto[]> {
       place_name: string;
       text: string;
       center: [number, number];
+      place_type?: string[];
       context?: Array<{ id: string; text: string; short_code?: string }>;
     }>;
   };
 
   return data.features.map((f) => {
     const country = f.context?.find((c) => c.id.startsWith("country"));
+    const typePrefix = f.place_type?.[0]
+      ? `${f.place_type[0]}.x`
+      : f.id;
     return {
       id: f.id,
       name: f.text,
@@ -66,6 +139,7 @@ async function mapboxSearch(query: string, limit: number): Promise<PlaceDto[]> {
       countryCode: country?.short_code?.toUpperCase(),
       lon: f.center[0],
       lat: f.center[1],
+      kind: kindFromMapboxId(typePrefix),
     };
   });
 }
@@ -77,7 +151,9 @@ function mockSearch(query: string, limit: number): PlaceDto[] {
       p.name.toLowerCase().includes(q) ||
       p.placeName.toLowerCase().includes(q) ||
       p.country?.toLowerCase().includes(q),
-  ).slice(0, limit);
+  )
+    .slice(0, limit)
+    .map((p) => ({ ...p, kind: "place" as const }));
 }
 
 export async function reverseGeocode(
@@ -115,6 +191,7 @@ function nearestMock(lat: number, lon: number): PlaceDto {
     placeName: `${nearest.name} (approx.)`,
     lat,
     lon,
+    kind: "place",
   };
 }
 

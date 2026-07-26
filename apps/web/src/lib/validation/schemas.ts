@@ -7,8 +7,14 @@ export const weatherQuerySchema = z.object({
 });
 
 export const searchQuerySchema = z.object({
-  q: z.string().min(1).max(120),
+  q: z.string().min(1).max(200),
   limit: z.coerce.number().int().min(1).max(10).optional().default(5),
+  /** cities = Open-Meteo-first; precise = Mapbox address/POI/place (default). */
+  mode: z.enum(["precise", "cities"]).optional().default("precise"),
+  lang: z.enum(["en", "fi"]).optional(),
+  /** Optional bias for ranking (user location). */
+  proximityLat: z.coerce.number().min(-90).max(90).optional(),
+  proximityLon: z.coerce.number().min(-180).max(180).optional(),
 });
 
 export const reverseQuerySchema = z.object({
@@ -17,7 +23,7 @@ export const reverseQuerySchema = z.object({
 });
 
 export const discoverQuerySchema = z.object({
-  origin: z.string().min(1).max(120).optional(),
+  origin: z.string().min(1).max(200).optional(),
   lat: z.coerce.number().min(-90).max(90).optional(),
   lon: z.coerce.number().min(-180).max(180).optional(),
   datePreset: z
@@ -52,8 +58,12 @@ export const discoverQuerySchema = z.object({
 });
 
 export const routeQuerySchema = z.object({
-  from: z.string().min(1).max(120),
-  to: z.string().min(1).max(120),
+  from: z.string().min(1).max(200),
+  to: z.string().min(1).max(200),
+  fromLat: z.coerce.number().min(-90).max(90).optional(),
+  fromLon: z.coerce.number().min(-180).max(180).optional(),
+  toLat: z.coerce.number().min(-90).max(90).optional(),
+  toLon: z.coerce.number().min(-180).max(180).optional(),
 });
 
 export type WeatherQuery = z.infer<typeof weatherQuerySchema>;

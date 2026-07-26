@@ -20,6 +20,11 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const route = await getRouteWeather(parsed.data.from, parsed.data.to);
+  const route = await getRouteWeather(parsed.data.from, parsed.data.to, {
+    fromLat: parsed.data.fromLat,
+    fromLon: parsed.data.fromLon,
+    toLat: parsed.data.toLat,
+    toLon: parsed.data.toLon,
+  });
   return NextResponse.json(route);
 }

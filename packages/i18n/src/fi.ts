@@ -46,7 +46,7 @@ const fi = {
     forecastIn: "{label}: {name}",
     rain: "sade {pct} %",
     detecting:
-      "Paikannetaan sijaintia kartan keskittämiseksi… Salli sijainti tai kirjoita kaupunki ja hae.",
+      "Paikannetaan sijaintia kartan keskittämiseksi… Salli sijainti tai kirjoita osoite/kaupunki ja hae.",
     noDestinations:
       "Ei kohteita tällä säteellä. Kokeile laajempaa etäisyyttä.",
   },
@@ -103,10 +103,10 @@ const fi = {
   location: {
     detecting: "Paikannetaan…",
     detectingCoarse: "Arvioidaan aluetta…",
-    placeholder: "Kaupunki tai paikka…",
+    placeholder: "Kaupunki, osoite tai paikka…",
     useMyLocation: "Käytä tarkkaa sijaintia",
-    denied: "Sijainti estetty. Kirjoita kaupunki sen sijaan.",
-    failed: "Paikannus epäonnistui. Kirjoita kaupunki.",
+    denied: "Sijainti estetty. Kirjoita osoite tai kaupunki sen sijaan.",
+    failed: "Paikannus epäonnistui. Kirjoita osoite tai kaupunki.",
     coarseHint: "Käytössä arvioitu alue — napauta kohdistinta GPS:ää varten.",
   },
   card: {
@@ -164,6 +164,12 @@ const fi = {
     clearRoute: "Selkeä reitti",
     cloudyCaution: "Pilvistä / varovaisuus",
     rainWarning: "Sade / varoitus",
+    from: "Mistä",
+    to: "Minne",
+    fromPlaceholder: "Osoite, maamerkki tai kaupunki…",
+    toPlaceholder: "Osoite, maamerkki tai kaupunki…",
+    updateRoute: "Näytä reitti",
+    pickBoth: "Valitse sekä lähtö että kohde ehdotuksista.",
   },
   trips: {
     title: "Tallennetut matkat",
