@@ -33,6 +33,7 @@ import { placeholderImageFor } from "@/server/integrations/places/candidates";
 import { buildWeatherAdvisories } from "@/lib/weather-advisories";
 import { weatherTone } from "@/lib/weather-tone";
 import { placesWithinRadius } from "@/server/dal/places";
+import { enrichDestinationImages, resolveDestinationImageUrl } from "@/server/services/place-images";
 import {
   resolveDiscoverLimits,
   weatherLimitForRadius,
@@ -370,6 +371,11 @@ export async function discoverDestinations(
     })
     .slice(0, limits.display);
 
+  const destinationsWithImages = await enrichDestinationImages(destinations, {
+    locale,
+    curatedById: catalogById,
+  });
+
   const mapMarkers: MapMarkerDto[] = [
     {
       id: `origin-${origin.id}`,
@@ -378,11 +384,11 @@ export async function discoverDestinations(
       lon: origin.lon,
       temperatureC:
         originWeather?.current.temperatureC ??
-        destinations[0]?.current.temperatureC ??
+        destinationsWithImages[0]?.current.temperatureC ??
         18,
       condition: originWeather?.current.condition ?? "partly_cloudy",
     },
-    ...destinations.map((d) => ({
+    ...destinationsWithImages.map((d) => ({
       id: d.id,
       name: d.name,
       lat: d.lat,
@@ -415,7 +421,7 @@ export async function discoverDestinations(
     startDate: dateWindow.startDate,
     endDate: dateWindow.endDate,
     radiusKm,
-    destinations,
+    destinations: destinationsWithImages,
     mapMarkers,
     originCurrent: originWeather
       ? {
@@ -558,9 +564,6 @@ export async function getDestinationBySlug(slug: string) {
   if (fromCatalog) return fromCatalog;
 
   const { getPlaceById } = await import("@/server/dal/places");
-  const { placeholderImageFor } = await import(
-    "@/server/integrations/places/candidates"
-  );
   const { isBlockedPlace } = await import("@/lib/geo-block");
   const place = await getPlaceById(slug);
   if (!place) return undefined;
@@ -585,6 +588,14 @@ export async function getDestinationBySlug(slug: string) {
   const lat = place.lat;
   const lon = place.lon;
 
+  const imageUrl = await resolveDestinationImageUrl({
+    id,
+    name,
+    placeName,
+    lat,
+    lon,
+  });
+
   return {
     id,
     slug: id,
@@ -599,6 +610,6 @@ export async function getDestinationBySlug(slug: string) {
     conditionLabel: "Partly cloudy",
     rainProbability: 20,
     sunshineScore: 60,
-    imageUrl: placeholderImageFor(id),
+    imageUrl,
   };
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import type { DestinationDto } from "@/lib/types";
@@ -9,6 +10,12 @@ import { useI18n } from "@/components/i18n/locale-provider";
 import { translateCondition } from "@/i18n/translate";
 import { resolveDateWindow, type DatePreset } from "@/lib/dates";
 import { destinationHref } from "@/lib/discover-query";
+
+const LOCAL_FALLBACK = "/images/naantali.jpg";
+
+function isRemoteImage(url: string): boolean {
+  return url.startsWith("http://") || url.startsWith("https://");
+}
 
 export function DestinationCard({
   destination,
@@ -32,6 +39,13 @@ export function DestinationCard({
     endDate: forecast.endDate,
     locale,
   }).label;
+  const [imageSrc, setImageSrc] = useState(destination.imageUrl);
+
+  useEffect(() => {
+    setImageSrc(destination.imageUrl);
+  }, [destination.id, destination.imageUrl]);
+
+  const remote = isRemoteImage(imageSrc);
 
   return (
     <Link
@@ -46,13 +60,18 @@ export function DestinationCard({
       })}
     >
       <article className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0px_10px_30px_rgba(0,0,0,0.08)]">
-        <div className="relative aspect-[4/3] w-full overflow-hidden">
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-surface-container">
           <Image
-            src={destination.imageUrl}
+            key={imageSrc}
+            src={imageSrc}
             alt={destination.placeName}
             fill
+            unoptimized={remote}
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             sizes="(max-width: 768px) 100vw, 33vw"
+            onError={() => {
+              if (imageSrc !== LOCAL_FALLBACK) setImageSrc(LOCAL_FALLBACK);
+            }}
           />
           <div className="absolute top-4 right-4 flex flex-col items-end gap-2">
             <div className="flex items-center gap-1.5 rounded-full border border-outline-variant/10 bg-surface/90 px-3 py-1.5 shadow-sm backdrop-blur-md">

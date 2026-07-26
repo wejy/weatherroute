@@ -126,6 +126,10 @@ export default async function DestinationPage({
             src={dest.imageUrl}
             alt={dest.placeName}
             fill
+            unoptimized={
+              dest.imageUrl.startsWith("http://") ||
+              dest.imageUrl.startsWith("https://")
+            }
             className="object-cover"
             priority
             sizes="100vw"
