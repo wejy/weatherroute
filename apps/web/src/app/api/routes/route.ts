@@ -28,6 +28,9 @@ export async function GET(request: NextRequest) {
     mode: parsed.data.mode,
     prefer: parsed.data.prefer,
     altIndex: parsed.data.alt,
+    datePreset: parsed.data.datePreset,
+    startDate: parsed.data.startDate,
+    endDate: parsed.data.endDate,
     locale: parsed.data.lang,
   });
   return NextResponse.json(route);

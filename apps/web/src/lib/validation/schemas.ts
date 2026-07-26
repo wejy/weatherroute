@@ -79,6 +79,18 @@ export const routeQuerySchema = z.object({
   mode: z.enum(["driving", "cycling"]).optional().default("driving"),
   prefer: z.enum(["fast", "weather"]).optional().default("fast"),
   alt: z.coerce.number().int().min(0).max(5).optional(),
+  datePreset: z
+    .enum(["today", "tomorrow", "weekend", "custom"])
+    .optional()
+    .default("weekend"),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
   lang: z.enum(["en", "fi"]).optional(),
 });
 

@@ -19,6 +19,53 @@ function notBlockedCandidate(city: {
   return !isBlockedPlace(city);
 }
 
+function normalizePlaceName(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/** ~1.1 km cell — collapses near-identical GeoNames points. */
+function geoCellKey(lat: number, lon: number): string {
+  return `${lat.toFixed(2)},${lon.toFixed(2)}`;
+}
+
+/**
+ * Keep first occurrence (caller should rank by population/distance first).
+ * Drops duplicate ids, same settlement name, and near-identical coordinates.
+ */
+export function dedupePlaceCandidates<
+  T extends {
+    id: string;
+    name: string;
+    lat: number;
+    lon: number;
+  },
+>(cities: T[]): T[] {
+  const seenIds = new Set<string>();
+  const seenNames = new Set<string>();
+  const seenGeo = new Set<string>();
+  const out: T[] = [];
+
+  for (const city of cities) {
+    if (seenIds.has(city.id)) continue;
+    const nameKey = normalizePlaceName(city.name);
+    if (nameKey && seenNames.has(nameKey)) continue;
+    const geoKey = geoCellKey(city.lat, city.lon);
+    if (seenGeo.has(geoKey)) continue;
+
+    seenIds.add(city.id);
+    if (nameKey) seenNames.add(nameKey);
+    seenGeo.add(geoKey);
+    out.push(city);
+  }
+
+  return out;
+}
+
 /**
  * Discover candidates: Postgres `places` when available, else CITY_INDEX.
  */
@@ -50,7 +97,7 @@ export async function placesWithinRadius(
       .limit(500);
 
     if (rows.length > 0) {
-      return rows
+      const ranked = rows
         .map((row) => ({
           id: row.id,
           name: row.name,
@@ -73,12 +120,13 @@ export async function placesWithinRadius(
             candidateRankScore(b.population, b.distanceKm) -
               candidateRankScore(a.population, a.distanceKm) ||
             a.distanceKm - b.distanceKm,
-        )
-        .slice(0, limit);
+        );
+
+      return dedupePlaceCandidates(ranked).slice(0, limit);
     }
   }
 
-  return CITY_INDEX.map((city) => ({
+  const ranked = CITY_INDEX.map((city) => ({
     ...city,
     distanceKm: haversineKm(origin, city),
   }))
@@ -93,8 +141,9 @@ export async function placesWithinRadius(
         candidateRankScore(b.population, b.distanceKm) -
           candidateRankScore(a.population, a.distanceKm) ||
         a.distanceKm - b.distanceKm,
-    )
-    .slice(0, limit);
+    );
+
+  return dedupePlaceCandidates(ranked).slice(0, limit);
 }
 
 export async function getPlaceById(id: string) {

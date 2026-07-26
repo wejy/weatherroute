@@ -297,6 +297,7 @@ export async function discoverDestinations(
   const originWeather = weatherBatch[0] ?? null;
   const candidateWeather = weatherBatch.slice(1);
 
+  const seenDestKeys = new Set<string>();
   const destinations: DestinationDto[] = candidates
     .flatMap((city, i) => {
       const weather = candidateWeather[i];
@@ -352,7 +353,21 @@ export async function discoverDestinations(
       ];
     })
     .sort((a, b) => b.score - a.score || a.dest.distanceKm - b.dest.distanceKm)
-    .map(({ dest }) => dest)
+    .flatMap(({ dest }) => {
+      const nameKey = dest.name
+        .normalize("NFD")
+        .replace(/\p{M}/gu, "")
+        .toLowerCase()
+        .trim();
+      const geoKey = `${dest.lat.toFixed(2)},${dest.lon.toFixed(2)}`;
+      if (seenDestKeys.has(dest.id) || seenDestKeys.has(nameKey) || seenDestKeys.has(geoKey)) {
+        return [];
+      }
+      seenDestKeys.add(dest.id);
+      seenDestKeys.add(nameKey);
+      seenDestKeys.add(geoKey);
+      return [dest];
+    })
     .slice(0, limits.display);
 
   const mapMarkers: MapMarkerDto[] = [
