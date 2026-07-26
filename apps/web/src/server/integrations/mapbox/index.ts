@@ -210,15 +210,18 @@ export type MapboxRoute = {
   /** [lon, lat] pairs along the road / path network. */
   geometry: [number, number][];
   profile: MapboxRouteProfile;
+  /** 0 = Mapbox primary (usually fastest); 1+ = alternatives. */
+  alternativeIndex: number;
 };
 
-/** Mapbox Directions — road/path route for driving or cycling. */
-export async function getMapboxRoute(
+/** Mapbox Directions — one or more road/path routes (optional alternatives). */
+export async function getMapboxRoutes(
   from: { lon: number; lat: number },
   to: { lon: number; lat: number },
   profile: MapboxRouteProfile = "driving",
-): Promise<MapboxRoute | null> {
-  if (!hasMapbox()) return null;
+  opts?: { alternatives?: boolean },
+): Promise<MapboxRoute[]> {
+  if (!hasMapbox()) return [];
 
   const coords = `${from.lon},${from.lat};${to.lon},${to.lat}`;
   const url = new URL(
@@ -228,6 +231,9 @@ export async function getMapboxRoute(
   url.searchParams.set("geometries", "geojson");
   url.searchParams.set("overview", "full");
   url.searchParams.set("steps", "false");
+  if (opts?.alternatives) {
+    url.searchParams.set("alternatives", "true");
+  }
 
   const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
   if (!res.ok) {
@@ -243,26 +249,37 @@ export async function getMapboxRoute(
     }>;
   };
 
-  const route = data.routes?.[0];
-  if (!route?.geometry?.coordinates?.length) {
-    return null;
-  }
+  const routes = data.routes ?? [];
+  return routes
+    .filter((route) => route.geometry?.coordinates?.length)
+    .map((route, i) => ({
+      distanceKm: Math.round(route.distance / 1000),
+      durationSeconds: Math.round(route.duration),
+      geometry: route.geometry.coordinates,
+      profile,
+      alternativeIndex: i,
+    }));
+}
 
-  return {
-    distanceKm: Math.round(route.distance / 1000),
-    durationSeconds: Math.round(route.duration),
-    geometry: route.geometry.coordinates,
-    profile,
-  };
+/** Primary (usually fastest) Mapbox route. */
+export async function getMapboxRoute(
+  from: { lon: number; lat: number },
+  to: { lon: number; lat: number },
+  profile: MapboxRouteProfile = "driving",
+): Promise<MapboxRoute | null> {
+  const routes = await getMapboxRoutes(from, to, profile, {
+    alternatives: false,
+  });
+  return routes[0] ?? null;
 }
 
 /** @deprecated Prefer getMapboxRoute(..., "driving") */
 export async function getDrivingRoute(
   from: { lon: number; lat: number },
   to: { lon: number; lat: number },
-): Promise<Omit<MapboxRoute, "profile"> | null> {
+): Promise<Omit<MapboxRoute, "profile" | "alternativeIndex"> | null> {
   const route = await getMapboxRoute(from, to, "driving");
   if (!route) return null;
-  const { profile: _p, ...rest } = route;
+  const { profile: _p, alternativeIndex: _i, ...rest } = route;
   return rest;
 }

@@ -48,6 +48,7 @@ export const yrProvider: WeatherProvider = {
         time: `${toDateKey(t)}T${pad(t.getHours())}:00`,
         temperatureC: baseTemp - (i % 5),
         precipitationProbability: precip,
+        precipitationMm: Math.round(((precip / 100) * 1.2) * 10) / 10,
         cloudCover: 30 + ((seed + i) % 50),
         condition: precip > 35 ? "rainy" : precip > 20 ? "cloudy" : "partly_cloudy",
         conditionLabel:

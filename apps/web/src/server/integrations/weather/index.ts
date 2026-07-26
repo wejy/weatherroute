@@ -48,7 +48,11 @@ async function lookupCache(
   const key = weatherGridKey(lat, lon);
   const mem = memoryCache.get(key);
   if (mem && mem.expiresAt > Date.now()) {
-    if (!mem.value.hourly?.length) {
+    const hourly = mem.value.hourly;
+    if (
+      !hourly?.length ||
+      !hourly.some((h) => h.precipitationMm != null)
+    ) {
       memoryCache.delete(key);
     } else {
       return mem.value;

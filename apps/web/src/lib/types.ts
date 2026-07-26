@@ -95,6 +95,8 @@ export interface HourlyForecastDto {
   time: string;
   temperatureC: number;
   precipitationProbability: number;
+  /** Expected precipitation for this hour (mm), when the provider supplies it. */
+  precipitationMm?: number;
   cloudCover: number;
   condition: WeatherCondition;
   conditionLabel: string;
@@ -233,8 +235,26 @@ export interface RouteWaypointDto {
   temperatureC: number;
   condition: WeatherCondition;
   rainProbability: number;
+  /** Expected precipitation around ETA (mm), when available. */
+  precipitationMm?: number;
   tone: WeatherTone;
   advisories: WeatherAdvisoryDto[];
+}
+
+export type RoutePrefer = "fast" | "weather";
+
+/** One Mapbox alternative considered for weather vs fast choice. */
+export interface RouteAlternativeDto {
+  index: number;
+  distanceKm: number;
+  durationLabel: string;
+  durationMinutes: number;
+  /** Dry-trip % for best departure on this corridor (when scored). */
+  dryness: number;
+  /** Average rain probability along corridor at that departure. */
+  avgRainProbability: number;
+  selected: boolean;
+  geometry: [number, number][];
 }
 
 export interface RouteDto {
@@ -252,6 +272,16 @@ export interface RouteDto {
   waypoints: RouteWaypointDto[];
   /** Road geometry as [lon, lat] pairs from Mapbox Directions (when available). */
   geometry?: [number, number][];
+  /** How this route was chosen. */
+  prefer?: RoutePrefer;
+  /** How many Mapbox alternatives were compared (incl. primary). */
+  alternativesCompared?: number;
+  /** True when weather prefer picked a non-primary alternative. */
+  weatherRouteSelected?: boolean;
+  /** Extra minutes vs the fastest alternative, when weather route is slower. */
+  minutesVsFastest?: number | null;
+  /** All Mapbox alternatives (scored when prefer=weather). */
+  alternatives?: RouteAlternativeDto[];
 }
 
 export interface TripDto {

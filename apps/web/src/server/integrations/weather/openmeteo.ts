@@ -28,6 +28,7 @@ interface OpenMeteoResponse {
     time: string[];
     temperature_2m: number[];
     precipitation_probability: number[];
+    precipitation?: number[];
     weather_code: number[];
     cloud_cover: number[];
   };
@@ -57,6 +58,10 @@ function mapHourly(data: OpenMeteoResponse): HourlyForecastDto[] {
       time: hourly.time[i]!,
       temperatureC: Math.round(hourly.temperature_2m[i] ?? 0),
       precipitationProbability: hourly.precipitation_probability[i] ?? 0,
+      precipitationMm:
+        hourly.precipitation?.[i] != null
+          ? Math.round((hourly.precipitation[i] ?? 0) * 10) / 10
+          : undefined,
       cloudCover: hourly.cloud_cover[i] ?? 40,
       condition,
       conditionLabel: label,
@@ -148,7 +153,7 @@ function forecastParams(
     current:
       "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,cloud_cover",
     hourly:
-      "temperature_2m,precipitation_probability,weather_code,cloud_cover",
+      "temperature_2m,precipitation_probability,precipitation,weather_code,cloud_cover",
     daily:
       "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,cloud_cover_mean",
     timezone: "auto",

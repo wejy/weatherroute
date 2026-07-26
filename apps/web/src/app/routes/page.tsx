@@ -61,6 +61,8 @@ export default async function RoutesPage({
   const modeRaw = first(raw.mode);
   const mode =
     modeRaw === "cycling" || modeRaw === "driving" ? modeRaw : "driving";
+  const preferRaw = first(raw.prefer);
+  const prefer = preferRaw === "weather" ? "weather" : "fast";
   const datePresetRaw = first(raw.datePreset);
   const datePreset: DatePreset =
     datePresetRaw === "today" ||
@@ -92,6 +94,7 @@ export default async function RoutesPage({
     toId,
     mode,
     locale,
+    prefer,
     earliestDepartureHour: departurePrefs.effectiveHour,
     datePreset: dateWindow.preset,
     startDate: dateWindow.startDate,
@@ -154,12 +157,13 @@ export default async function RoutesPage({
 
             <Suspense fallback={null}>
               <RouteEndpointsForm
-                key={`${route.from.id}-${route.to.id}-${mode}-${dateWindow.startDate}-${dateWindow.endDate}`}
+                key={`${route.from.id}-${route.to.id}-${mode}-${prefer}-${dateWindow.startDate}-${dateWindow.endDate}`}
                 initialFrom={from}
                 initialTo={to}
                 fromPlace={route.from}
                 toPlace={route.to}
                 initialMode={mode}
+                initialPrefer={prefer}
                 initialDatePreset={dateWindow.preset}
                 initialStartDate={dateWindow.startDate}
                 initialEndDate={dateWindow.endDate}
@@ -245,6 +249,22 @@ export default async function RoutesPage({
                 <p className="mt-1 text-base text-on-surface-variant">
                   {t("routes.dryTripDesc")}
                 </p>
+                {route.prefer === "weather" &&
+                (route.alternativesCompared ?? 0) > 1 ? (
+                  <p className="mt-2 text-sm font-medium text-secondary">
+                    {route.weatherRouteSelected
+                      ? t("routes.weatherRouteAlt", {
+                          n: route.alternativesCompared ?? 0,
+                          extra:
+                            route.minutesVsFastest && route.minutesVsFastest > 0
+                              ? t("routes.minutesLonger", {
+                                  m: route.minutesVsFastest,
+                                })
+                              : t("routes.sameDuration"),
+                        })
+                      : t("routes.weatherRouteSame")}
+                  </p>
+                ) : null}
               </div>
               <div
                 className="flex h-[4.5rem] w-[4.5rem] shrink-0 flex-col items-center justify-center rounded-full border-4 border-tertiary-container/20 bg-tertiary-container/10 text-tertiary-container"
@@ -258,6 +278,53 @@ export default async function RoutesPage({
                 </span>
               </div>
             </div>
+
+            {route.alternatives && route.alternatives.length > 1 ? (
+              <div className="rounded-xl border border-outline-variant/20 bg-surface-container-low p-4">
+                <h3 className="mb-1 text-sm font-medium tracking-wider text-on-surface-variant uppercase">
+                  {t("routes.alternativesTitle")}
+                </h3>
+                <p className="mb-3 text-xs text-on-surface-variant">
+                  {t("routes.alternativesHint")}
+                </p>
+                <ul className="space-y-2">
+                  {route.alternatives.map((alt, i) => (
+                    <li
+                      key={alt.index}
+                      className={`rounded-lg border px-3 py-2.5 ${
+                        alt.selected
+                          ? "border-secondary/40 bg-secondary/10"
+                          : "border-outline-variant/25 bg-surface"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-semibold text-on-surface">
+                          {t("routes.alternativeLabel", { n: String(i + 1) })}
+                          {alt.selected ? (
+                            <span className="ml-2 text-xs font-medium text-secondary">
+                              {t("routes.alternativeSelected")}
+                            </span>
+                          ) : (
+                            <span className="ml-2 text-xs font-medium text-on-surface-variant">
+                              {t("routes.alternativeOther")}
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-sm tabular-nums text-on-surface">
+                          {alt.dryness}% · {alt.durationLabel}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-on-surface-variant">
+                        {alt.distanceKm} km ·{" "}
+                        {t("routes.alternativeAvgRain", {
+                          pct: alt.avgRainProbability,
+                        })}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
 
             <div className="flex items-start gap-4 rounded-xl border border-secondary/20 bg-secondary/5 p-5">
               <span
@@ -417,6 +484,14 @@ export default async function RoutesPage({
                         style={{ width: `${wp.rainProbability}%` }}
                       />
                     </div>
+                    <p className="mt-1.5 text-[13px] text-on-surface-variant">
+                      {t("routes.rainAmount")}:{" "}
+                      <span className="font-semibold text-on-surface">
+                        {t("routes.rainAmountValue", {
+                          mm: wp.precipitationMm ?? 0,
+                        })}
+                      </span>
+                    </p>
                   </div>
                   {wp.advisories.length > 0 ? (
                     <ul className="mt-2 space-y-1.5">
@@ -460,6 +535,7 @@ export default async function RoutesPage({
             to={route.to}
             waypoints={route.waypoints}
             geometry={route.geometry}
+            alternatives={route.alternatives}
             mapboxToken={mapboxToken}
             className="absolute inset-0 h-full w-full"
           />

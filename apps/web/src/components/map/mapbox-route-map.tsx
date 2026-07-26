@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { cn, formatTemp } from "@/lib/utils";
-import type { PlaceDto, RouteWaypointDto } from "@/lib/types";
+import type { PlaceDto, RouteAlternativeDto, RouteWaypointDto } from "@/lib/types";
 import { WEATHER_TONE_COLORS, worseTone, mapWeatherColor, isSevereMapAlert, SEVERE_ALERT_COLOR } from "@/lib/weather-tone";
 import { weatherIcon } from "@/lib/weather-icons";
 import { useI18n } from "@/components/i18n/locale-provider";
@@ -33,6 +33,22 @@ function lineCoordinates(
     [from.lon, from.lat],
     [to.lon, to.lat],
   ];
+}
+
+function alternativesGeoJSON(
+  alternatives: RouteAlternativeDto[] | undefined,
+): GeoJSON.FeatureCollection<GeoJSON.LineString> {
+  const features = (alternatives ?? [])
+    .filter((a) => !a.selected && a.geometry.length >= 2)
+    .map((a) => ({
+      type: "Feature" as const,
+      properties: { index: a.index },
+      geometry: {
+        type: "LineString" as const,
+        coordinates: a.geometry,
+      },
+    }));
+  return { type: "FeatureCollection", features };
 }
 
 /** Split the route into segments colored by the worse tone of adjacent waypoints. */
@@ -153,6 +169,7 @@ export function MapboxRouteMap({
   to,
   waypoints,
   geometry,
+  alternatives,
   token,
   className,
 }: {
@@ -160,6 +177,7 @@ export function MapboxRouteMap({
   to: PlaceDto;
   waypoints: RouteWaypointDto[];
   geometry?: [number, number][];
+  alternatives?: RouteAlternativeDto[];
   token: string;
   className?: string;
 }) {
@@ -175,6 +193,9 @@ export function MapboxRouteMap({
   const geometryKey = geometry?.length
     ? `${geometry.length}:${geometry[0]?.join(",")}:${geometry[geometry.length - 1]?.join(",")}`
     : "straight";
+  const altKey = (alternatives ?? [])
+    .map((a) => `${a.index}:${a.selected}:${a.geometry.length}`)
+    .join("|");
 
   const selected = selectedIdx != null ? waypoints[selectedIdx] : null;
 
@@ -202,6 +223,26 @@ export function MapboxRouteMap({
     mapRef.current = map;
 
     map.on("load", () => {
+      map.addSource("route-alts", {
+        type: "geojson",
+        data: alternativesGeoJSON(alternatives),
+      });
+      map.addLayer({
+        id: "route-alts",
+        type: "line",
+        source: "route-alts",
+        paint: {
+          "line-color": "#9ca3af",
+          "line-width": 3,
+          "line-opacity": 0.55,
+          "line-dasharray": [1.5, 1.5],
+        },
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
+      });
+
       map.addSource("route-segments", {
         type: "geojson",
         data: coloredSegmentsGeoJSON(coords, waypointsRef.current),
@@ -237,6 +278,9 @@ export function MapboxRouteMap({
 
       const bounds = new mapboxgl.LngLatBounds();
       for (const c of coords) bounds.extend(c);
+      for (const a of alternatives ?? []) {
+        for (const c of a.geometry) bounds.extend(c);
+      }
       map.fitBounds(bounds, { padding: 72, maxZoom: 10, duration: 0 });
     });
 
@@ -258,6 +302,7 @@ export function MapboxRouteMap({
     to.lat,
     to.lon,
     geometryKey,
+    altKey,
   ]);
 
   // Sync weather markers + segment colors when waypoints / selection change.
@@ -289,11 +334,17 @@ export function MapboxRouteMap({
         const coords = lineCoordinates(from, to, waypoints, geometry);
         src.setData(coloredSegmentsGeoJSON(coords, waypoints));
       }
+      const altSrc = map.getSource("route-alts") as
+        | mapboxgl.GeoJSONSource
+        | undefined;
+      if (altSrc) {
+        altSrc.setData(alternativesGeoJSON(alternatives));
+      }
     };
 
     if (map.isStyleLoaded()) sync();
     else map.once("load", sync);
-  }, [waypoints, selectedIdx, from, to, geometry]);
+  }, [waypoints, selectedIdx, from, to, geometry, alternatives]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -347,19 +398,32 @@ export function MapboxRouteMap({
               </span>
             </button>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="text-2xl font-semibold tabular-nums text-on-surface">
-              {formatTemp(selected.temperatureC)}
-            </span>
-            <span
-              className="material-symbols-outlined text-secondary"
-              aria-hidden
-            >
-              {weatherIcon(selected.condition)}
-            </span>
-            <span className="text-sm text-on-surface-variant">
-              {t("routes.rainProbability")}: {selected.rainProbability}%
-            </span>
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl font-semibold tabular-nums text-on-surface">
+                {formatTemp(selected.temperatureC)}
+              </span>
+              <span
+                className="material-symbols-outlined text-secondary"
+                aria-hidden
+              >
+                {weatherIcon(selected.condition)}
+              </span>
+            </div>
+            <p className="text-sm text-on-surface-variant">
+              {t("routes.rainProbability")}:{" "}
+              <span className="font-semibold text-on-surface">
+                {selected.rainProbability}%
+              </span>
+            </p>
+            <p className="text-sm text-on-surface-variant">
+              {t("routes.rainAmount")}:{" "}
+              <span className="font-semibold text-on-surface">
+                {t("routes.rainAmountValue", {
+                  mm: selected.precipitationMm ?? 0,
+                })}
+              </span>
+            </p>
           </div>
           {selected.advisories.length > 0 ? (
             <ul className="mt-3 space-y-2 border-t border-outline-variant/20 pt-2">

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { PlaceDto, RouteWaypointDto } from "@/lib/types";
+import type { PlaceDto, RouteAlternativeDto, RouteWaypointDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const MapboxRouteMap = dynamic(
@@ -102,6 +102,7 @@ export function RouteMap({
   to,
   waypoints,
   geometry,
+  alternatives,
   mapboxToken,
   className,
 }: {
@@ -109,6 +110,7 @@ export function RouteMap({
   to: PlaceDto;
   waypoints: RouteWaypointDto[];
   geometry?: [number, number][];
+  alternatives?: RouteAlternativeDto[];
   mapboxToken?: string;
   className?: string;
 }) {
@@ -120,6 +122,7 @@ export function RouteMap({
         to={to}
         waypoints={waypoints}
         geometry={geometry}
+        alternatives={alternatives}
         token={token}
         className={className}
       />

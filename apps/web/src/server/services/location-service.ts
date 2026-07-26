@@ -1,12 +1,20 @@
 import "server-only";
 
-import type { PlaceDto, RouteDto, TravelMode } from "@/lib/types";
+import {
+  getMapboxRoutes,
+  searchPlaces,
+  reverseGeocode,
+  type MapboxRoute,
+} from "@/server/integrations/mapbox";
+import type {
+  PlaceDto,
+  RouteAlternativeDto,
+  RouteDto,
+  RoutePrefer,
+  TravelMode,
+} from "@/lib/types";
 import { DEFAULT_TRAVEL_MODE } from "@/lib/types";
 import { MOCK_ROUTE, findPlace, haversineKm } from "@/server/integrations/mocks/data";
-import {
-  getMapboxRoute,
-  searchPlaces,
-} from "@/server/integrations/mapbox";
 import { TRAVEL_SPEED_KMH } from "@/lib/utils";
 import { fetchWeatherBatch } from "@/server/integrations/weather";
 import type { DateLocale } from "@/lib/dates";
@@ -30,6 +38,7 @@ import {
   buildWeatherAdvisories,
   toneFromAdvisories,
 } from "@/lib/weather-advisories";
+import { CITY_INDEX } from "@/server/integrations/places/city-index";
 
 function durationMinutesFromSeconds(seconds: number): number {
   return Math.max(1, Math.round(seconds / 60));
@@ -41,6 +50,45 @@ function formatDurationLabel(totalMinutes: number, t: Translator): string {
   if (hours <= 0) return t("routes.durationMinutes", { m: minutes });
   if (minutes === 0) return t("routes.durationHours", { h: hours });
   return t("routes.durationHoursMinutes", { h: hours, m: minutes });
+}
+
+/** Nearest catalog city within maxKm, skipping reserved names (start/end/other mids). */
+function nearestCatalogCityName(
+  lat: number,
+  lon: number,
+  reserved: Set<string>,
+  maxKm = 80,
+): string | null {
+  let bestName: string | null = null;
+  let bestKm = Infinity;
+  for (const city of CITY_INDEX) {
+    const key = city.name.toLowerCase();
+    if (reserved.has(key)) continue;
+    const d = haversineKm({ lat, lon }, city);
+    if (d < bestKm && d <= maxKm) {
+      bestKm = d;
+      bestName = city.name;
+    }
+  }
+  return bestName;
+}
+
+async function nameMidpoint(
+  lat: number,
+  lon: number,
+  reserved: Set<string>,
+  fallback: string,
+): Promise<string> {
+  try {
+    const place = await reverseGeocode(lat, lon);
+    const candidate = place.name?.trim();
+    if (candidate && !reserved.has(candidate.toLowerCase())) {
+      return candidate;
+    }
+  } catch {
+    // fall through
+  }
+  return nearestCatalogCityName(lat, lon, reserved) ?? fallback;
 }
 
 function fallbackDurationSeconds(distanceKm: number, mode: TravelMode): number {
@@ -183,6 +231,37 @@ function sampleFractions(durationHours: number, distanceKm: number): number[] {
   return [0, 1];
 }
 
+/** Coarser samples when comparing several Mapbox alternatives. */
+function compareFractions(durationHours: number, distanceKm: number): number[] {
+  if (durationHours >= 2 || distanceKm >= 120) return [0, 0.33, 0.66, 1];
+  return [0, 0.5, 1];
+}
+
+function pointsAlongRoute(
+  from: PlaceDto,
+  to: PlaceDto,
+  geometry: [number, number][] | undefined,
+  fractions: number[],
+): Array<{ lat: number; lon: number; t: number }> {
+  return fractions.map((frac) => {
+    if (frac <= 0) return { lat: from.lat, lon: from.lon, t: 0 };
+    if (frac >= 1) return { lat: to.lat, lon: to.lon, t: 1 };
+    if (geometry?.length) {
+      const p = pointAlong(geometry, frac);
+      return { lat: p.lat, lon: p.lon, t: frac };
+    }
+    return {
+      lat: from.lat + (to.lat - from.lat) * frac,
+      lon: from.lon + (to.lon - from.lon) * frac,
+      t: frac,
+    };
+  });
+}
+
+function weatherGridKey(lat: number, lon: number): string {
+  return `${lat.toFixed(2)},${lon.toFixed(2)}`;
+}
+
 export async function getRouteWeather(
   fromQuery: string,
   toQuery: string,
@@ -200,10 +279,13 @@ export async function getRouteWeather(
     datePreset?: string | null;
     startDate?: string | null;
     endDate?: string | null;
+    /** `fast` = Mapbox primary; `weather` = driest among alternatives. */
+    prefer?: RoutePrefer;
   },
 ): Promise<RouteDto> {
   const mode = opts?.mode ?? DEFAULT_TRAVEL_MODE;
   const locale = opts?.locale ?? "en";
+  const prefer: RoutePrefer = opts?.prefer === "weather" ? "weather" : "fast";
   const t = createTranslator(getDictionary(locale));
   // TODO: Allow overriding earliestDepartureHour per route on the routes page
   // (query param / UI control), falling back to the Pro settings preference.
@@ -241,11 +323,132 @@ export async function getRouteWeather(
     opts?.toId,
   );
 
-  let routed: Awaited<ReturnType<typeof getMapboxRoute>> = null;
+  let candidates: MapboxRoute[] = [];
   try {
-    routed = await getMapboxRoute(from, to, mode);
+    // Always request alternatives so we can compare / overlay on the map.
+    candidates = await getMapboxRoutes(from, to, mode, { alternatives: true });
   } catch (error) {
     console.warn(`[route] Mapbox directions (${mode}) failed`, error);
+  }
+
+  let routed: MapboxRoute | null = candidates[0] ?? null;
+  let alternativesCompared = candidates.length;
+  let weatherRouteSelected = false;
+  let minutesVsFastest: number | null = null;
+  let alternativeSummaries: RouteAlternativeDto[] = [];
+
+  if (candidates.length > 0) {
+    type SamplePoint = { lat: number; lon: number; t: number; routeIdx: number };
+    const allPoints: SamplePoint[] = [];
+    const routeMeta = candidates.map((route, routeIdx) => {
+      const durationMinutes = durationMinutesFromSeconds(route.durationSeconds);
+      const durationHours = durationMinutes / 60;
+      const fractions = compareFractions(durationHours, route.distanceKm);
+      const points = pointsAlongRoute(from, to, route.geometry, fractions);
+      for (const p of points) {
+        allPoints.push({ ...p, routeIdx });
+      }
+      return { route, durationMinutes, durationHours, points };
+    });
+
+    const keyToIndex = new Map<string, number>();
+    const weatherPlaces: Array<{ lat: number; lon: number; name: string }> = [];
+    for (const p of allPoints) {
+      const key = weatherGridKey(p.lat, p.lon);
+      if (!keyToIndex.has(key)) {
+        keyToIndex.set(key, weatherPlaces.length);
+        weatherPlaces.push({
+          lat: p.lat,
+          lon: p.lon,
+          name: `cmp-${weatherPlaces.length + 1}`,
+        });
+      }
+    }
+
+    const forecasts = await fetchWeatherBatch(weatherPlaces, locale);
+
+    const scored: Array<{
+      route: MapboxRoute;
+      dryness: number;
+      avgRainProbability: number;
+      durationMinutes: number;
+    }> = [];
+
+    for (const meta of routeMeta) {
+      const samples: CorridorSample[] = meta.points.map((p, i) => {
+        const key = weatherGridKey(p.lat, p.lon);
+        const wi = keyToIndex.get(key)!;
+        const isStart = i === 0;
+        const isEnd = i === meta.points.length - 1;
+        return {
+          name: isStart ? from.name : isEnd ? to.name : `m${i}`,
+          role: isStart ? "start" : isEnd ? "destination" : "midpoint",
+          lat: p.lat,
+          lon: p.lon,
+          t: p.t,
+          weather: forecasts[wi] ?? null,
+        };
+      });
+      const best = findBestDeparture(samples, meta.durationHours, {
+        earliestHour: opts?.earliestDepartureHour ?? null,
+        startDate: dateWindow.startDate,
+        endDate: dateWindow.endDate,
+      });
+      let rainSum = 0;
+      for (const sample of samples) {
+        const eta = addHoursToLocalKey(
+          best.departureTime,
+          sample.t * meta.durationHours,
+        );
+        const slot = lookupHourly(sample.weather, normalizeHourKey(eta));
+        rainSum += slot.precipitationProbability;
+      }
+      const avgRainProbability =
+        samples.length > 0 ? Math.round(rainSum / samples.length) : 0;
+      scored.push({
+        route: meta.route,
+        dryness: best.dryness,
+        avgRainProbability,
+        durationMinutes: meta.durationMinutes,
+      });
+    }
+
+    const fastest = [...scored].sort(
+      (a, b) => a.durationMinutes - b.durationMinutes,
+    )[0]!;
+
+    if (prefer === "weather" && scored.length > 1) {
+      // Prefer drier corridor; break ties by lower average rain, then shorter time.
+      const ranked = [...scored].sort(
+        (a, b) =>
+          b.dryness - a.dryness ||
+          a.avgRainProbability - b.avgRainProbability ||
+          a.durationMinutes - b.durationMinutes,
+      );
+      const winner = ranked[0]!;
+      routed = winner.route;
+      weatherRouteSelected = winner.route.alternativeIndex > 0;
+      minutesVsFastest =
+        winner.durationMinutes > fastest.durationMinutes
+          ? winner.durationMinutes - fastest.durationMinutes
+          : 0;
+    } else {
+      routed = fastest.route;
+      weatherRouteSelected = false;
+      minutesVsFastest = 0;
+    }
+
+    const selectedIndex = routed?.alternativeIndex ?? 0;
+    alternativeSummaries = scored.map((s) => ({
+      index: s.route.alternativeIndex,
+      distanceKm: s.route.distanceKm,
+      durationMinutes: s.durationMinutes,
+      durationLabel: formatDurationLabel(s.durationMinutes, t),
+      dryness: s.dryness,
+      avgRainProbability: s.avgRainProbability,
+      selected: s.route.alternativeIndex === selectedIndex,
+      geometry: s.route.geometry,
+    }));
   }
 
   const distanceKm = routed?.distanceKm ?? haversineKm(from, to);
@@ -257,31 +460,36 @@ export async function getRouteWeather(
   const durationLabel = formatDurationLabel(durationMinutes, t);
 
   const fractions = sampleFractions(durationHours, distanceKm);
-  const points = fractions.map((frac) => {
-    if (frac <= 0) return { lat: from.lat, lon: from.lon, t: 0 };
-    if (frac >= 1) return { lat: to.lat, lon: to.lon, t: 1 };
-    if (routed?.geometry?.length) {
-      const p = pointAlong(routed.geometry, frac);
-      return { lat: p.lat, lon: p.lon, t: frac };
+  const points = pointsAlongRoute(from, to, routed?.geometry, fractions);
+
+  const reservedNames = new Set(
+    [from.name, to.name].map((n) => n.toLowerCase().trim()).filter(Boolean),
+  );
+
+  const midNames: string[] = [];
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i]!;
+    if (i === 0) {
+      midNames.push(from.name);
+      continue;
     }
-    return {
-      lat: from.lat + (to.lat - from.lat) * frac,
-      lon: from.lon + (to.lon - from.lon) * frac,
-      t: frac,
-    };
-  });
+    if (i === points.length - 1) {
+      midNames.push(to.name);
+      continue;
+    }
+    const fallback =
+      points.length === 3
+        ? t("routes.roleMidpoint")
+        : t("routes.midpointLabel", { n: String(i) });
+    const name = await nameMidpoint(p.lat, p.lon, reservedNames, fallback);
+    reservedNames.add(name.toLowerCase());
+    midNames.push(name);
+  }
 
   const weatherPlaces = points.map((p, i) => ({
     lat: p.lat,
     lon: p.lon,
-    name:
-      i === 0
-        ? from.name
-        : i === points.length - 1
-          ? to.name
-          : points.length === 3
-            ? t("routes.roleMidpoint")
-            : t("routes.midpointLabel", { n: String(i) }),
+    name: midNames[i]!,
   }));
 
   const forecasts = await fetchWeatherBatch(weatherPlaces, locale);
@@ -337,6 +545,11 @@ export async function getRouteWeather(
       advisories,
     );
 
+    const precipitationMm =
+      slot.precipitationMm != null
+        ? slot.precipitationMm
+        : Math.round((slot.precipitationProbability / 100) * 1.2 * 10) / 10;
+
     return {
       name: sample.name,
       role: sample.role,
@@ -346,13 +559,35 @@ export async function getRouteWeather(
       temperatureC: slot.temperatureC,
       condition: slot.condition,
       rainProbability: slot.precipitationProbability,
+      precipitationMm,
       tone,
       advisories,
     };
   });
 
+  const departureHint =
+    prefer === "weather" && weatherRouteSelected
+      ? t("routes.departureHintWeatherRoute", {
+          time: clock,
+          from: from.name,
+          to: to.name,
+          place: best.wettestName,
+          rain: String(best.maxRainProbability),
+          extra:
+            minutesVsFastest && minutesVsFastest > 0
+              ? t("routes.minutesLonger", { m: minutesVsFastest })
+              : t("routes.sameDuration"),
+        })
+      : t("routes.departureHint", {
+          time: clock,
+          from: from.name,
+          to: to.name,
+          place: best.wettestName,
+          rain: String(best.maxRainProbability),
+        });
+
   return {
-    id: `${from.id}-${to.id}-${mode}`,
+    id: `${from.id}-${to.id}-${mode}-${prefer}`,
     title: t("routes.title", { from: from.name, to: to.name }),
     from,
     to,
@@ -361,14 +596,13 @@ export async function getRouteWeather(
     travelMode: mode,
     dryTripGuarantee: best.dryness,
     bestDeparture: clock,
-    departureHint: t("routes.departureHint", {
-      time: clock,
-      from: from.name,
-      to: to.name,
-      place: best.wettestName,
-      rain: String(best.maxRainProbability),
-    }),
+    departureHint,
     geometry: routed?.geometry,
     waypoints,
+    prefer,
+    alternativesCompared,
+    weatherRouteSelected,
+    minutesVsFastest,
+    alternatives: alternativeSummaries.length > 1 ? alternativeSummaries : undefined,
   };
 }

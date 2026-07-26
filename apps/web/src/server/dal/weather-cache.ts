@@ -31,6 +31,8 @@ export async function readWeatherCache(
     const payload = row.payload as WeatherDto;
     // Hourly was added for route dryness — treat pre-hourly rows as a miss.
     if (!payload.hourly?.length) return null;
+    // Hourly precipitation mm added for route waypoints — refetch if missing.
+    if (!payload.hourly.some((h) => h.precipitationMm != null)) return null;
     return payload;
   } catch (error) {
     console.warn("[weather-cache] read failed", error);

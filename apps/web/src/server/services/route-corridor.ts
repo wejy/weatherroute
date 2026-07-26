@@ -73,6 +73,7 @@ export function hourOfLocalKey(time: string): number {
 
 function dailyFallback(weather: WeatherDto | null, atKey: string): {
   precipitationProbability: number;
+  precipitationMm?: number;
   temperatureC: number;
   condition: WeatherCondition;
   conditionLabel: string;
@@ -85,6 +86,10 @@ function dailyFallback(weather: WeatherDto | null, atKey: string): {
       day?.precipitationProbability ??
       weather?.current.precipitationProbability ??
       25,
+    precipitationMm:
+      day?.precipitationMm != null
+        ? Math.round((day.precipitationMm / 8) * 10) / 10
+        : undefined,
     temperatureC:
       day != null
         ? Math.round((day.tempMaxC + day.tempMinC) / 2)
@@ -117,6 +122,7 @@ export function lookupHourly(
     time: key,
     temperatureC: fb.temperatureC,
     precipitationProbability: fb.precipitationProbability,
+    precipitationMm: fb.precipitationMm,
     cloudCover: weather?.current.cloudCover ?? 40,
     condition: fb.condition,
     conditionLabel: fb.conditionLabel,

@@ -11,6 +11,9 @@ interface NominatimReverse {
     town?: string;
     village?: string;
     municipality?: string;
+    city_district?: string;
+    suburb?: string;
+    hamlet?: string;
     county?: string;
     state?: string;
     country?: string;
@@ -54,6 +57,9 @@ export async function nominatimReverse(
     addr.town ||
     addr.village ||
     addr.municipality ||
+    addr.city_district ||
+    addr.suburb ||
+    addr.hamlet ||
     addr.county ||
     data.name ||
     "Current location";

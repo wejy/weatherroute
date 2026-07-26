@@ -42,6 +42,8 @@ function buildHourly(
       time: `${toDateKey(t)}T${pad(t.getHours())}:00`,
       temperatureC: baseTemp - Math.round(Math.sin(i / 4) * 3),
       precipitationProbability: precip,
+      precipitationMm:
+        Math.round(((precip / 100) * (0.2 + (seed % 7) / 10)) * 10) / 10,
       cloudCover: 20 + ((seed + i * 3) % 60),
       condition: cond,
       conditionLabel: label,
