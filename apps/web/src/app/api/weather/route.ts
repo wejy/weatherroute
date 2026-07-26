@@ -20,6 +20,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const weather = await getWeatherForPlace(parsed.data);
+  const { lang, ...rest } = parsed.data;
+  const weather = await getWeatherForPlace({ ...rest, locale: lang });
   return NextResponse.json(weather);
 }

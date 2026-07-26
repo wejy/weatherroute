@@ -16,6 +16,7 @@ type Defaults = {
   datePreset?: string;
   startDate?: string;
   endDate?: string;
+  mode?: string;
 };
 
 export function MapFloatingFilters({

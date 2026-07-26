@@ -1,14 +1,26 @@
 import "server-only";
 
-import type { PlaceDto, RouteDto } from "@/lib/types";
+import type { PlaceDto, RouteDto, TravelMode } from "@/lib/types";
+import { DEFAULT_TRAVEL_MODE } from "@/lib/types";
 import { MOCK_ROUTE, findPlace, haversineKm } from "@/server/integrations/mocks/data";
 import {
-  getDrivingRoute,
+  getMapboxRoute,
   searchPlaces,
 } from "@/server/integrations/mapbox";
+import { TRAVEL_SPEED_KMH } from "@/lib/utils";
 
 function formatDuration(seconds: number): string {
   const totalMinutes = Math.max(1, Math.round(seconds / 60));
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  if (hours <= 0) return `${minutes}m`;
+  if (minutes === 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
+}
+
+function fallbackDurationLabel(distanceKm: number, mode: TravelMode): string {
+  const speed = TRAVEL_SPEED_KMH[mode];
+  const totalMinutes = Math.max(5, Math.round((distanceKm / speed) * 60));
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
   if (hours <= 0) return `${minutes}m`;
@@ -63,8 +75,10 @@ export async function getRouteWeather(
     fromLon?: number;
     toLat?: number;
     toLon?: number;
+    mode?: TravelMode;
   },
 ): Promise<RouteDto> {
+  const mode = opts?.mode ?? DEFAULT_TRAVEL_MODE;
   const from = await resolveEndpoint(
     fromQuery,
     opts?.fromLat != null && opts?.fromLon != null
@@ -78,48 +92,46 @@ export async function getRouteWeather(
       : undefined,
   );
 
-  let driving: Awaited<ReturnType<typeof getDrivingRoute>> = null;
+  let routed: Awaited<ReturnType<typeof getMapboxRoute>> = null;
   try {
-    driving = await getDrivingRoute(from, to);
+    routed = await getMapboxRoute(from, to, mode);
   } catch (error) {
-    console.warn("[route] Mapbox directions failed", error);
+    console.warn(`[route] Mapbox directions (${mode}) failed`, error);
   }
 
-  const distanceKm = driving?.distanceKm ?? haversineKm(from, to);
-  const durationLabel = driving
-    ? formatDuration(driving.durationSeconds)
-    : (() => {
-        const hours = Math.max(1, Math.round(distanceKm / 80));
-        const minutes = Math.round(((distanceKm / 80) % 1) * 60);
-        return `${hours}h ${minutes}m`;
-      })();
+  const distanceKm = routed?.distanceKm ?? haversineKm(from, to);
+  const durationLabel = routed
+    ? formatDuration(routed.durationSeconds)
+    : fallbackDurationLabel(distanceKm, mode);
 
-  const mid = driving?.geometry?.length
-    ? pointAlong(driving.geometry, 0.5)
+  const mid = routed?.geometry?.length
+    ? pointAlong(routed.geometry, 0.5)
     : {
         lat: (from.lat + to.lat) / 2,
         lon: (from.lon + to.lon) / 2,
       };
 
   if (
-    !driving &&
+    !routed &&
+    mode === "driving" &&
     from.name.toLowerCase().includes("helsinki") &&
     to.name.toLowerCase().includes("tampere")
   ) {
-    return MOCK_ROUTE;
+    return { ...MOCK_ROUTE, travelMode: mode };
   }
 
   return {
-    id: `${from.id}-${to.id}`,
+    id: `${from.id}-${to.id}-${mode}`,
     title: `${from.name} to ${to.name}`,
     from,
     to,
     distanceKm,
     durationLabel,
+    travelMode: mode,
     dryTripGuarantee: 78 + (distanceKm % 15),
     bestDeparture: "09:30 AM",
     departureHint: `Leave mid-morning for the driest corridor between ${from.name} and ${to.name}.`,
-    geometry: driving?.geometry,
+    geometry: routed?.geometry,
     waypoints: [
       {
         name: from.name,

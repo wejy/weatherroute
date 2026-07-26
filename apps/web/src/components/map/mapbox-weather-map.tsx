@@ -24,7 +24,7 @@ export function MapboxWeatherMap({
   token,
   locationQuery,
 }: WeatherMapProps) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -219,7 +219,7 @@ export function MapboxWeatherMap({
       <div ref={containerRef} className="absolute inset-0 h-full w-full" />
       {showRadius && radiusKm < 15000 && (
         <div className="pointer-events-none absolute top-4 left-4 z-10 rounded-full border border-primary/20 bg-surface/90 px-3 py-1.5 text-sm font-medium text-primary shadow-sm backdrop-blur-md">
-          {radiusKm.toLocaleString()} km radius
+          {t("map.radiusKm", { km: radiusKm.toLocaleString() })}
         </div>
       )}
 

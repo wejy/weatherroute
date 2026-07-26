@@ -14,6 +14,15 @@ export interface DateWindow {
 
 export type DateLocale = "en" | "fi";
 
+/**
+ * Weekday short labels indexed by Date#getDay() (0 = Sunday).
+ * Finnish uses fixed 2-letter forms (su, ma, …) — never English Sun/Mon.
+ */
+export const WEEKDAY_SHORT: Record<DateLocale, readonly string[]> = {
+  en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  fi: ["su", "ma", "ti", "ke", "to", "pe", "la"],
+};
+
 const DATE_LABELS: Record<
   DateLocale,
   {
@@ -50,6 +59,15 @@ export function parseDateKey(key: string): Date {
   return new Date(y!, m! - 1, day!);
 }
 
+/** Locale-aware weekday abbreviation from a Date or YYYY-MM-DD key. */
+export function weekdayShort(
+  date: Date | string,
+  locale: DateLocale = "en",
+): string {
+  const d = typeof date === "string" ? parseDateKey(date) : date;
+  return WEEKDAY_SHORT[locale][d.getDay()] ?? "";
+}
+
 export function addDays(d: Date, days: number): Date {
   const next = new Date(d);
   next.setDate(next.getDate() + days);
@@ -65,15 +83,16 @@ export function startOfLocalDay(d = new Date()): Date {
 function formatRangeLabel(start: Date, end: Date, locale: DateLocale): string {
   const sameDay = toDateKey(start) === toDateKey(end);
   const tag = locale === "fi" ? "fi-FI" : "en-GB";
-  const opts: Intl.DateTimeFormatOptions = {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
+  const dayPart = (d: Date) => {
+    const wd = weekdayShort(d, locale);
+    const rest = d.toLocaleDateString(tag, {
+      day: "numeric",
+      month: "short",
+    });
+    return `${wd} ${rest}`;
   };
-  if (sameDay) {
-    return start.toLocaleDateString(tag, opts);
-  }
-  return `${start.toLocaleDateString(tag, opts)} – ${end.toLocaleDateString(tag, opts)}`;
+  if (sameDay) return dayPart(start);
+  return `${dayPart(start)} – ${dayPart(end)}`;
 }
 
 /** Upcoming / current Sat–Sun based on local day-of-week. */
@@ -178,4 +197,17 @@ export function maxForecastDateKey(now = new Date()): string {
 
 export function minForecastDateKey(now = new Date()): string {
   return toDateKey(startOfLocalDay(now));
+}
+
+/** Rewrite daily.dayLabel from ISO dates for the active UI locale. */
+export function localizeDayLabels<
+  T extends { daily: Array<{ date: string; dayLabel: string }> },
+>(weather: T, locale: DateLocale): T {
+  return {
+    ...weather,
+    daily: weather.daily.map((d) => ({
+      ...d,
+      dayLabel: weekdayShort(d.date, locale),
+    })),
+  };
 }

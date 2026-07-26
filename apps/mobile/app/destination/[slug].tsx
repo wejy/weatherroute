@@ -20,7 +20,7 @@ export default function DestinationScreen() {
     lon?: string;
     name?: string;
   }>();
-  const { t, translateCondition } = useI18n();
+  const { t, translateCondition, locale } = useI18n();
   const [weather, setWeather] = useState<WeatherDto | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -38,6 +38,7 @@ export default function DestinationScreen() {
         lat,
         lon,
         name: name ?? String(slug).replace(/-/g, " "),
+        lang: locale,
       });
       setWeather(data);
     } catch {
@@ -46,7 +47,7 @@ export default function DestinationScreen() {
     } finally {
       setLoading(false);
     }
-  }, [lat, lon, name, slug, t]);
+  }, [lat, lon, locale, name, slug, t]);
 
   useEffect(() => {
     void load();

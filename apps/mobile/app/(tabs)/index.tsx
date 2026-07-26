@@ -35,7 +35,7 @@ type DatePreset = (typeof DATE_PRESETS)[number];
 type DistanceOption = (typeof DISTANCE_PRESET_KEYS)[number] | "custom";
 
 export default function DiscoverScreen() {
-  const { t, translateCondition } = useI18n();
+  const { t, translateCondition, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const autoStarted = useRef(false);
 
@@ -84,6 +84,7 @@ export default function DiscoverScreen() {
               ? resolveRadiusKm("custom", nextRadius)
               : undefined,
           datePreset: nextPreset,
+          lang: locale,
         });
         setResult(data);
       } catch (e) {
@@ -99,7 +100,7 @@ export default function DiscoverScreen() {
         setLoading(false);
       }
     },
-    [customRadiusKm, datePreset, distance, t],
+    [customRadiusKm, datePreset, distance, locale, t],
   );
 
   const searchPlaces = useCallback(

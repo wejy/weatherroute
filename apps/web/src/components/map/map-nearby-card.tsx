@@ -9,6 +9,7 @@ import {
 } from "@/lib/temp-color";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { useI18n } from "@/components/i18n/locale-provider";
+import { translateCondition } from "@/i18n/translate";
 
 /** Compact 7-day max-temp bars colored by absolute °C scale. */
 export function TempSparkline({
@@ -89,7 +90,7 @@ export function MapNearbyCard({
   href: string;
   compact?: boolean;
 }) {
-  const { t } = useI18n();
+  const { t, dict } = useI18n();
   const d = destination;
   const duration = d.driveDurationLabel ?? "";
   const series = d.tempSeries ?? [];
@@ -173,7 +174,7 @@ export function MapNearbyCard({
                 })}
               </p>
               <p className="text-xs text-on-surface-variant">
-                {d.forecast.conditionLabel}
+                {translateCondition(dict, d.forecast.condition)}
               </p>
               <p className="mt-2 text-xs text-on-surface-variant">
                 {t("map.hoverRain", { pct: d.rainProbability })}

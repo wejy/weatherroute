@@ -10,7 +10,8 @@ import {
   useState,
   useTransition,
 } from "react";
-import type { PlaceDto } from "@/lib/types";
+import type { PlaceDto, TravelMode } from "@/lib/types";
+import { DEFAULT_TRAVEL_MODE, isTravelMode } from "@/lib/types";
 import {
   resolveDateWindow,
   type DatePreset,
@@ -30,6 +31,7 @@ import {
   type GeoDetectMeta,
 } from "@/components/discover/location-origin-field";
 import { DateWhenField } from "@/components/discover/date-when-field";
+import { TravelModeSelector } from "@/components/travel/travel-mode-selector";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
@@ -56,6 +58,7 @@ export function DiscoverSearch({
     datePreset?: string;
     startDate?: string;
     endDate?: string;
+    mode?: string;
   };
   basePath?: string;
   hash?: string;
@@ -111,12 +114,19 @@ export function DiscoverSearch({
   const [weatherGoal, setWeatherGoal] = useState(
     defaults?.weatherGoal ?? "best",
   );
+  const [travelMode, setTravelMode] = useState<TravelMode>(
+    isTravelMode(defaults?.mode) ? defaults.mode : DEFAULT_TRAVEL_MODE,
+  );
   const [error, setError] = useState<string | null>(null);
 
   // Keep local fields in sync when URL/query defaults change (chips ↔ form ↔ map).
   useEffect(() => {
     if (defaults?.weatherGoal) setWeatherGoal(defaults.weatherGoal);
   }, [defaults?.weatherGoal]);
+
+  useEffect(() => {
+    if (isTravelMode(defaults?.mode)) setTravelMode(defaults.mode);
+  }, [defaults?.mode]);
 
   useEffect(() => {
     if (defaults?.distance) setDistance(defaults.distance);
@@ -158,12 +168,14 @@ export function DiscoverSearch({
         radiusKm?: number;
         weatherGoal?: string;
         when?: DateWindow;
+        mode?: TravelMode;
       },
     ) => {
       const nextDistance = overrides?.distance ?? distance;
       const nextRadius = overrides?.radiusKm ?? customRadiusKm;
       const nextGoal = overrides?.weatherGoal ?? weatherGoal;
       const nextWhen = overrides?.when ?? when;
+      const nextMode = overrides?.mode ?? travelMode;
       const params = new URLSearchParams(searchParams.toString());
       params.set("origin", resolved.placeName);
       params.set("lat", String(resolved.lat));
@@ -173,6 +185,7 @@ export function DiscoverSearch({
       params.set("datePreset", nextWhen.preset);
       params.set("startDate", nextWhen.startDate);
       params.set("endDate", nextWhen.endDate);
+      params.set("mode", nextMode);
       if (nextDistance === "custom") {
         params.set("radiusKm", String(nextRadius));
       } else {
@@ -180,7 +193,7 @@ export function DiscoverSearch({
       }
       return params;
     },
-    [customRadiusKm, distance, searchParams, weatherGoal, when],
+    [customRadiusKm, distance, searchParams, travelMode, weatherGoal, when],
   );
 
   const navigateWith = useCallback(
@@ -192,6 +205,7 @@ export function DiscoverSearch({
         radiusKm?: number;
         weatherGoal?: string;
         when?: DateWindow;
+        mode?: TravelMode;
       },
     ) => {
       const url = `${basePath}?${buildParams(resolved, overrides).toString()}${hash || ""}`;
@@ -299,6 +313,19 @@ export function DiscoverSearch({
     });
   }
 
+  function onTravelModeChange(next: TravelMode) {
+    setTravelMode(next);
+    if (place) {
+      navigateWith(place, true, { mode: next });
+      return;
+    }
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("mode", next);
+    startTransition(() => {
+      router.replace(`${basePath}?${params.toString()}${hash || ""}`);
+    });
+  }
+
   const fieldClass = stack
     ? "rounded-xl border border-outline-variant/30 bg-surface-container-low px-3 py-2.5"
     : "group relative flex-1 border-b border-outline-variant/30 px-4 py-3 transition-colors hover:bg-surface-container-low md:px-6 md:py-4 lg:border-r lg:border-b-0";
@@ -356,6 +383,15 @@ export function DiscoverSearch({
             setWhen(next);
             if (place) navigateWith(place, true, { when: next });
           }}
+        />
+      </div>
+
+      <div className={fieldClass}>
+        <p className={labelClass}>{t("travel.modeLabel")}</p>
+        <TravelModeSelector
+          value={travelMode}
+          onChange={onTravelModeChange}
+          size="sm"
         />
       </div>
 

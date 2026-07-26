@@ -6,6 +6,7 @@ import type { MapMarkerDto } from "@/lib/types";
 import { formatTemp, cn } from "@/lib/utils";
 import { TempSparkline } from "@/components/map/map-nearby-card";
 import { useI18n } from "@/components/i18n/locale-provider";
+import { translateCondition } from "@/i18n/translate";
 import {
   fetchWikipediaSummary,
   getCachedWikipedia,
@@ -37,7 +38,7 @@ export function MapMarkerPopup({
   onClose: () => void;
   className?: string;
 }) {
-  const { t, locale } = useI18n();
+  const { t, locale, dict } = useI18n();
   const lang = locale === "fi" ? "fi" : "en";
   const cacheKey = wikipediaCacheKey(marker.name, marker.lat, marker.lon, lang);
   const cached = getCachedWikipedia(cacheKey);
@@ -166,8 +167,10 @@ export function MapMarkerPopup({
               })}
             </p>
           )}
-          {marker.conditionLabel && (
-            <p className="text-on-surface-variant">{marker.conditionLabel}</p>
+          {marker.condition && (
+            <p className="text-on-surface-variant">
+              {translateCondition(dict, marker.condition)}
+            </p>
           )}
           {marker.rainProbability != null && (
             <p className="text-on-surface-variant">

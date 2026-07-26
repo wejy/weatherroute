@@ -169,6 +169,14 @@ const fi = {
     wikipediaUnavailable: "Wikipedia-yhteenvetoa ei löytynyt tälle paikalle.",
     wikipediaNoImage: "Ei kuvaa",
     wikipediaLink: "Wikipedia",
+    radiusKm: "{km} km säde",
+  },
+  travel: {
+    modeLabel: "Kulkuväline",
+    driving: "Auto",
+    cycling: "Pyörä",
+    transit: "Julkiset",
+    transitSoon: "Julkiset tulossa myöhemmin",
   },
   routes: {
     dryTrip: "Kuivan matkan takuu",
@@ -185,6 +193,7 @@ const fi = {
     toPlaceholder: "Osoite, maamerkki tai kaupunki…",
     updateRoute: "Näytä reitti",
     pickBoth: "Valitse sekä lähtö että kohde ehdotuksista.",
+    travelMode: "Millä matkustat?",
   },
   trips: {
     title: "Tallennetut matkat",
@@ -217,6 +226,13 @@ const fi = {
     storm: "Ukkosta",
     snow: "Lunta",
     fog: "Sumua",
+  },
+  uv: {
+    low: "Matala",
+    moderate: "Kohtalainen",
+    high: "Korkea",
+    veryHigh: "Hyvin korkea",
+    extreme: "Äärimmäinen",
   },
   suitability: {
     outdoorTitle: "Täydellinen ulkogrillailuun",

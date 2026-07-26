@@ -33,10 +33,10 @@ export default async function MapPage({
     Object.entries(raw).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]),
   );
   const parsed = discoverQuerySchema.parse(flat);
-  const result = await discoverDestinations(parsed);
+  const locale = await getLocale();
+  const result = await discoverDestinations(parsed, locale);
   const mapboxToken = getMapboxPublicToken();
   const serverToken = getMapboxServerToken();
-  const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
   const hasOrigin = result.origin.id !== "pending";
   const routeFrom = hasOrigin ? result.origin.name : "";
@@ -45,6 +45,7 @@ export default async function MapPage({
     origin: flat.origin ?? parsed.origin ?? (hasOrigin ? result.origin.name : undefined),
     lat: parsed.lat ?? (hasOrigin ? result.origin.lat : undefined),
     lon: parsed.lon ?? (hasOrigin ? result.origin.lon : undefined),
+    mode: parsed.mode,
   };
 
   const filterDefaults = {
@@ -57,6 +58,7 @@ export default async function MapPage({
     datePreset: parsed.datePreset,
     startDate: parsed.startDate,
     endDate: parsed.endDate,
+    mode: parsed.mode,
   };
 
   return (

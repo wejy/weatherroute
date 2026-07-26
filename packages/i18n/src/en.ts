@@ -167,6 +167,14 @@ const en = {
     wikipediaUnavailable: "No Wikipedia summary found for this place.",
     wikipediaNoImage: "No image",
     wikipediaLink: "Wikipedia",
+    radiusKm: "{km} km radius",
+  },
+  travel: {
+    modeLabel: "Travel mode",
+    driving: "Car",
+    cycling: "Bike",
+    transit: "Transit",
+    transitSoon: "Transit coming later",
   },
   routes: {
     dryTrip: "Dry Trip Guarantee",
@@ -183,6 +191,7 @@ const en = {
     toPlaceholder: "Address, landmark, or city…",
     updateRoute: "Show route",
     pickBoth: "Pick both start and destination from the suggestions.",
+    travelMode: "How are you traveling?",
   },
   trips: {
     title: "Saved Trips",
@@ -214,6 +223,13 @@ const en = {
     snow: "Snow",
     fog: "Fog",
   } satisfies Record<WeatherCondition, string>,
+  uv: {
+    low: "Low",
+    moderate: "Moderate",
+    high: "High",
+    veryHigh: "Very high",
+    extreme: "Extreme",
+  },
   suitability: {
     outdoorTitle: "Perfect for Outdoor BBQ",
     outdoorDesc: "Low wind and clear skies expected.",

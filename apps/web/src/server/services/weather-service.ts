@@ -12,11 +12,15 @@ import type {
   PlaceDto,
   PeriodWeatherDto,
   DailyForecastDto,
+  TravelMode,
 } from "@/lib/types";
+import { DEFAULT_TRAVEL_MODE } from "@/lib/types";
 import type { DiscoverQuery } from "@/lib/validation/schemas";
 import {
   listDateKeys,
   resolveDateWindow,
+  weekdayShort,
+  type DateLocale,
   type DatePreset,
 } from "@/lib/dates";
 import { fetchWeather, fetchWeatherBatch } from "@/server/integrations/weather";
@@ -33,7 +37,7 @@ import {
   resolveRadiusKm,
   DISCOVER_WEATHER_CANDIDATE_LIMIT,
 } from "@/lib/distance";
-import { formatDriveDuration } from "@/lib/utils";
+import { formatTravelDuration } from "@/lib/utils";
 
 function scoreWeather(
   goal: WeatherGoal,
@@ -215,11 +219,13 @@ async function resolveOrigin(query: DiscoverQuery): Promise<PlaceDto | null> {
 
 function emptyDiscoverResult(
   query: DiscoverQuery,
+  locale: DateLocale = "en",
 ): DiscoverResultDto {
   const dateWindow = resolveDateWindow({
     preset: (query.datePreset ?? "weekend") as DatePreset,
     startDate: query.startDate,
     endDate: query.endDate,
+    locale,
   });
   const distance = (query.distance ?? "region") as DistanceRange;
   const radiusKm = resolveRadiusKm(distance, query.radiusKm);
@@ -227,8 +233,9 @@ function emptyDiscoverResult(
   return {
     origin: {
       id: "pending",
-      name: "Your location",
-      placeName: "Detecting location…",
+      name: locale === "fi" ? "Sijaintisi" : "Your location",
+      placeName:
+        locale === "fi" ? "Paikannetaan…" : "Detecting location…",
       lat: 64.0,
       lon: 26.0,
     },
@@ -247,20 +254,23 @@ function emptyDiscoverResult(
 
 export async function discoverDestinations(
   query: DiscoverQuery,
+  locale: DateLocale = "en",
 ): Promise<DiscoverResultDto> {
   const origin = await resolveOrigin(query);
   if (!origin) {
-    return emptyDiscoverResult(query);
+    return emptyDiscoverResult(query, locale);
   }
 
   const distance = (query.distance ?? "region") as DistanceRange;
   const radiusKm = resolveRadiusKm(distance, query.radiusKm);
   const goal = query.weatherGoal ?? "best";
+  const travelMode = (query.mode ?? DEFAULT_TRAVEL_MODE) as TravelMode;
 
   const dateWindow = resolveDateWindow({
     preset: (query.datePreset ?? "weekend") as DatePreset,
     startDate: query.startDate,
     endDate: query.endDate,
+    locale,
   });
 
   const candidates = citiesWithinRadius(origin, radiusKm, {
@@ -279,7 +289,7 @@ export async function discoverDestinations(
     })),
   ];
 
-  const weatherBatch = await fetchWeatherBatch(weatherInputs);
+  const weatherBatch = await fetchWeatherBatch(weatherInputs, locale);
   const originWeather = weatherBatch[0] ?? null;
   const candidateWeather = weatherBatch.slice(1);
 
@@ -313,7 +323,7 @@ export async function discoverDestinations(
         description:
           catalog?.description ??
           `${Math.round(city.distanceKm)} km from ${origin.name}`,
-        driveDurationLabel: formatDriveDuration(city.distanceKm),
+        driveDurationLabel: formatTravelDuration(city.distanceKm, travelMode),
         tempSeries,
         current: {
           temperatureC: weather.current.temperatureC,
@@ -401,6 +411,7 @@ export async function getWeatherForPlace(input: {
   lat: number;
   lon: number;
   name?: string;
+  locale?: DateLocale;
 }): Promise<WeatherDto> {
   return fetchWeather(input);
 }
@@ -408,6 +419,7 @@ export async function getWeatherForPlace(input: {
 export function buildSuitability(
   weather: WeatherDto,
   t?: (key: string, vars?: Record<string, string | number>) => string,
+  locale: DateLocale = "en",
 ): SuitabilityBadgeDto[] {
   const badges: SuitabilityBadgeDto[] = [];
   const { current, daily } = weather;
@@ -453,11 +465,12 @@ export function buildSuitability(
 
   const wetDay = daily.find((d) => d.precipitationProbability >= 50);
   if (wetDay) {
+    const day = weekdayShort(wetDay.date, locale);
     badges.push({
       id: "umbrella",
       tone: "warning",
       icon: "umbrella",
-      title: `${tr("suitability.wetTitle")} · ${wetDay.dayLabel}`,
+      title: `${tr("suitability.wetTitle")} · ${day}`,
       description: tr("suitability.wetDesc", {
         pct: wetDay.precipitationProbability,
       }),

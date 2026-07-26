@@ -6,6 +6,7 @@ export {
   getDictionary,
   createTranslator,
   translateCondition,
+  translateUv,
   type Translator,
 } from "./translate";
 export {

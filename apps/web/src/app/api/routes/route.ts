@@ -25,6 +25,7 @@ export async function GET(request: NextRequest) {
     fromLon: parsed.data.fromLon,
     toLat: parsed.data.toLat,
     toLon: parsed.data.toLon,
+    mode: parsed.data.mode,
   });
   return NextResponse.json(route);
 }

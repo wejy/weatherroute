@@ -19,7 +19,7 @@ import {
   type DatePreset,
 } from "@/lib/dates";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
-import { createTranslator, translateCondition } from "@/i18n/translate";
+import { createTranslator, translateCondition, translateUv } from "@/i18n/translate";
 import { routesHref } from "@/lib/discover-query";
 
 export const dynamic = "force-dynamic";
@@ -72,15 +72,16 @@ export default async function DestinationPage({
   const dest = await getDestinationBySlug(slug);
   if (!dest) notFound();
 
+  const locale = await getLocale();
   const weather = await getWeatherForPlace({
     lat: dest.lat,
     lon: dest.lon,
     name: dest.placeName,
+    locale,
   });
-  const locale = await getLocale();
   const dict = getDictionary(locale);
   const t = createTranslator(dict);
-  const badges = buildSuitability(weather, t);
+  const badges = buildSuitability(weather, t, locale);
 
   const window = resolveDateWindow({
     preset: datePreset,
@@ -225,7 +226,7 @@ export default async function DestinationPage({
                 {
                   icon: "device_thermostat",
                   label: t("destination.uvIndex"),
-                  value: weather.current.uvLabel,
+                  value: `${weather.current.uvIndex} · ${translateUv(dict, weather.current.uvIndex)}`,
                 },
               ].map((m) => (
                 <div

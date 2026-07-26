@@ -9,6 +9,7 @@ export const DISCOVER_PARAM_KEYS = [
   "distance",
   "radiusKm",
   "weatherGoal",
+  "mode",
 ] as const;
 
 export const LOCATION_PARAM_KEYS = ["origin", "lat", "lon"] as const;
@@ -76,6 +77,7 @@ export function destinationHref(
     origin?: string;
     lat?: string | number;
     lon?: string | number;
+    mode?: string;
   } = {},
 ): string {
   return withQuery(`/destinations/${slug}`, {
@@ -85,6 +87,7 @@ export function destinationHref(
     origin: opts.origin,
     lat: opts.lat,
     lon: opts.lon,
+    mode: opts.mode,
   });
 }
 
@@ -95,6 +98,7 @@ export function routesHref(opts: {
   origin?: string;
   lat?: string | number;
   lon?: string | number;
+  mode?: string;
 } = {}): string {
   const from = opts.from || opts.origin;
   return withQuery("/routes", {
@@ -103,5 +107,6 @@ export function routesHref(opts: {
     origin: opts.origin || from,
     lat: opts.lat,
     lon: opts.lon,
+    mode: opts.mode,
   });
 }

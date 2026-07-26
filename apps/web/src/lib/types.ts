@@ -26,6 +26,20 @@ export type DistanceRange =
   | "continent"
   | "custom";
 
+/**
+ * Travel mode for ETA + routing.
+ * `transit` reserved for a future Digitransit/OTP integration — not routed yet.
+ */
+export type TravelMode = "driving" | "cycling";
+
+export const TRAVEL_MODES: TravelMode[] = ["driving", "cycling"];
+
+export const DEFAULT_TRAVEL_MODE: TravelMode = "driving";
+
+export function isTravelMode(value: string | undefined | null): value is TravelMode {
+  return value === "driving" || value === "cycling";
+}
+
 export interface Coordinates {
   lat: number;
   lon: number;
@@ -192,6 +206,8 @@ export interface RouteDto {
   to: PlaceDto;
   distanceKm: number;
   durationLabel: string;
+  /** Routing profile used for geometry / duration. */
+  travelMode?: TravelMode;
   dryTripGuarantee: number;
   bestDeparture: string;
   departureHint: string;

@@ -36,3 +36,11 @@ export function translateCondition(
 ): string {
   return dict.conditions[condition] ?? condition;
 }
+
+export function translateUv(dict: Dictionary, uvIndex: number): string {
+  if (uvIndex < 3) return dict.uv.low;
+  if (uvIndex < 6) return dict.uv.moderate;
+  if (uvIndex < 8) return dict.uv.high;
+  if (uvIndex < 11) return dict.uv.veryHigh;
+  return dict.uv.extreme;
+}

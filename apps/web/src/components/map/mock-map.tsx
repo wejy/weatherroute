@@ -53,7 +53,7 @@ export function MockMap({
     lon?: number;
   };
 }) {
-  const { locale } = useI18n();
+  const { locale, t } = useI18n();
   const center = origin ?? {
     id: "center",
     name: "Center",
@@ -129,8 +129,10 @@ export function MockMap({
           <div className="h-4 w-4 rounded-full border-2 border-surface bg-primary shadow-[0_0_15px_rgba(53,37,205,0.5)]" />
           <div className="absolute top-4 rounded-full border border-primary/20 bg-surface/80 px-3 py-1 text-sm font-medium text-primary shadow-sm backdrop-blur-sm">
             {radiusKm >= 10000
-              ? "Global"
-              : `${radiusKm.toLocaleString()} km radius`}
+              ? t("map.global")
+              : t("map.radiusKm", {
+                  km: radiusKm.toLocaleString(),
+                })}
           </div>
         </div>
       )}

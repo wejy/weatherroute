@@ -27,10 +27,10 @@ export default async function HomePage({
     Object.entries(raw).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v]),
   );
   const parsed = discoverQuerySchema.parse(flat);
-  const result = await discoverDestinations(parsed);
+  const locale = await getLocale();
+  const result = await discoverDestinations(parsed, locale);
   const mapboxToken = getMapboxPublicToken();
   const serverToken = getMapboxServerToken();
-  const locale = await getLocale();
   const dict = getDictionary(locale);
   const t = createTranslator(dict);
   const dateWindow = resolveDateWindow({
@@ -102,6 +102,7 @@ export default async function HomePage({
                 datePreset: parsed.datePreset,
                 startDate: parsed.startDate,
                 endDate: parsed.endDate,
+                mode: parsed.mode,
               }}
               showGoalField={false}
             />

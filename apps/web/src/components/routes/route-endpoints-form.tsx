@@ -2,10 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import type { PlaceDto } from "@/lib/types";
+import type { PlaceDto, TravelMode } from "@/lib/types";
+import { DEFAULT_TRAVEL_MODE, isTravelMode } from "@/lib/types";
 import { PlaceAutocomplete } from "@/components/discover/place-autocomplete";
+import { TravelModeSelector } from "@/components/travel/travel-mode-selector";
 import { useI18n } from "@/components/i18n/locale-provider";
-import { routesHref } from "@/lib/discover-query";
 import { cn } from "@/lib/utils";
 
 export function RouteEndpointsForm({
@@ -13,11 +14,13 @@ export function RouteEndpointsForm({
   initialTo,
   fromPlace,
   toPlace,
+  initialMode = DEFAULT_TRAVEL_MODE,
 }: {
   initialFrom: string;
   initialTo: string;
   fromPlace?: PlaceDto;
   toPlace?: PlaceDto;
+  initialMode?: TravelMode;
 }) {
   const { t } = useI18n();
   const router = useRouter();
@@ -26,6 +29,9 @@ export function RouteEndpointsForm({
   const [toText, setToText] = useState(initialTo);
   const [from, setFrom] = useState<PlaceDto | null>(fromPlace ?? null);
   const [to, setTo] = useState<PlaceDto | null>(toPlace ?? null);
+  const [mode, setMode] = useState<TravelMode>(
+    isTravelMode(initialMode) ? initialMode : DEFAULT_TRAVEL_MODE,
+  );
   const [error, setError] = useState<string | null>(null);
 
   function applyRoute() {
@@ -34,18 +40,17 @@ export function RouteEndpointsForm({
       return;
     }
     setError(null);
-    const href = routesHref({
-      from: from.placeName,
-      to: to.placeName,
-      origin: from.placeName,
-      lat: from.lat,
-      lon: from.lon,
-    });
-    const params = new URLSearchParams(href.split("?")[1] || "");
+    const params = new URLSearchParams();
+    params.set("from", from.placeName);
+    params.set("to", to.placeName);
+    params.set("origin", from.placeName);
+    params.set("lat", String(from.lat));
+    params.set("lon", String(from.lon));
     params.set("fromLat", String(from.lat));
     params.set("fromLon", String(from.lon));
     params.set("toLat", String(to.lat));
     params.set("toLon", String(to.lon));
+    params.set("mode", mode);
     startTransition(() => {
       router.push(`/routes?${params.toString()}`);
     });
@@ -53,6 +58,13 @@ export function RouteEndpointsForm({
 
   return (
     <div className="space-y-4 rounded-xl border border-outline-variant/20 bg-surface-container-low p-4">
+      <div>
+        <p className="mb-1.5 text-sm font-medium tracking-wide text-on-surface-variant uppercase">
+          {t("routes.travelMode")}
+        </p>
+        <TravelModeSelector value={mode} onChange={setMode} />
+      </div>
+
       <div>
         <label
           htmlFor="route-from"

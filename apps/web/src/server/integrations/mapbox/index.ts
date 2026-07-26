@@ -195,23 +195,27 @@ function nearestMock(lat: number, lon: number): PlaceDto {
   };
 }
 
-export type DrivingRoute = {
+export type MapboxRouteProfile = "driving" | "cycling";
+
+export type MapboxRoute = {
   distanceKm: number;
   durationSeconds: number;
-  /** [lon, lat] pairs along the road network. */
+  /** [lon, lat] pairs along the road / path network. */
   geometry: [number, number][];
+  profile: MapboxRouteProfile;
 };
 
-/** Mapbox Directions — driving route along real roads. */
-export async function getDrivingRoute(
+/** Mapbox Directions — road/path route for driving or cycling. */
+export async function getMapboxRoute(
   from: { lon: number; lat: number },
   to: { lon: number; lat: number },
-): Promise<DrivingRoute | null> {
+  profile: MapboxRouteProfile = "driving",
+): Promise<MapboxRoute | null> {
   if (!hasMapbox()) return null;
 
   const coords = `${from.lon},${from.lat};${to.lon},${to.lat}`;
   const url = new URL(
-    `https://api.mapbox.com/directions/v5/mapbox/driving/${coords}`,
+    `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coords}`,
   );
   url.searchParams.set("access_token", env.mapboxToken);
   url.searchParams.set("geometries", "geojson");
@@ -241,5 +245,17 @@ export async function getDrivingRoute(
     distanceKm: Math.round(route.distance / 1000),
     durationSeconds: Math.round(route.duration),
     geometry: route.geometry.coordinates,
+    profile,
   };
+}
+
+/** @deprecated Prefer getMapboxRoute(..., "driving") */
+export async function getDrivingRoute(
+  from: { lon: number; lat: number },
+  to: { lon: number; lat: number },
+): Promise<Omit<MapboxRoute, "profile"> | null> {
+  const route = await getMapboxRoute(from, to, "driving");
+  if (!route) return null;
+  const { profile: _p, ...rest } = route;
+  return rest;
 }

@@ -237,6 +237,7 @@ export const MOCK_ROUTE: RouteDto = {
   to: PLACES.find((p) => p.id === "tampere")!,
   distanceKm: 178,
   durationLabel: "2h 10m",
+  travelMode: "driving",
   dryTripGuarantee: 94,
   bestDeparture: "10:00 AM",
   departureHint:

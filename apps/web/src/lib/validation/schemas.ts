@@ -4,6 +4,7 @@ export const weatherQuerySchema = z.object({
   lat: z.coerce.number().min(-90).max(90),
   lon: z.coerce.number().min(-180).max(180),
   name: z.string().optional(),
+  lang: z.enum(["en", "fi"]).optional().default("en"),
 });
 
 export const searchQuerySchema = z.object({
@@ -55,6 +56,8 @@ export const discoverQuerySchema = z.object({
     .enum(["best", "sun", "dry", "mild", "rain", "warm", "calm", "cloudy"])
     .optional()
     .default("best"),
+  mode: z.enum(["driving", "cycling"]).optional().default("driving"),
+  lang: z.enum(["en", "fi"]).optional(),
 });
 
 export const routeQuerySchema = z.object({
@@ -64,6 +67,7 @@ export const routeQuerySchema = z.object({
   fromLon: z.coerce.number().min(-180).max(180).optional(),
   toLat: z.coerce.number().min(-90).max(90).optional(),
   toLon: z.coerce.number().min(-180).max(180).optional(),
+  mode: z.enum(["driving", "cycling"]).optional().default("driving"),
 });
 
 export const wikipediaQuerySchema = z.object({

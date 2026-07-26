@@ -45,12 +45,16 @@ export default async function RoutesPage({
   const fromLon = parseCoord(first(raw.fromLon)) ?? parseCoord(first(raw.lon));
   const toLat = parseCoord(first(raw.toLat));
   const toLon = parseCoord(first(raw.toLon));
+  const modeRaw = first(raw.mode);
+  const mode =
+    modeRaw === "cycling" || modeRaw === "driving" ? modeRaw : "driving";
 
   const route = await getRouteWeather(from, to, {
     fromLat,
     fromLon,
     toLat,
     toLon,
+    mode,
   });
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
@@ -102,11 +106,12 @@ export default async function RoutesPage({
 
             <Suspense fallback={null}>
               <RouteEndpointsForm
-                key={`${route.from.id}-${route.to.id}`}
+                key={`${route.from.id}-${route.to.id}-${mode}`}
                 initialFrom={from}
                 initialTo={to}
                 fromPlace={route.from}
                 toPlace={route.to}
+                initialMode={mode}
               />
             </Suspense>
 

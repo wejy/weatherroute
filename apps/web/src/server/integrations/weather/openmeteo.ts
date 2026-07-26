@@ -6,6 +6,7 @@ import {
   uvLabel,
 } from "@/server/integrations/mocks/data";
 import type { WeatherProvider } from "./types";
+import { weekdayShort } from "@/lib/dates";
 
 interface OpenMeteoResponse {
   latitude: number;
@@ -31,8 +32,6 @@ interface OpenMeteoResponse {
   };
 }
 
-const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
 function toWeatherDto(
   data: OpenMeteoResponse,
   name?: string,
@@ -51,7 +50,8 @@ function toWeatherDto(
     );
     return {
       date,
-      dayLabel: DAY_LABELS[new Date(date).getDay()] ?? date,
+      // EN placeholder; localizeDayLabels(locale) applied before UI.
+      dayLabel: weekdayShort(date, "en"),
       tempMaxC: data.daily!.temperature_2m_max[i] ?? 0,
       tempMinC: data.daily!.temperature_2m_min[i] ?? 0,
       precipitationProbability:

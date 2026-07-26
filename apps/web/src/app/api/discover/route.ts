@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { discoverQuerySchema } from "@/lib/validation/schemas";
 import { rateLimit } from "@/lib/rate-limit";
 import { discoverDestinations } from "@/server/services/weather-service";
+import { getLocale } from "@/i18n/get-dictionary";
 
 export async function GET(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") ?? "local";
@@ -20,6 +21,8 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const result = await discoverDestinations(parsed.data);
+  const locale =
+    parsed.data.lang ?? ((await getLocale()) === "fi" ? "fi" : "en");
+  const result = await discoverDestinations(parsed.data, locale);
   return NextResponse.json(result);
 }

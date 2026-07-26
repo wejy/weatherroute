@@ -3,6 +3,7 @@ import "server-only";
 import type { WeatherDto, DailyForecastDto } from "@/lib/types";
 import { uvLabel } from "@/server/integrations/mocks/data";
 import type { WeatherProvider } from "./types";
+import { weekdayShort, toDateKey } from "@/lib/dates";
 
 /** yr.no fallback stub — returns deterministic mock shaped like a real provider. */
 export const yrProvider: WeatherProvider = {
@@ -14,10 +15,10 @@ export const yrProvider: WeatherProvider = {
     const days: DailyForecastDto[] = Array.from({ length: 16 }, (_, i) => {
       const date = new Date();
       date.setDate(date.getDate() + i);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const key = toDateKey(date);
       return {
         date: key,
-        dayLabel: date.toLocaleDateString("en", { weekday: "short" }),
+        dayLabel: weekdayShort(key, "en"),
         tempMaxC: baseTemp + 2 - (i % 3),
         tempMinC: baseTemp - 4,
         precipitationProbability: (seed + i * 7) % 40,
