@@ -82,6 +82,8 @@ export interface PeriodWeatherDto {
   condition: WeatherCondition;
   conditionLabel: string;
   rainProbability: number;
+  /** Total expected precipitation over the window (mm), when available. */
+  precipitationMm?: number;
   sunshineScore: number;
   cloudCover: number;
 }
@@ -108,9 +110,15 @@ export interface DestinationDto {
   condition: WeatherCondition;
   conditionLabel: string;
   rainProbability: number;
+  /** Period rain total in mm when forecast provides it. */
+  precipitationMm?: number;
   sunshineScore: number;
   imageUrl: string;
   description?: string;
+  /** Estimated drive time label from distance (e.g. "20 min"). */
+  driveDurationLabel?: string;
+  /** Daily max temps in the selected window (for mini charts). */
+  tempSeries?: number[];
   /** Live / now conditions at the destination. */
   current: {
     temperatureC: number;
@@ -152,7 +160,18 @@ export interface MapMarkerDto {
   lon: number;
   temperatureC: number;
   condition: WeatherCondition;
+  /** Current / “now” temperature for hover preview. */
   tomorrowTempC?: number;
+  tempMinC?: number;
+  tempMaxC?: number;
+  rainProbability?: number;
+  precipitationMm?: number;
+  sunshineScore?: number;
+  dateRangeLabel?: string;
+  conditionLabel?: string;
+  distanceKm?: number;
+  driveDurationLabel?: string;
+  tempSeries?: number[];
 }
 
 export interface RouteWaypointDto {

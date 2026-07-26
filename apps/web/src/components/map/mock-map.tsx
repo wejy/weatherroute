@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import type { MapMarkerDto, PlaceDto } from "@/lib/types";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp, cn } from "@/lib/utils";
 import { destinationHref } from "@/lib/discover-query";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { TempSparkline } from "@/components/map/map-nearby-card";
 
 /** Project lat/lon into map % coords relative to origin + radius circle. */
 function project(
@@ -48,6 +52,7 @@ export function MockMap({
     lon?: number;
   };
 }) {
+  const { t } = useI18n();
   const center = origin ?? {
     id: "center",
     name: "Center",
@@ -160,14 +165,64 @@ export function MockMap({
                 </span>
               )}
             </div>
-            <div className="pointer-events-none rounded-lg border border-outline-variant/20 bg-surface/95 p-2 text-center opacity-0 shadow-xl backdrop-blur-xl transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">
+            <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden w-max max-w-[220px] -translate-x-1/2 rounded-xl border border-outline-variant/25 bg-surface/95 p-3 text-left opacity-0 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-opacity [@media(hover:hover)_and_(pointer:fine)]:block [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-focus-visible:opacity-100">
               <p className="text-sm font-semibold text-on-surface">
                 {marker.name}
               </p>
-              {marker.tomorrowTempC != null && !isOrigin && (
-                <p className="text-[13px] font-semibold tracking-wider text-on-surface-variant">
-                  Tom: +{Math.round(marker.tomorrowTempC)}°
-                </p>
+              {!isOrigin && (
+                <div className="mt-1 space-y-0.5 text-[12px] leading-snug text-on-surface-variant">
+                  {marker.distanceKm != null && (
+                    <p>
+                      {t("map.hoverAway", {
+                        km: Math.round(marker.distanceKm),
+                        duration: marker.driveDurationLabel || "",
+                      })}
+                    </p>
+                  )}
+                  {marker.tomorrowTempC != null && (
+                    <p>
+                      {t("map.hoverNow", {
+                        temp: formatTemp(marker.tomorrowTempC),
+                      })}
+                    </p>
+                  )}
+                  {marker.tempMinC != null && marker.tempMaxC != null && (
+                    <p className="font-semibold text-on-surface">
+                      {t("map.hoverForecast", {
+                        label: marker.dateRangeLabel || t("card.forecast"),
+                        min: formatTemp(marker.tempMinC),
+                        max: formatTemp(marker.tempMaxC),
+                      })}
+                    </p>
+                  )}
+                  {marker.conditionLabel && <p>{marker.conditionLabel}</p>}
+                  {marker.rainProbability != null && (
+                    <p>
+                      {t("map.hoverRain", { pct: marker.rainProbability })}
+                    </p>
+                  )}
+                  {marker.precipitationMm != null && (
+                    <p>
+                      {t("map.hoverRainMm", { mm: marker.precipitationMm })}
+                    </p>
+                  )}
+                  {marker.sunshineScore != null && (
+                    <p>
+                      {t("map.hoverSun", { score: marker.sunshineScore })}
+                    </p>
+                  )}
+                  {marker.tempSeries && marker.tempSeries.length >= 2 && (
+                    <div className="mt-1">
+                      <p className="text-[10px] font-medium tracking-wide uppercase">
+                        {t("map.hoverTempChart")}
+                      </p>
+                      <TempSparkline
+                        values={marker.tempSeries}
+                        height={48}
+                      />
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </Link>

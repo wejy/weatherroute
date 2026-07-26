@@ -4,13 +4,121 @@ import { useEffect, useRef } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { cn, formatTemp } from "@/lib/utils";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { circlePolygon, type WeatherMapProps } from "@/components/map/geo";
 import { destinationHref } from "@/lib/discover-query";
+import { useI18n } from "@/components/i18n/locale-provider";
+import { tempSeriesBarsHtml } from "@/components/map/map-nearby-card";
+import type { MapMarkerDto } from "@/lib/types";
+import type { Translator } from "@/i18n/translate";
 
 const STYLE = "mapbox://styles/mapbox/light-v11";
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function markerPopupHtml(
+  marker: MapMarkerDto,
+  t: Translator,
+  href: string,
+): string {
+  if (marker.id.startsWith("origin-")) {
+    return `<strong>${escapeHtml(marker.name)}</strong>`;
+  }
+
+  const rows: string[] = [
+    `<strong style="font-size:15px">${escapeHtml(marker.name)}</strong>`,
+  ];
+
+  if (marker.distanceKm != null) {
+    rows.push(
+      `<div style="opacity:.7;margin-top:4px;font-size:12px">${escapeHtml(
+        t("map.hoverAway", {
+          km: Math.round(marker.distanceKm),
+          duration: marker.driveDurationLabel || "",
+        }),
+      )}</div>`,
+    );
+  }
+
+  if (marker.tomorrowTempC != null) {
+    rows.push(
+      `<div style="margin-top:6px;font-size:13px">${escapeHtml(
+        t("map.hoverNow", { temp: formatTemp(marker.tomorrowTempC) }),
+      )}</div>`,
+    );
+  }
+
+  if (marker.tempMinC != null && marker.tempMaxC != null) {
+    rows.push(
+      `<div style="font-size:13px;font-weight:600">${escapeHtml(
+        t("map.hoverForecast", {
+          label: marker.dateRangeLabel || t("card.forecast"),
+          min: formatTemp(marker.tempMinC),
+          max: formatTemp(marker.tempMaxC),
+        }),
+      )}</div>`,
+    );
+  }
+
+  if (marker.conditionLabel) {
+    rows.push(
+      `<div style="opacity:.75;font-size:12px;margin-top:2px">${escapeHtml(marker.conditionLabel)}</div>`,
+    );
+  }
+
+  if (marker.rainProbability != null) {
+    rows.push(
+      `<div style="margin-top:6px;font-size:12px">${escapeHtml(
+        t("map.hoverRain", { pct: marker.rainProbability }),
+      )}</div>`,
+    );
+  }
+
+  if (marker.precipitationMm != null) {
+    rows.push(
+      `<div style="font-size:12px;opacity:.8">${escapeHtml(
+        t("map.hoverRainMm", { mm: marker.precipitationMm }),
+      )}</div>`,
+    );
+  }
+
+  if (marker.sunshineScore != null) {
+    rows.push(
+      `<div style="font-size:12px;opacity:.8">${escapeHtml(
+        t("map.hoverSun", { score: marker.sunshineScore }),
+      )}</div>`,
+    );
+  }
+
+  if (marker.tempSeries && marker.tempSeries.length >= 2) {
+    rows.push(
+      `<div style="margin-top:8px;font-size:10px;font-weight:600;color:#464555;text-transform:uppercase;letter-spacing:.04em">${escapeHtml(
+        t("map.hoverTempChart"),
+      )}</div>
+      ${tempSeriesBarsHtml(marker.tempSeries)}`,
+    );
+  }
+
+  rows.push(
+    `<a href="${escapeHtml(href)}" style="display:inline-block;margin-top:10px;font-size:13px;font-weight:600;color:#3525cd;text-decoration:underline">${escapeHtml(
+      t("map.openDestination"),
+    )}</a>`,
+  );
+
+  return `<div style="min-width:168px;max-width:240px;line-height:1.35">${rows.join("")}</div>`;
+}
+
+function canHoverPreview(): boolean {
+  if (typeof window === "undefined") return false;
+  return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+}
 
 export function MapboxWeatherMap({
   markers,
@@ -21,12 +129,14 @@ export function MapboxWeatherMap({
   token,
   locationQuery,
 }: WeatherMapProps) {
+  const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
-  const router = useRouter();
   const locationQueryRef = useRef(locationQuery);
   locationQueryRef.current = locationQuery;
+  const tRef = useRef(t);
+  tRef.current = t;
 
   useEffect(() => {
     if (!containerRef.current || !token) return;
@@ -127,25 +237,34 @@ export function MapboxWeatherMap({
               <span>${Math.round(marker.temperatureC)}°</span>
             </div>`;
 
-        el.addEventListener("click", (e) => {
-          e.stopPropagation();
-          if (!isOrigin) {
-            router.push(destinationHref(marker.id, locationQueryRef.current));
-          }
-        });
+        const href = destinationHref(marker.id, locationQueryRef.current);
+        const popup = new mapboxgl.Popup({
+          offset: 16,
+          closeButton: true,
+          closeOnClick: true,
+          maxWidth: "260px",
+        }).setHTML(markerPopupHtml(marker, tRef.current, href));
 
         const m = new mapboxgl.Marker({ element: el, anchor: "bottom" })
           .setLngLat([marker.lon, marker.lat])
-          .setPopup(
-            new mapboxgl.Popup({ offset: 16, closeButton: false }).setHTML(
-              `<strong>${marker.name}</strong>${
-                isOrigin
-                  ? ""
-                  : `<div style="opacity:.7;margin-top:2px">${Math.round(marker.temperatureC)}° · forecast</div>`
-              }`,
-            ),
-          )
+          .setPopup(popup)
           .addTo(map);
+
+        el.addEventListener("click", (e) => {
+          e.stopPropagation();
+          if (isOrigin) return;
+          // Touch / click: open popup with temp chart (don't navigate away).
+          if (!m.getPopup()?.isOpen()) m.togglePopup();
+        });
+
+        if (!isOrigin && canHoverPreview()) {
+          el.addEventListener("mouseenter", () => {
+            if (!m.getPopup()?.isOpen()) m.togglePopup();
+          });
+          el.addEventListener("mouseleave", () => {
+            if (m.getPopup()?.isOpen()) m.togglePopup();
+          });
+        }
 
         markersRef.current.push(m);
       }
@@ -153,7 +272,7 @@ export function MapboxWeatherMap({
 
     if (map.isStyleLoaded()) sync();
     else map.once("load", sync);
-  }, [markers, router]);
+  }, [markers]);
 
   return (
     <div className={cn("relative h-full w-full overflow-hidden", className)}>

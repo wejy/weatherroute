@@ -6,13 +6,12 @@ import { SideNav } from "@/components/layout/side-nav";
 import { BottomNav } from "@/components/layout/top-nav";
 import { DiscoverMap } from "@/components/map/discover-map";
 import { MapFloatingFilters } from "@/components/map/map-filters-panel";
-import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
-import { formatTemp } from "@/lib/utils";
 import { getMapboxPublicToken, getMapboxServerToken } from "@/lib/env";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { destinationHref, routesHref } from "@/lib/discover-query";
+import { MapNearbyCard } from "@/components/map/map-nearby-card";
 
 export const dynamic = "force-dynamic";
 
@@ -75,36 +74,16 @@ export default async function MapPage({
           )}
           <div className="flex flex-col gap-3">
             {result.destinations.slice(0, 8).map((d) => (
-              <Link
+              <MapNearbyCard
                 key={d.id}
+                destination={d}
                 href={destinationHref(d.slug, {
                   datePreset: parsed.datePreset,
                   startDate: result.startDate,
                   endDate: result.endDate,
                   ...originQuery,
                 })}
-                className="cursor-pointer rounded-xl border border-surface-variant bg-surface-container-lowest p-4 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] transition-colors hover:border-primary/50"
-              >
-                <div className="mb-2 flex items-start justify-between">
-                  <h3 className="m-0 text-xl font-semibold text-on-surface">
-                    {d.name}
-                  </h3>
-                  <span
-                    className={`material-symbols-outlined fill-icon ${weatherIconClass(d.condition)}`}
-                  >
-                    {weatherIcon(d.condition)}
-                  </span>
-                </div>
-                <p className="mb-3 text-sm text-on-surface-variant">
-                  {t("map.kmAway", {
-                    km: d.distanceKm,
-                    temp: formatTemp(d.temperatureC),
-                  })}
-                </p>
-                <span className="rounded-full bg-surface-container px-2 py-1 text-sm text-secondary">
-                  {t("map.rainProbability", { pct: d.rainProbability })}
-                </span>
-              </Link>
+              />
             ))}
           </div>
         </div>
@@ -151,6 +130,27 @@ export default async function MapPage({
           locationQuery={originQuery}
           className="absolute inset-0"
         />
+
+        {/* Below lg the side nav is hidden — show nearby cards + charts here */}
+        {hasOrigin && result.destinations.length > 0 && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-20 z-20 lg:hidden">
+            <div className="pointer-events-auto flex gap-3 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {result.destinations.slice(0, 8).map((d) => (
+                <MapNearbyCard
+                  key={`m-${d.id}`}
+                  destination={d}
+                  compact
+                  href={destinationHref(d.slug, {
+                    datePreset: parsed.datePreset,
+                    startDate: result.startDate,
+                    endDate: result.endDate,
+                    ...originQuery,
+                  })}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="pointer-events-none absolute top-4 right-4 left-4 z-20 flex items-start justify-between gap-3 lg:left-[21rem]">
           <Suspense fallback={null}>

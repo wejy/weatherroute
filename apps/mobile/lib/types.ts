@@ -39,6 +39,7 @@ export interface PeriodWeatherDto {
   condition: WeatherCondition;
   conditionLabel: string;
   rainProbability: number;
+  precipitationMm?: number;
   sunshineScore: number;
   cloudCover: number;
 }
@@ -56,9 +57,12 @@ export interface DestinationDto {
   condition: WeatherCondition;
   conditionLabel: string;
   rainProbability: number;
+  precipitationMm?: number;
   sunshineScore: number;
   imageUrl: string;
   description?: string;
+  driveDurationLabel?: string;
+  tempSeries?: number[];
   current: {
     temperatureC: number;
     condition: WeatherCondition;

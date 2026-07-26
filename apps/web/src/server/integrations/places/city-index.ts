@@ -81,11 +81,64 @@ export const CITY_INDEX: CityIndexEntry[] = [
 
   // Germany (dense CE coverage)
   { id: "berlin", name: "Berlin", placeName: "Berlin, Germany", country: "Germany", countryCode: "DE", lat: 52.52, lon: 13.405, population: 3700000 },
+  // Berlin / Brandenburg metro (short-radius alternatives)
+  { id: "potsdam", name: "Potsdam", placeName: "Potsdam, Germany", country: "Germany", countryCode: "DE", lat: 52.3906, lon: 13.0645, population: 180000 },
+  { id: "oranienburg", name: "Oranienburg", placeName: "Oranienburg, Germany", country: "Germany", countryCode: "DE", lat: 52.755, lon: 13.2369, population: 45000 },
+  { id: "bernau", name: "Bernau", placeName: "Bernau bei Berlin, Germany", country: "Germany", countryCode: "DE", lat: 52.6798, lon: 13.5871, population: 42000 },
+  { id: "strausberg", name: "Strausberg", placeName: "Strausberg, Germany", country: "Germany", countryCode: "DE", lat: 52.5789, lon: 13.8872, population: 27000 },
+  { id: "falkensee", name: "Falkensee", placeName: "Falkensee, Germany", country: "Germany", countryCode: "DE", lat: 52.5583, lon: 13.0928, population: 44000 },
+  { id: "hennigsdorf", name: "Hennigsdorf", placeName: "Hennigsdorf, Germany", country: "Germany", countryCode: "DE", lat: 52.6361, lon: 13.2056, population: 27000 },
+  { id: "teltow", name: "Teltow", placeName: "Teltow, Germany", country: "Germany", countryCode: "DE", lat: 52.4019, lon: 13.2681, population: 27000 },
+  { id: "konigs_wusterhausen", name: "Königs Wusterhausen", placeName: "Königs Wusterhausen, Germany", country: "Germany", countryCode: "DE", lat: 52.3014, lon: 13.6311, population: 38000 },
+  { id: "ludwigsfelde", name: "Ludwigsfelde", placeName: "Ludwigsfelde, Germany", country: "Germany", countryCode: "DE", lat: 52.3031, lon: 13.2542, population: 28000 },
+  { id: "nauen", name: "Nauen", placeName: "Nauen, Germany", country: "Germany", countryCode: "DE", lat: 52.6072, lon: 12.8731, population: 19000 },
+  { id: "eberswalde", name: "Eberswalde", placeName: "Eberswalde, Germany", country: "Germany", countryCode: "DE", lat: 52.8333, lon: 13.8167, population: 42000 },
+  { id: "furstenwalde", name: "Fürstenwalde", placeName: "Fürstenwalde, Germany", country: "Germany", countryCode: "DE", lat: 52.3592, lon: 14.0689, population: 32000 },
+  { id: "brandenburg_havel", name: "Brandenburg an der Havel", placeName: "Brandenburg an der Havel, Germany", country: "Germany", countryCode: "DE", lat: 52.4125, lon: 12.5316, population: 72000 },
+  { id: "neuruppin", name: "Neuruppin", placeName: "Neuruppin, Germany", country: "Germany", countryCode: "DE", lat: 52.9286, lon: 12.8031, population: 32000 },
+  { id: "werder_havel", name: "Werder", placeName: "Werder (Havel), Germany", country: "Germany", countryCode: "DE", lat: 52.3764, lon: 12.9342, population: 27000 },
+  { id: "beelitz", name: "Beelitz", placeName: "Beelitz, Germany", country: "Germany", countryCode: "DE", lat: 52.2381, lon: 12.9714, population: 13000 },
+  { id: "juterbog", name: "Jüterbog", placeName: "Jüterbog, Germany", country: "Germany", countryCode: "DE", lat: 51.9961, lon: 13.0797, population: 12000 },
+  { id: "frankfurt_oder", name: "Frankfurt (Oder)", placeName: "Frankfurt (Oder), Germany", country: "Germany", countryCode: "DE", lat: 52.3472, lon: 14.5506, population: 57000 },
+  { id: "cottbus", name: "Cottbus", placeName: "Cottbus, Germany", country: "Germany", countryCode: "DE", lat: 51.7606, lon: 14.3342, population: 99000 },
   { id: "hamburg", name: "Hamburg", placeName: "Hamburg, Germany", country: "Germany", countryCode: "DE", lat: 53.5511, lon: 9.9937, population: 1900000 },
+  // Hamburg metro
+  { id: "luneburg", name: "Lüneburg", placeName: "Lüneburg, Germany", country: "Germany", countryCode: "DE", lat: 53.2509, lon: 10.4144, population: 77000 },
+  { id: "stade", name: "Stade", placeName: "Stade, Germany", country: "Germany", countryCode: "DE", lat: 53.5937, lon: 9.4763, population: 48000 },
+  { id: "pinneberg", name: "Pinneberg", placeName: "Pinneberg, Germany", country: "Germany", countryCode: "DE", lat: 53.6617, lon: 9.7981, population: 44000 },
+  { id: "norderstedt", name: "Norderstedt", placeName: "Norderstedt, Germany", country: "Germany", countryCode: "DE", lat: 53.7083, lon: 10.0, population: 82000 },
+  { id: "winsen", name: "Winsen", placeName: "Winsen (Luhe), Germany", country: "Germany", countryCode: "DE", lat: 53.3575, lon: 10.2128, population: 36000 },
   { id: "munich", name: "Munich", placeName: "Munich, Germany", country: "Germany", countryCode: "DE", lat: 48.1351, lon: 11.582, population: 1500000 },
+  // Munich metro
+  { id: "freising", name: "Freising", placeName: "Freising, Germany", country: "Germany", countryCode: "DE", lat: 48.4028, lon: 11.7486, population: 50000 },
+  { id: "erding", name: "Erding", placeName: "Erding, Germany", country: "Germany", countryCode: "DE", lat: 48.3061, lon: 11.9067, population: 37000 },
+  { id: "dachau", name: "Dachau", placeName: "Dachau, Germany", country: "Germany", countryCode: "DE", lat: 48.26, lon: 11.4342, population: 48000 },
+  { id: "furstenfeldbruck", name: "Fürstenfeldbruck", placeName: "Fürstenfeldbruck, Germany", country: "Germany", countryCode: "DE", lat: 48.1778, lon: 11.2547, population: 37000 },
+  { id: "starnberg", name: "Starnberg", placeName: "Starnberg, Germany", country: "Germany", countryCode: "DE", lat: 47.9972, lon: 11.3406, population: 24000 },
+  { id: "rosenheim", name: "Rosenheim", placeName: "Rosenheim, Germany", country: "Germany", countryCode: "DE", lat: 47.8561, lon: 12.1289, population: 64000 },
+  { id: "landshut", name: "Landshut", placeName: "Landshut, Germany", country: "Germany", countryCode: "DE", lat: 48.5369, lon: 12.1514, population: 73000 },
+  { id: "ingolstadt", name: "Ingolstadt", placeName: "Ingolstadt, Germany", country: "Germany", countryCode: "DE", lat: 48.7665, lon: 11.4257, population: 140000 },
   { id: "cologne", name: "Cologne", placeName: "Cologne, Germany", country: "Germany", countryCode: "DE", lat: 50.9375, lon: 6.9603, population: 1100000 },
+  // Rhine-Ruhr extras for short radius
+  { id: "leverkusen", name: "Leverkusen", placeName: "Leverkusen, Germany", country: "Germany", countryCode: "DE", lat: 51.0459, lon: 6.9853, population: 165000 },
+  { id: "neuss", name: "Neuss", placeName: "Neuss, Germany", country: "Germany", countryCode: "DE", lat: 51.1987, lon: 6.685, population: 155000 },
+  { id: "solingen", name: "Solingen", placeName: "Solingen, Germany", country: "Germany", countryCode: "DE", lat: 51.1652, lon: 7.067, population: 160000 },
+  { id: "remscheid", name: "Remscheid", placeName: "Remscheid, Germany", country: "Germany", countryCode: "DE", lat: 51.1787, lon: 7.1897, population: 110000 },
+  { id: "bergisch_gladbach", name: "Bergisch Gladbach", placeName: "Bergisch Gladbach, Germany", country: "Germany", countryCode: "DE", lat: 50.9918, lon: 7.1302, population: 110000 },
   { id: "frankfurt", name: "Frankfurt", placeName: "Frankfurt, Germany", country: "Germany", countryCode: "DE", lat: 50.1109, lon: 8.6821, population: 760000 },
+  // Frankfurt Rhein-Main
+  { id: "offenbach", name: "Offenbach", placeName: "Offenbach am Main, Germany", country: "Germany", countryCode: "DE", lat: 50.1006, lon: 8.7665, population: 140000 },
+  { id: "darmstadt", name: "Darmstadt", placeName: "Darmstadt, Germany", country: "Germany", countryCode: "DE", lat: 49.8728, lon: 8.6512, population: 160000 },
+  { id: "hanau", name: "Hanau", placeName: "Hanau, Germany", country: "Germany", countryCode: "DE", lat: 50.1333, lon: 8.9167, population: 97000 },
+  { id: "bad_homburg", name: "Bad Homburg", placeName: "Bad Homburg, Germany", country: "Germany", countryCode: "DE", lat: 50.2268, lon: 8.6182, population: 55000 },
+  { id: "ruesselsheim", name: "Rüsselsheim", placeName: "Rüsselsheim, Germany", country: "Germany", countryCode: "DE", lat: 49.9917, lon: 8.4119, population: 66000 },
   { id: "stuttgart", name: "Stuttgart", placeName: "Stuttgart, Germany", country: "Germany", countryCode: "DE", lat: 48.7758, lon: 9.1829, population: 630000 },
+  // Stuttgart metro
+  { id: "ludwigsburg", name: "Ludwigsburg", placeName: "Ludwigsburg, Germany", country: "Germany", countryCode: "DE", lat: 48.8974, lon: 9.1916, population: 94000 },
+  { id: "esslingen", name: "Esslingen", placeName: "Esslingen am Neckar, Germany", country: "Germany", countryCode: "DE", lat: 48.7421, lon: 9.309, population: 94000 },
+  { id: "tubingen", name: "Tübingen", placeName: "Tübingen, Germany", country: "Germany", countryCode: "DE", lat: 48.5216, lon: 9.0576, population: 92000 },
+  { id: "reutlingen", name: "Reutlingen", placeName: "Reutlingen, Germany", country: "Germany", countryCode: "DE", lat: 48.4914, lon: 9.2045, population: 116000 },
+  { id: "heilbronn", name: "Heilbronn", placeName: "Heilbronn, Germany", country: "Germany", countryCode: "DE", lat: 49.1427, lon: 9.2109, population: 126000 },
   { id: "dusseldorf", name: "Düsseldorf", placeName: "Düsseldorf, Germany", country: "Germany", countryCode: "DE", lat: 51.2277, lon: 6.7735, population: 620000 },
   { id: "dortmund", name: "Dortmund", placeName: "Dortmund, Germany", country: "Germany", countryCode: "DE", lat: 51.5136, lon: 7.4653, population: 590000 },
   { id: "essen", name: "Essen", placeName: "Essen, Germany", country: "Germany", countryCode: "DE", lat: 51.4556, lon: 7.0116, population: 580000 },
@@ -117,7 +170,6 @@ export const CITY_INDEX: CityIndexEntry[] = [
   { id: "rostock", name: "Rostock", placeName: "Rostock, Germany", country: "Germany", countryCode: "DE", lat: 54.0924, lon: 12.0991, population: 210000 },
   { id: "magdeburg", name: "Magdeburg", placeName: "Magdeburg, Germany", country: "Germany", countryCode: "DE", lat: 52.1205, lon: 11.6276, population: 235000 },
   { id: "erfurt", name: "Erfurt", placeName: "Erfurt, Germany", country: "Germany", countryCode: "DE", lat: 50.9848, lon: 11.0299, population: 215000 },
-  { id: "potsdam", name: "Potsdam", placeName: "Potsdam, Germany", country: "Germany", countryCode: "DE", lat: 52.3906, lon: 13.0645, population: 180000 },
   { id: "regensburg", name: "Regensburg", placeName: "Regensburg, Germany", country: "Germany", countryCode: "DE", lat: 49.0134, lon: 12.1016, population: 150000 },
   { id: "wurzburg", name: "Würzburg", placeName: "Würzburg, Germany", country: "Germany", countryCode: "DE", lat: 49.7913, lon: 9.9534, population: 130000 },
   { id: "ulm", name: "Ulm", placeName: "Ulm, Germany", country: "Germany", countryCode: "DE", lat: 48.4011, lon: 9.9876, population: 125000 },
@@ -213,9 +265,9 @@ export const CITY_INDEX: CityIndexEntry[] = [
   { id: "singapore", name: "Singapore", placeName: "Singapore", country: "Singapore", countryCode: "SG", lat: 1.3521, lon: 103.8198, population: 5700000 },
 ];
 
-/** Larger + nearer wins before weather is fetched. */
+/** Larger + nearer wins before weather is fetched. Distance weighs more so short radii fill with local options. */
 export function candidateRankScore(population: number, distanceKm: number): number {
-  return Math.log10(population + 1) * 45 - distanceKm;
+  return Math.log10(population + 1) * 30 - distanceKm * 1.8;
 }
 
 export function citiesWithinRadius(

@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import {
   Area,
   AreaChart,
@@ -16,6 +16,13 @@ import {
 } from "recharts";
 import type { DailyForecastDto } from "@/lib/types";
 import { formatTemp } from "@/lib/utils";
+import {
+  TEMP_SCALE_MAX_C,
+  TEMP_SCALE_MIN_C,
+  temperatureColor,
+  temperatureScaleCssGradient,
+  temperatureSeriesGradientStops,
+} from "@/lib/temp-color";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { translateCondition } from "@/i18n/translate";
 import type { Dictionary } from "@/i18n/dictionaries/en";
@@ -24,15 +31,12 @@ import type { Translator } from "@/i18n/translate";
 type ChartDay = DailyForecastDto & { inPeriod: boolean };
 
 const COLORS = {
-  primary: "#4f46e5",
-  primarySoft: "#c3c0ff",
   secondary: "#006591",
   secondaryBright: "#39b8fd",
   surfaceVariant: "#e4e1ee",
   onSurface: "#1b1b24",
   onSurfaceVariant: "#464555",
   grid: "rgba(70, 69, 85, 0.12)",
-  tooltipBg: "rgba(252, 248, 255, 0.96)",
 };
 
 function ChartTooltipShell({
@@ -78,7 +82,13 @@ function TemperatureTooltip({
     <ChartTooltipShell {...props} tripWindowLabel={tripWindowLabel}>
       {(day) => (
         <p className="text-sm font-semibold text-on-surface">
-          {formatTemp(day.tempMinC)}–{formatTemp(day.tempMaxC)}C
+          <span style={{ color: temperatureColor(day.tempMaxC) }}>
+            {formatTemp(day.tempMaxC)}
+          </span>
+          <span className="text-on-surface-variant">–</span>
+          <span style={{ color: temperatureColor(day.tempMinC) }}>
+            {formatTemp(day.tempMinC)}
+          </span>
           <span className="ml-1.5 font-normal text-on-surface-variant">
             {translateCondition(dict, day.condition)}
           </span>
@@ -122,6 +132,49 @@ function PrecipTooltip({
   );
 }
 
+function TempScaleLegend({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-2" title={label}>
+      <span className="text-xs font-medium text-on-surface-variant">
+        {TEMP_SCALE_MIN_C}°
+      </span>
+      <div
+        className="h-2.5 w-28 rounded-full border border-outline-variant/20 shadow-inner sm:w-36"
+        style={{ background: temperatureScaleCssGradient() }}
+        aria-hidden="true"
+      />
+      <span className="text-xs font-medium text-on-surface-variant">
+        +{TEMP_SCALE_MAX_C}°
+      </span>
+    </div>
+  );
+}
+
+function TempDot({
+  cx,
+  cy,
+  payload,
+  dataKey,
+}: {
+  cx?: number;
+  cy?: number;
+  payload?: ChartDay;
+  dataKey: "tempMaxC" | "tempMinC";
+}) {
+  if (cx == null || cy == null || !payload) return null;
+  const fill = temperatureColor(payload[dataKey]);
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={dataKey === "tempMaxC" ? 4.5 : 3.5}
+      fill={fill}
+      stroke="#fff"
+      strokeWidth={2}
+    />
+  );
+}
+
 export function ForecastCharts({
   days,
   periodStart,
@@ -134,6 +187,7 @@ export function ForecastCharts({
   provider: string;
 }) {
   const { t, dict } = useI18n();
+  const gid = useId().replace(/:/g, "");
   const tripWindowLabel = t("destination.tripWindow");
   const data: ChartDay[] = days.map((day) => ({
     ...day,
@@ -144,16 +198,19 @@ export function ForecastCharts({
     (d) => d.precipitationMm != null && !Number.isNaN(d.precipitationMm),
   );
   const maxMm = hasPrecipMm
-    ? Math.max(
-        2,
-        ...data.map((d) => d.precipitationMm ?? 0),
-      )
+    ? Math.max(2, ...data.map((d) => d.precipitationMm ?? 0))
     : 0;
   const mmDomainMax = Math.ceil(maxMm * 1.15 * 2) / 2;
 
   const temps = data.flatMap((d) => [d.tempMinC, d.tempMaxC]);
   const tempMin = Math.floor(Math.min(...temps) - 2);
   const tempMax = Math.ceil(Math.max(...temps) + 2);
+
+  const maxStops = temperatureSeriesGradientStops(data.map((d) => d.tempMaxC));
+  const minStops = temperatureSeriesGradientStops(data.map((d) => d.tempMinC));
+  const maxStrokeId = `tempMaxStroke-${gid}`;
+  const maxFillId = `tempMaxFill-${gid}`;
+  const minStrokeId = `tempMinStroke-${gid}`;
 
   return (
     <div className="space-y-8">
@@ -162,15 +219,22 @@ export function ForecastCharts({
           <h2 className="text-xl font-semibold text-on-surface">
             {t("destination.chartsTemp")}
           </h2>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <span className="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
-              <span className="h-2.5 w-2.5 rounded-full bg-primary-container" />
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ background: temperatureColor(28) }}
+              />
               {t("destination.high")}
             </span>
             <span className="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
-              <span className="h-2.5 w-2.5 rounded-full bg-primary-fixed-dim" />
+              <span
+                className="h-2.5 w-2.5 rounded-full"
+                style={{ background: temperatureColor(8) }}
+              />
               {t("destination.low")}
             </span>
+            <TempScaleLegend label={t("destination.tempScale")} />
           </div>
         </div>
 
@@ -181,29 +245,45 @@ export function ForecastCharts({
               margin={{ top: 12, right: 8, left: -12, bottom: 0 }}
             >
               <defs>
-                <linearGradient id="tempMaxFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="0%"
-                    stopColor={COLORS.primary}
-                    stopOpacity={0.28}
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor={COLORS.primary}
-                    stopOpacity={0.02}
-                  />
+                <linearGradient
+                  id={maxStrokeId}
+                  x1="0"
+                  y1="0"
+                  x2="1"
+                  y2="0"
+                >
+                  {maxStops.map((s) => (
+                    <stop
+                      key={`max-s-${s.offset}`}
+                      offset={s.offset}
+                      stopColor={s.color}
+                    />
+                  ))}
                 </linearGradient>
-                <linearGradient id="tempMinFill" x1="0" y1="0" x2="0" y2="1">
-                  <stop
-                    offset="0%"
-                    stopColor={COLORS.primarySoft}
-                    stopOpacity={0.35}
-                  />
-                  <stop
-                    offset="100%"
-                    stopColor={COLORS.primarySoft}
-                    stopOpacity={0.02}
-                  />
+                <linearGradient id={maxFillId} x1="0" y1="0" x2="1" y2="0">
+                  {maxStops.map((s) => (
+                    <stop
+                      key={`max-f-${s.offset}`}
+                      offset={s.offset}
+                      stopColor={s.color}
+                      stopOpacity={0.28}
+                    />
+                  ))}
+                </linearGradient>
+                <linearGradient
+                  id={minStrokeId}
+                  x1="0"
+                  y1="0"
+                  x2="1"
+                  y2="0"
+                >
+                  {minStops.map((s) => (
+                    <stop
+                      key={`min-s-${s.offset}`}
+                      offset={s.offset}
+                      stopColor={s.color}
+                    />
+                  ))}
                 </linearGradient>
               </defs>
               <CartesianGrid
@@ -213,7 +293,11 @@ export function ForecastCharts({
               />
               <XAxis
                 dataKey="dayLabel"
-                tick={{ fill: COLORS.onSurfaceVariant, fontSize: 12, fontWeight: 600 }}
+                tick={{
+                  fill: COLORS.onSurfaceVariant,
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
                 axisLine={false}
                 tickLine={false}
                 dy={8}
@@ -234,41 +318,41 @@ export function ForecastCharts({
                   />
                 }
                 cursor={{
-                  stroke: COLORS.primarySoft,
+                  stroke: COLORS.onSurfaceVariant,
                   strokeWidth: 1,
                   strokeDasharray: "4 4",
+                  strokeOpacity: 0.35,
                 }}
               />
               <Area
                 type="monotone"
                 dataKey="tempMaxC"
                 name="High"
-                stroke={COLORS.primary}
+                stroke={`url(#${maxStrokeId})`}
                 strokeWidth={2.5}
-                fill="url(#tempMaxFill)"
+                fill={`url(#${maxFillId})`}
                 animationDuration={900}
                 animationEasing="ease-out"
+                dot={<TempDot dataKey="tempMaxC" />}
                 activeDot={{
-                  r: 5,
+                  r: 6,
                   strokeWidth: 2,
                   stroke: "#fff",
-                  fill: COLORS.primary,
                 }}
               />
               <Line
                 type="monotone"
                 dataKey="tempMinC"
                 name="Low"
-                stroke={COLORS.primarySoft}
+                stroke={`url(#${minStrokeId})`}
                 strokeWidth={2}
-                dot={false}
+                dot={<TempDot dataKey="tempMinC" />}
                 animationDuration={1100}
                 animationEasing="ease-out"
                 activeDot={{
-                  r: 4,
+                  r: 5,
                   strokeWidth: 2,
                   stroke: "#fff",
-                  fill: COLORS.primarySoft,
                 }}
               />
             </AreaChart>
@@ -313,7 +397,7 @@ export function ForecastCharts({
               barCategoryGap="22%"
             >
               <defs>
-                <linearGradient id="precipFill" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id={`precipFill-${gid}`} x1="0" y1="0" x2="0" y2="1">
                   <stop
                     offset="0%"
                     stopColor={COLORS.secondaryBright}
@@ -333,7 +417,11 @@ export function ForecastCharts({
               />
               <XAxis
                 dataKey="dayLabel"
-                tick={{ fill: COLORS.onSurfaceVariant, fontSize: 12, fontWeight: 600 }}
+                tick={{
+                  fill: COLORS.onSurfaceVariant,
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
                 axisLine={false}
                 tickLine={false}
                 dy={8}
@@ -391,7 +479,7 @@ export function ForecastCharts({
                 yAxisId="pct"
                 dataKey="precipitationProbability"
                 name="Precip"
-                fill="url(#precipFill)"
+                fill={`url(#precipFill-${gid})`}
                 radius={[6, 6, 2, 2]}
                 maxBarSize={28}
                 animationDuration={1000}
@@ -402,7 +490,7 @@ export function ForecastCharts({
                     key={`precip-${day.date}`}
                     fill={
                       day.inPeriod
-                        ? "url(#precipFill)"
+                        ? `url(#precipFill-${gid})`
                         : COLORS.secondaryBright
                     }
                     fillOpacity={day.inPeriod ? 1 : 0.3}

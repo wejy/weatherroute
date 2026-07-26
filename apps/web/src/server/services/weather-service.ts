@@ -33,6 +33,7 @@ import {
   resolveRadiusKm,
   DISCOVER_WEATHER_CANDIDATE_LIMIT,
 } from "@/lib/distance";
+import { formatDriveDuration } from "@/lib/utils";
 
 function scoreWeather(
   goal: WeatherGoal,
@@ -148,6 +149,13 @@ export function summarizePeriod(
   const rainProbability = Math.round(
     days.reduce((s, d) => s + d.precipitationProbability, 0) / days.length,
   );
+  const precipValues = days
+    .map((d) => d.precipitationMm)
+    .filter((v): v is number => v != null && Number.isFinite(v));
+  const precipitationMm =
+    precipValues.length > 0
+      ? Math.round(precipValues.reduce((s, v) => s + v, 0) * 10) / 10
+      : undefined;
   const cloudCover = Math.round(
     days.reduce((s, d) => s + d.cloudCover, 0) / days.length,
   );
@@ -174,6 +182,7 @@ export function summarizePeriod(
     condition: representative.condition,
     conditionLabel: representative.conditionLabel,
     rainProbability,
+    precipitationMm,
     sunshineScore,
     cloudCover,
   };
@@ -280,6 +289,10 @@ export async function discoverDestinations(
       if (!weather) return [];
       const catalog = catalogById.get(city.id);
       const forecast = summarizePeriod(weather, dateWindow);
+      // Always use a multi-day series for sparkline (trip window alone may be 1 day).
+      const tempSeries = weather.daily
+        .slice(0, 7)
+        .map((d) => Math.round(d.tempMaxC));
 
       const dest: DestinationDto = {
         id: city.id,
@@ -294,11 +307,14 @@ export async function discoverDestinations(
         condition: forecast.condition,
         conditionLabel: forecast.conditionLabel,
         rainProbability: forecast.rainProbability,
+        precipitationMm: forecast.precipitationMm,
         sunshineScore: forecast.sunshineScore,
         imageUrl: catalog?.imageUrl ?? placeholderImageFor(city.id),
         description:
           catalog?.description ??
           `${Math.round(city.distanceKm)} km from ${origin.name}`,
+        driveDurationLabel: formatDriveDuration(city.distanceKm),
+        tempSeries,
         current: {
           temperatureC: weather.current.temperatureC,
           condition: weather.current.condition,
@@ -343,6 +359,16 @@ export async function discoverDestinations(
       temperatureC: d.forecast.tempMaxC,
       condition: d.forecast.condition,
       tomorrowTempC: d.current.temperatureC,
+      tempMinC: d.forecast.tempMinC,
+      tempMaxC: d.forecast.tempMaxC,
+      rainProbability: d.rainProbability,
+      precipitationMm: d.precipitationMm,
+      sunshineScore: d.sunshineScore,
+      dateRangeLabel: d.forecast.rangeLabel,
+      conditionLabel: d.forecast.conditionLabel,
+      distanceKm: d.distanceKm,
+      driveDurationLabel: d.driveDurationLabel,
+      tempSeries: d.tempSeries,
     })),
   ];
 
