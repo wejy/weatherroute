@@ -66,8 +66,16 @@ export const routeQuerySchema = z.object({
   toLon: z.coerce.number().min(-180).max(180).optional(),
 });
 
+export const wikipediaQuerySchema = z.object({
+  name: z.string().min(1).max(200),
+  lat: z.coerce.number().min(-90).max(90).optional(),
+  lon: z.coerce.number().min(-180).max(180).optional(),
+  lang: z.enum(["en", "fi"]).optional().default("en"),
+});
+
 export type WeatherQuery = z.infer<typeof weatherQuerySchema>;
 export type SearchQuery = z.infer<typeof searchQuerySchema>;
 export type ReverseQuery = z.infer<typeof reverseQuerySchema>;
 export type DiscoverQuery = z.infer<typeof discoverQuerySchema>;
 export type RouteQuery = z.infer<typeof routeQuerySchema>;
+export type WikipediaQuery = z.infer<typeof wikipediaQuerySchema>;

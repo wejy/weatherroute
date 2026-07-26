@@ -32,7 +32,7 @@ const DATE_LABELS: Record<
   fi: {
     today: "Tänään",
     tomorrow: "Huomenna",
-    weekend: "Tämä viikonloppu",
+    weekend: "Tuleva viikonloppu",
     custom: "Omat päivät",
   },
 };

@@ -1,12 +1,13 @@
 "use client";
 
-import Link from "next/link";
+import { useEffect, useState } from "react";
 import type { MapMarkerDto, PlaceDto } from "@/lib/types";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp, cn } from "@/lib/utils";
 import { destinationHref } from "@/lib/discover-query";
+import { MapMarkerPopup } from "@/components/map/map-marker-popup";
 import { useI18n } from "@/components/i18n/locale-provider";
-import { TempSparkline } from "@/components/map/map-nearby-card";
+import { prefetchWikipediaForMarkers } from "@/lib/wikipedia-client";
 
 /** Project lat/lon into map % coords relative to origin + radius circle. */
 function project(
@@ -52,7 +53,7 @@ export function MockMap({
     lon?: number;
   };
 }) {
-  const { t } = useI18n();
+  const { locale } = useI18n();
   const center = origin ?? {
     id: "center",
     name: "Center",
@@ -60,6 +61,26 @@ export function MockMap({
     lat: 60.17,
     lon: 24.94,
   };
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected =
+    markers.find((m) => m.id === selectedId && !m.id.startsWith("origin-")) ??
+    null;
+  const selectedPos = selected
+    ? project(selected.lat, selected.lon, center, radiusKm)
+    : null;
+
+  useEffect(() => {
+    const places = markers
+      .filter((m) => !m.id.startsWith("origin-"))
+      .map((m) => ({ name: m.name, lat: m.lat, lon: m.lon }));
+    if (places.length === 0) return;
+    const ac = new AbortController();
+    prefetchWikipediaForMarkers(places, locale === "fi" ? "fi" : "en", {
+      staggerMs: 220,
+      signal: ac.signal,
+    });
+    return () => ac.abort();
+  }, [markers, locale]);
 
   return (
     <div
@@ -67,6 +88,7 @@ export function MockMap({
         "relative h-full w-full overflow-hidden bg-[#dfe9f5]",
         className,
       )}
+      onClick={() => setSelectedId(null)}
     >
       <div
         className="absolute inset-0 opacity-80"
@@ -121,34 +143,46 @@ export function MockMap({
           radiusKm,
         );
         const isOrigin = marker.id.startsWith("origin-");
+        const isSelected = selectedId === marker.id;
 
         return (
-          <Link
+          <button
             key={marker.id}
-            href={
-              isOrigin
-                ? "/#"
-                : destinationHref(marker.id, locationQuery)
-            }
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isOrigin) return;
+              setSelectedId((prev) =>
+                prev === marker.id ? null : marker.id,
+              );
+            }}
             aria-label={
               isOrigin
                 ? `${marker.name} (origin)`
                 : `${marker.name}, ${formatTemp(marker.temperatureC)}`
             }
-            className="group absolute z-20 flex min-h-11 min-w-11 -translate-x-1/2 -translate-y-1/2 cursor-pointer flex-col items-center transition-all hover:z-30 focus-visible:z-30"
+            className={cn(
+              "absolute z-20 flex min-h-11 min-w-11 -translate-x-1/2 -translate-y-1/2 cursor-pointer flex-col items-center transition-all",
+              isSelected && "z-30",
+            )}
             style={{ left: `${left}%`, top: `${top}%` }}
           >
             <div
               className={cn(
-                "mb-1 flex items-center gap-2 rounded-full border px-3 py-1.5 shadow-lg backdrop-blur-md transition-transform group-hover:scale-105 group-focus-visible:scale-105",
+                "mb-1 flex items-center gap-2 rounded-full border px-3 py-1.5 shadow-lg backdrop-blur-md transition-transform",
                 isOrigin
                   ? "border-primary/40 bg-primary text-on-primary"
-                  : "border-outline-variant/30 bg-surface/95",
+                  : isSelected
+                    ? "scale-105 border-primary bg-surface/95"
+                    : "border-outline-variant/30 bg-surface/95",
               )}
             >
               {!isOrigin && (
                 <>
-                  <span className="text-xl font-semibold text-on-surface" aria-hidden="true">
+                  <span
+                    className="text-xl font-semibold text-on-surface"
+                    aria-hidden="true"
+                  >
                     {formatTemp(marker.temperatureC)}
                   </span>
                   <span
@@ -165,69 +199,26 @@ export function MockMap({
                 </span>
               )}
             </div>
-            <div className="pointer-events-none absolute bottom-full left-1/2 z-30 mb-2 hidden w-max max-w-[220px] -translate-x-1/2 rounded-xl border border-outline-variant/25 bg-surface/95 p-3 text-left opacity-0 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-opacity [@media(hover:hover)_and_(pointer:fine)]:block [@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:group-focus-visible:opacity-100">
-              <p className="text-sm font-semibold text-on-surface">
-                {marker.name}
-              </p>
-              {!isOrigin && (
-                <div className="mt-1 space-y-0.5 text-[12px] leading-snug text-on-surface-variant">
-                  {marker.distanceKm != null && (
-                    <p>
-                      {t("map.hoverAway", {
-                        km: Math.round(marker.distanceKm),
-                        duration: marker.driveDurationLabel || "",
-                      })}
-                    </p>
-                  )}
-                  {marker.tomorrowTempC != null && (
-                    <p>
-                      {t("map.hoverNow", {
-                        temp: formatTemp(marker.tomorrowTempC),
-                      })}
-                    </p>
-                  )}
-                  {marker.tempMinC != null && marker.tempMaxC != null && (
-                    <p className="font-semibold text-on-surface">
-                      {t("map.hoverForecast", {
-                        label: marker.dateRangeLabel || t("card.forecast"),
-                        min: formatTemp(marker.tempMinC),
-                        max: formatTemp(marker.tempMaxC),
-                      })}
-                    </p>
-                  )}
-                  {marker.conditionLabel && <p>{marker.conditionLabel}</p>}
-                  {marker.rainProbability != null && (
-                    <p>
-                      {t("map.hoverRain", { pct: marker.rainProbability })}
-                    </p>
-                  )}
-                  {marker.precipitationMm != null && (
-                    <p>
-                      {t("map.hoverRainMm", { mm: marker.precipitationMm })}
-                    </p>
-                  )}
-                  {marker.sunshineScore != null && (
-                    <p>
-                      {t("map.hoverSun", { score: marker.sunshineScore })}
-                    </p>
-                  )}
-                  {marker.tempSeries && marker.tempSeries.length >= 2 && (
-                    <div className="mt-1">
-                      <p className="text-[10px] font-medium tracking-wide uppercase">
-                        {t("map.hoverTempChart")}
-                      </p>
-                      <TempSparkline
-                        values={marker.tempSeries}
-                        height={48}
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </Link>
+          </button>
         );
       })}
+
+      {selected && selectedPos && (
+        <div
+          className="absolute z-40 -translate-x-1/2 -translate-y-[calc(100%+10px)]"
+          style={{
+            left: `${selectedPos.left}%`,
+            top: `${selectedPos.top}%`,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MapMarkerPopup
+            marker={selected}
+            href={destinationHref(selected.id, locationQuery)}
+            onClose={() => setSelectedId(null)}
+          />
+        </div>
+      )}
 
       <div className="absolute right-4 bottom-4 z-20 rounded-xl border border-outline-variant/20 bg-surface/90 px-3 py-2 text-xs font-medium text-on-surface-variant shadow-sm backdrop-blur-md">
         Mock map · circle = search radius from start

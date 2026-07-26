@@ -91,7 +91,7 @@ const fi = {
   dates: {
     today: "Tänään",
     tomorrow: "Huomenna",
-    weekend: "Tämä viikonloppu",
+    weekend: "Tuleva viikonloppu",
     custom: "Omat päivät",
     pickDate: "Valitse päivä…",
     start: "Alku",
@@ -144,7 +144,7 @@ const fi = {
     finland: "Suomi",
   },
   map: {
-    nearbyIdeal: "Lähiseudun ihanne sää",
+    nearbyIdeal: "Lähiseudun kohteet",
     searchPlaceholder: "Hae 300 km säteellä…",
     kmAway: "{km} km päässä (~{duration}) · {temp} °C",
     rainProbability: "Sadetodennäköisyys: {pct} %",
@@ -164,6 +164,11 @@ const fi = {
     hoverAway: "{km} km päässä (~{duration})",
     hoverTempChart: "Lämpötilaennuste",
     openDestination: "Avaa kohde",
+    closePopup: "Sulje",
+    wikipediaLoading: "Ladataan Wikipediaa…",
+    wikipediaUnavailable: "Wikipedia-yhteenvetoa ei löytynyt tälle paikalle.",
+    wikipediaNoImage: "Ei kuvaa",
+    wikipediaLink: "Wikipedia",
   },
   routes: {
     dryTrip: "Kuivan matkan takuu",

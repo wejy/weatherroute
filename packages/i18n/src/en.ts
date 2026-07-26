@@ -162,6 +162,11 @@ const en = {
     hoverAway: "{km} km away (~{duration})",
     hoverTempChart: "Temperature forecast",
     openDestination: "Open destination",
+    closePopup: "Close",
+    wikipediaLoading: "Loading Wikipedia…",
+    wikipediaUnavailable: "No Wikipedia summary found for this place.",
+    wikipediaNoImage: "No image",
+    wikipediaLink: "Wikipedia",
   },
   routes: {
     dryTrip: "Dry Trip Guarantee",

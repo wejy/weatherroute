@@ -62,29 +62,31 @@ export default async function MapPage({
   return (
     <div className="h-screen w-full overflow-hidden bg-background text-on-background">
       <SideNav active="/map">
-        <div className="mb-4 min-h-0 flex-1 space-y-4 overflow-y-auto pr-1">
-          <h1 className="text-xl font-semibold text-on-surface">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <h1 className="mb-3 shrink-0 text-xl font-semibold text-on-surface">
             {t("map.nearbyIdeal")}
           </h1>
-          {!hasOrigin && (
-            <p className="rounded-xl border border-outline-variant/30 bg-surface-container-low p-3 text-sm text-on-surface-variant">
-              {t("map.detecting")}
-              <span className="mt-1 block">{t("map.waitingPlaces")}</span>
-            </p>
-          )}
-          <div className="flex flex-col gap-3">
-            {result.destinations.slice(0, 8).map((d) => (
-              <MapNearbyCard
-                key={d.id}
-                destination={d}
-                href={destinationHref(d.slug, {
-                  datePreset: parsed.datePreset,
-                  startDate: result.startDate,
-                  endDate: result.endDate,
-                  ...originQuery,
-                })}
-              />
-            ))}
+          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+            {!hasOrigin && (
+              <p className="rounded-xl border border-outline-variant/30 bg-surface-container-low p-3 text-sm text-on-surface-variant">
+                {t("map.detecting")}
+                <span className="mt-1 block">{t("map.waitingPlaces")}</span>
+              </p>
+            )}
+            <div className="flex flex-col gap-3 pb-1">
+              {result.destinations.slice(0, 8).map((d) => (
+                <MapNearbyCard
+                  key={d.id}
+                  destination={d}
+                  href={destinationHref(d.slug, {
+                    datePreset: parsed.datePreset,
+                    startDate: result.startDate,
+                    endDate: result.endDate,
+                    ...originQuery,
+                  })}
+                />
+              ))}
+            </div>
           </div>
         </div>
         <Link
@@ -97,7 +99,7 @@ export default async function MapPage({
                 })
               : routesHref(originQuery)
           }
-          className="mt-4 block w-full shrink-0 rounded-lg bg-primary py-3 text-center text-xl font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container hover:text-on-primary-container"
+          className="mt-3 block w-full shrink-0 rounded-lg bg-primary py-3 text-center text-lg font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container hover:text-on-primary-container"
         >
           {t("map.generateRoute")}
         </Link>
@@ -119,7 +121,7 @@ export default async function MapPage({
         </div>
       </header>
 
-      <main id="main-content" className="relative z-0 h-full w-full pt-16 lg:pt-0 lg:pl-80">
+      <main id="main-content" className="relative z-0 h-full w-full pt-16 lg:pt-0 lg:pl-96">
         <DiscoverMap
           markers={hasOrigin ? result.mapMarkers : []}
           origin={hasOrigin ? result.origin : undefined}
@@ -152,7 +154,7 @@ export default async function MapPage({
           </div>
         )}
 
-        <div className="pointer-events-none absolute top-4 right-4 left-4 z-20 flex items-start justify-between gap-3 lg:left-[21rem]">
+        <div className="pointer-events-none absolute top-4 right-4 left-4 z-20 flex items-start justify-between gap-3 lg:left-[25rem]">
           <Suspense fallback={null}>
             <MapFloatingFilters
               defaults={filterDefaults}
