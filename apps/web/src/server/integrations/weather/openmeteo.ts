@@ -33,20 +33,90 @@ interface OpenMeteoResponse {
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+function toWeatherDto(
+  data: OpenMeteoResponse,
+  name?: string,
+): WeatherDto {
+  const current = data.current;
+  if (!current || !data.daily) {
+    throw new Error("Open-Meteo returned incomplete payload");
+  }
+
+  const currentCondition = conditionFromCode(current.weather_code);
+  const uv = data.daily.uv_index_max?.[0] ?? 3;
+
+  const daily: DailyForecastDto[] = data.daily.time.map((date, i) => {
+    const { condition, label } = conditionFromCode(
+      data.daily!.weather_code[i] ?? 3,
+    );
+    return {
+      date,
+      dayLabel: DAY_LABELS[new Date(date).getDay()] ?? date,
+      tempMaxC: data.daily!.temperature_2m_max[i] ?? 0,
+      tempMinC: data.daily!.temperature_2m_min[i] ?? 0,
+      precipitationProbability:
+        data.daily!.precipitation_probability_max[i] ?? 0,
+      precipitationMm:
+        data.daily!.precipitation_sum?.[i] != null
+          ? Math.round((data.daily!.precipitation_sum[i] ?? 0) * 10) / 10
+          : undefined,
+      cloudCover: data.daily!.cloud_cover_mean?.[i] ?? 40,
+      condition,
+      conditionLabel: label,
+    };
+  });
+
+  const lat = data.latitude;
+  const lon = data.longitude;
+  const placeName = name ?? `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+
+  return {
+    place: {
+      id: `${lat.toFixed(3)},${lon.toFixed(3)}`,
+      name: placeName.split(",")[0]?.trim() || placeName,
+      placeName,
+      lat,
+      lon,
+    },
+    provider: "open-meteo",
+    fetchedAt: new Date().toISOString(),
+    current: {
+      temperatureC: current.temperature_2m,
+      feelsLikeC: current.apparent_temperature,
+      humidity: current.relative_humidity_2m,
+      windSpeedKmh: current.wind_speed_10m,
+      visibilityKm: 10,
+      uvIndex: uv,
+      uvLabel: uvLabel(uv),
+      condition: currentCondition.condition,
+      conditionLabel: currentCondition.label,
+      precipitationProbability: daily[0]?.precipitationProbability ?? 10,
+      cloudCover: current.cloud_cover,
+    },
+    daily,
+  };
+}
+
+function forecastParams(
+  latitudes: number[],
+  longitudes: number[],
+): URLSearchParams {
+  return new URLSearchParams({
+    latitude: latitudes.map(String).join(","),
+    longitude: longitudes.map(String).join(","),
+    current:
+      "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,cloud_cover",
+    daily:
+      "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,cloud_cover_mean",
+    timezone: "auto",
+    forecast_days: "16",
+  });
+}
+
 export const openMeteoProvider: WeatherProvider = {
   name: "open-meteo",
   async getForecast({ lat, lon, name }) {
-    const params = new URLSearchParams({
-      latitude: String(lat),
-      longitude: String(lon),
-      current:
-        "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,cloud_cover",
-      daily:
-        "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,cloud_cover_mean",
-      timezone: "auto",
-      forecast_days: "16",
-    });
-
+    const params = forecastParams([lat], [lon]);
     const res = await fetch(
       `https://api.open-meteo.com/v1/forecast?${params}`,
       { next: { revalidate: 600 } },
@@ -57,64 +127,49 @@ export const openMeteoProvider: WeatherProvider = {
     }
 
     const data = (await res.json()) as OpenMeteoResponse;
-    const current = data.current;
-    if (!current || !data.daily) {
-      throw new Error("Open-Meteo returned incomplete payload");
-    }
-
-    const currentCondition = conditionFromCode(current.weather_code);
-    const uv = data.daily.uv_index_max?.[0] ?? 3;
-
-    const daily: DailyForecastDto[] = data.daily.time.map((date, i) => {
-      const { condition, label } = conditionFromCode(
-        data.daily!.weather_code[i] ?? 3,
-      );
-      return {
-        date,
-        dayLabel: DAY_LABELS[new Date(date).getDay()] ?? date,
-        tempMaxC: data.daily!.temperature_2m_max[i] ?? 0,
-        tempMinC: data.daily!.temperature_2m_min[i] ?? 0,
-        precipitationProbability:
-          data.daily!.precipitation_probability_max[i] ?? 0,
-        precipitationMm:
-          data.daily!.precipitation_sum?.[i] != null
-            ? Math.round((data.daily!.precipitation_sum[i] ?? 0) * 10) / 10
-            : undefined,
-        cloudCover: data.daily!.cloud_cover_mean?.[i] ?? 40,
-        condition,
-        conditionLabel: label,
-      };
-    });
-
-    const placeName = name ?? `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
-
-    const dto: WeatherDto = {
-      place: {
-        id: `${lat.toFixed(3)},${lon.toFixed(3)}`,
-        name: placeName.split(",")[0]?.trim() || placeName,
-        placeName,
-        lat,
-        lon,
-      },
-      provider: "open-meteo",
-      fetchedAt: new Date().toISOString(),
-      current: {
-        temperatureC: current.temperature_2m,
-        feelsLikeC: current.apparent_temperature,
-        humidity: current.relative_humidity_2m,
-        windSpeedKmh: current.wind_speed_10m,
-        visibilityKm: 10,
-        uvIndex: uv,
-        uvLabel: uvLabel(uv),
-        condition: currentCondition.condition,
-        conditionLabel: currentCondition.label,
-        precipitationProbability:
-          daily[0]?.precipitationProbability ?? 10,
-        cloudCover: current.cloud_cover,
-      },
-      daily,
-    };
-
-    return dto;
+    return toWeatherDto(data, name);
   },
 };
+
+/**
+ * Batch forecast for many coordinates in one HTTP call.
+ * Open-Meteo returns an array when multiple lat/lon pairs are requested.
+ */
+export async function openMeteoForecastBatch(
+  places: Array<{ lat: number; lon: number; name?: string }>,
+): Promise<Array<WeatherDto | null>> {
+  if (places.length === 0) return [];
+  if (places.length === 1) {
+    try {
+      const w = await openMeteoProvider.getForecast(places[0]!);
+      return [w];
+    } catch {
+      return [null];
+    }
+  }
+
+  const params = forecastParams(
+    places.map((p) => p.lat),
+    places.map((p) => p.lon),
+  );
+  const res = await fetch(
+    `https://api.open-meteo.com/v1/forecast?${params}`,
+    { next: { revalidate: 600 } },
+  );
+  if (!res.ok) {
+    throw new Error(`Open-Meteo batch error: ${res.status}`);
+  }
+
+  const raw = (await res.json()) as OpenMeteoResponse | OpenMeteoResponse[];
+  const rows = Array.isArray(raw) ? raw : [raw];
+
+  return places.map((place, i) => {
+    const row = rows[i];
+    if (!row) return null;
+    try {
+      return toWeatherDto(row, place.name);
+    } catch {
+      return null;
+    }
+  });
+}

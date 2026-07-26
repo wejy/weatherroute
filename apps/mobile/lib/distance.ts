@@ -33,3 +33,6 @@ export function resolveRadiusKm(
   }
   return DISTANCE_RADIUS_KM.region;
 }
+
+/** Matches web discover weather batch cap. */
+export const DISCOVER_WEATHER_CANDIDATE_LIMIT = 14;

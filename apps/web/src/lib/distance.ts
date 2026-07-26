@@ -35,10 +35,14 @@ export function resolveRadiusKm(
 }
 
 export function candidateLimitForRadius(radiusKm: number): number {
-  if (radiusKm <= 30) return 20;
-  if (radiusKm <= 60) return 28;
-  if (radiusKm <= 120) return 36;
-  if (radiusKm <= 300) return 40;
-  if (radiusKm <= 1000) return 36;
-  return 40;
+  // Pre-weather scan cap (index is static; keep modest for ranking).
+  if (radiusKm <= 30) return 16;
+  if (radiusKm <= 60) return 16;
+  if (radiusKm <= 120) return 16;
+  if (radiusKm <= 300) return 16;
+  if (radiusKm <= 1000) return 16;
+  return 16;
 }
+
+/** Hard cap on Open-Meteo locations per discover (batch). */
+export const DISCOVER_WEATHER_CANDIDATE_LIMIT = 14;

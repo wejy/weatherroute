@@ -1,0 +1,250 @@
+import type { PlaceDto } from "@/lib/types";
+import { haversineKm } from "@/server/integrations/mocks/data";
+
+/** Static settlement used for discover radius queries (no network). */
+export type CityIndexEntry = PlaceDto & {
+  /** Approx. population for pre-weather ranking. */
+  population: number;
+};
+
+/**
+ * Dense-enough static index for discover (Nordics + Central/Western Europe hubs).
+ * Ranked in-memory by population vs distance — no Overpass on the hot path.
+ */
+export const CITY_INDEX: CityIndexEntry[] = [
+  // Finland
+  { id: "helsinki", name: "Helsinki", placeName: "Helsinki, Finland", country: "Finland", countryCode: "FI", lat: 60.1699, lon: 24.9384, population: 658000 },
+  { id: "espoo", name: "Espoo", placeName: "Espoo, Finland", country: "Finland", countryCode: "FI", lat: 60.2055, lon: 24.6559, population: 305000 },
+  { id: "vantaa", name: "Vantaa", placeName: "Vantaa, Finland", country: "Finland", countryCode: "FI", lat: 60.2934, lon: 25.0378, population: 240000 },
+  { id: "tampere", name: "Tampere", placeName: "Tampere, Finland", country: "Finland", countryCode: "FI", lat: 61.4978, lon: 23.761, population: 244000 },
+  { id: "turku", name: "Turku", placeName: "Turku, Finland", country: "Finland", countryCode: "FI", lat: 60.4518, lon: 22.2666, population: 195000 },
+  { id: "oulu", name: "Oulu", placeName: "Oulu, Finland", country: "Finland", countryCode: "FI", lat: 65.0121, lon: 25.4651, population: 210000 },
+  { id: "jyvaskyla", name: "Jyväskylä", placeName: "Jyväskylä, Finland", country: "Finland", countryCode: "FI", lat: 62.2426, lon: 25.7473, population: 144000 },
+  { id: "kuopio", name: "Kuopio", placeName: "Kuopio, Finland", country: "Finland", countryCode: "FI", lat: 62.8924, lon: 27.677, population: 122000 },
+  { id: "lahti", name: "Lahti", placeName: "Lahti, Finland", country: "Finland", countryCode: "FI", lat: 60.9827, lon: 25.6612, population: 120000 },
+  { id: "pori", name: "Pori", placeName: "Pori, Finland", country: "Finland", countryCode: "FI", lat: 61.4851, lon: 21.7974, population: 83000 },
+  { id: "kouvola", name: "Kouvola", placeName: "Kouvola, Finland", country: "Finland", countryCode: "FI", lat: 60.8667, lon: 26.7, population: 80000 },
+  { id: "joensuu", name: "Joensuu", placeName: "Joensuu, Finland", country: "Finland", countryCode: "FI", lat: 62.601, lon: 29.7636, population: 77000 },
+  { id: "lappeenranta", name: "Lappeenranta", placeName: "Lappeenranta, Finland", country: "Finland", countryCode: "FI", lat: 61.0583, lon: 28.1887, population: 73000 },
+  { id: "hameenlinna", name: "Hämeenlinna", placeName: "Hämeenlinna, Finland", country: "Finland", countryCode: "FI", lat: 60.9959, lon: 24.4642, population: 68000 },
+  { id: "vaasa", name: "Vaasa", placeName: "Vaasa, Finland", country: "Finland", countryCode: "FI", lat: 63.096, lon: 21.6158, population: 68000 },
+  { id: "rovaniemi", name: "Rovaniemi", placeName: "Rovaniemi, Finland", country: "Finland", countryCode: "FI", lat: 66.5039, lon: 25.7294, population: 64000 },
+  { id: "seinajoki", name: "Seinäjoki", placeName: "Seinäjoki, Finland", country: "Finland", countryCode: "FI", lat: 62.7903, lon: 22.8403, population: 65000 },
+  { id: "mikkeli", name: "Mikkeli", placeName: "Mikkeli, Finland", country: "Finland", countryCode: "FI", lat: 61.6886, lon: 27.2725, population: 52000 },
+  { id: "kotka", name: "Kotka", placeName: "Kotka, Finland", country: "Finland", countryCode: "FI", lat: 60.4664, lon: 26.9458, population: 51000 },
+  { id: "salo", name: "Salo", placeName: "Salo, Finland", country: "Finland", countryCode: "FI", lat: 60.3833, lon: 23.1333, population: 51000 },
+  { id: "porvoo", name: "Porvoo", placeName: "Porvoo, Finland", country: "Finland", countryCode: "FI", lat: 60.3925, lon: 25.665, population: 51000 },
+  { id: "lohja", name: "Lohja", placeName: "Lohja, Finland", country: "Finland", countryCode: "FI", lat: 60.25, lon: 24.0833, population: 46000 },
+  { id: "rauma", name: "Rauma", placeName: "Rauma, Finland", country: "Finland", countryCode: "FI", lat: 61.1272, lon: 21.5113, population: 39000 },
+  { id: "kokkola", name: "Kokkola", placeName: "Kokkola, Finland", country: "Finland", countryCode: "FI", lat: 63.8385, lon: 23.1302, population: 48000 },
+  { id: "hyvinkaa", name: "Hyvinkää", placeName: "Hyvinkää, Finland", country: "Finland", countryCode: "FI", lat: 60.6333, lon: 24.8667, population: 47000 },
+  { id: "nurmijarvi", name: "Nurmijärvi", placeName: "Nurmijärvi, Finland", country: "Finland", countryCode: "FI", lat: 60.4667, lon: 24.8167, population: 44000 },
+  { id: "jarvenpaa", name: "Järvenpää", placeName: "Järvenpää, Finland", country: "Finland", countryCode: "FI", lat: 60.4722, lon: 25.0892, population: 45000 },
+  { id: "tuusula", name: "Tuusula", placeName: "Tuusula, Finland", country: "Finland", countryCode: "FI", lat: 60.4, lon: 25.0333, population: 40000 },
+  { id: "kirkkonummi", name: "Kirkkonummi", placeName: "Kirkkonummi, Finland", country: "Finland", countryCode: "FI", lat: 60.1333, lon: 24.4333, population: 40000 },
+  { id: "kerava", name: "Kerava", placeName: "Kerava, Finland", country: "Finland", countryCode: "FI", lat: 60.4033, lon: 25.105, population: 37000 },
+  { id: "nokia", name: "Nokia", placeName: "Nokia, Finland", country: "Finland", countryCode: "FI", lat: 61.4767, lon: 23.5053, population: 35000 },
+  { id: "raahe", name: "Raahe", placeName: "Raahe, Finland", country: "Finland", countryCode: "FI", lat: 64.6833, lon: 24.4833, population: 24000 },
+  { id: "kajaani", name: "Kajaani", placeName: "Kajaani, Finland", country: "Finland", countryCode: "FI", lat: 64.2273, lon: 27.7285, population: 36000 },
+  { id: "savonlinna", name: "Savonlinna", placeName: "Savonlinna, Finland", country: "Finland", countryCode: "FI", lat: 61.8689, lon: 28.8861, population: 32000 },
+  { id: "imatra", name: "Imatra", placeName: "Imatra, Finland", country: "Finland", countryCode: "FI", lat: 61.1719, lon: 28.7717, population: 25000 },
+  { id: "naantali", name: "Naantali", placeName: "Naantali, Finland", country: "Finland", countryCode: "FI", lat: 60.4667, lon: 22.0333, population: 19500 },
+  { id: "hanko", name: "Hanko", placeName: "Hanko, Finland", country: "Finland", countryCode: "FI", lat: 59.8333, lon: 22.9667, population: 8000 },
+  { id: "mariehamn", name: "Mariehamn", placeName: "Mariehamn, Åland", country: "Finland", countryCode: "FI", lat: 60.1, lon: 19.9333, population: 12000 },
+  { id: "kempele", name: "Kempele", placeName: "Kempele, Finland", country: "Finland", countryCode: "FI", lat: 64.9128, lon: 25.5083, population: 19000 },
+  { id: "oulainen", name: "Oulainen", placeName: "Oulainen, Finland", country: "Finland", countryCode: "FI", lat: 64.2667, lon: 24.8167, population: 7000 },
+
+  // Sweden / Norway / Denmark / Baltics
+  { id: "stockholm", name: "Stockholm", placeName: "Stockholm, Sweden", country: "Sweden", countryCode: "SE", lat: 59.3293, lon: 18.0686, population: 975000 },
+  { id: "gothenburg", name: "Gothenburg", placeName: "Gothenburg, Sweden", country: "Sweden", countryCode: "SE", lat: 57.7089, lon: 11.9746, population: 580000 },
+  { id: "malmo", name: "Malmö", placeName: "Malmö, Sweden", country: "Sweden", countryCode: "SE", lat: 55.605, lon: 13.0038, population: 350000 },
+  { id: "uppsala", name: "Uppsala", placeName: "Uppsala, Sweden", country: "Sweden", countryCode: "SE", lat: 59.8586, lon: 17.6389, population: 235000 },
+  { id: "umea", name: "Umeå", placeName: "Umeå, Sweden", country: "Sweden", countryCode: "SE", lat: 63.8258, lon: 20.263, population: 130000 },
+  { id: "visby", name: "Visby", placeName: "Visby, Sweden", country: "Sweden", countryCode: "SE", lat: 57.6348, lon: 18.2948, population: 24000 },
+  { id: "linkoping", name: "Linköping", placeName: "Linköping, Sweden", country: "Sweden", countryCode: "SE", lat: 58.4108, lon: 15.6214, population: 165000 },
+  { id: "orebro", name: "Örebro", placeName: "Örebro, Sweden", country: "Sweden", countryCode: "SE", lat: 59.2741, lon: 15.2066, population: 155000 },
+  { id: "vasteras", name: "Västerås", placeName: "Västerås, Sweden", country: "Sweden", countryCode: "SE", lat: 59.6099, lon: 16.5448, population: 155000 },
+  { id: "helsingborg", name: "Helsingborg", placeName: "Helsingborg, Sweden", country: "Sweden", countryCode: "SE", lat: 56.0465, lon: 12.6945, population: 150000 },
+  { id: "oslo", name: "Oslo", placeName: "Oslo, Norway", country: "Norway", countryCode: "NO", lat: 59.9139, lon: 10.7522, population: 700000 },
+  { id: "bergen", name: "Bergen", placeName: "Bergen, Norway", country: "Norway", countryCode: "NO", lat: 60.3913, lon: 5.3221, population: 285000 },
+  { id: "trondheim", name: "Trondheim", placeName: "Trondheim, Norway", country: "Norway", countryCode: "NO", lat: 63.4305, lon: 10.3951, population: 210000 },
+  { id: "stavanger", name: "Stavanger", placeName: "Stavanger, Norway", country: "Norway", countryCode: "NO", lat: 58.97, lon: 5.7331, population: 145000 },
+  { id: "copenhagen", name: "Copenhagen", placeName: "Copenhagen, Denmark", country: "Denmark", countryCode: "DK", lat: 55.6761, lon: 12.5683, population: 660000 },
+  { id: "aarhus", name: "Aarhus", placeName: "Aarhus, Denmark", country: "Denmark", countryCode: "DK", lat: 56.1629, lon: 10.2039, population: 290000 },
+  { id: "odense", name: "Odense", placeName: "Odense, Denmark", country: "Denmark", countryCode: "DK", lat: 55.4038, lon: 10.4024, population: 180000 },
+  { id: "aalborg", name: "Aalborg", placeName: "Aalborg, Denmark", country: "Denmark", countryCode: "DK", lat: 57.0488, lon: 9.9217, population: 120000 },
+  { id: "tallinn", name: "Tallinn", placeName: "Tallinn, Estonia", country: "Estonia", countryCode: "EE", lat: 59.437, lon: 24.7536, population: 450000 },
+  { id: "tartu", name: "Tartu", placeName: "Tartu, Estonia", country: "Estonia", countryCode: "EE", lat: 58.378, lon: 26.729, population: 97000 },
+  { id: "riga", name: "Riga", placeName: "Riga, Latvia", country: "Latvia", countryCode: "LV", lat: 56.9496, lon: 24.1052, population: 610000 },
+  { id: "vilnius", name: "Vilnius", placeName: "Vilnius, Lithuania", country: "Lithuania", countryCode: "LT", lat: 54.6872, lon: 25.2797, population: 580000 },
+  { id: "kaunas", name: "Kaunas", placeName: "Kaunas, Lithuania", country: "Lithuania", countryCode: "LT", lat: 54.8985, lon: 23.9036, population: 300000 },
+
+  // Germany (dense CE coverage)
+  { id: "berlin", name: "Berlin", placeName: "Berlin, Germany", country: "Germany", countryCode: "DE", lat: 52.52, lon: 13.405, population: 3700000 },
+  { id: "hamburg", name: "Hamburg", placeName: "Hamburg, Germany", country: "Germany", countryCode: "DE", lat: 53.5511, lon: 9.9937, population: 1900000 },
+  { id: "munich", name: "Munich", placeName: "Munich, Germany", country: "Germany", countryCode: "DE", lat: 48.1351, lon: 11.582, population: 1500000 },
+  { id: "cologne", name: "Cologne", placeName: "Cologne, Germany", country: "Germany", countryCode: "DE", lat: 50.9375, lon: 6.9603, population: 1100000 },
+  { id: "frankfurt", name: "Frankfurt", placeName: "Frankfurt, Germany", country: "Germany", countryCode: "DE", lat: 50.1109, lon: 8.6821, population: 760000 },
+  { id: "stuttgart", name: "Stuttgart", placeName: "Stuttgart, Germany", country: "Germany", countryCode: "DE", lat: 48.7758, lon: 9.1829, population: 630000 },
+  { id: "dusseldorf", name: "Düsseldorf", placeName: "Düsseldorf, Germany", country: "Germany", countryCode: "DE", lat: 51.2277, lon: 6.7735, population: 620000 },
+  { id: "dortmund", name: "Dortmund", placeName: "Dortmund, Germany", country: "Germany", countryCode: "DE", lat: 51.5136, lon: 7.4653, population: 590000 },
+  { id: "essen", name: "Essen", placeName: "Essen, Germany", country: "Germany", countryCode: "DE", lat: 51.4556, lon: 7.0116, population: 580000 },
+  { id: "leipzig", name: "Leipzig", placeName: "Leipzig, Germany", country: "Germany", countryCode: "DE", lat: 51.3397, lon: 12.3731, population: 600000 },
+  { id: "bremen", name: "Bremen", placeName: "Bremen, Germany", country: "Germany", countryCode: "DE", lat: 53.0793, lon: 8.8017, population: 570000 },
+  { id: "dresden", name: "Dresden", placeName: "Dresden, Germany", country: "Germany", countryCode: "DE", lat: 51.0504, lon: 13.7373, population: 560000 },
+  { id: "hanover", name: "Hanover", placeName: "Hanover, Germany", country: "Germany", countryCode: "DE", lat: 52.3759, lon: 9.732, population: 540000 },
+  { id: "nuremberg", name: "Nuremberg", placeName: "Nuremberg, Germany", country: "Germany", countryCode: "DE", lat: 49.4521, lon: 11.0767, population: 520000 },
+  { id: "duisburg", name: "Duisburg", placeName: "Duisburg, Germany", country: "Germany", countryCode: "DE", lat: 51.4344, lon: 6.7623, population: 500000 },
+  { id: "bochum", name: "Bochum", placeName: "Bochum, Germany", country: "Germany", countryCode: "DE", lat: 51.4818, lon: 7.2162, population: 360000 },
+  { id: "wuppertal", name: "Wuppertal", placeName: "Wuppertal, Germany", country: "Germany", countryCode: "DE", lat: 51.2562, lon: 7.1508, population: 355000 },
+  { id: "bielefeld", name: "Bielefeld", placeName: "Bielefeld, Germany", country: "Germany", countryCode: "DE", lat: 52.0302, lon: 8.5325, population: 340000 },
+  { id: "bonn", name: "Bonn", placeName: "Bonn, Germany", country: "Germany", countryCode: "DE", lat: 50.7374, lon: 7.0982, population: 330000 },
+  { id: "munster", name: "Münster", placeName: "Münster, Germany", country: "Germany", countryCode: "DE", lat: 51.9607, lon: 7.6261, population: 320000 },
+  { id: "karlsruhe", name: "Karlsruhe", placeName: "Karlsruhe, Germany", country: "Germany", countryCode: "DE", lat: 49.0069, lon: 8.4037, population: 310000 },
+  { id: "mannheim", name: "Mannheim", placeName: "Mannheim, Germany", country: "Germany", countryCode: "DE", lat: 49.4875, lon: 8.466, population: 310000 },
+  { id: "augsburg", name: "Augsburg", placeName: "Augsburg, Germany", country: "Germany", countryCode: "DE", lat: 48.3705, lon: 10.8978, population: 300000 },
+  { id: "wiesbaden", name: "Wiesbaden", placeName: "Wiesbaden, Germany", country: "Germany", countryCode: "DE", lat: 50.0782, lon: 8.2398, population: 280000 },
+  { id: "gelsenkirchen", name: "Gelsenkirchen", placeName: "Gelsenkirchen, Germany", country: "Germany", countryCode: "DE", lat: 51.5177, lon: 7.0857, population: 260000 },
+  { id: "monchengladbach", name: "Mönchengladbach", placeName: "Mönchengladbach, Germany", country: "Germany", countryCode: "DE", lat: 51.1805, lon: 6.4428, population: 260000 },
+  { id: "braunschweig", name: "Braunschweig", placeName: "Braunschweig, Germany", country: "Germany", countryCode: "DE", lat: 52.2689, lon: 10.5268, population: 250000 },
+  { id: "chemnitz", name: "Chemnitz", placeName: "Chemnitz, Germany", country: "Germany", countryCode: "DE", lat: 50.8278, lon: 12.9214, population: 245000 },
+  { id: "kiel", name: "Kiel", placeName: "Kiel, Germany", country: "Germany", countryCode: "DE", lat: 54.3233, lon: 10.1228, population: 245000 },
+  { id: "aachen", name: "Aachen", placeName: "Aachen, Germany", country: "Germany", countryCode: "DE", lat: 50.7753, lon: 6.0839, population: 250000 },
+  { id: "halle", name: "Halle", placeName: "Halle, Germany", country: "Germany", countryCode: "DE", lat: 51.482, lon: 11.970, population: 240000 },
+  { id: "freiburg", name: "Freiburg", placeName: "Freiburg, Germany", country: "Germany", countryCode: "DE", lat: 47.999, lon: 7.8421, population: 230000 },
+  { id: "krefeld", name: "Krefeld", placeName: "Krefeld, Germany", country: "Germany", countryCode: "DE", lat: 51.3388, lon: 6.5853, population: 225000 },
+  { id: "lubeck", name: "Lübeck", placeName: "Lübeck, Germany", country: "Germany", countryCode: "DE", lat: 53.8655, lon: 10.6866, population: 220000 },
+  { id: "rostock", name: "Rostock", placeName: "Rostock, Germany", country: "Germany", countryCode: "DE", lat: 54.0924, lon: 12.0991, population: 210000 },
+  { id: "magdeburg", name: "Magdeburg", placeName: "Magdeburg, Germany", country: "Germany", countryCode: "DE", lat: 52.1205, lon: 11.6276, population: 235000 },
+  { id: "erfurt", name: "Erfurt", placeName: "Erfurt, Germany", country: "Germany", countryCode: "DE", lat: 50.9848, lon: 11.0299, population: 215000 },
+  { id: "potsdam", name: "Potsdam", placeName: "Potsdam, Germany", country: "Germany", countryCode: "DE", lat: 52.3906, lon: 13.0645, population: 180000 },
+  { id: "regensburg", name: "Regensburg", placeName: "Regensburg, Germany", country: "Germany", countryCode: "DE", lat: 49.0134, lon: 12.1016, population: 150000 },
+  { id: "wurzburg", name: "Würzburg", placeName: "Würzburg, Germany", country: "Germany", countryCode: "DE", lat: 49.7913, lon: 9.9534, population: 130000 },
+  { id: "ulm", name: "Ulm", placeName: "Ulm, Germany", country: "Germany", countryCode: "DE", lat: 48.4011, lon: 9.9876, population: 125000 },
+  { id: "heidelberg", name: "Heidelberg", placeName: "Heidelberg, Germany", country: "Germany", countryCode: "DE", lat: 49.3988, lon: 8.6724, population: 160000 },
+  { id: "mainz", name: "Mainz", placeName: "Mainz, Germany", country: "Germany", countryCode: "DE", lat: 49.9929, lon: 8.2473, population: 220000 },
+  { id: "saarbrucken", name: "Saarbrücken", placeName: "Saarbrücken, Germany", country: "Germany", countryCode: "DE", lat: 49.2402, lon: 6.9969, population: 180000 },
+
+  // Benelux / France / Alps / CE neighbors
+  { id: "amsterdam", name: "Amsterdam", placeName: "Amsterdam, Netherlands", country: "Netherlands", countryCode: "NL", lat: 52.3676, lon: 4.9041, population: 870000 },
+  { id: "rotterdam", name: "Rotterdam", placeName: "Rotterdam, Netherlands", country: "Netherlands", countryCode: "NL", lat: 51.9244, lon: 4.4777, population: 655000 },
+  { id: "the_hague", name: "The Hague", placeName: "The Hague, Netherlands", country: "Netherlands", countryCode: "NL", lat: 52.0705, lon: 4.3007, population: 550000 },
+  { id: "utrecht", name: "Utrecht", placeName: "Utrecht, Netherlands", country: "Netherlands", countryCode: "NL", lat: 52.0907, lon: 5.1214, population: 360000 },
+  { id: "eindhoven", name: "Eindhoven", placeName: "Eindhoven, Netherlands", country: "Netherlands", countryCode: "NL", lat: 51.4416, lon: 5.4697, population: 240000 },
+  { id: "groningen", name: "Groningen", placeName: "Groningen, Netherlands", country: "Netherlands", countryCode: "NL", lat: 53.2194, lon: 6.5665, population: 235000 },
+  { id: "maastricht", name: "Maastricht", placeName: "Maastricht, Netherlands", country: "Netherlands", countryCode: "NL", lat: 50.8514, lon: 5.691, population: 120000 },
+  { id: "brussels", name: "Brussels", placeName: "Brussels, Belgium", country: "Belgium", countryCode: "BE", lat: 50.8503, lon: 4.3517, population: 1200000 },
+  { id: "antwerp", name: "Antwerp", placeName: "Antwerp, Belgium", country: "Belgium", countryCode: "BE", lat: 51.2194, lon: 4.4025, population: 530000 },
+  { id: "ghent", name: "Ghent", placeName: "Ghent, Belgium", country: "Belgium", countryCode: "BE", lat: 51.0543, lon: 3.7174, population: 265000 },
+  { id: "bruges", name: "Bruges", placeName: "Bruges, Belgium", country: "Belgium", countryCode: "BE", lat: 51.2093, lon: 3.2247, population: 120000 },
+  { id: "liege", name: "Liège", placeName: "Liège, Belgium", country: "Belgium", countryCode: "BE", lat: 50.6326, lon: 5.5797, population: 195000 },
+  { id: "luxembourg", name: "Luxembourg", placeName: "Luxembourg City", country: "Luxembourg", countryCode: "LU", lat: 49.6116, lon: 6.1319, population: 130000 },
+  { id: "paris", name: "Paris", placeName: "Paris, France", country: "France", countryCode: "FR", lat: 48.8566, lon: 2.3522, population: 2100000 },
+  { id: "lyon", name: "Lyon", placeName: "Lyon, France", country: "France", countryCode: "FR", lat: 45.764, lon: 4.8357, population: 520000 },
+  { id: "marseille", name: "Marseille", placeName: "Marseille, France", country: "France", countryCode: "FR", lat: 43.2965, lon: 5.3698, population: 870000 },
+  { id: "toulouse", name: "Toulouse", placeName: "Toulouse, France", country: "France", countryCode: "FR", lat: 43.6047, lon: 1.4442, population: 490000 },
+  { id: "nice", name: "Nice", placeName: "Nice, France", country: "France", countryCode: "FR", lat: 43.7102, lon: 7.262, population: 340000 },
+  { id: "nantes", name: "Nantes", placeName: "Nantes, France", country: "France", countryCode: "FR", lat: 47.2184, lon: -1.5536, population: 320000 },
+  { id: "strasbourg", name: "Strasbourg", placeName: "Strasbourg, France", country: "France", countryCode: "FR", lat: 48.5734, lon: 7.7521, population: 290000 },
+  { id: "montpellier", name: "Montpellier", placeName: "Montpellier, France", country: "France", countryCode: "FR", lat: 43.6108, lon: 3.8767, population: 290000 },
+  { id: "bordeaux", name: "Bordeaux", placeName: "Bordeaux, France", country: "France", countryCode: "FR", lat: 44.8378, lon: -0.5792, population: 260000 },
+  { id: "lille", name: "Lille", placeName: "Lille, France", country: "France", countryCode: "FR", lat: 50.6292, lon: 3.0573, population: 230000 },
+  { id: "rennes", name: "Rennes", placeName: "Rennes, France", country: "France", countryCode: "FR", lat: 48.1173, lon: -1.6778, population: 220000 },
+  { id: "reims", name: "Reims", placeName: "Reims, France", country: "France", countryCode: "FR", lat: 49.2583, lon: 4.0317, population: 180000 },
+  { id: "dijon", name: "Dijon", placeName: "Dijon, France", country: "France", countryCode: "FR", lat: 47.322, lon: 5.0415, population: 155000 },
+  { id: "metz", name: "Metz", placeName: "Metz, France", country: "France", countryCode: "FR", lat: 49.1193, lon: 6.1757, population: 120000 },
+  { id: "vienna", name: "Vienna", placeName: "Vienna, Austria", country: "Austria", countryCode: "AT", lat: 48.2082, lon: 16.3738, population: 1900000 },
+  { id: "graz", name: "Graz", placeName: "Graz, Austria", country: "Austria", countryCode: "AT", lat: 47.0707, lon: 15.4395, population: 290000 },
+  { id: "linz", name: "Linz", placeName: "Linz, Austria", country: "Austria", countryCode: "AT", lat: 48.3069, lon: 14.2858, population: 210000 },
+  { id: "salzburg", name: "Salzburg", placeName: "Salzburg, Austria", country: "Austria", countryCode: "AT", lat: 47.8095, lon: 13.055, population: 155000 },
+  { id: "innsbruck", name: "Innsbruck", placeName: "Innsbruck, Austria", country: "Austria", countryCode: "AT", lat: 47.2692, lon: 11.4041, population: 130000 },
+  { id: "zurich", name: "Zurich", placeName: "Zurich, Switzerland", country: "Switzerland", countryCode: "CH", lat: 47.3769, lon: 8.5417, population: 420000 },
+  { id: "geneva", name: "Geneva", placeName: "Geneva, Switzerland", country: "Switzerland", countryCode: "CH", lat: 46.2044, lon: 6.1432, population: 200000 },
+  { id: "basel", name: "Basel", placeName: "Basel, Switzerland", country: "Switzerland", countryCode: "CH", lat: 47.5596, lon: 7.5886, population: 175000 },
+  { id: "bern", name: "Bern", placeName: "Bern, Switzerland", country: "Switzerland", countryCode: "CH", lat: 46.948, lon: 7.4474, population: 135000 },
+  { id: "lausanne", name: "Lausanne", placeName: "Lausanne, Switzerland", country: "Switzerland", countryCode: "CH", lat: 46.5197, lon: 6.6323, population: 140000 },
+  { id: "prague", name: "Prague", placeName: "Prague, Czechia", country: "Czechia", countryCode: "CZ", lat: 50.0755, lon: 14.4378, population: 1300000 },
+  { id: "brno", name: "Brno", placeName: "Brno, Czechia", country: "Czechia", countryCode: "CZ", lat: 49.1951, lon: 16.6068, population: 380000 },
+  { id: "ostrava", name: "Ostrava", placeName: "Ostrava, Czechia", country: "Czechia", countryCode: "CZ", lat: 49.8209, lon: 18.2625, population: 280000 },
+  { id: "plzen", name: "Plzeň", placeName: "Plzeň, Czechia", country: "Czechia", countryCode: "CZ", lat: 49.7384, lon: 13.3736, population: 175000 },
+  { id: "warsaw", name: "Warsaw", placeName: "Warsaw, Poland", country: "Poland", countryCode: "PL", lat: 52.2297, lon: 21.0122, population: 1800000 },
+  { id: "krakow", name: "Kraków", placeName: "Kraków, Poland", country: "Poland", countryCode: "PL", lat: 50.0647, lon: 19.945, population: 780000 },
+  { id: "lodz", name: "Łódź", placeName: "Łódź, Poland", country: "Poland", countryCode: "PL", lat: 51.7592, lon: 19.456, population: 670000 },
+  { id: "wroclaw", name: "Wrocław", placeName: "Wrocław, Poland", country: "Poland", countryCode: "PL", lat: 51.1079, lon: 17.0385, population: 640000 },
+  { id: "poznan", name: "Poznań", placeName: "Poznań, Poland", country: "Poland", countryCode: "PL", lat: 52.4064, lon: 16.9252, population: 530000 },
+  { id: "gdansk", name: "Gdańsk", placeName: "Gdańsk, Poland", country: "Poland", countryCode: "PL", lat: 54.352, lon: 18.6466, population: 470000 },
+  { id: "szczecin", name: "Szczecin", placeName: "Szczecin, Poland", country: "Poland", countryCode: "PL", lat: 53.4285, lon: 14.5528, population: 400000 },
+  { id: "budapest", name: "Budapest", placeName: "Budapest, Hungary", country: "Hungary", countryCode: "HU", lat: 47.4979, lon: 19.0402, population: 1700000 },
+  { id: "debrecen", name: "Debrecen", placeName: "Debrecen, Hungary", country: "Hungary", countryCode: "HU", lat: 47.5316, lon: 21.6273, population: 200000 },
+
+  // Italy / Iberia / UK / wider (kept for larger radii)
+  { id: "milan", name: "Milan", placeName: "Milan, Italy", country: "Italy", countryCode: "IT", lat: 45.4642, lon: 9.19, population: 1400000 },
+  { id: "rome", name: "Rome", placeName: "Rome, Italy", country: "Italy", countryCode: "IT", lat: 41.9028, lon: 12.4964, population: 2800000 },
+  { id: "turin", name: "Turin", placeName: "Turin, Italy", country: "Italy", countryCode: "IT", lat: 45.0703, lon: 7.6869, population: 870000 },
+  { id: "florence", name: "Florence", placeName: "Florence, Italy", country: "Italy", countryCode: "IT", lat: 43.7696, lon: 11.2558, population: 380000 },
+  { id: "venice", name: "Venice", placeName: "Venice, Italy", country: "Italy", countryCode: "IT", lat: 45.4408, lon: 12.3155, population: 260000 },
+  { id: "bologna", name: "Bologna", placeName: "Bologna, Italy", country: "Italy", countryCode: "IT", lat: 44.4949, lon: 11.3426, population: 390000 },
+  { id: "genoa", name: "Genoa", placeName: "Genoa, Italy", country: "Italy", countryCode: "IT", lat: 44.4056, lon: 8.9463, population: 580000 },
+  { id: "barcelona", name: "Barcelona", placeName: "Barcelona, Spain", country: "Spain", countryCode: "ES", lat: 41.3874, lon: 2.1686, population: 1600000 },
+  { id: "madrid", name: "Madrid", placeName: "Madrid, Spain", country: "Spain", countryCode: "ES", lat: 40.4168, lon: -3.7038, population: 3300000 },
+  { id: "valencia", name: "Valencia", placeName: "Valencia, Spain", country: "Spain", countryCode: "ES", lat: 39.4699, lon: -0.3763, population: 790000 },
+  { id: "lisbon", name: "Lisbon", placeName: "Lisbon, Portugal", country: "Portugal", countryCode: "PT", lat: 38.7223, lon: -9.1393, population: 550000 },
+  { id: "porto", name: "Porto", placeName: "Porto, Portugal", country: "Portugal", countryCode: "PT", lat: 41.1579, lon: -8.6291, population: 230000 },
+  { id: "athens", name: "Athens", placeName: "Athens, Greece", country: "Greece", countryCode: "GR", lat: 37.9838, lon: 23.7275, population: 660000 },
+  { id: "london", name: "London", placeName: "London, UK", country: "United Kingdom", countryCode: "GB", lat: 51.5074, lon: -0.1278, population: 9000000 },
+  { id: "manchester", name: "Manchester", placeName: "Manchester, UK", country: "United Kingdom", countryCode: "GB", lat: 53.4808, lon: -2.2426, population: 550000 },
+  { id: "edinburgh", name: "Edinburgh", placeName: "Edinburgh, UK", country: "United Kingdom", countryCode: "GB", lat: 55.9533, lon: -3.1883, population: 520000 },
+  { id: "birmingham", name: "Birmingham", placeName: "Birmingham, UK", country: "United Kingdom", countryCode: "GB", lat: 52.4862, lon: -1.8904, population: 1100000 },
+  { id: "dublin", name: "Dublin", placeName: "Dublin, Ireland", country: "Ireland", countryCode: "IE", lat: 53.3498, lon: -6.2603, population: 550000 },
+  { id: "reykjavik", name: "Reykjavik", placeName: "Reykjavik, Iceland", country: "Iceland", countryCode: "IS", lat: 64.1466, lon: -21.9426, population: 130000 },
+
+  // Wider world (continent / custom)
+  { id: "newyork", name: "New York", placeName: "New York, USA", country: "United States", countryCode: "US", lat: 40.7128, lon: -74.006, population: 8300000 },
+  { id: "boston", name: "Boston", placeName: "Boston, USA", country: "United States", countryCode: "US", lat: 42.3601, lon: -71.0589, population: 675000 },
+  { id: "miami", name: "Miami", placeName: "Miami, USA", country: "United States", countryCode: "US", lat: 25.7617, lon: -80.1918, population: 440000 },
+  { id: "toronto", name: "Toronto", placeName: "Toronto, Canada", country: "Canada", countryCode: "CA", lat: 43.6532, lon: -79.3832, population: 2800000 },
+  { id: "vancouver", name: "Vancouver", placeName: "Vancouver, Canada", country: "Canada", countryCode: "CA", lat: 49.2827, lon: -123.1207, population: 675000 },
+  { id: "tokyo", name: "Tokyo", placeName: "Tokyo, Japan", country: "Japan", countryCode: "JP", lat: 35.6762, lon: 139.6503, population: 14000000 },
+  { id: "sydney", name: "Sydney", placeName: "Sydney, Australia", country: "Australia", countryCode: "AU", lat: -33.8688, lon: 151.2093, population: 5300000 },
+  { id: "auckland", name: "Auckland", placeName: "Auckland, New Zealand", country: "New Zealand", countryCode: "NZ", lat: -36.8509, lon: 174.7645, population: 1650000 },
+  { id: "cape_town", name: "Cape Town", placeName: "Cape Town, South Africa", country: "South Africa", countryCode: "ZA", lat: -33.9249, lon: 18.4241, population: 4600000 },
+  { id: "dubai", name: "Dubai", placeName: "Dubai, UAE", country: "United Arab Emirates", countryCode: "AE", lat: 25.2048, lon: 55.2708, population: 3500000 },
+  { id: "bangkok", name: "Bangkok", placeName: "Bangkok, Thailand", country: "Thailand", countryCode: "TH", lat: 13.7563, lon: 100.5018, population: 8300000 },
+  { id: "singapore", name: "Singapore", placeName: "Singapore", country: "Singapore", countryCode: "SG", lat: 1.3521, lon: 103.8198, population: 5700000 },
+];
+
+/** Larger + nearer wins before weather is fetched. */
+export function candidateRankScore(population: number, distanceKm: number): number {
+  return Math.log10(population + 1) * 45 - distanceKm;
+}
+
+export function citiesWithinRadius(
+  origin: { lat: number; lon: number },
+  radiusKm: number,
+  opts?: { excludeName?: string; limit?: number },
+): Array<CityIndexEntry & { distanceKm: number }> {
+  const exclude = opts?.excludeName?.toLowerCase().trim();
+  const limit = opts?.limit ?? 14;
+
+  return CITY_INDEX.map((city) => ({
+    ...city,
+    distanceKm: haversineKm(origin, city),
+  }))
+    .filter((city) => {
+      if (city.distanceKm < 5) return false;
+      if (exclude && city.name.toLowerCase() === exclude) return false;
+      return city.distanceKm <= radiusKm;
+    })
+    .sort(
+      (a, b) =>
+        candidateRankScore(b.population, b.distanceKm) -
+          candidateRankScore(a.population, a.distanceKm) ||
+        a.distanceKm - b.distanceKm,
+    )
+    .slice(0, limit);
+}
+
+/** @deprecated Prefer CITY_INDEX — kept for slug lookups. */
+export const WORLD_CITIES: PlaceDto[] = CITY_INDEX.map(
+  ({ population: _p, ...place }) => place,
+);

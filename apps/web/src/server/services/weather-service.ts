@@ -19,7 +19,7 @@ import {
   resolveDateWindow,
   type DatePreset,
 } from "@/lib/dates";
-import { fetchWeather } from "@/server/integrations/weather";
+import { fetchWeather, fetchWeatherBatch } from "@/server/integrations/weather";
 import { reverseGeocode, searchPlaces } from "@/server/integrations/mapbox";
 import {
   DESTINATION_CATALOG,
@@ -29,10 +29,9 @@ import {
   citiesWithinRadius,
   placeholderImageFor,
 } from "@/server/integrations/places/candidates";
-import { fetchNearbySettlements } from "@/server/integrations/places/nearby-overpass";
 import {
   resolveRadiusKm,
-  candidateLimitForRadius,
+  DISCOVER_WEATHER_CANDIDATE_LIMIT,
 } from "@/lib/distance";
 
 function scoreWeather(
@@ -180,40 +179,6 @@ export function summarizePeriod(
   };
 }
 
-function mergePlaceCandidates(
-  curated: Array<PlaceDto & { distanceKm: number }>,
-  live: Array<PlaceDto & { distanceKm: number }>,
-  limit: number,
-): Array<PlaceDto & { distanceKm: number }> {
-  const byName = new Map<string, PlaceDto & { distanceKm: number }>();
-
-  // Prefer curated hubs when names collide (stable IDs / catalog images).
-  for (const place of [...live, ...curated]) {
-    const key = place.name.toLowerCase().trim();
-    const existing = byName.get(key);
-    if (!existing) {
-      byName.set(key, place);
-      continue;
-    }
-    const curatedWins =
-      !place.id.startsWith("osm-") && existing.id.startsWith("osm-");
-    if (curatedWins) {
-      byName.set(key, {
-        ...place,
-        distanceKm: Math.min(place.distanceKm, existing.distanceKm),
-      });
-      continue;
-    }
-    if (place.distanceKm < existing.distanceKm) {
-      byName.set(key, place);
-    }
-  }
-
-  return [...byName.values()]
-    .sort((a, b) => a.distanceKm - b.distanceKm)
-    .slice(0, limit);
-}
-
 async function resolveOrigin(query: DiscoverQuery): Promise<PlaceDto | null> {
   if (query.lat != null && query.lon != null) {
     const name = query.origin?.trim();
@@ -289,54 +254,30 @@ export async function discoverDestinations(
     endDate: query.endDate,
   });
 
-  const limit = candidateLimitForRadius(radiusKm);
-  const curated = citiesWithinRadius(origin, radiusKm, {
+  const candidates = citiesWithinRadius(origin, radiusKm, {
     excludeName: origin.name,
-    limit,
+    limit: DISCOVER_WEATHER_CANDIDATE_LIMIT,
   });
-
-  // Live OSM settlements around the user (soft-fail; curated catalog always used).
-  // Keep Overpass radius modest — large rings time out on public mirrors.
-  const overpassRadius = Math.min(radiusKm, 150);
-  const live =
-    overpassRadius >= 15
-      ? await fetchNearbySettlements(origin, overpassRadius, {
-          excludeName: origin.name,
-          limit: Math.min(Math.max(limit, 24), 36),
-        })
-      : [];
-
-  const candidates = mergePlaceCandidates(curated, live, limit);
 
   const catalogById = new Map(DESTINATION_CATALOG.map((d) => [d.id, d]));
 
-  const [originWeatherResult, ...weatherSettled] = await Promise.all([
-    fetchWeather({
-      lat: origin.lat,
-      lon: origin.lon,
-      name: origin.placeName,
-    }).then(
-      (w) => ({ ok: true as const, w }),
-      () => ({ ok: false as const }),
-    ),
-    ...candidates.map(async (city) => {
-      try {
-        const weather = await fetchWeather({
-          lat: city.lat,
-          lon: city.lon,
-          name: city.placeName,
-        });
-        return { ok: true as const, city, weather };
-      } catch {
-        return { ok: false as const, city };
-      }
-    }),
-  ]);
+  const weatherInputs = [
+    { lat: origin.lat, lon: origin.lon, name: origin.placeName },
+    ...candidates.map((city) => ({
+      lat: city.lat,
+      lon: city.lon,
+      name: city.placeName,
+    })),
+  ];
 
-  const destinations: DestinationDto[] = weatherSettled
-    .flatMap((result) => {
-      if (!result.ok || !("weather" in result)) return [];
-      const { city, weather } = result;
+  const weatherBatch = await fetchWeatherBatch(weatherInputs);
+  const originWeather = weatherBatch[0] ?? null;
+  const candidateWeather = weatherBatch.slice(1);
+
+  const destinations: DestinationDto[] = candidates
+    .flatMap((city, i) => {
+      const weather = candidateWeather[i];
+      if (!weather) return [];
       const catalog = catalogById.get(city.id);
       const forecast = summarizePeriod(weather, dateWindow);
 
@@ -388,12 +329,11 @@ export async function discoverDestinations(
       name: origin.name,
       lat: origin.lat,
       lon: origin.lon,
-      temperatureC: originWeatherResult.ok
-        ? originWeatherResult.w.current.temperatureC
-        : (destinations[0]?.current.temperatureC ?? 18),
-      condition: originWeatherResult.ok
-        ? originWeatherResult.w.current.condition
-        : "partly_cloudy",
+      temperatureC:
+        originWeather?.current.temperatureC ??
+        destinations[0]?.current.temperatureC ??
+        18,
+      condition: originWeather?.current.condition ?? "partly_cloudy",
     },
     ...destinations.slice(0, 8).map((d) => ({
       id: d.id,
@@ -418,15 +358,15 @@ export async function discoverDestinations(
     radiusKm,
     destinations,
     mapMarkers,
-    originCurrent: originWeatherResult.ok
+    originCurrent: originWeather
       ? {
-          temperatureC: originWeatherResult.w.current.temperatureC,
-          condition: originWeatherResult.w.current.condition,
-          conditionLabel: originWeatherResult.w.current.conditionLabel,
+          temperatureC: originWeather.current.temperatureC,
+          condition: originWeather.current.condition,
+          conditionLabel: originWeather.current.conditionLabel,
         }
       : undefined,
-    originForecast: originWeatherResult.ok
-      ? summarizePeriod(originWeatherResult.w, dateWindow)
+    originForecast: originWeather
+      ? summarizePeriod(originWeather, dateWindow)
       : undefined,
   };
 }
