@@ -63,12 +63,21 @@ export function MockMap({
     lon: 24.94,
   };
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [densePopup, setDensePopup] = useState(false);
   const selected =
     markers.find((m) => m.id === selectedId && !m.id.startsWith("origin-")) ??
     null;
   const selectedPos = selected
     ? project(selected.lat, selected.lon, center, radiusKm)
     : null;
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const sync = () => setDensePopup(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     const places = markers
@@ -175,9 +184,9 @@ export function MockMap({
                 "mb-1 flex items-center gap-2 rounded-full border px-3 py-1.5 shadow-lg backdrop-blur-md transition-transform",
                 isOrigin
                   ? "border-primary/40 bg-primary text-on-primary"
-                  : isSelected
-                    ? "scale-105 border-primary bg-surface/95"
-                    : marker.tone === "warning" || marker.condition === "storm"
+                  :                 isSelected
+                  ? "border-primary bg-surface/95"
+                  : marker.tone === "warning" || marker.condition === "storm"
                       ? marker.condition === "storm"
                         ? "border-error/60 bg-surface/95"
                         : "border-secondary/60 bg-surface/95"
@@ -212,7 +221,28 @@ export function MockMap({
         );
       })}
 
-      {selected && selectedPos && (
+      {selected && densePopup ? (
+        <>
+          <button
+            type="button"
+            className="absolute inset-0 z-30 bg-inverse-surface/20"
+            aria-label={t("map.closePopup")}
+            onClick={() => setSelectedId(null)}
+          />
+          <div className="absolute inset-x-3 top-[28%] z-40 max-h-[min(42%,16rem)] sm:inset-x-4">
+            <div className="max-h-full overflow-y-auto overscroll-contain rounded-xl shadow-[0px_12px_36px_rgba(0,0,0,0.2)]">
+              <MapMarkerPopup
+                dense
+                marker={selected}
+                href={destinationHref(selected.id, locationQuery)}
+                onClose={() => setSelectedId(null)}
+              />
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {selected && selectedPos && !densePopup ? (
         <div
           className="absolute z-40 -translate-x-1/2 -translate-y-[calc(100%+10px)]"
           style={{
@@ -227,7 +257,7 @@ export function MockMap({
             onClose={() => setSelectedId(null)}
           />
         </div>
-      )}
+      ) : null}
 
       <div className="absolute right-4 bottom-4 z-20 rounded-xl border border-outline-variant/20 bg-surface/90 px-3 py-2 text-xs font-medium text-on-surface-variant shadow-sm backdrop-blur-md">
         Mock map · circle = search radius from start

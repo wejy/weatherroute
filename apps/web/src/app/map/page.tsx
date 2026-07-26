@@ -74,6 +74,14 @@ export default async function MapPage({
   };
   const shareToken =
     typeof flat.share === "string" ? flat.share : undefined;
+  const routeHref =
+    routeFrom && routeTo
+      ? routesHref({
+          from: routeFrom,
+          to: routeTo,
+          ...originQuery,
+        })
+      : routesHref(originQuery);
 
   const filterDefaults = {
     origin: flat.origin ?? parsed.origin,
@@ -89,7 +97,7 @@ export default async function MapPage({
   };
 
   return (
-    <div className="h-screen w-full overflow-hidden bg-background text-on-background">
+    <div className="h-[100dvh] w-full overflow-hidden bg-background text-on-background">
       <SideNav active="/map">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <h1 className="mb-3 shrink-0 text-xl font-semibold text-on-surface">
@@ -141,25 +149,17 @@ export default async function MapPage({
         </div>
         {!gate.paywalled ? (
           <Link
-            href={
-              routeFrom && routeTo
-                ? routesHref({
-                    from: routeFrom,
-                    to: routeTo,
-                    ...originQuery,
-                  })
-                : routesHref(originQuery)
-            }
-            className="mt-3 block w-full shrink-0 rounded-lg bg-primary py-3 text-center text-lg font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container hover:text-on-primary-container"
+            href={routeHref}
+            className="mt-3 block w-full shrink-0 rounded-lg bg-accent py-3 text-center text-lg font-semibold text-on-accent shadow-sm transition-colors hover:bg-accent-container hover:text-on-accent-container"
           >
             {t("map.generateRoute")}
           </Link>
         ) : null}
       </SideNav>
 
-      <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between bg-surface/80 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl md:hidden">
-        <p className="text-2xl font-bold text-primary">{t("brand")}</p>
-        <div className="flex items-center gap-3">
+      <header className="fixed top-0 left-0 z-50 flex h-14 w-full items-center justify-between bg-surface/85 px-4 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl lg:hidden">
+        <p className="text-xl font-bold text-primary">{t("brand")}</p>
+        <div className="flex items-center gap-2">
           <LanguageSwitcher />
           <Link
             href="/settings"
@@ -173,7 +173,10 @@ export default async function MapPage({
         </div>
       </header>
 
-      <main id="main-content" className="relative z-0 h-full w-full pt-16 lg:pt-0 lg:pl-96">
+      <main
+        id="main-content"
+        className="relative z-0 h-full w-full pt-14 pb-[4.5rem] lg:pt-0 lg:pb-0 lg:pl-96"
+      >
         <DiscoverMap
           markers={hasOrigin ? result.mapMarkers : []}
           origin={hasOrigin ? result.origin : undefined}
@@ -185,40 +188,63 @@ export default async function MapPage({
           className="absolute inset-0"
         />
 
-        {hasOrigin && result.destinations.length > 0 && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-20 z-20 lg:hidden">
-            <div className="pointer-events-auto flex gap-3 overflow-x-auto px-4 pb-2 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {result.destinations.map((d) => (
-                <MapNearbyCard
-                  key={`m-${d.id}`}
-                  destination={d}
-                  compact
-                  href={destinationHref(d.slug, {
-                    datePreset: parsed.datePreset,
-                    startDate: result.startDate,
-                    endDate: result.endDate,
-                    ...originQuery,
-                  })}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="pointer-events-none absolute top-4 right-4 left-4 z-20 flex items-start justify-between gap-3 lg:left-[25rem]">
+        {/* Map chrome: filters + origin (one instance for mobile + desktop) */}
+        <div className="pointer-events-none absolute inset-x-0 top-14 z-20 flex items-start justify-between gap-2 px-3 pt-3 lg:top-0 lg:right-4 lg:left-[25rem] lg:pt-4">
           <Suspense fallback={null}>
             <MapFloatingFilters
               defaults={filterDefaults}
               weatherGoal={parsed.weatherGoal}
             />
           </Suspense>
-
-          <div className="pointer-events-auto hidden shrink-0 lg:block">
-            <p className="rounded-xl border border-outline-variant/30 bg-surface/90 px-3 py-2 text-xs text-on-surface-variant shadow-sm backdrop-blur-xl">
+          <div className="pointer-events-auto max-w-[45%] shrink-0 lg:max-w-none">
+            <p className="truncate rounded-full border border-outline-variant/30 bg-surface/90 px-3 py-2 text-xs font-medium text-on-surface-variant shadow-sm backdrop-blur-xl lg:rounded-xl">
               {hasOrigin ? result.origin.placeName : t("map.detecting")}
             </p>
           </div>
         </div>
+
+        {gate.paywalled ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-[4.75rem] z-20 px-3 lg:hidden">
+            <div className="pointer-events-auto max-h-[50vh] overflow-y-auto rounded-2xl border border-outline-variant/25 bg-surface/95 p-3 shadow-lg backdrop-blur-xl">
+              <SoftPaywall
+                quota={
+                  gate.quota
+                    ? {
+                        remaining: gate.quota.remaining,
+                        limit: gate.quota.limit,
+                        searchesUsed: gate.quota.searchesUsed,
+                        bonusCredits: gate.quota.bonusCredits,
+                      }
+                    : null
+                }
+                initialShareToken={shareToken}
+              />
+            </div>
+          </div>
+        ) : null}
+
+        {hasOrigin && !gate.paywalled ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-[4.75rem] z-20 px-3 lg:hidden">
+            <Link
+              href={routeHref}
+              className="pointer-events-auto flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-base font-semibold text-on-accent shadow-[0px_8px_24px_rgba(0,0,0,0.18)] transition-colors hover:bg-accent-container"
+            >
+              <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+                route
+              </span>
+              {t("map.generateRoute")}
+            </Link>
+          </div>
+        ) : null}
+
+        {!hasOrigin && !gate.paywalled ? (
+          <div className="pointer-events-none absolute inset-x-0 bottom-[5.5rem] z-20 px-4 lg:hidden">
+            <p className="pointer-events-auto rounded-xl border border-outline-variant/30 bg-surface/95 px-4 py-3 text-center text-sm text-on-surface-variant shadow-md backdrop-blur-xl">
+              {t("map.detecting")}
+              <span className="mt-1 block text-xs">{t("map.waitingPlaces")}</span>
+            </p>
+          </div>
+        ) : null}
       </main>
 
       <BottomNav active="/map" />

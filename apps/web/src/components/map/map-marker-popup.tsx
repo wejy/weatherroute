@@ -28,17 +28,20 @@ function truncate(text: string, max = 220): string {
 
 /**
  * Pinned map marker info card: weather + Wikipedia image/extract/link.
+ * `dense` = mobile-friendly shorter layout (bottom sheet / limited height).
  */
 export function MapMarkerPopup({
   marker,
   href,
   onClose,
   className,
+  dense = false,
 }: {
   marker: MapMarkerDto;
   href: string;
   onClose: () => void;
   className?: string;
+  dense?: boolean;
 }) {
   const { t, locale, dict } = useI18n();
   const lang = locale === "fi" ? "fi" : "en";
@@ -93,32 +96,67 @@ export function MapMarkerPopup({
     };
   }, [cacheKey, marker.name, marker.lat, marker.lon, lang]);
 
+  const advisories = buildWeatherAdvisories(
+    {
+      rainProbability: marker.rainProbability ?? 0,
+      condition: marker.condition,
+      temperatureC: marker.tempMaxC ?? marker.temperatureC,
+    },
+    t,
+  );
+
   return (
     <article
       role="dialog"
       aria-label={marker.name}
       className={cn(
-        "w-[min(300px,calc(100vw-2rem))] overflow-hidden rounded-xl border border-outline-variant/30 bg-surface shadow-[0px_12px_36px_rgba(0,0,0,0.18)]",
+        "overflow-hidden rounded-xl border border-outline-variant/30 bg-surface shadow-[0px_12px_36px_rgba(0,0,0,0.18)]",
+        dense ? "w-full max-w-none" : "w-[min(300px,calc(100vw-2rem))]",
         className,
       )}
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <div className="relative">
+      <div className={cn("relative", dense && "flex gap-3 px-3 pt-3")}>
         {wiki?.thumbnailUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- remote Wikimedia thumbs
           <img
             src={wiki.thumbnailUrl}
             alt=""
-            className="h-36 w-full object-cover"
+            className={cn(
+              "object-cover",
+              dense
+                ? "h-16 w-16 shrink-0 rounded-lg"
+                : "h-36 w-full",
+            )}
           />
-        ) : (
+        ) : !dense ? (
           <div className="flex h-24 w-full items-center justify-center bg-surface-container text-sm text-on-surface-variant">
             {wikiStatus === "loading"
               ? t("map.wikipediaLoading")
               : t("map.wikipediaNoImage")}
           </div>
-        )}
+        ) : null}
+
+        <div className={cn(dense ? "min-w-0 flex-1 pr-10" : "contents")}>
+          {dense ? (
+            <>
+              <h2 className="m-0 truncate text-base leading-tight font-semibold text-on-surface">
+                {marker.name}
+              </h2>
+              <p className="mt-0.5 truncate text-sm text-on-surface-variant">
+                {formatTemp(marker.temperatureC)}C
+                {marker.condition
+                  ? ` · ${translateCondition(dict, marker.condition)}`
+                  : ""}
+                {marker.distanceKm != null
+                  ? ` · ${Math.round(marker.distanceKm)} km`
+                  : ""}
+              </p>
+            </>
+          ) : null}
+        </div>
+
         <button
           type="button"
           onClick={onClose}
@@ -131,19 +169,21 @@ export function MapMarkerPopup({
         </button>
       </div>
 
-      <div className="space-y-2.5 p-3.5">
-        <div>
-          <h2 className="m-0 text-lg leading-tight font-semibold text-on-surface">
-            {marker.name}
-          </h2>
-          {wiki?.description && (
-            <p className="mt-0.5 text-xs text-on-surface-variant">
-              {wiki.description}
-            </p>
-          )}
-        </div>
+      <div className={cn("space-y-2", dense ? "p-3 pt-2" : "space-y-2.5 p-3.5")}>
+        {!dense ? (
+          <div>
+            <h2 className="m-0 text-lg leading-tight font-semibold text-on-surface">
+              {marker.name}
+            </h2>
+            {wiki?.description && (
+              <p className="mt-0.5 text-xs text-on-surface-variant">
+                {wiki.description}
+              </p>
+            )}
+          </div>
+        ) : null}
 
-        {marker.distanceKm != null && (
+        {!dense && marker.distanceKm != null && (
           <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-on-surface-variant">
             <span>{Math.round(marker.distanceKm)} km</span>
             {marker.driveDurationLabel ? (
@@ -161,26 +201,19 @@ export function MapMarkerPopup({
           </p>
         )}
 
-        <div className="space-y-0.5 text-sm text-on-surface">
-          {marker.tomorrowTempC != null && (
-            <p>
-              {t("map.hoverNow", {
-                temp: formatTemp(marker.tomorrowTempC),
-              })}
-            </p>
+        <div
+          className={cn(
+            "text-on-surface",
+            dense ? "flex flex-wrap gap-x-3 gap-y-0.5 text-xs" : "space-y-0.5 text-sm",
           )}
+        >
           {marker.tempMinC != null && marker.tempMaxC != null && (
-            <p className="font-semibold">
+            <p className={dense ? "font-semibold" : "font-semibold"}>
               {t("map.hoverForecast", {
                 label: marker.dateRangeLabel || t("card.forecast"),
                 min: formatTemp(marker.tempMinC),
                 max: formatTemp(marker.tempMaxC),
               })}
-            </p>
-          )}
-          {marker.condition && (
-            <p className="text-on-surface-variant">
-              {translateCondition(dict, marker.condition)}
             </p>
           )}
           {marker.rainProbability != null && (
@@ -191,65 +224,73 @@ export function MapMarkerPopup({
                 : ""}
             </p>
           )}
+          {!dense && marker.tomorrowTempC != null && (
+            <p>
+              {t("map.hoverNow", {
+                temp: formatTemp(marker.tomorrowTempC),
+              })}
+            </p>
+          )}
+          {!dense && marker.condition && (
+            <p className="text-on-surface-variant">
+              {translateCondition(dict, marker.condition)}
+            </p>
+          )}
         </div>
 
-        {(() => {
-          const advisories = buildWeatherAdvisories(
-            {
-              rainProbability: marker.rainProbability ?? 0,
-              condition: marker.condition,
-              temperatureC: marker.tempMaxC ?? marker.temperatureC,
-            },
-            t,
-          );
-          if (advisories.length === 0) return null;
-          return (
-            <ul className="space-y-1.5 border-t border-outline-variant/20 pt-2">
-              {advisories.map((a) => (
-                <li key={a.id} className="flex gap-2 text-xs">
+        {advisories.length > 0 ? (
+          <ul
+            className={cn(
+              "border-t border-outline-variant/20",
+              dense ? "space-y-1 pt-1.5" : "space-y-1.5 pt-2",
+            )}
+          >
+            {(dense ? advisories.slice(0, 1) : advisories).map((a) => (
+              <li key={a.id} className="flex gap-2 text-xs">
+                <span
+                  className={`material-symbols-outlined text-[16px] ${
+                    a.tone === "warning" ? "text-error" : "text-amber-600"
+                  }`}
+                  aria-hidden
+                >
+                  {a.icon}
+                </span>
+                <span>
                   <span
-                    className={`material-symbols-outlined text-[16px] ${
-                      a.tone === "warning" ? "text-error" : "text-amber-600"
+                    className={`font-semibold ${
+                      a.tone === "warning" ? "text-error" : "text-on-surface"
                     }`}
-                    aria-hidden
                   >
-                    {a.icon}
+                    {a.title}
                   </span>
-                  <span>
-                    <span
-                      className={`font-semibold ${
-                        a.tone === "warning" ? "text-error" : "text-on-surface"
-                      }`}
-                    >
-                      {a.title}
-                    </span>
+                  {!dense ? (
                     <span className="mt-0.5 block text-on-surface-variant">
                       {a.description}
                     </span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          );
-        })()}
+                  ) : null}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
 
-        {wikiStatus === "loading" && (
+        {!dense && wikiStatus === "loading" && (
           <p className="text-xs text-on-surface-variant">
             {t("map.wikipediaLoading")}
           </p>
         )}
-        {wikiStatus === "ready" && wiki && (
+        {!dense && wikiStatus === "ready" && wiki && (
           <p className="text-sm leading-snug text-on-surface-variant">
             {truncate(wiki.extract)}
           </p>
         )}
-        {wikiStatus === "empty" && (
+        {!dense && wikiStatus === "empty" && (
           <p className="text-xs text-on-surface-variant">
             {t("map.wikipediaUnavailable")}
           </p>
         )}
 
-        {marker.tempSeries && marker.tempSeries.length >= 2 && (
+        {!dense && marker.tempSeries && marker.tempSeries.length >= 2 && (
           <div className="rounded-lg border border-outline-variant/20 bg-surface-container/50 px-2 py-2">
             <p className="mb-1 text-[11px] font-semibold tracking-wide text-on-surface-variant uppercase">
               {t("map.hoverTempChart")}
@@ -258,8 +299,8 @@ export function MapMarkerPopup({
           </div>
         )}
 
-        <div className="flex flex-wrap gap-2 pt-1">
-          {wiki?.pageUrl && (
+        <div className={cn("flex flex-wrap gap-2", dense ? "pt-0" : "pt-1")}>
+          {!dense && wiki?.pageUrl && (
             <a
               href={wiki.pageUrl}
               target="_blank"
@@ -271,7 +312,10 @@ export function MapMarkerPopup({
           )}
           <Link
             href={href}
-            className="inline-flex min-h-10 items-center rounded-lg bg-primary px-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container"
+            className={cn(
+              "inline-flex items-center rounded-lg bg-primary px-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container",
+              dense ? "min-h-11 flex-1 justify-center" : "min-h-10",
+            )}
           >
             {t("map.openDestination")}
           </Link>

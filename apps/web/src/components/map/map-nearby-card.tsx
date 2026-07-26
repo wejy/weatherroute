@@ -102,7 +102,7 @@ export function MapNearbyCard({
       href={href}
       className={cn(
         "group relative block cursor-pointer rounded-xl border border-surface-variant bg-surface-container-lowest shadow-[0px_4px_20px_rgba(0,0,0,0.05)] transition-colors hover:border-primary/50 focus-visible:border-primary/50",
-        compact ? "min-w-[240px] p-3" : "p-4",
+        compact ? "min-w-[200px] max-w-[220px] shrink-0 p-3" : "p-4",
       )}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
