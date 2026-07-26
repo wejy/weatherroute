@@ -38,6 +38,9 @@ yarn-error.log*
 !.env.example
 !**/.env.example
 
+# Geonames seed cache
+**/.cache/
+
 # Vercel
 .vercel
 

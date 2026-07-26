@@ -1,10 +1,17 @@
 import "./load-env";
-import { createWriteStream, existsSync, mkdirSync, readFileSync, unlinkSync } from "node:fs";
+import {
+  createWriteStream,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { resolve } from "node:path";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import { execFileSync } from "node:child_process";
 import { drizzle } from "drizzle-orm/postgres-js";
+import { sql } from "drizzle-orm";
 import postgres from "postgres";
 import { places } from "../src/db/schema";
 
@@ -13,22 +20,20 @@ import { places } from "../src/db/schema";
  *
  * Env:
  *   GEONAMES_FILE=cities15000 | cities5000 | cities500  (default cities15000)
- *   GEONAMES_MIN_POP=0          extra population floor (dump already filtered)
+ *   GEONAMES_MIN_POP=0          extra population floor
  *   GEONAMES_CACHE_DIR=apps/web/.cache/geonames
  *
- * IDs: geonames:{geonameid} — does not overwrite city_index rows.
+ * IDs: gn:{geonameid} — does not collide with city_index ids.
  */
 
 const FILE = (process.env.GEONAMES_FILE || "cities15000").replace(/\.zip$/i, "");
 const MIN_POP = Number(process.env.GEONAMES_MIN_POP || 0);
 const CACHE_DIR = resolve(
-  process.env.GEONAMES_CACHE_DIR ||
-    resolve(__dirname, "../.cache/geonames"),
+  process.env.GEONAMES_CACHE_DIR || resolve(__dirname, "../.cache/geonames"),
 );
 const ZIP_URL = `https://download.geonames.org/export/dump/${FILE}.zip`;
 const COUNTRY_URL = "https://download.geonames.org/export/dump/countryInfo.txt";
 
-/** Minimal ISO2 → English name; extended from countryInfo when download works. */
 const FALLBACK_COUNTRIES: Record<string, string> = {
   FI: "Finland",
   SE: "Sweden",
@@ -74,32 +79,19 @@ async function download(url: string, dest: string): Promise<void> {
   );
 }
 
-function extractTxtFromZip(zipPath: string, entryName: string, outPath: string): void {
+function extractTxtFromZip(
+  zipPath: string,
+  entryName: string,
+  outPath: string,
+): void {
   if (existsSync(outPath)) {
     console.log(`Using cached ${outPath}`);
     return;
   }
-  try {
-    execFileSync("unzip", ["-p", zipPath, entryName], {
-      encoding: "buffer",
-      maxBuffer: 200 * 1024 * 1024,
-    });
-    // unzip -p writes to stdout — capture properly
-  } catch {
-    // fall through
-  }
-
-  try {
-    const buf = execFileSync("unzip", ["-p", zipPath, entryName], {
-      maxBuffer: 200 * 1024 * 1024,
-    });
-    require("node:fs").writeFileSync(outPath, buf);
-    return;
-  } catch (err) {
-    throw new Error(
-      `Failed to unzip ${entryName} from ${zipPath}. Install unzip or extract manually. ${err}`,
-    );
-  }
+  const buf = execFileSync("unzip", ["-p", zipPath, entryName], {
+    maxBuffer: 200 * 1024 * 1024,
+  });
+  writeFileSync(outPath, buf);
 }
 
 function parseCountryInfo(text: string): Record<string, string> {
@@ -112,16 +104,6 @@ function parseCountryInfo(text: string): Record<string, string> {
     if (iso && name) map[iso] = name;
   }
   return map;
-}
-
-function slugify(name: string): string {
-  return name
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_|_$/g, "")
-    .slice(0, 48);
 }
 
 function parseCitiesTxt(
@@ -148,10 +130,9 @@ function parseCitiesTxt(
 
     const country = countryCode ? countries[countryCode] ?? countryCode : null;
     const placeName = country ? `${name}, ${country}` : name;
-    const id = `gn:${geonameId}`;
 
     rows.push({
-      id,
+      id: `gn:${geonameId}`,
       name,
       placeName,
       country,
@@ -194,10 +175,10 @@ async function main() {
   const parsed = parseCitiesTxt(readFileSync(txtPath, "utf8"), countries);
   console.log(`Parsed ${parsed.length} places from ${FILE} (minPop=${MIN_POP})`);
 
-  const sql = postgres(url, { max: 1 });
-  const db = drizzle(sql);
+  const client = postgres(url, { max: 1 });
+  const db = drizzle(client);
 
-  const chunkSize = 200;
+  const chunkSize = 250;
   let upserted = 0;
   for (let i = 0; i < parsed.length; i += chunkSize) {
     const chunk = parsed.slice(i, i + chunkSize);
@@ -207,30 +188,28 @@ async function main() {
       .onConflictDoUpdate({
         target: places.id,
         set: {
-          name: chunk[0]!.name, // placeholder — drizzle needs per-row; use raw SQL batch instead
-          placeName: chunk[0]!.placeName,
-          country: chunk[0]!.country,
-          countryCode: chunk[0]!.countryCode,
-          lat: chunk[0]!.lat,
-          lon: chunk[0]!.lon,
-          population: chunk[0]!.population,
-          kind: chunk[0]!.kind,
-          source: chunk[0]!.source,
+          name: sql`excluded.name`,
+          placeName: sql`excluded.place_name`,
+          country: sql`excluded.country`,
+          countryCode: sql`excluded.country_code`,
+          lat: sql`excluded.lat`,
+          lon: sql`excluded.lon`,
+          population: sql`excluded.population`,
+          kind: sql`excluded.kind`,
+          source: sql`excluded.source`,
         },
       });
-    // The above onConflict with chunk[0] is WRONG for multi-row.
-    // Do per-row or use sql`EXCLUDED`.
     upserted += chunk.length;
+    if (upserted % 2500 === 0 || upserted === parsed.length) {
+      console.log(`Upserted ${upserted}/${parsed.length}`);
+    }
   }
 
-  // Fix: redo properly with per-row or excluded columns
-  await sql.end();
-  console.log(
-    `WARNING: re-run with fixed upsert — wrote incorrectly. Fixing…`,
-  );
-  void slugify;
-  void unlinkSync;
-  process.exit(1);
+  const [{ count }] = await client<{ count: string }[]>`
+    select count(*)::text as count from places
+  `;
+  await client.end();
+  console.log(`Geonames seed complete. places table now has ${count} rows.`);
 }
 
 main().catch((err) => {

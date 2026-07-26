@@ -228,6 +228,27 @@ const fi = {
     supabaseHint: "Aseta DATABASE_URL ja USE_MOCKS=false email-OTP:lle.",
     otpFooter: "Lokalisti: EMAIL_MODE=console tulostaa koodin palvelimen lokiin.",
   },
+  paywall: {
+    title: "Ilmaiset haut käytetty",
+    body: "Kirjaudu sähköpostilla rajattomiin hakuihin, tai jaa WeatherTrip saadaksesi yhden lisähaun.",
+    quotaUsed: "Käytetty {used}/{limit} ilmaista hakua",
+    remaining: "{remaining}/{limit} ilmaista hakua jäljellä",
+    signIn: "Kirjaudu sähköpostilla",
+    shareForCredit: "Jaa ja saa +1 haku",
+    sharing: "Valmistellaan jakoa…",
+    shareText: "Löydä parempi sää lähistöltä WeatherTripillä",
+    shareDone:
+      "Kiitos jaosta — pyydä kaveria avaamaan linkki; lunastus antaa bonuksen (ei oma linkkisi).",
+    linkCopied:
+      "Jakolinkki kopioitu. Lähetä kaverille — lunastus antaa +1 haun (ei omaa linkkiä).",
+    shareError: "Jakolinkin luonti epäonnistui. Yritä uudelleen.",
+    redeemLabel: "Onko sinulla jakokoodi?",
+    redeemPlaceholder: "Liitä jakotunnus",
+    redeem: "Lunasta +1 haku",
+    redeeming: "Lunastetaan…",
+    redeemDone: "Bonushaku lisätty — päivitetään…",
+    redeemError: "Koodia ei voitu lunastaa (käytetty, vanhentunut tai oma).",
+  },
   conditions: {
     sunny: "Aurinkoista",
     partly_cloudy: "Puolipilvistä",

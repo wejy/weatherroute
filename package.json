@@ -17,6 +17,7 @@
     "db:generate": "npm run db:generate -w @weathertrip/web",
     "db:migrate": "npm run db:migrate -w @weathertrip/web",
     "db:seed": "npm run db:seed -w @weathertrip/web",
+    "db:seed:geonames": "npm run db:seed:geonames -w @weathertrip/web",
     "db:studio": "npm run db:studio -w @weathertrip/web",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down"

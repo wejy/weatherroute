@@ -1,7 +1,7 @@
 import "server-only";
 
 import { cookies } from "next/headers";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, gt } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { env } from "@/lib/env";
 import { getDb } from "@/db";
@@ -13,6 +13,15 @@ import {
 
 const ANON_COOKIE = "wt_anon";
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+const DEDUPE_WINDOW_MS = 10 * 60 * 1000;
+
+function discoverFingerprint(meta?: Record<string, unknown>): string {
+  if (!meta) return "";
+  const origin = String(meta.origin ?? "");
+  const goal = String(meta.weatherGoal ?? "");
+  const pathAgnostic = `${origin}|${goal}`;
+  return pathAgnostic;
+}
 
 export type QuotaStatus = {
   cookieId: string;
@@ -120,6 +129,39 @@ export async function consumeDiscoverQuota(meta?: Record<string, unknown>): Prom
         allowed: false,
       },
     };
+  }
+
+  // Same origin+goal within 10 min (e.g. home ↔ map) does not burn another credit.
+  const fp = discoverFingerprint(meta);
+  if (fp) {
+    const since = new Date(Date.now() - DEDUPE_WINDOW_MS);
+    const [recent] = await db
+      .select()
+      .from(usageEvents)
+      .where(
+        and(
+          eq(usageEvents.anonSessionId, session.id),
+          eq(usageEvents.type, "discover"),
+          gt(usageEvents.createdAt, since),
+        ),
+      )
+      .orderBy(desc(usageEvents.createdAt))
+      .limit(1);
+
+    const recentMeta = recent?.meta as Record<string, unknown> | null;
+    if (recent && discoverFingerprint(recentMeta ?? undefined) === fp) {
+      return {
+        ok: true,
+        quota: {
+          cookieId: session.cookieId,
+          searchesUsed: session.searchesUsed,
+          bonusCredits: session.bonusCredits,
+          limit,
+          remaining: Math.max(0, limit - session.searchesUsed),
+          allowed: true,
+        },
+      };
+    }
   }
 
   const [updated] = await db

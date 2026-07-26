@@ -23,8 +23,8 @@ Do this after web auth + quota + places seed are stable.
 
 ## Places density
 
-- [ ] Geonames world seed (`cities5000` / `cities15000`) → upsert `places` (same discover query)
-- [ ] Optional population threshold env for seed filtering
+- [x] Geonames world seed (`cities15000`) → upsert `places` (`npm run db:seed:geonames`)
+- [ ] Optional `GEONAMES_FILE=cities5000` / `GEONAMES_MIN_POP` tuning for denser Nordic coverage
 
 ## Ops
 
