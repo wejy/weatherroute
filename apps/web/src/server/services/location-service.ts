@@ -26,6 +26,10 @@ import {
   isMapboxFeatureId,
 } from "@/lib/discover-query";
 import { resolveInternalPlace } from "@/server/dal/place-resolve";
+import {
+  buildWeatherAdvisories,
+  toneFromAdvisories,
+} from "@/lib/weather-advisories";
 
 function durationMinutesFromSeconds(seconds: number): number {
   return Math.max(1, Math.round(seconds / 60));
@@ -302,12 +306,8 @@ export async function getRouteWeather(
   });
   const clock = formatClock(best.departureTime, locale);
 
-  const displaySamples =
-    samples.length <= 3
-      ? samples
-      : [samples[0]!, samples[Math.floor(samples.length / 2)]!, samples[samples.length - 1]!];
-
-  const waypoints = displaySamples.map((sample) => {
+  // Show every corridor sample on the map / timeline (2–5 by trip length).
+  const waypoints = samples.map((sample) => {
     const etaKey = addHoursToLocalKey(
       best.departureTime,
       sample.t * durationHours,
@@ -321,6 +321,22 @@ export async function getRouteWeather(
           ? t("routes.roleDestination")
           : t("routes.roleMidpoint");
 
+    const advisories = buildWeatherAdvisories(
+      {
+        rainProbability: slot.precipitationProbability,
+        condition: slot.condition,
+        temperatureC: slot.temperatureC,
+        windSpeedKmh: sample.weather?.current.windSpeedKmh,
+        placeLabel: sample.name,
+      },
+      t,
+    );
+    const tone = toneFromAdvisories(
+      slot.precipitationProbability,
+      slot.condition,
+      advisories,
+    );
+
     return {
       name: sample.name,
       role: sample.role,
@@ -330,6 +346,8 @@ export async function getRouteWeather(
       temperatureC: slot.temperatureC,
       condition: slot.condition,
       rainProbability: slot.precipitationProbability,
+      tone,
+      advisories,
     };
   });
 

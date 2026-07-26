@@ -19,6 +19,9 @@ import {
   isLinkableDestinationId,
 } from "@/lib/discover-query";
 import { resolveDateWindow, type DatePreset } from "@/lib/dates";
+import { RouteShareActions } from "@/components/routes/route-share-actions";
+import { getEffectiveEarliestDepartureHour } from "@/server/dal/user-prefs";
+import { WEATHER_TONE_COLORS } from "@/lib/weather-tone";
 
 export async function generateMetadata() {
   const locale = await getLocale();
@@ -78,10 +81,8 @@ export default async function RoutesPage({
     endDate: endDateParam ?? startDateParam ?? undefined,
     locale,
   });
-  const { getEffectiveEarliestDepartureHour } = await import(
-    "@/server/dal/user-prefs"
-  );
   const departurePrefs = await getEffectiveEarliestDepartureHour();
+  const isPro = departurePrefs.tier === "pro";
   const route = await getRouteWeather(from, to, {
     fromLat,
     fromLon,
@@ -102,6 +103,10 @@ export default async function RoutesPage({
 
   // TODO: Let users set earliest departure on this page per trip (overrides
   // the Pro settings default). Wire via search param e.g. `earliestHour`.
+
+  const shareWaypoints = route.waypoints
+    .filter((wp) => wp.role === "midpoint")
+    .map((wp) => ({ lat: wp.lat, lon: wp.lon }));
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
@@ -211,6 +216,27 @@ export default async function RoutesPage({
               </Link>
             )}
 
+            {isPro ? (
+              <RouteShareActions
+                fromName={route.from.placeName}
+                toName={route.to.placeName}
+                origin={{ lat: route.from.lat, lon: route.from.lon }}
+                destination={{ lat: route.to.lat, lon: route.to.lon }}
+                waypoints={shareWaypoints}
+                mode={mode}
+                bestDeparture={route.bestDeparture}
+                datePreset={dateWindow.preset}
+                startDate={dateWindow.startDate}
+                endDate={dateWindow.endDate}
+                fromId={
+                  isLinkableDestinationId(route.from.id) ? route.from.id : null
+                }
+                toId={
+                  isLinkableDestinationId(route.to.id) ? route.to.id : null
+                }
+              />
+            ) : null}
+
             <div className="flex items-center justify-between gap-4 rounded-xl border border-outline-variant/20 bg-surface-container-low p-5 shadow-sm">
               <div className="min-w-0 flex-1">
                 <h3 className="text-xl font-semibold text-on-surface">
@@ -254,16 +280,80 @@ export default async function RoutesPage({
               </div>
             </div>
 
+            {(() => {
+              const allAdvisories = route.waypoints.flatMap((wp) =>
+                wp.advisories.map((a) => ({ ...a, place: wp.name })),
+              );
+              // Dedupe by id+place
+              const seen = new Set<string>();
+              const unique = allAdvisories.filter((a) => {
+                const key = `${a.id}:${a.place}`;
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+              });
+              if (unique.length === 0) return null;
+              return (
+                <div className="rounded-xl border border-error-container/40 bg-error-container/10 p-5">
+                  <h3 className="mb-1 flex items-center gap-2 text-sm font-medium tracking-wider text-error uppercase">
+                    <span className="material-symbols-outlined text-[18px]" aria-hidden>
+                      warning
+                    </span>
+                    {t("routes.advisoriesTitle")}
+                  </h3>
+                  <p className="mb-3 text-xs text-on-surface-variant">
+                    {t("routes.advisoriesHint")}
+                  </p>
+                  <ul className="space-y-3">
+                    {unique.map((a) => (
+                      <li key={`${a.id}-${a.place}`} className="flex gap-3">
+                        <span
+                          className={`material-symbols-outlined mt-0.5 ${
+                            a.tone === "warning" ? "text-error" : "text-amber-600"
+                          }`}
+                          aria-hidden
+                        >
+                          {a.icon}
+                        </span>
+                        <div>
+                          <p
+                            className={`text-sm font-semibold ${
+                              a.tone === "warning" ? "text-error" : "text-on-surface"
+                            }`}
+                          >
+                            {a.title}
+                            <span className="font-normal text-on-surface-variant">
+                              {" "}
+                              · {a.place}
+                            </span>
+                          </p>
+                          <p className="text-[13px] text-on-surface-variant">
+                            {a.description}
+                          </p>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })()}
+
             <div className="relative mt-4 space-y-8 border-l-2 border-surface-variant pb-8 pl-4">
               {route.waypoints.map((wp) => (
-                <div key={wp.name} className="relative">
+                <div key={`${wp.role}-${wp.name}-${wp.lat}`} className="relative">
                   <div
                     className={`absolute -left-[23px] top-1 h-3 w-3 rounded-full border-4 border-surface-bright ${
-                      wp.role === "start"
-                        ? "bg-primary"
-                        : wp.role === "destination"
-                          ? "bg-tertiary"
-                          : "bg-outline"
+                      wp.condition === "storm"
+                        ? "bg-error"
+                        : wp.tone === "warning"
+                          ? "bg-secondary"
+                          : wp.tone === "caution"
+                            ? "bg-amber-400"
+                            : wp.role === "start"
+                              ? "bg-primary"
+                              : wp.role === "destination"
+                                ? "bg-tertiary"
+                                : "bg-outline"
                     }`}
                   />
                   <div className="mb-2 flex items-start justify-between">
@@ -315,11 +405,46 @@ export default async function RoutesPage({
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-variant">
                       <div
-                        className="h-full bg-secondary"
+                        className={
+                          wp.condition === "storm"
+                            ? "h-full bg-error"
+                            : wp.tone === "warning"
+                              ? "h-full bg-secondary"
+                              : wp.tone === "caution"
+                                ? "h-full bg-amber-400"
+                                : "h-full bg-secondary"
+                        }
                         style={{ width: `${wp.rainProbability}%` }}
                       />
                     </div>
                   </div>
+                  {wp.advisories.length > 0 ? (
+                    <ul className="mt-2 space-y-1.5">
+                      {wp.advisories.map((a) => (
+                        <li
+                          key={a.id}
+                          className={`flex items-start gap-2 rounded-lg px-2.5 py-2 text-[13px] ${
+                            a.tone === "warning"
+                              ? "bg-error-container/20 text-error"
+                              : "bg-amber-400/15 text-on-surface"
+                          }`}
+                        >
+                          <span
+                            className="material-symbols-outlined text-[16px]"
+                            aria-hidden
+                          >
+                            {a.icon}
+                          </span>
+                          <span>
+                            <span className="font-semibold">{a.title}</span>
+                            <span className="mt-0.5 block text-on-surface-variant">
+                              {a.description}
+                            </span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -345,15 +470,27 @@ export default async function RoutesPage({
             </h2>
             <ul className="flex flex-col gap-2">
               <li className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-tertiary-fixed-dim" aria-hidden="true" />
+                <span
+                  className="h-3 w-3 rounded-full"
+                  style={{ backgroundColor: WEATHER_TONE_COLORS.clear }}
+                  aria-hidden="true"
+                />
                 <span className="text-base text-on-surface">{t("routes.clearRoute")}</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-amber-400" aria-hidden="true" />
+                <span
+                  className="h-3 w-3 rounded-full"
+                  style={{ backgroundColor: WEATHER_TONE_COLORS.caution }}
+                  aria-hidden="true"
+                />
                 <span className="text-base text-on-surface">{t("routes.cloudyCaution")}</span>
               </li>
               <li className="flex items-center gap-2">
-                <span className="h-3 w-3 rounded-full bg-error" aria-hidden="true" />
+                <span
+                  className="h-3 w-3 rounded-full"
+                  style={{ backgroundColor: WEATHER_TONE_COLORS.warning }}
+                  aria-hidden="true"
+                />
                 <span className="text-base text-on-surface">{t("routes.rainWarning")}</span>
               </li>
             </ul>

@@ -20,10 +20,12 @@ const MapboxRouteMap = dynamic(
 function MockRouteMap({
   from,
   to,
+  waypoints,
   className,
 }: {
   from: PlaceDto;
   to: PlaceDto;
+  waypoints: RouteWaypointDto[];
   className?: string;
 }) {
   return (
@@ -66,6 +68,21 @@ function MockRouteMap({
           <circle cx="50" cy="50" r="6" fill="#005338" />
         </svg>
       </div>
+      {waypoints.length > 0 ? (
+        <div className="absolute top-4 left-4 right-4 flex flex-wrap gap-2">
+          {waypoints.map((wp) => (
+            <div
+              key={`${wp.name}-${wp.lat}`}
+              className="rounded-xl border border-outline-variant/30 bg-surface/95 px-3 py-2 text-xs shadow-sm backdrop-blur-md"
+            >
+              <p className="font-semibold text-on-surface">{wp.name}</p>
+              <p className="tabular-nums text-on-surface-variant">
+                {Math.round(wp.temperatureC)}° · {wp.rainProbability}%
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <div className="absolute bottom-4 left-4 right-4 rounded-xl border border-outline-variant/30 bg-surface/95 p-3 text-sm text-on-surface shadow-sm backdrop-blur-md">
         <p className="font-semibold text-on-surface">
           {from.name} → {to.name}
@@ -109,5 +126,12 @@ export function RouteMap({
     );
   }
 
-  return <MockRouteMap from={from} to={to} className={className} />;
+  return (
+    <MockRouteMap
+      from={from}
+      to={to}
+      waypoints={waypoints}
+      className={className}
+    />
+  );
 }

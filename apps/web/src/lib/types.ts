@@ -187,6 +187,18 @@ export interface DiscoverResultDto {
   originForecast?: PeriodWeatherDto;
 }
 
+/** Forecast-derived advisory (not official national CAP / Meteoalarm). */
+export interface WeatherAdvisoryDto {
+  id: string;
+  tone: "caution" | "warning";
+  icon: string;
+  title: string;
+  description: string;
+}
+
+/** clear / caution / warning — matches routes map legend. */
+export type WeatherTone = "clear" | "caution" | "warning";
+
 export interface MapMarkerDto {
   id: string;
   name: string;
@@ -207,6 +219,9 @@ export interface MapMarkerDto {
   driveDurationLabel?: string;
   travelMode?: TravelMode;
   tempSeries?: number[];
+  /** Corridor / forecast severity for marker chrome. */
+  tone?: WeatherTone;
+  advisories?: WeatherAdvisoryDto[];
 }
 
 export interface RouteWaypointDto {
@@ -218,6 +233,8 @@ export interface RouteWaypointDto {
   temperatureC: number;
   condition: WeatherCondition;
   rainProbability: number;
+  tone: WeatherTone;
+  advisories: WeatherAdvisoryDto[];
 }
 
 export interface RouteDto {

@@ -262,6 +262,8 @@ export const MOCK_ROUTE: RouteDto = {
       temperatureC: 18,
       condition: "sunny",
       rainProbability: 0,
+      tone: "clear",
+      advisories: [],
     },
     {
       name: "Hämeenlinna",
@@ -272,6 +274,8 @@ export const MOCK_ROUTE: RouteDto = {
       temperatureC: 17,
       condition: "cloudy",
       rainProbability: 15,
+      tone: "clear",
+      advisories: [],
     },
     {
       name: "Tampere",
@@ -282,6 +286,8 @@ export const MOCK_ROUTE: RouteDto = {
       temperatureC: 19,
       condition: "partly_cloudy",
       rainProbability: 5,
+      tone: "clear",
+      advisories: [],
     },
   ],
 };

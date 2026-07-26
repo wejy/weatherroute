@@ -158,10 +158,26 @@ export function MapboxWeatherMap({
         el.style.minHeight = "32px";
 
         const selected = selectedIdRef.current === marker.id;
+        const tone = marker.tone ?? "clear";
+        const severe = marker.condition === "storm";
+        const toneBorder = severe
+          ? "#ba1a1a"
+          : tone === "warning"
+            ? "#006591"
+            : tone === "caution"
+              ? "#f59e0b"
+              : selected
+                ? "#3525cd"
+                : "rgba(199,196,216,.5)";
+        const warnDot =
+          tone === "warning" || tone === "caution" || severe
+            ? `<span style="position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:999px;background:${severe ? "#ba1a1a" : tone === "warning" ? "#006591" : "#f59e0b"};border:2px solid #fff;" aria-hidden="true"></span>`
+            : "";
         el.innerHTML = isOrigin
           ? `<div style="background:#3525cd;color:#fff;border-radius:999px;padding:8px 12px;font:600 12px/1 Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.18);border:2px solid #fff;">●</div>`
-          : `<div style="display:flex;align-items:center;gap:4px;background:rgba(252,248,255,.98);border-radius:999px;padding:8px 12px;font:600 13px/1 Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.12);border:2px solid ${selected ? "#3525cd" : "rgba(199,196,216,.5)"};color:#1b1b24;transform:${selected ? "scale(1.08)" : "none"};">
+          : `<div style="position:relative;display:flex;align-items:center;gap:4px;background:rgba(252,248,255,.98);border-radius:999px;padding:8px 12px;font:600 13px/1 Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.12);border:2px solid ${toneBorder};color:#1b1b24;transform:${selected ? "scale(1.08)" : "none"};">
               <span>${Math.round(marker.temperatureC)}°</span>
+              ${warnDot}
             </div>`;
 
         el.addEventListener("click", (e) => {

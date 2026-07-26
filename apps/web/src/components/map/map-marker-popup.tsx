@@ -14,6 +14,7 @@ import {
   wikipediaCacheKey,
   type WikipediaSummaryClient,
 } from "@/lib/wikipedia-client";
+import { buildWeatherAdvisories } from "@/lib/weather-advisories";
 
 export type { WikipediaSummaryClient };
 
@@ -191,6 +192,46 @@ export function MapMarkerPopup({
             </p>
           )}
         </div>
+
+        {(() => {
+          const advisories = buildWeatherAdvisories(
+            {
+              rainProbability: marker.rainProbability ?? 0,
+              condition: marker.condition,
+              temperatureC: marker.tempMaxC ?? marker.temperatureC,
+            },
+            t,
+          );
+          if (advisories.length === 0) return null;
+          return (
+            <ul className="space-y-1.5 border-t border-outline-variant/20 pt-2">
+              {advisories.map((a) => (
+                <li key={a.id} className="flex gap-2 text-xs">
+                  <span
+                    className={`material-symbols-outlined text-[16px] ${
+                      a.tone === "warning" ? "text-error" : "text-amber-600"
+                    }`}
+                    aria-hidden
+                  >
+                    {a.icon}
+                  </span>
+                  <span>
+                    <span
+                      className={`font-semibold ${
+                        a.tone === "warning" ? "text-error" : "text-on-surface"
+                      }`}
+                    >
+                      {a.title}
+                    </span>
+                    <span className="mt-0.5 block text-on-surface-variant">
+                      {a.description}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          );
+        })()}
 
         {wikiStatus === "loading" && (
           <p className="text-xs text-on-surface-variant">

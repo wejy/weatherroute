@@ -177,7 +177,13 @@ export function MockMap({
                   ? "border-primary/40 bg-primary text-on-primary"
                   : isSelected
                     ? "scale-105 border-primary bg-surface/95"
-                    : "border-outline-variant/30 bg-surface/95",
+                    : marker.tone === "warning" || marker.condition === "storm"
+                      ? marker.condition === "storm"
+                        ? "border-error/60 bg-surface/95"
+                        : "border-secondary/60 bg-surface/95"
+                      : marker.tone === "caution"
+                        ? "border-amber-400/70 bg-surface/95"
+                        : "border-outline-variant/30 bg-surface/95",
               )}
             >
               {!isOrigin && (

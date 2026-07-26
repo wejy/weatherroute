@@ -30,6 +30,8 @@ import {
   findPlace,
 } from "@/server/integrations/mocks/data";
 import { placeholderImageFor } from "@/server/integrations/places/candidates";
+import { buildWeatherAdvisories } from "@/lib/weather-advisories";
+import { weatherTone } from "@/lib/weather-tone";
 import { placesWithinRadius } from "@/server/dal/places";
 import {
   resolveDiscoverLimits,
@@ -384,6 +386,7 @@ export async function discoverDestinations(
       driveDurationLabel: d.driveDurationLabel,
       travelMode: d.travelMode,
       tempSeries: d.tempSeries,
+      tone: weatherTone(d.rainProbability, d.condition),
     })),
   ];
 
@@ -438,6 +441,22 @@ export function buildSuitability(
         "suitability.photoDesc": "Excellent visibility and soft light.",
         "suitability.wetTitle": "Pack a raincoat",
         "suitability.wetDesc": "{pct}% chance of heavy showers.",
+        "advisory.stormTitle": "Thunderstorm risk",
+        "advisory.stormDesc": "Expect thunderstorms — delay travel if you can.",
+        "advisory.snowTitle": "Snow / icy conditions",
+        "advisory.snowDesc": "Snow expected — allow extra travel time.",
+        "advisory.fogTitle": "Fog / low visibility",
+        "advisory.fogDesc": "Reduced visibility — drive carefully.",
+        "advisory.rainTitle": "Heavy rain likely",
+        "advisory.rainCautionTitle": "Showers possible",
+        "advisory.rainDesc": "{pct}% chance of rain.",
+        "advisory.windTitle": "Strong wind",
+        "advisory.windCautionTitle": "Windy",
+        "advisory.windDesc": "Wind around {speed} km/h.",
+        "advisory.heatTitle": "High temperature",
+        "advisory.heatDesc": "Around {temp}°C — stay hydrated.",
+        "advisory.coldTitle": "Very cold",
+        "advisory.coldDesc": "Around {temp}°C — dress warmly.",
       };
       let s = fallback[key] ?? key;
       if (vars) {
@@ -479,6 +498,38 @@ export function buildSuitability(
       description: tr("suitability.wetDesc", {
         pct: wetDay.precipitationProbability,
       }),
+    });
+  }
+
+  // Forecast-derived advisories (storm / snow / fog / wind / heat / cold).
+  const worstDaily = [...daily].sort(
+    (a, b) => b.precipitationProbability - a.precipitationProbability,
+  )[0];
+  const advisorySource = {
+    rainProbability: Math.max(
+      current.precipitationProbability,
+      worstDaily?.precipitationProbability ?? 0,
+    ),
+    condition:
+      current.condition === "storm" ||
+      current.condition === "snow" ||
+      current.condition === "fog"
+        ? current.condition
+        : (worstDaily?.condition ?? current.condition),
+    temperatureC: current.temperatureC,
+    windSpeedKmh: current.windSpeedKmh,
+  };
+  for (const a of buildWeatherAdvisories(advisorySource, tr)) {
+    // Avoid duplicating the wet-day umbrella badge for generic rain.
+    if (a.id === "rain" && wetDay) continue;
+    if (a.id === "rain-moderate" && wetDay) continue;
+    if (a.id === "rain-condition" && wetDay) continue;
+    badges.push({
+      id: a.id,
+      tone: a.tone === "warning" ? "warning" : "info",
+      icon: a.icon,
+      title: a.title,
+      description: a.description,
     });
   }
 
