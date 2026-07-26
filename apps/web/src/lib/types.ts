@@ -254,6 +254,10 @@ export interface RouteAlternativeDto {
   /** Average rain probability along corridor at that departure. */
   avgRainProbability: number;
   selected: boolean;
+  /** Shortest duration among compared alternatives. */
+  isFastest: boolean;
+  /** Highest dryness (then lowest avg rain) among alternatives. */
+  isDriest: boolean;
   geometry: [number, number][];
 }
 

@@ -281,14 +281,22 @@ export async function getRouteWeather(
     endDate?: string | null;
     /** `fast` = Mapbox primary; `weather` = driest among alternatives. */
     prefer?: RoutePrefer;
+    /** Manual override: Mapbox alternative index (0 = primary). */
+    altIndex?: number | null;
   },
 ): Promise<RouteDto> {
   const mode = opts?.mode ?? DEFAULT_TRAVEL_MODE;
   const locale = opts?.locale ?? "en";
-  const prefer: RoutePrefer = opts?.prefer === "weather" ? "weather" : "fast";
+  const prefer: RoutePrefer = "fast";
+  const manualAlt =
+    opts?.altIndex != null &&
+    Number.isInteger(opts.altIndex) &&
+    opts.altIndex >= 0
+      ? opts.altIndex
+      : null;
   const t = createTranslator(getDictionary(locale));
-  // TODO: Allow overriding earliestDepartureHour per route on the routes page
-  // (query param / UI control), falling back to the Pro settings preference.
+  // Default selection is the fastest Mapbox alternative; `altIndex` lets the
+  // user pick another corridor from the comparison cards.
 
   const datePresetRaw = opts?.datePreset;
   const datePreset =
@@ -417,21 +425,15 @@ export async function getRouteWeather(
       (a, b) => a.durationMinutes - b.durationMinutes,
     )[0]!;
 
-    if (prefer === "weather" && scored.length > 1) {
-      // Prefer drier corridor; break ties by lower average rain, then shorter time.
-      const ranked = [...scored].sort(
-        (a, b) =>
-          b.dryness - a.dryness ||
-          a.avgRainProbability - b.avgRainProbability ||
-          a.durationMinutes - b.durationMinutes,
-      );
-      const winner = ranked[0]!;
-      routed = winner.route;
-      weatherRouteSelected = winner.route.alternativeIndex > 0;
+    const manual = scored.find((s) => s.route.alternativeIndex === manualAlt);
+    if (manual) {
+      routed = manual.route;
       minutesVsFastest =
-        winner.durationMinutes > fastest.durationMinutes
-          ? winner.durationMinutes - fastest.durationMinutes
+        manual.durationMinutes > fastest.durationMinutes
+          ? manual.durationMinutes - fastest.durationMinutes
           : 0;
+      weatherRouteSelected =
+        manual.route.alternativeIndex !== fastest.route.alternativeIndex;
     } else {
       routed = fastest.route;
       weatherRouteSelected = false;
@@ -439,6 +441,12 @@ export async function getRouteWeather(
     }
 
     const selectedIndex = routed?.alternativeIndex ?? 0;
+    const driest = [...scored].sort(
+      (a, b) =>
+        b.dryness - a.dryness ||
+        a.avgRainProbability - b.avgRainProbability ||
+        a.durationMinutes - b.durationMinutes,
+    )[0]!;
     alternativeSummaries = scored.map((s) => ({
       index: s.route.alternativeIndex,
       distanceKm: s.route.distanceKm,
@@ -447,6 +455,8 @@ export async function getRouteWeather(
       dryness: s.dryness,
       avgRainProbability: s.avgRainProbability,
       selected: s.route.alternativeIndex === selectedIndex,
+      isFastest: s.route.alternativeIndex === fastest.route.alternativeIndex,
+      isDriest: s.route.alternativeIndex === driest.route.alternativeIndex,
       geometry: s.route.geometry,
     }));
   }
@@ -566,17 +576,14 @@ export async function getRouteWeather(
   });
 
   const departureHint =
-    prefer === "weather" && weatherRouteSelected
+    minutesVsFastest != null && minutesVsFastest > 0
       ? t("routes.departureHintWeatherRoute", {
           time: clock,
           from: from.name,
           to: to.name,
           place: best.wettestName,
           rain: String(best.maxRainProbability),
-          extra:
-            minutesVsFastest && minutesVsFastest > 0
-              ? t("routes.minutesLonger", { m: minutesVsFastest })
-              : t("routes.sameDuration"),
+          extra: t("routes.minutesLonger", { m: minutesVsFastest }),
         })
       : t("routes.departureHint", {
           time: clock,
@@ -587,7 +594,7 @@ export async function getRouteWeather(
         });
 
   return {
-    id: `${from.id}-${to.id}-${mode}-${prefer}`,
+    id: `${from.id}-${to.id}-${mode}`,
     title: t("routes.title", { from: from.name, to: to.name }),
     from,
     to,
@@ -599,7 +606,7 @@ export async function getRouteWeather(
     departureHint,
     geometry: routed?.geometry,
     waypoints,
-    prefer,
+    prefer: "fast",
     alternativesCompared,
     weatherRouteSelected,
     minutesVsFastest,

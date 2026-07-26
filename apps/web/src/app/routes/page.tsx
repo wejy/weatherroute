@@ -61,8 +61,12 @@ export default async function RoutesPage({
   const modeRaw = first(raw.mode);
   const mode =
     modeRaw === "cycling" || modeRaw === "driving" ? modeRaw : "driving";
-  const preferRaw = first(raw.prefer);
-  const prefer = preferRaw === "weather" ? "weather" : "fast";
+  const altRaw = first(raw.alt);
+  const altParsed = altRaw != null && altRaw !== "" ? Number(altRaw) : null;
+  const altIndex =
+    altParsed != null && Number.isInteger(altParsed) && altParsed >= 0
+      ? altParsed
+      : null;
   const datePresetRaw = first(raw.datePreset);
   const datePreset: DatePreset =
     datePresetRaw === "today" ||
@@ -94,7 +98,7 @@ export default async function RoutesPage({
     toId,
     mode,
     locale,
-    prefer,
+    altIndex,
     earliestDepartureHour: departurePrefs.effectiveHour,
     datePreset: dateWindow.preset,
     startDate: dateWindow.startDate,
@@ -110,6 +114,27 @@ export default async function RoutesPage({
   const shareWaypoints = route.waypoints
     .filter((wp) => wp.role === "midpoint")
     .map((wp) => ({ lat: wp.lat, lon: wp.lon }));
+
+  function hrefForAlt(altIndexValue: number): string {
+    const params = new URLSearchParams();
+    params.set("from", from);
+    params.set("to", to);
+    params.set("origin", from);
+    if (fromLat != null) params.set("fromLat", String(fromLat));
+    if (fromLon != null) params.set("fromLon", String(fromLon));
+    if (toLat != null) params.set("toLat", String(toLat));
+    if (toLon != null) params.set("toLon", String(toLon));
+    if (fromLat != null) params.set("lat", String(fromLat));
+    if (fromLon != null) params.set("lon", String(fromLon));
+    if (fromId) params.set("fromId", fromId);
+    if (toId) params.set("toId", toId);
+    params.set("mode", mode);
+    params.set("alt", String(altIndexValue));
+    params.set("datePreset", dateWindow.preset);
+    params.set("startDate", dateWindow.startDate);
+    params.set("endDate", dateWindow.endDate);
+    return `/routes?${params.toString()}`;
+  }
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
@@ -157,13 +182,12 @@ export default async function RoutesPage({
 
             <Suspense fallback={null}>
               <RouteEndpointsForm
-                key={`${route.from.id}-${route.to.id}-${mode}-${prefer}-${dateWindow.startDate}-${dateWindow.endDate}`}
+                key={`${route.from.id}-${route.to.id}-${mode}-${dateWindow.startDate}-${dateWindow.endDate}`}
                 initialFrom={from}
                 initialTo={to}
                 fromPlace={route.from}
                 toPlace={route.to}
                 initialMode={mode}
-                initialPrefer={prefer}
                 initialDatePreset={dateWindow.preset}
                 initialStartDate={dateWindow.startDate}
                 initialEndDate={dateWindow.endDate}
@@ -249,22 +273,6 @@ export default async function RoutesPage({
                 <p className="mt-1 text-base text-on-surface-variant">
                   {t("routes.dryTripDesc")}
                 </p>
-                {route.prefer === "weather" &&
-                (route.alternativesCompared ?? 0) > 1 ? (
-                  <p className="mt-2 text-sm font-medium text-secondary">
-                    {route.weatherRouteSelected
-                      ? t("routes.weatherRouteAlt", {
-                          n: route.alternativesCompared ?? 0,
-                          extra:
-                            route.minutesVsFastest && route.minutesVsFastest > 0
-                              ? t("routes.minutesLonger", {
-                                  m: route.minutesVsFastest,
-                                })
-                              : t("routes.sameDuration"),
-                        })
-                      : t("routes.weatherRouteSame")}
-                  </p>
-                ) : null}
               </div>
               <div
                 className="flex h-[4.5rem] w-[4.5rem] shrink-0 flex-col items-center justify-center rounded-full border-4 border-tertiary-container/20 bg-tertiary-container/10 text-tertiary-container"
@@ -288,40 +296,74 @@ export default async function RoutesPage({
                   {t("routes.alternativesHint")}
                 </p>
                 <ul className="space-y-2">
-                  {route.alternatives.map((alt, i) => (
-                    <li
-                      key={alt.index}
-                      className={`rounded-lg border px-3 py-2.5 ${
-                        alt.selected
-                          ? "border-secondary/40 bg-secondary/10"
-                          : "border-outline-variant/25 bg-surface"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-semibold text-on-surface">
-                          {t("routes.alternativeLabel", { n: String(i + 1) })}
-                          {alt.selected ? (
-                            <span className="ml-2 text-xs font-medium text-secondary">
-                              {t("routes.alternativeSelected")}
-                            </span>
-                          ) : (
-                            <span className="ml-2 text-xs font-medium text-on-surface-variant">
-                              {t("routes.alternativeOther")}
-                            </span>
-                          )}
-                        </span>
-                        <span className="text-sm tabular-nums text-on-surface">
-                          {alt.dryness}% · {alt.durationLabel}
-                        </span>
-                      </div>
-                      <p className="mt-1 text-xs text-on-surface-variant">
-                        {alt.distanceKm} km ·{" "}
-                        {t("routes.alternativeAvgRain", {
-                          pct: alt.avgRainProbability,
-                        })}
-                      </p>
-                    </li>
-                  ))}
+                  {[...route.alternatives]
+                    .sort(
+                      (a, b) =>
+                        // Fastest first, then driest, then shorter duration.
+                        Number(b.isFastest) - Number(a.isFastest) ||
+                        Number(b.isDriest) - Number(a.isDriest) ||
+                        a.durationMinutes - b.durationMinutes,
+                    )
+                    .map((alt) => {
+                    const title =
+                      alt.isFastest && alt.isDriest
+                        ? t("routes.alternativeBoth")
+                        : alt.isFastest
+                          ? t("routes.alternativeFastest")
+                          : alt.isDriest
+                            ? t("routes.alternativeDriest")
+                            : t("routes.alternativeOtherRoute");
+                    const body = (
+                      <>
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-sm font-semibold text-on-surface">
+                            {title}
+                            {alt.selected ? (
+                              <span className="ml-2 text-xs font-medium text-secondary">
+                                {t("routes.alternativeSelected")}
+                              </span>
+                            ) : (
+                              <span className="ml-2 text-xs font-medium text-primary">
+                                {t("routes.alternativeChoose")}
+                              </span>
+                            )}
+                          </span>
+                          <span className="shrink-0 text-sm font-semibold tabular-nums text-on-surface">
+                            {alt.durationLabel}
+                          </span>
+                        </div>
+                        <p className="mt-1.5 text-xs text-on-surface-variant">
+                          {t("routes.alternativeDryness", { pct: alt.dryness })}
+                          {" · "}
+                          {alt.distanceKm} km
+                        </p>
+                        <p className="mt-0.5 text-xs text-on-surface-variant">
+                          {t("routes.alternativeAvgRain", {
+                            pct: alt.avgRainProbability,
+                          })}
+                        </p>
+                      </>
+                    );
+                    return (
+                      <li key={alt.index}>
+                        {alt.selected ? (
+                          <div
+                            className="rounded-lg border border-secondary/40 bg-secondary/10 px-3 py-2.5"
+                            aria-current="true"
+                          >
+                            {body}
+                          </div>
+                        ) : (
+                          <Link
+                            href={hrefForAlt(alt.index)}
+                            className="block rounded-lg border border-on-surface/25 bg-surface px-3 py-2.5 transition-colors hover:border-primary hover:bg-primary/5"
+                          >
+                            {body}
+                          </Link>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             ) : null}

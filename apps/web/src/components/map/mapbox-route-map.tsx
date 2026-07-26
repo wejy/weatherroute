@@ -228,14 +228,29 @@ export function MapboxRouteMap({
         data: alternativesGeoJSON(alternatives),
       });
       map.addLayer({
+        id: "route-alts-casing",
+        type: "line",
+        source: "route-alts",
+        paint: {
+          "line-color": "#ffffff",
+          "line-width": 7,
+          "line-opacity": 0.95,
+          "line-dasharray": [1.2, 1.2],
+        },
+        layout: {
+          "line-cap": "round",
+          "line-join": "round",
+        },
+      });
+      map.addLayer({
         id: "route-alts",
         type: "line",
         source: "route-alts",
         paint: {
-          "line-color": "#9ca3af",
-          "line-width": 3,
-          "line-opacity": 0.55,
-          "line-dasharray": [1.5, 1.5],
+          "line-color": "#1b1b24",
+          "line-width": 4,
+          "line-opacity": 0.9,
+          "line-dasharray": [1.5, 1.2],
         },
         layout: {
           "line-cap": "round",

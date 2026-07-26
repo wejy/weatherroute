@@ -41,7 +41,6 @@ export function RouteEndpointsForm({
   initialDatePreset,
   initialStartDate,
   initialEndDate,
-  initialPrefer = "fast",
 }: {
   initialFrom: string;
   initialTo: string;
@@ -51,7 +50,6 @@ export function RouteEndpointsForm({
   initialDatePreset?: string | null;
   initialStartDate?: string | null;
   initialEndDate?: string | null;
-  initialPrefer?: "fast" | "weather";
 }) {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -62,9 +60,6 @@ export function RouteEndpointsForm({
   const [to, setTo] = useState<PlaceDto | null>(toPlace ?? null);
   const [mode, setMode] = useState<TravelMode>(
     isTravelMode(initialMode) ? initialMode : DEFAULT_TRAVEL_MODE,
-  );
-  const [prefer, setPrefer] = useState<"fast" | "weather">(
-    initialPrefer === "weather" ? "weather" : "fast",
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -114,7 +109,6 @@ export function RouteEndpointsForm({
     nextWhen: DateWindow,
     nextFrom: PlaceDto,
     nextTo: PlaceDto,
-    nextPrefer: "fast" | "weather" = prefer,
   ): URLSearchParams {
     const params = new URLSearchParams();
     params.set("from", nextFrom.placeName);
@@ -133,7 +127,6 @@ export function RouteEndpointsForm({
       params.set("toId", nextTo.id);
     }
     params.set("mode", nextMode);
-    params.set("prefer", nextPrefer);
     params.set("datePreset", nextWhen.preset);
     params.set("startDate", nextWhen.startDate);
     params.set("endDate", nextWhen.endDate);
@@ -143,15 +136,13 @@ export function RouteEndpointsForm({
   function applyRoute(
     nextMode: TravelMode = mode,
     nextWhen: DateWindow = when,
-    nextPrefer: "fast" | "weather" = prefer,
   ) {
     if (!from || !to) {
       setError(t("routes.pickBoth"));
       return;
     }
     setError(null);
-    setPrefer(nextPrefer);
-    const params = buildParams(nextMode, nextWhen, from, to, nextPrefer);
+    const params = buildParams(nextMode, nextWhen, from, to);
     startTransition(() => {
       router.push(`/routes?${params.toString()}`);
     });
@@ -160,14 +151,14 @@ export function RouteEndpointsForm({
   function onModeChange(next: TravelMode) {
     setMode(next);
     if (from && to) {
-      applyRoute(next, when, prefer);
+      applyRoute(next, when);
     }
   }
 
   function onWhenChange(next: DateWindow) {
     setWhen(next);
     if (from && to) {
-      applyRoute(mode, next, prefer);
+      applyRoute(mode, next);
     }
   }
 
@@ -267,52 +258,20 @@ export function RouteEndpointsForm({
         </p>
       )}
 
-      <div className="flex flex-col gap-2">
-        <button
-          type="button"
-          onClick={() => applyRoute(mode, when, "fast")}
-          disabled={pending}
-          className={cn(
-            "flex w-full min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-base font-semibold shadow-sm transition-colors",
-            prefer === "fast"
-              ? "bg-primary text-on-primary hover:bg-primary-container"
-              : "border border-outline-variant bg-surface text-on-surface hover:bg-surface-container",
-            pending && "opacity-70",
-          )}
-        >
-          <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
-            speed
-          </span>
-          {pending && prefer === "fast"
-            ? t("search.searching")
-            : t("routes.updateRoute")}
-        </button>
-        <button
-          type="button"
-          onClick={() => applyRoute(mode, when, "weather")}
-          disabled={pending}
-          title={t("routes.preferWeatherHint")}
-          className={cn(
-            "flex w-full min-h-11 items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-base font-semibold shadow-sm transition-colors",
-            prefer === "weather"
-              ? "bg-secondary text-on-secondary hover:bg-secondary-container hover:text-on-secondary-container"
-              : "border border-outline-variant bg-surface text-on-surface hover:bg-surface-container",
-            pending && "opacity-70",
-          )}
-        >
-          <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
-            partly_cloudy_day
-          </span>
-          {pending && prefer === "weather"
-            ? t("search.searching")
-            : t("routes.updateRouteWeather")}
-        </button>
-        <p className="text-xs text-on-surface-variant">
-          {prefer === "weather"
-            ? t("routes.preferWeatherHint")
-            : t("routes.preferFastHint")}
-        </p>
-      </div>
+      <button
+        type="button"
+        onClick={() => applyRoute()}
+        disabled={pending}
+        className={cn(
+          "flex w-full min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-base font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container",
+          pending && "opacity-70",
+        )}
+      >
+        <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
+          route
+        </span>
+        {pending ? t("search.searching") : t("routes.updateRoute")}
+      </button>
     </div>
   );
 }

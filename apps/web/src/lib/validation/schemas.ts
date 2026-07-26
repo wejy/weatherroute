@@ -78,6 +78,7 @@ export const routeQuerySchema = z.object({
   toLon: z.coerce.number().min(-180).max(180).optional(),
   mode: z.enum(["driving", "cycling"]).optional().default("driving"),
   prefer: z.enum(["fast", "weather"]).optional().default("fast"),
+  alt: z.coerce.number().int().min(0).max(5).optional(),
   lang: z.enum(["en", "fi"]).optional(),
 });
 
