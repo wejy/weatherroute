@@ -180,8 +180,16 @@ const fi = {
   },
   routes: {
     dryTrip: "Kuivan matkan takuu",
-    dryTripDesc: "Korkea todennäköisyys selkeälle taivaalle.",
+    dryTripDesc:
+      "Todennäköisyys, että reitin kostein kohta pysyy kuivana tällä lähdöllä.",
     bestDeparture: "Paras lähtöaika",
+    departureHint:
+      "Lähde noin klo {time}, jotta matka {from}–{to} on kuivin. Suurin saderiski lähellä: {place} ({rain} %).",
+    title: "{from} – {to}",
+    midpointLabel: "Välietappi {n}",
+    roleStart: "Lähtö",
+    roleMidpoint: "Väli",
+    roleDestination: "Kohde",
     rainProbability: "Sadetodennäköisyys",
     conditions: "Reittiolosuhteet",
     clearRoute: "Selkeä reitti",
@@ -194,6 +202,12 @@ const fi = {
     updateRoute: "Näytä reitti",
     pickBoth: "Valitse sekä lähtö että kohde ehdotuksista.",
     travelMode: "Millä matkustat?",
+    saveRoute: "Tallenna reitti",
+    saveRouteSignIn: "Kirjaudu tallentaaksesi reitin",
+    durationMinutes: "{m} min",
+    durationHours: "{h} h",
+    durationHoursMinutes: "{h} h {m} min",
+    viewDestination: "Kohteen tiedot",
   },
   trips: {
     title: "Tallennetut matkat",
@@ -201,9 +215,12 @@ const fi = {
     discoverMore: "Löydä lisää",
     empty:
       "Ei tallennettuja matkoja vielä. Löydä aurinkoinen kohde ja tallenna se.",
+    emptyFiltered: "Ei tallennettuja matkoja tällä kulkuvälineellä vielä.",
     continueDemo: "Jatka demokäyttäjänä",
     openRoute: "Avaa reitti",
     remove: "Poista",
+    filterLabel: "Suodata kulkuvälineen mukaan",
+    filterAll: "Kaikki",
   },
   login: {
     title: "Kirjaudu",
@@ -223,10 +240,52 @@ const fi = {
     errorSend: "Koodin lähetys epäonnistui. Yritä uudelleen.",
     errorCode: "Virheellinen tai vanhentunut koodi.",
     goTrips: "Siirry tallennettuihin",
+    goSettings: "Avaa asetukset",
     signOut: "Kirjaudu ulos",
     continueDemo: "Jatka demotilillä",
     supabaseHint: "Aseta DATABASE_URL ja USE_MOCKS=false email-OTP:lle.",
     otpFooter: "Lokalisti: EMAIL_MODE=console tulostaa koodin palvelimen lokiin.",
+  },
+  settings: {
+    title: "Omat asetukset",
+    subtitle: "Tili, discover-rajat, lähtöasetukset ja ulkoasu.",
+    saved: "Asetukset tallennettu.",
+    save: "Tallenna",
+    account: "Tili",
+    notSignedIn: "Et ole kirjautunut sisään.",
+    tierFree: "Tilaus: Ilmainen",
+    tierPro: "Tilaus: Pro",
+    discoverTitle: "Discover-tulokset",
+    discoverHint:
+      "Kuinka monta kohdetta näytetään rankingin jälkeen. Isompi määrä hakee enemmän säätä ja voi olla hieman hitaampi.",
+    discoverLabel: "Näytettävät kohteet",
+    discoverOption: "{count} kohdetta",
+    discoverOptionPro: "{count} (Pro)",
+    discoverFreeNote:
+      "Ilmaisella tilillä näytetään enintään {free}. Pro avaa jopa {max} — valintasi tallentuu päivitystä varten.",
+    discoverAnonNote:
+      "Ilman kirjautumista näet {count} kohdetta. Kirjaudu saadaksesi enemmän.",
+    departureTitle: "Aikaisin lähtöaika",
+    departureHint:
+      "Reittiehdotukset ehdottavat lähtöä vasta tästä kellonajasta eteenpäin. Pro-ominaisuus — vaikuttaa reittisivun parhaaseen lähtöaikaan.",
+    departureLabel: "Älä ehdota lähtöä ennen",
+    departureAny: "Ei rajoitusta",
+    departureOptionPro: "{time} (Pro)",
+    departureProNote:
+      "Tallennus odottaa Pro-päivitystä. Siihen asti reitti voi ehdottaa mitä tahansa tuntia.",
+    departureActive: "Käytössä reiteillä: ei ehdotuksia ennen klo {time}.",
+    departureSignInNote:
+      "Kirjaudu ja päivitä Prohon asettaaksesi aikaisimman lähtöajan.",
+    appearanceTitle: "Ulkoasu",
+    themeLabel: "Teema",
+    themeLight: "Vaalea",
+    themeDark: "Tumma",
+    themeComingSoon: "Tumma tila tulee pian — toistaiseksi käytössä on vaalea.",
+    subscriptionTitle: "Tilaus",
+    subscriptionBody:
+      "Avaa enemmän discover-tuloksia, aikaisin lähtöaika ja tulevia Pro-ominaisuuksia maksullisella tilauksella.",
+    subscriptionCta: "Katso tilaukset",
+    subscriptionSoon: "Laskutus ei ole vielä käytössä — tulossa pian.",
   },
   paywall: {
     title: "Ilmaiset haut käytetty",

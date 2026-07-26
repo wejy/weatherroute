@@ -85,12 +85,12 @@ export async function TopNav({ active }: { active?: string }) {
       <div className="flex items-center gap-3">
         <LanguageSwitcher />
         <Link
-          href="/login"
-          aria-label={t("nav.profile")}
+          href="/settings"
+          aria-label={t("nav.sideSettings")}
           className="flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/30 bg-surface-container-low text-on-surface-variant shadow-sm transition-colors hover:bg-surface-container hover:text-primary-container"
         >
           <span className="material-symbols-outlined text-2xl" aria-hidden="true">
-            account_circle
+            settings
           </span>
         </Link>
       </div>

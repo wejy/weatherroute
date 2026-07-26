@@ -28,7 +28,10 @@ export async function readWeatherCache(
 
     if (!row) return null;
     if (row.expiresAt.getTime() <= Date.now()) return null;
-    return row.payload as WeatherDto;
+    const payload = row.payload as WeatherDto;
+    // Hourly was added for route dryness — treat pre-hourly rows as a miss.
+    if (!payload.hourly?.length) return null;
+    return payload;
   } catch (error) {
     console.warn("[weather-cache] read failed", error);
     return null;

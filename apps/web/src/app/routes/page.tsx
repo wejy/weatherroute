@@ -12,6 +12,13 @@ import { getMapboxPublicToken } from "@/lib/env";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import { saveTripAction } from "@/server/actions/trips";
+import { getCurrentUser } from "@/server/auth/session";
+import {
+  destinationHref,
+  isLinkableDestinationId,
+} from "@/lib/discover-query";
+import { resolveDateWindow, type DatePreset } from "@/lib/dates";
 
 export async function generateMetadata() {
   const locale = await getLocale();
@@ -46,20 +53,55 @@ export default async function RoutesPage({
   const fromLon = parseCoord(first(raw.fromLon)) ?? parseCoord(first(raw.lon));
   const toLat = parseCoord(first(raw.toLat));
   const toLon = parseCoord(first(raw.toLon));
+  const fromId = first(raw.fromId)?.trim();
+  const toId = first(raw.toId)?.trim();
   const modeRaw = first(raw.mode);
   const mode =
     modeRaw === "cycling" || modeRaw === "driving" ? modeRaw : "driving";
+  const datePresetRaw = first(raw.datePreset);
+  const datePreset: DatePreset =
+    datePresetRaw === "today" ||
+    datePresetRaw === "tomorrow" ||
+    datePresetRaw === "weekend" ||
+    datePresetRaw === "custom"
+      ? datePresetRaw
+      : first(raw.startDate)
+        ? "custom"
+        : "weekend";
+  const startDateParam = first(raw.startDate) || null;
+  const endDateParam = first(raw.endDate) || null;
 
+  const locale = await getLocale();
+  const dateWindow = resolveDateWindow({
+    preset: datePreset,
+    startDate: startDateParam ?? undefined,
+    endDate: endDateParam ?? startDateParam ?? undefined,
+    locale,
+  });
+  const { getEffectiveEarliestDepartureHour } = await import(
+    "@/server/dal/user-prefs"
+  );
+  const departurePrefs = await getEffectiveEarliestDepartureHour();
   const route = await getRouteWeather(from, to, {
     fromLat,
     fromLon,
     toLat,
     toLon,
+    fromId,
+    toId,
     mode,
+    locale,
+    earliestDepartureHour: departurePrefs.effectiveHour,
+    datePreset: dateWindow.preset,
+    startDate: dateWindow.startDate,
+    endDate: dateWindow.endDate,
   });
-  const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
   const mapboxToken = getMapboxPublicToken();
+  const user = await getCurrentUser();
+
+  // TODO: Let users set earliest departure on this page per trip (overrides
+  // the Pro settings default). Wire via search param e.g. `earliestHour`.
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background">
@@ -70,12 +112,12 @@ export default async function RoutesPage({
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
           <Link
-            href="/login"
-            aria-label={t("nav.profile")}
+            href="/settings"
+            aria-label={t("nav.sideSettings")}
             className="flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/30 bg-surface-container-low text-on-surface-variant"
           >
             <span className="material-symbols-outlined text-2xl" aria-hidden="true">
-              account_circle
+              settings
             </span>
           </Link>
         </div>
@@ -107,17 +149,70 @@ export default async function RoutesPage({
 
             <Suspense fallback={null}>
               <RouteEndpointsForm
-                key={`${route.from.id}-${route.to.id}-${mode}`}
+                key={`${route.from.id}-${route.to.id}-${mode}-${dateWindow.startDate}-${dateWindow.endDate}`}
                 initialFrom={from}
                 initialTo={to}
                 fromPlace={route.from}
                 toPlace={route.to}
                 initialMode={mode}
+                initialDatePreset={dateWindow.preset}
+                initialStartDate={dateWindow.startDate}
+                initialEndDate={dateWindow.endDate}
               />
             </Suspense>
 
-            <div className="flex items-center justify-between rounded-xl border border-outline-variant/20 bg-surface-container-low p-5 shadow-sm">
-              <div>
+            {user ? (
+              <form action={saveTripAction}>
+                <input
+                  type="hidden"
+                  name="title"
+                  value={`${route.from.name} → ${route.to.name}`}
+                />
+                <input type="hidden" name="originName" value={route.from.placeName} />
+                <input
+                  type="hidden"
+                  name="destinationName"
+                  value={route.to.placeName}
+                />
+                <input type="hidden" name="destinationLat" value={route.to.lat} />
+                <input type="hidden" name="destinationLon" value={route.to.lon} />
+                <input type="hidden" name="originLat" value={route.from.lat} />
+                <input type="hidden" name="originLon" value={route.from.lon} />
+                <input type="hidden" name="weatherGoal" value="best" />
+                <input type="hidden" name="travelMode" value={mode} />
+                <input type="hidden" name="datePreset" value={dateWindow.preset} />
+                <input type="hidden" name="startDate" value={dateWindow.startDate} />
+                <input type="hidden" name="endDate" value={dateWindow.endDate} />
+                <input type="hidden" name="distanceKm" value={route.distanceKm} />
+                <input
+                  type="hidden"
+                  name="durationLabel"
+                  value={route.durationLabel}
+                />
+                <button
+                  type="submit"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-on-primary shadow-sm transition-colors hover:bg-primary-container"
+                >
+                  <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                    bookmark
+                  </span>
+                  {t("routes.saveRoute")}
+                </button>
+              </form>
+            ) : (
+              <Link
+                href={`/login?next=${encodeURIComponent(`/routes?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&mode=${mode}`)}`}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border border-outline-variant px-4 py-3 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container"
+              >
+                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                  bookmark
+                </span>
+                {t("routes.saveRouteSignIn")}
+              </Link>
+            )}
+
+            <div className="flex items-center justify-between gap-4 rounded-xl border border-outline-variant/20 bg-surface-container-low p-5 shadow-sm">
+              <div className="min-w-0 flex-1">
                 <h3 className="text-xl font-semibold text-on-surface">
                   {t("routes.dryTrip")}
                 </h3>
@@ -125,8 +220,16 @@ export default async function RoutesPage({
                   {t("routes.dryTripDesc")}
                 </p>
               </div>
-              <div className="flex h-16 w-16 items-center justify-center rounded-full border-4 border-tertiary-container/20 bg-tertiary-container/10 text-2xl font-semibold text-tertiary-container">
-                {route.dryTripGuarantee}%
+              <div
+                className="flex h-[4.5rem] w-[4.5rem] shrink-0 flex-col items-center justify-center rounded-full border-4 border-tertiary-container/20 bg-tertiary-container/10 text-tertiary-container"
+                aria-label={`${route.dryTripGuarantee}%`}
+              >
+                <span className="text-xl font-semibold leading-none tabular-nums">
+                  {route.dryTripGuarantee}
+                </span>
+                <span className="mt-0.5 text-[11px] font-semibold leading-none tracking-wide">
+                  %
+                </span>
               </div>
             </div>
 
@@ -138,11 +241,16 @@ export default async function RoutesPage({
               >
                 lightbulb
               </span>
-              <div>
+              <div className="min-w-0">
                 <h4 className="mb-1 text-sm font-medium tracking-wider text-on-secondary-container uppercase">
                   {t("routes.bestDeparture")}
                 </h4>
-                <p className="text-base text-on-surface">{route.departureHint}</p>
+                <p className="text-2xl font-semibold tabular-nums text-on-surface">
+                  {route.bestDeparture}
+                </p>
+                <p className="mt-1 text-base text-on-surface-variant">
+                  {route.departureHint}
+                </p>
               </div>
             </div>
 
@@ -161,7 +269,25 @@ export default async function RoutesPage({
                   <div className="mb-2 flex items-start justify-between">
                     <div>
                       <h5 className="text-xl font-semibold text-on-surface">
-                        {wp.name}
+                        {wp.role === "destination" &&
+                        isLinkableDestinationId(route.to.id) ? (
+                          <Link
+                            href={destinationHref(route.to.id, {
+                              datePreset: dateWindow.preset,
+                              startDate: dateWindow.startDate,
+                              endDate: dateWindow.endDate,
+                              origin: route.from.placeName,
+                              lat: route.from.lat,
+                              lon: route.from.lon,
+                              mode,
+                            })}
+                            className="text-on-surface underline-offset-2 hover:text-secondary hover:underline"
+                          >
+                            {wp.name}
+                          </Link>
+                        ) : (
+                          wp.name
+                        )}
                       </h5>
                       <span className="text-sm font-medium text-on-surface-variant">
                         {wp.timeLabel}

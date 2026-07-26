@@ -21,8 +21,11 @@ import {
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator, translateCondition, translateUv } from "@/i18n/translate";
 import { routesHref } from "@/lib/discover-query";
+import { haversineKm } from "@/server/integrations/mocks/data";
 
 export const dynamic = "force-dynamic";
+
+const HELSINKI = { lat: 60.1699, lon: 24.9384 };
 
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -66,14 +69,29 @@ export default async function DestinationPage({
     parseDatePreset(first(raw.datePreset)) ??
     (startDate ? "custom" : "weekend");
   const originName = first(raw.origin) || first(raw.from) || "Helsinki";
-  const originLat = first(raw.lat);
-  const originLon = first(raw.lon);
+  const originLatRaw = first(raw.lat) ?? first(raw.fromLat);
+  const originLonRaw = first(raw.lon) ?? first(raw.fromLon);
+  const parsedOriginLat = originLatRaw != null ? Number(originLatRaw) : NaN;
+  const parsedOriginLon = originLonRaw != null ? Number(originLonRaw) : NaN;
+  const originLat = Number.isFinite(parsedOriginLat)
+    ? parsedOriginLat
+    : HELSINKI.lat;
+  const originLon = Number.isFinite(parsedOriginLon)
+    ? parsedOriginLon
+    : HELSINKI.lon;
   const modeRaw = first(raw.mode);
   const mode =
-    modeRaw === "cycling" || modeRaw === "driving" ? modeRaw : undefined;
+    modeRaw === "cycling" || modeRaw === "driving" ? modeRaw : "driving";
 
   const dest = await getDestinationBySlug(slug);
   if (!dest) notFound();
+
+  const distanceKm = Math.round(
+    haversineKm(
+      { lat: originLat, lon: originLon },
+      { lat: dest.lat, lon: dest.lon },
+    ),
+  );
 
   const locale = await getLocale();
   const weather = await getWeatherForPlace({
@@ -318,12 +336,22 @@ export default async function DestinationPage({
                 />
                 <input type="hidden" name="destinationLat" value={dest.lat} />
                 <input type="hidden" name="destinationLon" value={dest.lon} />
+                <input type="hidden" name="originLat" value={originLat} />
+                <input type="hidden" name="originLon" value={originLon} />
                 <input type="hidden" name="weatherGoal" value="best" />
-                <input
-                  type="hidden"
-                  name="distanceKm"
-                  value={dest.distanceKm}
-                />
+                <input type="hidden" name="travelMode" value={mode} />
+                <input type="hidden" name="datePreset" value={datePreset} />
+                {window.startDate ? (
+                  <input
+                    type="hidden"
+                    name="startDate"
+                    value={window.startDate}
+                  />
+                ) : null}
+                {window.endDate ? (
+                  <input type="hidden" name="endDate" value={window.endDate} />
+                ) : null}
+                <input type="hidden" name="distanceKm" value={distanceKm} />
                 <button
                   type="submit"
                   className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-on-primary shadow-sm transition-colors hover:bg-primary-container"

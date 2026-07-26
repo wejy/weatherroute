@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { routeQuerySchema } from "@/lib/validation/schemas";
+import { placeResolveQuerySchema } from "@/lib/validation/schemas";
 import { rateLimit } from "@/lib/rate-limit";
-import { getRouteWeather } from "@/server/services/location-service";
+import { resolveInternalPlace } from "@/server/dal/place-resolve";
 
 export async function GET(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") ?? "local";
-  const limited = rateLimit(`route:${ip}`, 30);
+  const limited = rateLimit(`place-resolve:${ip}`, 60);
   if (!limited.ok) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 
-  const parsed = routeQuerySchema.safeParse(
+  const parsed = placeResolveQuerySchema.safeParse(
     Object.fromEntries(request.nextUrl.searchParams),
   );
   if (!parsed.success) {
@@ -20,13 +20,14 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const route = await getRouteWeather(parsed.data.from, parsed.data.to, {
-    fromLat: parsed.data.fromLat,
-    fromLon: parsed.data.fromLon,
-    toLat: parsed.data.toLat,
-    toLon: parsed.data.toLon,
-    mode: parsed.data.mode,
-    locale: parsed.data.lang,
+  const { lat, lon, name, placeName, id } = parsed.data;
+  const place = await resolveInternalPlace({
+    lat,
+    lon,
+    name,
+    placeName,
+    id,
   });
-  return NextResponse.json(route);
+
+  return NextResponse.json({ place });
 }

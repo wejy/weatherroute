@@ -23,6 +23,15 @@ export const reverseQuerySchema = z.object({
   lon: z.coerce.number().min(-180).max(180),
 });
 
+/** Resolve a geocoded place onto an internal destination id. */
+export const placeResolveQuerySchema = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lon: z.coerce.number().min(-180).max(180),
+  name: z.string().min(1).max(200).optional(),
+  placeName: z.string().min(1).max(300).optional(),
+  id: z.string().min(1).max(120).optional(),
+});
+
 export const discoverQuerySchema = z.object({
   origin: z.string().min(1).max(200).optional(),
   lat: z.coerce.number().min(-90).max(90).optional(),
@@ -68,6 +77,7 @@ export const routeQuerySchema = z.object({
   toLat: z.coerce.number().min(-90).max(90).optional(),
   toLon: z.coerce.number().min(-180).max(180).optional(),
   mode: z.enum(["driving", "cycling"]).optional().default("driving"),
+  lang: z.enum(["en", "fi"]).optional(),
 });
 
 export const wikipediaQuerySchema = z.object({

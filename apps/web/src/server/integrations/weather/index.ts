@@ -47,7 +47,13 @@ async function lookupCache(
 ): Promise<WeatherDto | null> {
   const key = weatherGridKey(lat, lon);
   const mem = memoryCache.get(key);
-  if (mem && mem.expiresAt > Date.now()) return mem.value;
+  if (mem && mem.expiresAt > Date.now()) {
+    if (!mem.value.hourly?.length) {
+      memoryCache.delete(key);
+    } else {
+      return mem.value;
+    }
+  }
 
   const fromDb = await readWeatherCache(lat, lon);
   if (fromDb) {

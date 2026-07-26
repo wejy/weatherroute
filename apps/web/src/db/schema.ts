@@ -182,7 +182,7 @@ export const savedLocations = pgTable("saved_locations", {
     .defaultNow(),
 });
 
-/** User-saved trips / discovery results. */
+/** User-saved trips / discovery results / routes. */
 export const trips = pgTable("trips", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id")
@@ -193,8 +193,15 @@ export const trips = pgTable("trips", {
   destinationName: text("destination_name").notNull(),
   destinationLat: doublePrecision("destination_lat").notNull(),
   destinationLon: doublePrecision("destination_lon").notNull(),
+  originLat: doublePrecision("origin_lat"),
+  originLon: doublePrecision("origin_lon"),
   weatherGoal: text("weather_goal"),
+  travelMode: text("travel_mode").default("driving"),
+  datePreset: text("date_preset"),
+  startDate: text("start_date"),
+  endDate: text("end_date"),
   distanceKm: integer("distance_km"),
+  durationLabel: text("duration_label"),
   snapshot: jsonb("snapshot"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

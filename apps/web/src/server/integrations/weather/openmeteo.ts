@@ -1,6 +1,10 @@
 import "server-only";
 
-import type { WeatherDto, DailyForecastDto } from "@/lib/types";
+import type {
+  WeatherDto,
+  DailyForecastDto,
+  HourlyForecastDto,
+} from "@/lib/types";
 import {
   conditionFromCode,
   uvLabel,
@@ -20,6 +24,13 @@ interface OpenMeteoResponse {
     precipitation_probability?: number;
     cloud_cover: number;
   };
+  hourly?: {
+    time: string[];
+    temperature_2m: number[];
+    precipitation_probability: number[];
+    weather_code: number[];
+    cloud_cover: number[];
+  };
   daily?: {
     time: string[];
     weather_code: number[];
@@ -30,6 +41,28 @@ interface OpenMeteoResponse {
     cloud_cover_mean?: number[];
     uv_index_max?: number[];
   };
+}
+
+function mapHourly(data: OpenMeteoResponse): HourlyForecastDto[] {
+  const hourly = data.hourly;
+  if (!hourly?.time?.length) return [];
+
+  // Keep ~7d for route date presets (today / tomorrow / weekend).
+  const limit = Math.min(hourly.time.length, 168);
+  const out: HourlyForecastDto[] = [];
+  for (let i = 0; i < limit; i++) {
+    const code = hourly.weather_code[i] ?? 3;
+    const { condition, label } = conditionFromCode(code);
+    out.push({
+      time: hourly.time[i]!,
+      temperatureC: Math.round(hourly.temperature_2m[i] ?? 0),
+      precipitationProbability: hourly.precipitation_probability[i] ?? 0,
+      cloudCover: hourly.cloud_cover[i] ?? 40,
+      condition,
+      conditionLabel: label,
+    });
+  }
+  return out;
 }
 
 function toWeatherDto(
@@ -43,6 +76,7 @@ function toWeatherDto(
 
   const currentCondition = conditionFromCode(current.weather_code);
   const uv = data.daily.uv_index_max?.[0] ?? 3;
+  const hourly = mapHourly(data);
 
   const daily: DailyForecastDto[] = data.daily.time.map((date, i) => {
     const { condition, label } = conditionFromCode(
@@ -70,6 +104,12 @@ function toWeatherDto(
   const lon = data.longitude;
   const placeName = name ?? `${lat.toFixed(2)}, ${lon.toFixed(2)}`;
 
+  const currentPrecip =
+    current.precipitation_probability ??
+    hourly[0]?.precipitationProbability ??
+    daily[0]?.precipitationProbability ??
+    10;
+
   return {
     place: {
       id: `${lat.toFixed(3)},${lon.toFixed(3)}`,
@@ -90,10 +130,11 @@ function toWeatherDto(
       uvLabel: uvLabel(uv),
       condition: currentCondition.condition,
       conditionLabel: currentCondition.label,
-      precipitationProbability: daily[0]?.precipitationProbability ?? 10,
+      precipitationProbability: currentPrecip,
       cloudCover: current.cloud_cover,
     },
     daily,
+    hourly,
   };
 }
 
@@ -106,10 +147,13 @@ function forecastParams(
     longitude: longitudes.map(String).join(","),
     current:
       "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code,cloud_cover",
+    hourly:
+      "temperature_2m,precipitation_probability,weather_code,cloud_cover",
     daily:
       "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,uv_index_max,cloud_cover_mean",
     timezone: "auto",
     forecast_days: "16",
+    forecast_hours: "168",
   });
 }
 

@@ -34,6 +34,10 @@ export default async function LoginPage({
   const emailParam = typeof raw.email === "string" ? raw.email : "";
   const sent = raw.sent === "1";
   const error = typeof raw.error === "string" ? raw.error : "";
+  const nextParam =
+    typeof raw.next === "string" && raw.next.startsWith("/") && !raw.next.startsWith("//")
+      ? raw.next
+      : "/settings";
 
   return (
     <>
@@ -72,8 +76,14 @@ export default async function LoginPage({
           {user ? (
             <div className="space-y-3">
               <Link
-                href="/trips"
+                href="/settings"
                 className="block w-full rounded-lg bg-primary py-3 text-center font-semibold text-on-primary"
+              >
+                {t("login.goSettings")}
+              </Link>
+              <Link
+                href="/trips"
+                className="block w-full rounded-lg border border-outline-variant py-3 text-center font-semibold text-on-surface-variant"
               >
                 {t("login.goTrips")}
               </Link>
@@ -89,6 +99,7 @@ export default async function LoginPage({
           ) : mode === "otp" ? (
             <div className="space-y-6">
               <form action={requestOtpAction} className="space-y-3">
+                <input type="hidden" name="next" value={nextParam} />
                 <label className="block text-sm font-medium text-on-surface">
                   {t("login.emailLabel")}
                   <input
@@ -112,6 +123,7 @@ export default async function LoginPage({
               {sent || emailParam ? (
                 <form action={verifyOtpAction} className="space-y-3 border-t border-outline-variant/20 pt-6">
                   <input type="hidden" name="email" value={emailParam} />
+                  <input type="hidden" name="next" value={nextParam} />
                   <p className="text-sm text-on-surface-variant">
                     {t("login.codeSent", { email: emailParam || "…" })}
                   </p>

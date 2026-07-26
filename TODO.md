@@ -21,6 +21,10 @@ Expo app (`apps/mobile`, ~57) talks to web `/api/*` but is behind the web client
 
 Do this after web auth + quota + places seed are stable.
 
+## Appearance
+
+- [ ] Dark mode (settings UI already has disabled Light/Dark toggle on `/settings`)
+
 ## Discover result caps (tiered)
 
 | Tier | Display | Weather pool |

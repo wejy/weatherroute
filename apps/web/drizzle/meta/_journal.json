@@ -8,6 +8,13 @@
       "when": 1785068532155,
       "tag": "0000_previous_ben_urich",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785070850106,
+      "tag": "0001_trips_travel_meta",
+      "breakpoints": true
     }
   ]
 }

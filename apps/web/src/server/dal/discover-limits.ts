@@ -1,8 +1,6 @@
 import "server-only";
 
-import { eq } from "drizzle-orm";
-import { getDb } from "@/db";
-import { subscriptions } from "@/db/schema";
+import { cookies } from "next/headers";
 import { getCurrentUser } from "@/server/auth/session";
 import {
   DISCOVER_ANON_DISPLAY,
@@ -14,6 +12,7 @@ import {
   DISCOVER_PRO_WEATHER_BASE,
   weatherCandidateLimit,
 } from "@/lib/distance";
+import { resolveUserTier } from "@/server/dal/user-prefs";
 
 export type DiscoverTier = "anon" | "free" | "pro";
 
@@ -23,37 +22,34 @@ export type DiscoverLimits = {
   weather: number;
 };
 
+export const DISCOVER_DISPLAY_COOKIE = "wt_discover_display";
+
+export const DISCOVER_DISPLAY_OPTIONS = [10, 20, 30, 40, 50] as const;
+
 async function resolveTier(userId: string | null): Promise<DiscoverTier> {
-  if (!userId) return "anon";
+  return resolveUserTier(userId);
+}
 
-  const db = getDb();
-  if (!db) return "free";
-
-  try {
-    const [sub] = await db
-      .select({ status: subscriptions.status })
-      .from(subscriptions)
-      .where(eq(subscriptions.userId, userId))
-      .limit(1);
-    if (sub?.status === "active" || sub?.status === "trial") {
-      return "pro";
-    }
-  } catch {
-    // ignore — treat as free
-  }
-  return "free";
+export async function readDiscoverDisplayPreference(): Promise<number | null> {
+  const jar = await cookies();
+  const raw = jar.get(DISCOVER_DISPLAY_COOKIE)?.value;
+  if (!raw) return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n)) return null;
+  return Math.min(DISCOVER_PRO_DISPLAY_MAX, Math.max(10, Math.round(n)));
 }
 
 /**
  * Resolve discover result caps by auth/subscription tier.
- * Pro display preference (settings) can be wired later; default 30, max 50.
+ * Pro (and stored preference) can raise display up to 50.
  */
 export async function resolveDiscoverLimits(opts?: {
-  /** Explicit display override for pro settings (clamped to max). */
   proDisplayPreference?: number;
 }): Promise<DiscoverLimits> {
   const user = await getCurrentUser();
   const tier = await resolveTier(user?.id ?? null);
+  const stored =
+    opts?.proDisplayPreference ?? (await readDiscoverDisplayPreference());
 
   if (tier === "anon") {
     return {
@@ -71,22 +67,18 @@ export async function resolveDiscoverLimits(opts?: {
     };
   }
 
-  const pref = opts?.proDisplayPreference;
   const display = Math.min(
     DISCOVER_PRO_DISPLAY_MAX,
     Math.max(
       DISCOVER_FREE_DISPLAY,
-      pref ?? DISCOVER_PRO_DISPLAY_DEFAULT,
+      stored ?? DISCOVER_PRO_DISPLAY_DEFAULT,
     ),
   );
 
   return {
     tier,
     display,
-    weather: Math.max(
-      DISCOVER_PRO_WEATHER_BASE,
-      Math.ceil(display * 1.2),
-    ),
+    weather: Math.max(DISCOVER_PRO_WEATHER_BASE, Math.ceil(display * 1.2)),
   };
 }
 
@@ -96,4 +88,30 @@ export function weatherLimitForRadius(
   tierWeatherBase: number,
 ): number {
   return weatherCandidateLimit(radiusKm, tierWeatherBase);
+}
+
+export async function getDiscoverTierForSettings(): Promise<{
+  tier: DiscoverTier;
+  currentDisplay: number;
+  preference: number | null;
+  maxSelectable: number;
+}> {
+  const user = await getCurrentUser();
+  const tier = await resolveTier(user?.id ?? null);
+  const preference = await readDiscoverDisplayPreference();
+  const limits = await resolveDiscoverLimits({
+    proDisplayPreference: preference ?? undefined,
+  });
+
+  return {
+    tier,
+    currentDisplay: limits.display,
+    preference,
+    maxSelectable:
+      tier === "pro"
+        ? DISCOVER_PRO_DISPLAY_MAX
+        : tier === "free"
+          ? DISCOVER_FREE_DISPLAY
+          : DISCOVER_ANON_DISPLAY,
+  };
 }

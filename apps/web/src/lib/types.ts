@@ -89,6 +89,17 @@ export interface DailyForecastDto {
   conditionLabel: string;
 }
 
+/** Hourly slot from the forecast provider (local timezone ISO-ish strings). */
+export interface HourlyForecastDto {
+  /** Local time, typically `YYYY-MM-DDTHH:00` */
+  time: string;
+  temperatureC: number;
+  precipitationProbability: number;
+  cloudCover: number;
+  condition: WeatherCondition;
+  conditionLabel: string;
+}
+
 export interface PeriodWeatherDto {
   label: string;
   rangeLabel: string;
@@ -113,6 +124,8 @@ export interface WeatherDto {
   fetchedAt: string;
   current: CurrentWeatherDto;
   daily: DailyForecastDto[];
+  /** Next ~48h when the provider supplies it (used for route dryness). */
+  hourly?: HourlyForecastDto[];
 }
 
 export interface DestinationDto {
@@ -231,8 +244,15 @@ export interface TripDto {
   destinationName: string;
   destinationLat: number;
   destinationLon: number;
+  originLat?: number | null;
+  originLon?: number | null;
   weatherGoal?: string | null;
+  travelMode?: TravelMode | string | null;
+  datePreset?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
   distanceKm?: number | null;
+  durationLabel?: string | null;
   createdAt: string;
 }
 
