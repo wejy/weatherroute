@@ -8,6 +8,7 @@ import { CITY_INDEX } from "@/server/integrations/places/city-index";
 import { getDb } from "@/db";
 import { places } from "@/db/schema";
 import { getPlaceById } from "@/server/dal/places";
+import { isBlockedPlace } from "@/lib/geo-block";
 
 const MATCH_RADIUS_KM = 25;
 
@@ -106,8 +107,10 @@ export async function resolveInternalPlace(input: {
         });
         if (distanceKm > MATCH_RADIUS_KM) continue;
         if (!namesMatch(row.name, label)) continue;
+        const dto = toPlaceDto(row);
+        if (isBlockedPlace(dto)) continue;
         candidates.push({
-          ...toPlaceDto(row),
+          ...dto,
           distanceKm,
           population: row.population,
         });
@@ -144,7 +147,7 @@ export async function resolveInternalPlace(input: {
   );
 
   const best = candidates[0]!;
-  return {
+  const dto = {
     id: best.id,
     name: best.name,
     placeName: best.placeName,
@@ -152,6 +155,8 @@ export async function resolveInternalPlace(input: {
     countryCode: best.countryCode,
     lat: best.lat,
     lon: best.lon,
-    kind: "place",
+    kind: "place" as const,
   };
+  if (isBlockedPlace(dto)) return null;
+  return dto;
 }

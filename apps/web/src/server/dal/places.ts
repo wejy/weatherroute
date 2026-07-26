@@ -7,8 +7,17 @@ import {
 } from "@/server/integrations/places/city-index";
 import { getDb } from "@/db";
 import { places } from "@/db/schema";
+import { isBlockedCountryCode, isBlockedPlace } from "@/lib/geo-block";
 
 export type PlaceCandidate = CityIndexEntry & { distanceKm: number };
+
+function notBlockedCandidate(city: {
+  country?: string | null;
+  countryCode?: string | null;
+  placeName?: string | null;
+}): boolean {
+  return !isBlockedPlace(city);
+}
 
 /**
  * Discover candidates: Postgres `places` when available, else CITY_INDEX.
@@ -54,6 +63,7 @@ export async function placesWithinRadius(
           distanceKm: haversineKm(origin, { lat: row.lat, lon: row.lon }),
         }))
         .filter((city) => {
+          if (!notBlockedCandidate(city)) return false;
           if (city.distanceKm < 5) return false;
           if (exclude && city.name.toLowerCase() === exclude) return false;
           return city.distanceKm <= radiusKm;
@@ -73,6 +83,7 @@ export async function placesWithinRadius(
     distanceKm: haversineKm(origin, city),
   }))
     .filter((city) => {
+      if (!notBlockedCandidate(city)) return false;
       if (city.distanceKm < 5) return false;
       if (exclude && city.name.toLowerCase() === exclude) return false;
       return city.distanceKm <= radiusKm;
@@ -96,12 +107,27 @@ export async function getPlaceById(id: string) {
         .from(places)
         .where(eq(places.id, candidate))
         .limit(1);
-      if (row) return row;
+      if (row) {
+        if (
+          isBlockedCountryCode(row.countryCode) ||
+          isBlockedPlace({
+            country: row.country,
+            countryCode: row.countryCode,
+            placeName: row.placeName,
+          })
+        ) {
+          return null;
+        }
+        return row;
+      }
     }
   }
   for (const candidate of candidates) {
     const city = CITY_INDEX.find((c) => c.id === candidate);
-    if (city) return city;
+    if (city) {
+      if (!notBlockedCandidate(city)) return null;
+      return city;
+    }
   }
   return null;
 }

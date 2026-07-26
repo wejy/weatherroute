@@ -127,6 +127,7 @@ function parseCitiesTxt(
     if (featureClass !== "P") continue;
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
     if (population < MIN_POP) continue;
+    if (countryCode === "RU") continue;
 
     const country = countryCode ? countries[countryCode] ?? countryCode : null;
     const placeName = country ? `${name}, ${country}` : name;
@@ -204,6 +205,11 @@ async function main() {
       console.log(`Upserted ${upserted}/${parsed.length}`);
     }
   }
+
+  const deleted = await client`
+    delete from places where upper(country_code) = 'RU'
+  `;
+  console.log(`Removed blocked country rows (RU): ${deleted.count}`);
 
   const [{ count }] = await client<{ count: string }[]>`
     select count(*)::text as count from places

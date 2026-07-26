@@ -495,8 +495,19 @@ export async function getDestinationBySlug(slug: string) {
   const { placeholderImageFor } = await import(
     "@/server/integrations/places/candidates"
   );
+  const { isBlockedPlace } = await import("@/lib/geo-block");
   const place = await getPlaceById(slug);
   if (!place) return undefined;
+
+  if (
+    isBlockedPlace({
+      country: "country" in place ? place.country : null,
+      countryCode: "countryCode" in place ? place.countryCode : null,
+      placeName: "placeName" in place ? place.placeName : null,
+    })
+  ) {
+    return undefined;
+  }
 
   const id = "id" in place ? place.id : slug;
   const name = place.name;

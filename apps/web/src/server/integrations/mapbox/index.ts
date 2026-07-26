@@ -5,6 +5,7 @@ import { env, hasMapbox } from "@/lib/env";
 import { PLACES } from "@/server/integrations/mocks/data";
 import { openMeteoSearchPlaces } from "@/server/integrations/geocoding/openmeteo";
 import { nominatimReverse } from "@/server/integrations/geocoding/nominatim";
+import { filterBlockedPlaces, isBlockedPlace } from "@/lib/geo-block";
 
 const reverseCache = new Map<string, { expiresAt: number; value: PlaceDto }>();
 const REVERSE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -52,12 +53,13 @@ export async function searchPlaces(
 
   if (mode === "precise" && hasMapbox()) {
     try {
-      const results = await mapboxSearch(q, limit, {
+      const results = await mapboxSearch(q, Math.min(limit + 5, 10), {
         types: PRECISE_TYPES,
         lang: opts.lang,
         proximity: opts.proximity,
       });
-      if (results.length > 0) return results;
+      const filtered = filterBlockedPlaces(results).slice(0, limit);
+      if (filtered.length > 0) return filtered;
     } catch (error) {
       console.warn("[geocode] Mapbox precise search failed", error);
     }
@@ -65,27 +67,29 @@ export async function searchPlaces(
 
   // Cities mode, or precise fallback when Mapbox miss/unavailable.
   try {
-    const results = await openMeteoSearchPlaces(q, limit);
-    if (results.length > 0) {
-      return results.map((p) => ({ ...p, kind: "place" as const }));
-    }
+    const results = await openMeteoSearchPlaces(q, Math.min(limit + 5, 10));
+    const filtered = filterBlockedPlaces(results)
+      .slice(0, limit)
+      .map((p) => ({ ...p, kind: "place" as const }));
+    if (filtered.length > 0) return filtered;
   } catch (error) {
     console.warn("[geocode] Open-Meteo search failed", error);
   }
 
   if (hasMapbox()) {
     try {
-      return await mapboxSearch(q, limit, {
+      const results = await mapboxSearch(q, Math.min(limit + 5, 10), {
         types: mode === "cities" ? CITY_TYPES : PRECISE_TYPES,
         lang: opts.lang,
         proximity: opts.proximity,
       });
+      return filterBlockedPlaces(results).slice(0, limit);
     } catch (error) {
       console.warn("[geocode] Mapbox search failed", error);
     }
   }
 
-  return mockSearch(q, limit);
+  return filterBlockedPlaces(mockSearch(q, limit));
 }
 
 async function mapboxSearch(
@@ -168,6 +172,9 @@ export async function reverseGeocode(
 
   try {
     const place = await nominatimReverse(lat, lon);
+    if (isBlockedPlace(place)) {
+      throw new Error("Blocked country");
+    }
     reverseCache.set(key, {
       value: place,
       expiresAt: Date.now() + REVERSE_TTL_MS,
