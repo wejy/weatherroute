@@ -137,7 +137,10 @@ export default async function RoutesPage({
   }
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background">
+    <div
+      data-testid="routes-page"
+      className="flex h-screen w-full overflow-hidden bg-background"
+    >
       <SideNav active="/routes" />
 
       <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between bg-surface/80 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl md:hidden">

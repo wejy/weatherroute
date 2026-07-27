@@ -173,7 +173,16 @@ export function DiscoverSearch({
     ) => {
       const nextDistance = overrides?.distance ?? distance;
       const nextRadius = overrides?.radiusKm ?? customRadiusKm;
-      const nextGoal = overrides?.weatherGoal ?? weatherGoal;
+      const liveGoal =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("weatherGoal")
+          : null;
+      // Prefer address-bar goal so filter chips aren't stomped by in-flight geo.
+      const nextGoal =
+        overrides?.weatherGoal ??
+        liveGoal ??
+        searchParams.get("weatherGoal") ??
+        weatherGoal;
       const nextWhen = overrides?.when ?? when;
       const nextMode = overrides?.mode ?? travelMode;
       const params = new URLSearchParams(searchParams.toString());

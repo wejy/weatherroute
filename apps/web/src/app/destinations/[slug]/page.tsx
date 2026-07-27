@@ -10,6 +10,7 @@ import {
 } from "@/server/services/weather-service";
 import { TopNav, BottomNav } from "@/components/layout/top-nav";
 import { ForecastCharts } from "@/components/destinations/forecast-charts";
+import { DestinationWikipedia } from "@/components/destinations/destination-wikipedia";
 import { DestinationDateFilters } from "@/components/destinations/date-filters";
 import { saveTripAction } from "@/server/actions/trips";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
@@ -22,6 +23,7 @@ import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator, translateCondition, translateUv } from "@/i18n/translate";
 import { routesHref } from "@/lib/discover-query";
 import { haversineKm } from "@/server/integrations/mocks/data";
+import { getDestinationWikipediaSummary } from "@/server/services/destination-wikipedia";
 
 export const dynamic = "force-dynamic";
 
@@ -94,11 +96,19 @@ export default async function DestinationPage({
   );
 
   const locale = await getLocale();
+  const wikiLang = locale === "fi" ? "fi" : "en";
   const weather = await getWeatherForPlace({
     lat: dest.lat,
     lon: dest.lon,
     name: dest.placeName,
     locale,
+  });
+  const wikipedia = await getDestinationWikipediaSummary({
+    placeId: dest.id,
+    name: dest.placeName,
+    lat: dest.lat,
+    lon: dest.lon,
+    lang: wikiLang,
   });
   const dict = getDictionary(locale);
   const t = createTranslator(dict);
@@ -270,6 +280,14 @@ export default async function DestinationPage({
                 </div>
               ))}
             </section>
+
+            {wikipedia ? (
+              <DestinationWikipedia
+                summary={wikipedia}
+                title={t("destination.wikipediaTitle", { place: dest.name })}
+                linkLabel={t("destination.wikipediaLink")}
+              />
+            ) : null}
           </div>
 
           <div className="space-y-8 lg:col-span-4">

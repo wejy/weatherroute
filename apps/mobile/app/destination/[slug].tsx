@@ -1,17 +1,28 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { Image } from "expo-image";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { apiGet } from "@/lib/api";
 import { colors } from "@/constants/Colors";
 import type { WeatherDto } from "@/lib/types";
+
+type WikipediaSummary = {
+  title: string;
+  extract: string;
+  description?: string;
+  thumbnailUrl?: string;
+  pageUrl: string;
+  lang: string;
+};
 
 export default function DestinationScreen() {
   const { slug, lat, lon, name } = useLocalSearchParams<{
@@ -22,8 +33,34 @@ export default function DestinationScreen() {
   }>();
   const { t, translateCondition, locale } = useI18n();
   const [weather, setWeather] = useState<WeatherDto | null>(null);
+  const [wikipedia, setWikipedia] = useState<WikipediaSummary | null>(null);
+  const [wikiLoading, setWikiLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const placeName = name ?? String(slug).replace(/-/g, " ");
+
+  const loadWikipedia = useCallback(async () => {
+    if (!lat || !lon) return;
+    setWikiLoading(true);
+    try {
+      const data = await apiGet<{ summary: WikipediaSummary | null }>(
+        "/api/wikipedia",
+        {
+          name: placeName,
+          lat,
+          lon,
+          lang: locale,
+          placeId: String(slug),
+        },
+      );
+      setWikipedia(data.summary);
+    } catch {
+      setWikipedia(null);
+    } finally {
+      setWikiLoading(false);
+    }
+  }, [lat, lon, locale, placeName, slug]);
 
   const load = useCallback(async () => {
     if (!lat || !lon) {
@@ -37,7 +74,7 @@ export default function DestinationScreen() {
       const data = await apiGet<WeatherDto>("/api/weather", {
         lat,
         lon,
-        name: name ?? String(slug).replace(/-/g, " "),
+        name: placeName,
         lang: locale,
       });
       setWeather(data);
@@ -47,11 +84,15 @@ export default function DestinationScreen() {
     } finally {
       setLoading(false);
     }
-  }, [lat, lon, locale, name, slug, t]);
+  }, [lat, lon, locale, placeName, t]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void loadWikipedia();
+  }, [loadWikipedia]);
 
   return (
     <>
@@ -126,6 +167,41 @@ export default function DestinationScreen() {
                 </Text>
               </View>
             ))}
+
+            <Text style={styles.section}>
+              {t("destination.wikipediaTitle", { place: placeName })}
+            </Text>
+            {wikiLoading ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : wikipedia ? (
+              <View style={styles.wikiCard}>
+                {wikipedia.thumbnailUrl ? (
+                  <Image
+                    source={{ uri: wikipedia.thumbnailUrl }}
+                    style={styles.wikiImage}
+                    contentFit="cover"
+                  />
+                ) : null}
+                {wikipedia.description ? (
+                  <Text style={styles.wikiDescription}>
+                    {wikipedia.description}
+                  </Text>
+                ) : null}
+                <Text style={styles.wikiExtract}>{wikipedia.extract}</Text>
+                <Pressable
+                  onPress={() => void Linking.openURL(wikipedia.pageUrl)}
+                  style={styles.wikiLink}
+                >
+                  <Text style={styles.wikiLinkText}>
+                    {t("destination.wikipediaLink")}
+                  </Text>
+                </Pressable>
+              </View>
+            ) : (
+              <Text style={styles.wikiUnavailable}>
+                {t("destination.wikipediaUnavailable")}
+              </Text>
+            )}
           </>
         )}
       </ScrollView>
@@ -199,6 +275,46 @@ const styles = StyleSheet.create({
   dayCond: { flex: 1, color: colors.onSurfaceVariant },
   dayTemp: { fontWeight: "700", color: colors.onSurface },
   dayRain: { width: 72, textAlign: "right", color: colors.secondary },
+  wikiCard: {
+    backgroundColor: colors.surfaceLowest,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: 16,
+    gap: 12,
+  },
+  wikiImage: {
+    width: "100%",
+    height: 160,
+    borderRadius: 12,
+  },
+  wikiDescription: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.primary,
+  },
+  wikiExtract: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.onSurfaceVariant,
+  },
+  wikiLink: {
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: colors.surfaceContainer,
+  },
+  wikiLinkText: {
+    fontWeight: "700",
+    color: colors.onSurface,
+  },
+  wikiUnavailable: {
+    color: colors.onSurfaceVariant,
+    fontSize: 14,
+  },
   errorBox: { gap: 12 },
   error: { color: colors.error, fontWeight: "600" },
   retry: {

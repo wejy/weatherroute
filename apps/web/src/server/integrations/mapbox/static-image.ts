@@ -1,18 +1,25 @@
 import "server-only";
 
-import { getMapboxPublicToken, getMapboxServerToken } from "@/lib/env";
+import { assertPublicMapboxToken, getMapboxPublicToken } from "@/lib/env";
 
 /**
  * Mapbox Static Images — map tile snapshot (not a POI photo).
  * Used when Wikipedia has no thumbnail for a place.
+ * Only public pk. tokens may appear in client-facing URLs.
  */
 export function mapboxStaticImageUrl(
   lat: number,
   lon: number,
   opts?: { width?: number; height?: number; zoom?: number },
 ): string | null {
-  const token = getMapboxPublicToken() || getMapboxServerToken();
-  if (!token) return null;
+  const token = getMapboxPublicToken();
+  if (!token.startsWith("pk.")) return null;
+
+  try {
+    assertPublicMapboxToken(token);
+  } catch {
+    return null;
+  }
 
   const width = opts?.width ?? 600;
   const height = opts?.height ?? 400;

@@ -1,15 +1,30 @@
 import "server-only";
 
-import { createHash, randomInt } from "node:crypto";
+import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
+import { z } from "zod";
 import { env } from "@/lib/env";
+import { rateLimit } from "@/lib/rate-limit";
 import { getDb } from "@/db";
 import { emailOtps, users } from "@/db/schema";
+
+const OTP_SEND_PER_EMAIL = 3;
+const OTP_SEND_PER_IP = 10;
+const OTP_SEND_WINDOW_MS = 60 * 60 * 1000;
+const OTP_IP_WINDOW_MS = 60_000;
+const MAX_VERIFY_ATTEMPTS = 5;
 
 function hashCode(email: string, code: string): string {
   return createHash("sha256")
     .update(`${email.toLowerCase().trim()}:${code}`)
     .digest("hex");
+}
+
+function codesMatch(stored: string, candidate: string): boolean {
+  const a = Buffer.from(stored, "utf8");
+  const b = Buffer.from(candidate, "utf8");
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
 }
 
 async function sendOtpEmail(email: string, code: string): Promise<void> {
@@ -32,24 +47,79 @@ async function sendOtpEmail(email: string, code: string): Promise<void> {
     });
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      throw new Error(`Resend failed: ${res.status} ${text}`);
+      console.error(`[otp] Resend failed: ${res.status}`, text);
+      throw new Error("Failed to send code");
     }
     return;
   }
 
-  console.info(`[email:console] to=${email} code=${code} — ${body}`);
+  if (env.isProduction) {
+    throw new Error("Email provider not configured");
+  }
+
+  console.info(`[email:console] to=${email} — OTP sent (code redacted in logs)`);
+  if (process.env.LOG_OTP_CODE === "1") {
+    console.info(`[email:console] debug code=${code}`);
+  }
 }
 
-/** Create + send a 6-digit OTP. Returns true when queued/sent. */
-export async function requestEmailOtp(emailRaw: string): Promise<{ ok: true }> {
-  const email = emailRaw.toLowerCase().trim();
-  if (!email.includes("@")) {
+async function enforceOtpSendLimits(
+  email: string,
+  clientKey: string,
+): Promise<void> {
+  const ipLimited = await rateLimit(
+    `otp:ip:${clientKey}`,
+    OTP_SEND_PER_IP,
+    OTP_IP_WINDOW_MS,
+  );
+  if (!ipLimited.ok) {
+    throw new Error("Rate limit exceeded");
+  }
+
+  const emailLimited = await rateLimit(
+    `otp:email:${email}`,
+    OTP_SEND_PER_EMAIL,
+    OTP_SEND_WINDOW_MS,
+  );
+  if (!emailLimited.ok) {
+    throw new Error("Rate limit exceeded");
+  }
+}
+
+const emailSchema = z.string().email();
+
+/** Create + send a 6-digit OTP. */
+export async function requestEmailOtp(
+  emailRaw: string,
+  opts?: { clientKey?: string },
+): Promise<{ ok: true }> {
+  const parsed = emailSchema.safeParse(emailRaw.trim());
+  if (!parsed.success) {
     throw new Error("Invalid email");
   }
+  const email = parsed.data.toLowerCase();
+  const clientKey = opts?.clientKey ?? "unknown";
 
   const db = getDb();
   if (!db) {
-    throw new Error("Database required for email OTP");
+    throw new Error("Failed to send code");
+  }
+
+  await enforceOtpSendLimits(email, clientKey);
+
+  const [locked] = await db
+    .select()
+    .from(emailOtps)
+    .where(
+      and(
+        eq(emailOtps.email, email),
+        gt(emailOtps.expiresAt, new Date()),
+      ),
+    )
+    .limit(1);
+
+  if (locked && locked.attempts >= MAX_VERIFY_ATTEMPTS) {
+    throw new Error("Too many attempts. Try again later.");
   }
 
   const code = String(randomInt(100000, 999999));
@@ -60,6 +130,7 @@ export async function requestEmailOtp(emailRaw: string): Promise<{ ok: true }> {
     email,
     codeHash: hashCode(email, code),
     expiresAt,
+    attempts: 0,
   });
 
   await sendOtpEmail(email, code);
@@ -86,16 +157,16 @@ export async function verifyEmailOtp(
     throw new Error("Invalid or expired code");
   }
 
-  if (row.attempts >= 5) {
+  if (row.attempts >= MAX_VERIFY_ATTEMPTS) {
     throw new Error("Too many attempts");
   }
 
-  await db
-    .update(emailOtps)
-    .set({ attempts: row.attempts + 1 })
-    .where(eq(emailOtps.id, row.id));
-
-  if (row.codeHash !== hashCode(email, code)) {
+  const candidateHash = hashCode(email, code);
+  if (!codesMatch(row.codeHash, candidateHash)) {
+    await db
+      .update(emailOtps)
+      .set({ attempts: row.attempts + 1 })
+      .where(eq(emailOtps.id, row.id));
     throw new Error("Invalid or expired code");
   }
 

@@ -23,6 +23,17 @@ function toUserDto(user: {
 }
 
 export async function getCurrentUser(): Promise<UserDto | null> {
+  if (env.isProduction) {
+    try {
+      const session = await auth();
+      if (!session?.user?.id) return null;
+      return toUserDto(session.user);
+    } catch (error) {
+      console.warn("[auth] getCurrentUser failed", error);
+      return null;
+    }
+  }
+
   if (env.useMocks || !hasDatabase()) {
     const jar = await cookies();
     const session = jar.get(DEMO_COOKIE)?.value;
@@ -48,8 +59,11 @@ export async function requireUser(): Promise<UserDto> {
   return user;
 }
 
-/** Demo login when USE_MOCKS=true / no database. */
+/** Demo login when USE_MOCKS=true / no database. Disabled in production. */
 export async function signInDemo(): Promise<UserDto> {
+  if (env.isProduction) {
+    throw new Error("Demo login is disabled in production");
+  }
   if (hasDatabase() && !env.useMocks) {
     throw new Error("Demo login disabled when database auth is configured");
   }

@@ -1,4 +1,5 @@
 import type { Locale } from "@weathertrip/i18n";
+import { getDeviceId } from "@/lib/device-id";
 
 /** Base URL of the Next.js API (apps/web). Use LAN IP for physical devices. */
 export function getApiBaseUrl(): string {
@@ -25,8 +26,13 @@ export async function apiGet<T>(
     }
   }
 
+  const deviceId = await getDeviceId();
+
   const res = await fetch(url.toString(), {
-    headers: { Accept: "application/json" },
+    headers: {
+      Accept: "application/json",
+      "X-WeatherTrip-Device": deviceId,
+    },
   }).catch(() => {
     throw new Error("NETWORK");
   });

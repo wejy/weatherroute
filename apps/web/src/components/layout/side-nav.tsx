@@ -53,6 +53,7 @@ export async function SideNav({
 
   return (
     <nav
+      data-testid="map-side-nav"
       className="fixed top-0 left-0 z-40 hidden h-full w-96 flex-col rounded-r-xl border-r border-outline-variant bg-surface text-on-surface shadow-[0px_10px_30px_rgba(0,0,0,0.08)] lg:flex"
       aria-label={t("nav.sideTripPlanner")}
     >

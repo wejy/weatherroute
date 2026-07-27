@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import {
   requireUser,
   signInDemo,
@@ -11,6 +12,8 @@ import {
 import { requestEmailOtp } from "@/server/auth/otp";
 import { createTrip, deleteTrip } from "@/server/dal/trips";
 import { haversineKm } from "@/server/integrations/mocks/data";
+import { getClientIpFromHeaders } from "@/lib/client-ip";
+import { saveTripInputSchema } from "@/lib/validation/schemas";
 
 export async function loginDemoAction() {
   await signInDemo();
@@ -24,7 +27,9 @@ export async function requestOtpAction(formData: FormData) {
     redirect(`/login?error=email${next ? `&next=${encodeURIComponent(next)}` : ""}`);
   }
   try {
-    await requestEmailOtp(email);
+    const h = await headers();
+    const clientKey = getClientIpFromHeaders(h);
+    await requestEmailOtp(email, { clientKey });
   } catch {
     redirect(`/login?error=send${next ? `&next=${encodeURIComponent(next)}` : ""}`);
   }
@@ -60,11 +65,7 @@ export async function logoutAction() {
 
 export async function saveTripAction(formData: FormData) {
   const user = await requireUser();
-  const title = String(formData.get("title") || "Saved trip");
-  const originName = String(formData.get("originName") || "Helsinki");
-  const destinationName = String(formData.get("destinationName") || "");
-  const destinationLat = Number(formData.get("destinationLat") || 0);
-  const destinationLon = Number(formData.get("destinationLon") || 0);
+
   const originLatRaw = formData.get("originLat");
   const originLonRaw = formData.get("originLon");
   const originLat =
@@ -75,14 +76,11 @@ export async function saveTripAction(formData: FormData) {
     originLonRaw != null && String(originLonRaw) !== ""
       ? Number(originLonRaw)
       : null;
-  const weatherGoal = String(formData.get("weatherGoal") || "best");
-  const travelMode = String(formData.get("travelMode") || "driving");
-  const datePreset = String(formData.get("datePreset") || "") || null;
-  const startDate = String(formData.get("startDate") || "") || null;
-  const endDate = String(formData.get("endDate") || "") || null;
-  const durationLabel = String(formData.get("durationLabel") || "") || null;
 
   let distanceKm = Number(formData.get("distanceKm") || 0);
+  const destinationLat = Number(formData.get("destinationLat") || 0);
+  const destinationLon = Number(formData.get("destinationLon") || 0);
+
   if (
     (!Number.isFinite(distanceKm) || distanceKm <= 0) &&
     originLat != null &&
@@ -100,22 +98,28 @@ export async function saveTripAction(formData: FormData) {
     );
   }
 
-  await createTrip(user.id, {
-    title,
-    originName,
-    destinationName,
+  const parsed = saveTripInputSchema.safeParse({
+    title: String(formData.get("title") || "Saved trip"),
+    originName: String(formData.get("originName") || "Helsinki"),
+    destinationName: String(formData.get("destinationName") || ""),
     destinationLat,
     destinationLon,
     originLat,
     originLon,
-    weatherGoal,
-    travelMode,
-    datePreset,
-    startDate,
-    endDate,
+    weatherGoal: String(formData.get("weatherGoal") || "best"),
+    travelMode: String(formData.get("travelMode") || "driving"),
+    datePreset: String(formData.get("datePreset") || "") || null,
+    startDate: String(formData.get("startDate") || "") || null,
+    endDate: String(formData.get("endDate") || "") || null,
     distanceKm: Number.isFinite(distanceKm) ? distanceKm : 0,
-    durationLabel,
+    durationLabel: String(formData.get("durationLabel") || "") || null,
   });
+
+  if (!parsed.success) {
+    throw new Error("Invalid trip data");
+  }
+
+  await createTrip(user.id, parsed.data);
 
   revalidatePath("/trips");
   redirect("/trips");

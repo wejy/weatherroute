@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { getClientIp } from "@/lib/client-ip";
 import { requestEmailOtp } from "@/server/auth/otp";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -8,8 +9,8 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const ip = request.headers.get("x-forwarded-for") ?? "local";
-  const limited = rateLimit(`otp:${ip}`, 10);
+  const ip = getClientIp(request);
+  const limited = await rateLimit(`otp:${ip}`, 10);
   if (!limited.ok) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
@@ -21,13 +22,15 @@ export async function POST(request: Request) {
   }
 
   try {
-    await requestEmailOtp(parsed.data.email);
+    await requestEmailOtp(parsed.data.email, { clientKey: ip });
     return NextResponse.json({ ok: true });
   } catch (error) {
     console.error("[otp]", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Failed to send code" },
-      { status: 500 },
-    );
+    const message =
+      error instanceof Error && error.message === "Rate limit exceeded"
+        ? "Rate limit exceeded"
+        : "Failed to send code";
+    const status = message === "Rate limit exceeded" ? 429 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

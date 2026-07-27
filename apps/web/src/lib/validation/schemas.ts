@@ -102,6 +102,31 @@ export const wikipediaQuerySchema = z.object({
   placeId: z.string().min(1).max(120).optional(),
 });
 
+export const saveTripInputSchema = z.object({
+  title: z.string().min(1).max(200).default("Saved trip"),
+  originName: z.string().min(1).max(200),
+  destinationName: z.string().min(1).max(200),
+  destinationLat: z.number().min(-90).max(90),
+  destinationLon: z.number().min(-180).max(180),
+  originLat: z.number().min(-90).max(90).nullable().optional(),
+  originLon: z.number().min(-180).max(180).nullable().optional(),
+  weatherGoal: z.string().min(1).max(50).default("best"),
+  travelMode: z.enum(["driving", "cycling"]).default("driving"),
+  datePreset: z.string().max(50).nullable().optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable()
+    .optional(),
+  distanceKm: z.number().min(0).max(50000).default(0),
+  durationLabel: z.string().max(120).nullable().optional(),
+});
+
 export type WeatherQuery = z.infer<typeof weatherQuerySchema>;
 export type SearchQuery = z.infer<typeof searchQuerySchema>;
 export type ReverseQuery = z.infer<typeof reverseQuerySchema>;

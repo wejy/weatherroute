@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { weatherQuerySchema } from "@/lib/validation/schemas";
+import { getClientIp } from "@/lib/client-ip";
 import { rateLimit } from "@/lib/rate-limit";
 import { getWeatherForPlace } from "@/server/services/weather-service";
 
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for") ?? "local";
-  const limited = rateLimit(`weather:${ip}`, 60);
+  const ip = getClientIp(request);
+  const limited = await rateLimit(`weather:${ip}`, 60);
   if (!limited.ok) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }

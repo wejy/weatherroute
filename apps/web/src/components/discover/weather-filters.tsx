@@ -67,8 +67,19 @@ export function WeatherFilters({
   function select(value: string) {
     const params = new URLSearchParams(searchParams.toString());
     params.set("weatherGoal", value);
-    const hash = basePath === "/" ? "#results" : "";
-    router.push(`${basePath}?${params.toString()}${hash}`);
+    const qs = params.toString();
+    const href = `${basePath}${qs ? `?${qs}` : ""}`;
+    router.push(href, { scroll: false });
+    if (basePath === "/") {
+      // Prefer explicit scroll over embedding #hash in router.push (App Router
+      // can drop the search string when only the hash changes on `/`).
+      requestAnimationFrame(() => {
+        document.getElementById("results")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
+    }
   }
 
   const mapLinkClass = cn(
@@ -79,6 +90,7 @@ export function WeatherFilters({
   return (
     <>
       <div
+        data-testid="weather-filters"
         className={cn(
           "relative z-30 flex flex-wrap gap-2",
           compact ? "justify-start" : "mb-10 justify-center gap-3",
@@ -91,6 +103,7 @@ export function WeatherFilters({
             <button
               key={f.value}
               type="button"
+              data-testid={`weather-filter-${f.value}`}
               onClick={() => select(f.value)}
               aria-pressed={isActive}
               className={cn(

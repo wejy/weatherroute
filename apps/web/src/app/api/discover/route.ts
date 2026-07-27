@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { discoverQuerySchema } from "@/lib/validation/schemas";
+import { getClientIp } from "@/lib/client-ip";
 import { rateLimit } from "@/lib/rate-limit";
 import { discoverDestinations } from "@/server/services/weather-service";
 import { getLocale } from "@/i18n/get-dictionary";
@@ -9,8 +10,8 @@ import {
 } from "@/server/dal/discover-gate";
 
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for") ?? "local";
-  const limited = rateLimit(`discover:${ip}`, 30);
+  const ip = getClientIp(request);
+  const limited = await rateLimit(`discover:${ip}`, 30);
   if (!limited.ok) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
@@ -28,6 +29,7 @@ export async function GET(request: NextRequest) {
   const active = isActiveDiscoverQuery(parsed.data);
   const gate = await gateDiscoverAccess({
     consume: active,
+    clientKey: ip,
     meta: {
       origin: parsed.data.origin,
       weatherGoal: parsed.data.weatherGoal,

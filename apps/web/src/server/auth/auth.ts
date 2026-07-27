@@ -9,7 +9,7 @@ import {
   verificationTokens,
 } from "@/db/schema";
 import { verifyEmailOtp } from "@/server/auth/otp";
-import { env } from "@/lib/env";
+import { env, getAuthSecret, shouldTrustAuthHost } from "@/lib/env";
 
 function buildAdapter() {
   const db = getDb();
@@ -23,8 +23,21 @@ function buildAdapter() {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  secret: env.authSecret || process.env.AUTH_SECRET || "dev-insecure-secret",
-  trustHost: true,
+  secret: getAuthSecret(),
+  trustHost: shouldTrustAuthHost(),
+  logger: {
+    error(error) {
+      // Stale session cookie after AUTH_SECRET rotation — treat as logged out in dev.
+      if (
+        !env.isProduction &&
+        error instanceof Error &&
+        error.name === "JWTSessionError"
+      ) {
+        return;
+      }
+      console.error(error);
+    },
+  },
   session: { strategy: "jwt" },
   adapter: buildAdapter(),
   providers: [

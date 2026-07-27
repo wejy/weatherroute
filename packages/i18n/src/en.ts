@@ -140,6 +140,10 @@ const en = {
     tripWindow: "trip window",
     source: "Source: {provider} · trip days highlighted · {start} → {end}",
     finland: "Finland",
+    wikipediaTitle: "About {place}",
+    wikipediaLink: "Read on Wikipedia",
+    wikipediaLoading: "Loading Wikipedia…",
+    wikipediaUnavailable: "No Wikipedia article found for this place.",
   },
   map: {
     nearbyIdeal: "Nearby Ideal Weather",

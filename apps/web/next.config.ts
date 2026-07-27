@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   transpilePackages: ["mapbox-gl", "@weathertrip/i18n"],
+  // Playwright / local tooling hits the app via 127.0.0.1 while `next dev`
+  // may bind on 0.0.0.0 — allow HMR/dev assets from that origin.
+  allowedDevOrigins: ["127.0.0.1", "localhost"],
   images: {
     remotePatterns: [
       {
@@ -26,21 +29,6 @@ const nextConfig: NextConfig = {
         pathname: "/styles/v1/**",
       },
     ],
-  },
-  async headers() {
-    return [
-      {
-        source: "/api/:path*",
-        headers: [
-          { key: "Access-Control-Allow-Origin", value: "*" },
-          { key: "Access-Control-Allow-Methods", value: "GET,POST,OPTIONS" },
-          {
-            key: "Access-Control-Allow-Headers",
-            value: "Content-Type, Authorization",
-          },
-        ],
-      },
-    ];
   },
 };
 

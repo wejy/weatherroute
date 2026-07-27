@@ -102,7 +102,10 @@ export default async function MapPage({
       : routesHref(filterDefaults);
 
   return (
-    <div className="h-[100dvh] w-full overflow-hidden bg-background text-on-background">
+    <div
+      data-testid="map-page"
+      className="h-[100dvh] w-full overflow-hidden bg-background text-on-background"
+    >
       <SideNav active="/map">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           <h1 className="mb-3 shrink-0 text-xl font-semibold text-on-surface">

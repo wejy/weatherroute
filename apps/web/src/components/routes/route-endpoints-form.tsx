@@ -176,7 +176,10 @@ export function RouteEndpointsForm({
       : null;
 
   return (
-    <div className="space-y-4 rounded-xl border border-outline-variant/20 bg-surface-container-low p-4">
+    <div
+      data-testid="route-endpoints-form"
+      className="space-y-4 rounded-xl border border-outline-variant/20 bg-surface-container-low p-4"
+    >
       <div>
         <p className="mb-1.5 text-sm font-medium tracking-wide text-on-surface-variant uppercase">
           {t("search.whenGoing")}

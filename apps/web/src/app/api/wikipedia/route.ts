@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { wikipediaQuerySchema } from "@/lib/validation/schemas";
+import { getClientIp } from "@/lib/client-ip";
 import { rateLimit } from "@/lib/rate-limit";
 import { fetchWikipediaPlaceSummary } from "@/server/integrations/wikipedia";
 import {
@@ -9,8 +10,8 @@ import {
 import { getPlaceById } from "@/server/dal/places";
 
 export async function GET(request: NextRequest) {
-  const ip = request.headers.get("x-forwarded-for") ?? "local";
-  const limited = rateLimit(`wikipedia:${ip}`, 40);
+  const ip = getClientIp(request);
+  const limited = await rateLimit(`wikipedia:${ip}`, 40);
   if (!limited.ok) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }

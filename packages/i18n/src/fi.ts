@@ -142,6 +142,10 @@ const fi = {
     source:
       "Lähde: {provider} · matkapäivät korostettu · {start} → {end}",
     finland: "Suomi",
+    wikipediaTitle: "Tietoa kohteesta {place}",
+    wikipediaLink: "Lue Wikipediassa",
+    wikipediaLoading: "Ladataan Wikipediaa…",
+    wikipediaUnavailable: "Wikipedia-artikkelia ei löytynyt tälle kohteelle.",
   },
   map: {
     nearbyIdeal: "Lähiseudun kohteet",
