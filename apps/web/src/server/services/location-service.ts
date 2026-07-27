@@ -340,7 +340,7 @@ export async function getRouteWeather(
   }
 
   let routed: MapboxRoute | null = candidates[0] ?? null;
-  let alternativesCompared = candidates.length;
+  const alternativesCompared = candidates.length;
   let weatherRouteSelected = false;
   let minutesVsFastest: number | null = null;
   let alternativeSummaries: RouteAlternativeDto[] = [];

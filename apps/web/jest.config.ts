@@ -14,9 +14,11 @@ const config: Config = {
       {
         tsconfig: {
           module: "commonjs",
-          moduleResolution: "node",
+          moduleResolution: "node16",
           esModuleInterop: true,
           isolatedModules: true,
+          rootDir: ".",
+          types: ["node", "jest"],
         },
       },
     ],

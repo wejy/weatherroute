@@ -85,7 +85,7 @@ async function upstashRateLimit(
 
     const data = (await res.json()) as { result?: unknown[] };
     const count = Number(data.result?.[0]);
-    let ttl = Number(data.result?.[1]);
+    const ttl = Number(data.result?.[1]);
 
     if (!Number.isFinite(count) || count < 1) return null;
 

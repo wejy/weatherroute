@@ -1,7 +1,7 @@
 /**
  * @jest-environment node
  */
-jest.mock("@/db", () => require("./mocks/db"));
+jest.mock("@/db", () => jest.requireActual("./mocks/db"));
 
 import { dedupePlaceCandidates } from "@/server/dal/places";
 
