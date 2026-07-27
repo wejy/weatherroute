@@ -74,6 +74,9 @@ export function destinationHref(
     datePreset?: string;
     startDate?: string;
     endDate?: string;
+    distance?: string;
+    radiusKm?: string | number;
+    weatherGoal?: string;
     origin?: string;
     lat?: string | number;
     lon?: string | number;
@@ -85,6 +88,9 @@ export function destinationHref(
     datePreset: opts.datePreset,
     startDate: opts.startDate,
     endDate: opts.endDate,
+    distance: opts.distance,
+    radiusKm: opts.radiusKm,
+    weatherGoal: opts.weatherGoal,
     origin: opts.origin,
     lat: opts.lat,
     lon: opts.lon,
@@ -116,6 +122,12 @@ export function isLinkableDestinationId(
 export function routesHref(opts: {
   from?: string;
   to?: string;
+  datePreset?: string;
+  startDate?: string;
+  endDate?: string;
+  distance?: string;
+  radiusKm?: string | number;
+  weatherGoal?: string;
   origin?: string;
   lat?: string | number;
   lon?: string | number;
@@ -125,6 +137,12 @@ export function routesHref(opts: {
   return withQuery("/routes", {
     from,
     to: opts.to,
+    datePreset: opts.datePreset,
+    startDate: opts.startDate,
+    endDate: opts.endDate,
+    distance: opts.distance,
+    radiusKm: opts.radiusKm,
+    weatherGoal: opts.weatherGoal,
     origin: opts.origin || from,
     lat: opts.lat,
     lon: opts.lon,

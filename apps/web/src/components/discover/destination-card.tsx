@@ -19,12 +19,24 @@ function isRemoteImage(url: string): boolean {
 
 export function DestinationCard({
   destination,
+  datePreset,
+  startDate,
+  endDate,
+  distance,
+  radiusKm,
+  weatherGoal,
   origin,
   lat,
   lon,
   mode,
 }: {
   destination: DestinationDto;
+  datePreset?: string;
+  startDate?: string;
+  endDate?: string;
+  distance?: string;
+  radiusKm?: number | string;
+  weatherGoal?: string;
   origin?: string;
   lat?: number;
   lon?: number;
@@ -50,9 +62,12 @@ export function DestinationCard({
   return (
     <Link
       href={destinationHref(destination.slug, {
-        datePreset: forecast.preset ?? "custom",
-        startDate: forecast.startDate,
-        endDate: forecast.endDate,
+        datePreset: datePreset ?? forecast.preset ?? "custom",
+        startDate: startDate ?? forecast.startDate,
+        endDate: endDate ?? forecast.endDate,
+        distance,
+        radiusKm,
+        weatherGoal,
         origin,
         lat,
         lon,

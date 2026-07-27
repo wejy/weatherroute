@@ -25,19 +25,29 @@ import {
   DISTANCE_PRESET_KEYS,
   resolveRadiusKm,
 } from "@/lib/distance";
+import {
+  clampDateKey,
+  isDateKey,
+  maxForecastDateKey,
+  minForecastDateKey,
+  resolveDateWindow,
+  type DatePreset,
+  type DateWindow,
+} from "@/lib/dates";
 import { colors } from "@/constants/Colors";
 import { DestinationCard } from "@/components/DestinationCard";
 import type { DiscoverResultDto, PlaceDto, WeatherGoal } from "@/lib/types";
 
 const GOALS: WeatherGoal[] = ["best", "sun", "dry", "mild", "rain", "warm"];
-const DATE_PRESETS = ["today", "tomorrow", "weekend"] as const;
-type DatePreset = (typeof DATE_PRESETS)[number];
+const DATE_PRESETS: DatePreset[] = ["today", "tomorrow", "weekend", "custom"];
 type DistanceOption = (typeof DISTANCE_PRESET_KEYS)[number] | "custom";
 
 export default function DiscoverScreen() {
   const { t, translateCondition, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const autoStarted = useRef(false);
+  const minDate = minForecastDateKey();
+  const maxDate = maxForecastDateKey();
 
   const [originQuery, setOriginQuery] = useState("");
   const [selectedPlace, setSelectedPlace] = useState<PlaceDto | null>(null);
@@ -49,7 +59,9 @@ export default function DiscoverScreen() {
   );
   const [coarseHint, setCoarseHint] = useState(false);
   const [goal, setGoal] = useState<WeatherGoal>("best");
-  const [datePreset, setDatePreset] = useState<DatePreset>("weekend");
+  const [dateWindow, setDateWindow] = useState<DateWindow>(() =>
+    resolveDateWindow({ preset: "weekend", locale }),
+  );
   const [distance, setDistance] = useState<DistanceOption>("region");
   const [customRadiusKm, setCustomRadiusKm] = useState(CUSTOM_RADIUS_DEFAULT_KM);
   const [result, setResult] = useState<DiscoverResultDto | null>(null);
@@ -62,13 +74,13 @@ export default function DiscoverScreen() {
       place: PlaceDto,
       weatherGoal: WeatherGoal,
       opts?: {
-        datePreset?: DatePreset;
+        dateWindow?: DateWindow;
         distance?: DistanceOption;
         radiusKm?: number;
       },
     ) => {
       const nextDistance = opts?.distance ?? distance;
-      const nextPreset = opts?.datePreset ?? datePreset;
+      const nextWindow = opts?.dateWindow ?? dateWindow;
       const nextRadius = opts?.radiusKm ?? customRadiusKm;
       setLoading(true);
       setError(null);
@@ -83,7 +95,9 @@ export default function DiscoverScreen() {
             nextDistance === "custom"
               ? resolveRadiusKm("custom", nextRadius)
               : undefined,
-          datePreset: nextPreset,
+          datePreset: nextWindow.preset,
+          startDate: nextWindow.startDate,
+          endDate: nextWindow.endDate,
           lang: locale,
         });
         setResult(data);
@@ -100,7 +114,7 @@ export default function DiscoverScreen() {
         setLoading(false);
       }
     },
-    [customRadiusKm, datePreset, distance, locale, t],
+    [customRadiusKm, dateWindow, distance, locale, t],
   );
 
   const searchPlaces = useCallback(
@@ -348,21 +362,28 @@ export default function DiscoverScreen() {
         )}
 
         <Text style={styles.label}>{t("search.whenGoing")}</Text>
+        <Text style={styles.dateRangeHint}>{dateWindow.rangeLabel}</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chipRow}
         >
           {DATE_PRESETS.map((preset) => {
-            const active = datePreset === preset;
+            const active = dateWindow.preset === preset;
             return (
               <Pressable
                 key={preset}
                 onPress={() => {
-                  setDatePreset(preset);
-                  if (selectedPlace) {
+                  const next = resolveDateWindow({
+                    preset,
+                    startDate: dateWindow.startDate,
+                    endDate: dateWindow.endDate,
+                    locale,
+                  });
+                  setDateWindow(next);
+                  if (selectedPlace && preset !== "custom") {
                     void runDiscover(selectedPlace, goal, {
-                      datePreset: preset,
+                      dateWindow: next,
                     });
                   }
                 }}
@@ -375,6 +396,125 @@ export default function DiscoverScreen() {
             );
           })}
         </ScrollView>
+
+        {dateWindow.preset === "custom" && (
+          <View style={styles.customDates}>
+            <View style={styles.customDateField}>
+              <Text style={styles.customDateLabel}>{t("dates.start")}</Text>
+              <TextInput
+                value={dateWindow.startDate}
+                onChangeText={(v) => {
+                  const raw = v.trim();
+                  if (!isDateKey(raw)) {
+                    setDateWindow((prev) => ({ ...prev, startDate: raw }));
+                    return;
+                  }
+                  const startDate = clampDateKey(raw, minDate, maxDate);
+                  const endDate =
+                    dateWindow.endDate < startDate
+                      ? startDate
+                      : isDateKey(dateWindow.endDate)
+                        ? dateWindow.endDate
+                        : startDate;
+                  setDateWindow(
+                    resolveDateWindow({
+                      preset: "custom",
+                      startDate,
+                      endDate,
+                      locale,
+                    }),
+                  );
+                }}
+                onEndEditing={() => {
+                  const next = resolveDateWindow({
+                    preset: "custom",
+                    startDate: clampDateKey(
+                      dateWindow.startDate,
+                      minDate,
+                      maxDate,
+                    ),
+                    endDate: clampDateKey(
+                      dateWindow.endDate,
+                      minDate,
+                      maxDate,
+                    ),
+                    locale,
+                  });
+                  setDateWindow(next);
+                  if (selectedPlace) {
+                    void runDiscover(selectedPlace, goal, {
+                      dateWindow: next,
+                    });
+                  }
+                }}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.outline}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.dateInput}
+                accessibilityLabel={t("dates.start")}
+              />
+            </View>
+            <View style={styles.customDateField}>
+              <Text style={styles.customDateLabel}>{t("dates.end")}</Text>
+              <TextInput
+                value={dateWindow.endDate}
+                onChangeText={(v) => {
+                  const raw = v.trim();
+                  if (!isDateKey(raw)) {
+                    setDateWindow((prev) => ({ ...prev, endDate: raw }));
+                    return;
+                  }
+                  const endDate = clampDateKey(
+                    raw,
+                    isDateKey(dateWindow.startDate)
+                      ? dateWindow.startDate
+                      : minDate,
+                    maxDate,
+                  );
+                  setDateWindow(
+                    resolveDateWindow({
+                      preset: "custom",
+                      startDate: isDateKey(dateWindow.startDate)
+                        ? dateWindow.startDate
+                        : endDate,
+                      endDate,
+                      locale,
+                    }),
+                  );
+                }}
+                onEndEditing={() => {
+                  const next = resolveDateWindow({
+                    preset: "custom",
+                    startDate: clampDateKey(
+                      dateWindow.startDate,
+                      minDate,
+                      maxDate,
+                    ),
+                    endDate: clampDateKey(
+                      dateWindow.endDate,
+                      minDate,
+                      maxDate,
+                    ),
+                    locale,
+                  });
+                  setDateWindow(next);
+                  if (selectedPlace) {
+                    void runDiscover(selectedPlace, goal, {
+                      dateWindow: next,
+                    });
+                  }
+                }}
+                placeholder="YYYY-MM-DD"
+                placeholderTextColor={colors.outline}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.dateInput}
+                accessibilityLabel={t("dates.end")}
+              />
+            </View>
+          </View>
+        )}
 
         <Text style={styles.label}>{t("search.howFar")}</Text>
         <ScrollView
@@ -468,10 +608,10 @@ export default function DiscoverScreen() {
           ]}
         >
           {loading ? (
-            <ActivityIndicator color={colors.onPrimary} />
+            <ActivityIndicator color={colors.onAccent} />
           ) : (
             <>
-              <FontAwesome name="search" size={16} color={colors.onPrimary} />
+              <FontAwesome name="search" size={16} color={colors.onAccent} />
               <Text style={styles.searchBtnText}>{t("search.search")}</Text>
             </>
           )}
@@ -665,11 +805,36 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   chipText: { fontWeight: "600", color: colors.onSurface, fontSize: 13 },
-  chipTextActive: { color: colors.onPrimary },
+  chipTextActive: { color: colors.onAccent },
+  dateRangeHint: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.onSurfaceVariant,
+    marginTop: -4,
+  },
+  customDates: { flexDirection: "row", gap: 10 },
+  customDateField: { flex: 1, gap: 4 },
+  customDateLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.onSurfaceVariant,
+    textTransform: "uppercase",
+  },
+  dateInput: {
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceContainer,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.onSurface,
+  },
   customRadius: { gap: 6 },
   customRadiusLabel: {
     fontSize: 13,
@@ -691,14 +856,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
     minHeight: 54,
     borderRadius: 16,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     gap: 10,
   },
   searchBtnText: {
-    color: colors.onPrimary,
+    color: colors.onAccent,
     fontSize: 16,
     fontWeight: "700",
   },

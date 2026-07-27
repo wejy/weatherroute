@@ -70,19 +70,14 @@ export default async function MapPage({
       (hasOrigin ? result.origin.name : undefined),
     lat: parsed.lat ?? (hasOrigin ? result.origin.lat : undefined),
     lon: parsed.lon ?? (hasOrigin ? result.origin.lon : undefined),
+    datePreset: parsed.datePreset,
+    startDate: parsed.startDate,
+    endDate: parsed.endDate,
+    distance: parsed.distance,
+    radiusKm: parsed.radiusKm,
+    weatherGoal: parsed.weatherGoal,
     mode: parsed.mode,
   };
-  const shareToken =
-    typeof flat.share === "string" ? flat.share : undefined;
-  const routeHref =
-    routeFrom && routeTo
-      ? routesHref({
-          from: routeFrom,
-          to: routeTo,
-          ...originQuery,
-        })
-      : routesHref(originQuery);
-
   const filterDefaults = {
     origin: flat.origin ?? parsed.origin,
     distance: parsed.distance,
@@ -95,6 +90,16 @@ export default async function MapPage({
     endDate: parsed.endDate,
     mode: parsed.mode,
   };
+  const shareToken =
+    typeof flat.share === "string" ? flat.share : undefined;
+  const routeHref =
+    routeFrom && routeTo
+      ? routesHref({
+          from: routeFrom,
+          to: routeTo,
+          ...filterDefaults,
+        })
+      : routesHref(filterDefaults);
 
   return (
     <div className="h-[100dvh] w-full overflow-hidden bg-background text-on-background">
@@ -136,9 +141,6 @@ export default async function MapPage({
                     key={d.id}
                     destination={d}
                     href={destinationHref(d.slug, {
-                      datePreset: parsed.datePreset,
-                      startDate: result.startDate,
-                      endDate: result.endDate,
                       ...originQuery,
                     })}
                   />

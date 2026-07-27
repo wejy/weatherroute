@@ -51,6 +51,12 @@ export function MockMap({
     origin?: string;
     lat?: number;
     lon?: number;
+    datePreset?: string;
+    startDate?: string;
+    endDate?: string;
+    distance?: string;
+    radiusKm?: number;
+    weatherGoal?: string;
     mode?: string;
   };
 }) {

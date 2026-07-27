@@ -370,6 +370,12 @@ export default async function DestinationPage({
                 href={routesHref({
                   from: originName,
                   to: dest.name,
+                  datePreset,
+                  startDate: window.startDate,
+                  endDate: window.endDate,
+                  distance: first(raw.distance),
+                  radiusKm: first(raw.radiusKm),
+                  weatherGoal: first(raw.weatherGoal),
                   origin: originName,
                   lat: originLat,
                   lon: originLon,

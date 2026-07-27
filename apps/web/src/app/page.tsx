@@ -263,6 +263,12 @@ export default async function HomePage({
                     <DestinationCard
                       key={dest.id}
                       destination={dest}
+                      datePreset={parsed.datePreset}
+                      startDate={result.startDate}
+                      endDate={result.endDate}
+                      distance={parsed.distance}
+                      radiusKm={parsed.radiusKm}
+                      weatherGoal={parsed.weatherGoal}
                       origin={
                         flat.origin ??
                         parsed.origin ??
