@@ -173,7 +173,16 @@ export function DiscoverSearch({
     ) => {
       const nextDistance = overrides?.distance ?? distance;
       const nextRadius = overrides?.radiusKm ?? customRadiusKm;
-      const nextGoal = overrides?.weatherGoal ?? weatherGoal;
+      const liveGoal =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("weatherGoal")
+          : null;
+      // Prefer address-bar goal so filter chips aren't stomped by in-flight geo.
+      const nextGoal =
+        overrides?.weatherGoal ??
+        liveGoal ??
+        searchParams.get("weatherGoal") ??
+        weatherGoal;
       const nextWhen = overrides?.when ?? when;
       const nextMode = overrides?.mode ?? travelMode;
       const params = new URLSearchParams(searchParams.toString());
@@ -521,7 +530,7 @@ export function DiscoverSearch({
           aria-label={t("a11y.searchDestinations")}
           aria-busy={pending || undefined}
           className={cn(
-            "flex items-center justify-center gap-2 bg-primary text-on-primary shadow-md transition-all hover:bg-on-primary-fixed-variant disabled:cursor-wait disabled:bg-primary/80",
+            "flex items-center justify-center gap-2 bg-accent text-on-accent shadow-md transition-all hover:bg-accent-container hover:text-on-accent-container disabled:cursor-wait disabled:bg-accent/80",
             stack
               ? "h-11 w-full rounded-xl text-sm font-semibold"
               : "h-14 w-full rounded-xl lg:h-16 lg:w-16 lg:rounded-full",

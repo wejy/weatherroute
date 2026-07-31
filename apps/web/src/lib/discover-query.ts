@@ -74,16 +74,23 @@ export function destinationHref(
     datePreset?: string;
     startDate?: string;
     endDate?: string;
+    distance?: string;
+    radiusKm?: string | number;
+    weatherGoal?: string;
     origin?: string;
     lat?: string | number;
     lon?: string | number;
     mode?: string;
   } = {},
 ): string {
-  return withQuery(`/destinations/${slug}`, {
+  // encodeURIComponent keeps geonames ids like gn:123 URL-safe (colon → %3A).
+  return withQuery(`/destinations/${encodeURIComponent(slug)}`, {
     datePreset: opts.datePreset,
     startDate: opts.startDate,
     endDate: opts.endDate,
+    distance: opts.distance,
+    radiusKm: opts.radiusKm,
+    weatherGoal: opts.weatherGoal,
     origin: opts.origin,
     lat: opts.lat,
     lon: opts.lon,
@@ -91,10 +98,36 @@ export function destinationHref(
   });
 }
 
+/** Mapbox Geocoding feature ids look like `place.2099272`, `address.…`. */
+const MAPBOX_ID_PREFIX =
+  /^(place|address|poi|locality|region|district|neighborhood|country|postcode|airport)\./i;
+
+export function isMapboxFeatureId(id: string | null | undefined): boolean {
+  return Boolean(id && MAPBOX_ID_PREFIX.test(id));
+}
+
+/**
+ * True when an id can resolve on `/destinations/[slug]`
+ * (katalogi / gn-*, not Mapbox feature or bare coordinate).
+ */
+export function isLinkableDestinationId(
+  id: string | null | undefined,
+): id is string {
+  if (!id || id.startsWith("coord-")) return false;
+  if (isMapboxFeatureId(id)) return false;
+  return id.length > 0;
+}
+
 /** Routes URL: `from` defaults to manual origin name when set. */
 export function routesHref(opts: {
   from?: string;
   to?: string;
+  datePreset?: string;
+  startDate?: string;
+  endDate?: string;
+  distance?: string;
+  radiusKm?: string | number;
+  weatherGoal?: string;
   origin?: string;
   lat?: string | number;
   lon?: string | number;
@@ -104,6 +137,12 @@ export function routesHref(opts: {
   return withQuery("/routes", {
     from,
     to: opts.to,
+    datePreset: opts.datePreset,
+    startDate: opts.startDate,
+    endDate: opts.endDate,
+    distance: opts.distance,
+    radiusKm: opts.radiusKm,
+    weatherGoal: opts.weatherGoal,
     origin: opts.origin || from,
     lat: opts.lat,
     lon: opts.lon,

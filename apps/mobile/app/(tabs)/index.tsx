@@ -12,7 +12,8 @@ import {
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/lib/i18n";
-import { apiGet, getApiBaseUrl } from "@/lib/api";
+import { apiGet, getApiBaseUrl, ApiError, type PublicQuota } from "@/lib/api";
+import { saveLastDiscover } from "@/lib/discover-cache";
 import {
   detectCoarsePlace,
   detectCurrentPlace,
@@ -25,53 +26,79 @@ import {
   DISTANCE_PRESET_KEYS,
   resolveRadiusKm,
 } from "@/lib/distance";
+import {
+  clampDateKey,
+  isDateKey,
+  maxForecastDateKey,
+  minForecastDateKey,
+  resolveDateWindow,
+  type DatePreset,
+  type DateWindow,
+} from "@/lib/dates";
 import { colors } from "@/constants/Colors";
 import { DestinationCard } from "@/components/DestinationCard";
+import { SoftPaywall, QuotaHint } from "@/components/SoftPaywall";
+import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
 import type { DiscoverResultDto, PlaceDto, WeatherGoal } from "@/lib/types";
 
 const GOALS: WeatherGoal[] = ["best", "sun", "dry", "mild", "rain", "warm"];
-const DATE_PRESETS = ["today", "tomorrow", "weekend"] as const;
-type DatePreset = (typeof DATE_PRESETS)[number];
+const DATE_PRESETS: DatePreset[] = ["today", "tomorrow", "weekend", "custom"];
 type DistanceOption = (typeof DISTANCE_PRESET_KEYS)[number] | "custom";
 
 export default function DiscoverScreen() {
   const { t, translateCondition, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const autoStarted = useRef(false);
+  const minDate = minForecastDateKey();
+  const maxDate = maxForecastDateKey();
 
   const [originQuery, setOriginQuery] = useState("");
   const [selectedPlace, setSelectedPlace] = useState<PlaceDto | null>(null);
-  const [suggestions, setSuggestions] = useState<PlaceDto[]>([]);
-  const [searchingPlaces, setSearchingPlaces] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locatingMode, setLocatingMode] = useState<"coarse" | "precise" | null>(
     null,
   );
   const [coarseHint, setCoarseHint] = useState(false);
   const [goal, setGoal] = useState<WeatherGoal>("best");
-  const [datePreset, setDatePreset] = useState<DatePreset>("weekend");
+  const [dateWindow, setDateWindow] = useState<DateWindow>(() =>
+    resolveDateWindow({ preset: "weekend", locale }),
+  );
   const [distance, setDistance] = useState<DistanceOption>("region");
   const [customRadiusKm, setCustomRadiusKm] = useState(CUSTOM_RADIUS_DEFAULT_KM);
   const [result, setResult] = useState<DiscoverResultDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paywalled, setPaywalled] = useState(false);
+  const [quota, setQuota] = useState<PublicQuota | null>(null);
   const apiReady = Boolean(getApiBaseUrl());
+
+  useEffect(() => {
+    setDateWindow((prev) =>
+      resolveDateWindow({
+        preset: prev.preset,
+        startDate: prev.startDate,
+        endDate: prev.endDate,
+        locale,
+      }),
+    );
+  }, [locale]);
 
   const runDiscover = useCallback(
     async (
       place: PlaceDto,
       weatherGoal: WeatherGoal,
       opts?: {
-        datePreset?: DatePreset;
+        dateWindow?: DateWindow;
         distance?: DistanceOption;
         radiusKm?: number;
       },
     ) => {
       const nextDistance = opts?.distance ?? distance;
-      const nextPreset = opts?.datePreset ?? datePreset;
+      const nextWindow = opts?.dateWindow ?? dateWindow;
       const nextRadius = opts?.radiusKm ?? customRadiusKm;
       setLoading(true);
       setError(null);
+      setPaywalled(false);
       try {
         const data = await apiGet<DiscoverResultDto>("/api/discover", {
           origin: place.placeName,
@@ -83,58 +110,36 @@ export default function DiscoverScreen() {
             nextDistance === "custom"
               ? resolveRadiusKm("custom", nextRadius)
               : undefined,
-          datePreset: nextPreset,
+          datePreset: nextWindow.preset,
+          startDate: nextWindow.startDate,
+          endDate: nextWindow.endDate,
           lang: locale,
         });
         setResult(data);
+        setQuota(null);
+        void saveLastDiscover(data);
       } catch (e) {
-        const message =
-          e instanceof Error && e.message === "MISSING_API_URL"
-            ? t("mobile.apiMissing")
-            : e instanceof Error && e.message === "NETWORK"
-              ? t("mobile.networkError")
-              : t("mobile.errorGeneric");
-        setError(message);
-        setResult(null);
+        if (e instanceof ApiError && e.isPaywall) {
+          setPaywalled(true);
+          setQuota(e.quota);
+          setResult(null);
+          setError(null);
+        } else {
+          const message =
+            e instanceof Error && e.message === "MISSING_API_URL"
+              ? t("mobile.apiMissing")
+              : e instanceof Error && e.message === "NETWORK"
+                ? t("mobile.networkError")
+                : t("mobile.errorGeneric");
+          setError(message);
+          setResult(null);
+        }
       } finally {
         setLoading(false);
       }
     },
-    [customRadiusKm, datePreset, distance, locale, t],
+    [customRadiusKm, dateWindow, distance, locale, t],
   );
-
-  const searchPlaces = useCallback(
-    async (q: string) => {
-      if (q.trim().length < 2 || !apiReady) {
-        setSuggestions([]);
-        setSearchingPlaces(false);
-        return;
-      }
-      setSearchingPlaces(true);
-      try {
-        const data = await apiGet<{ results?: PlaceDto[] }>("/api/search", {
-          q,
-          limit: 8,
-          mode: "precise",
-        });
-        setSuggestions(data.results?.slice(0, 8) ?? []);
-      } catch {
-        setSuggestions([]);
-      } finally {
-        setSearchingPlaces(false);
-      }
-    },
-    [apiReady],
-  );
-
-  useEffect(() => {
-    const id = setTimeout(() => {
-      if (!selectedPlace || originQuery !== selectedPlace.placeName) {
-        void searchPlaces(originQuery);
-      }
-    }, 280);
-    return () => clearTimeout(id);
-  }, [originQuery, searchPlaces, selectedPlace]);
 
   const applyPlace = useCallback(
     async (
@@ -146,7 +151,6 @@ export default function DiscoverScreen() {
     ) => {
       setSelectedPlace(place);
       setOriginQuery(place.placeName);
-      setSuggestions([]);
       if (opts?.distance) setDistance(opts.distance);
       if (opts?.andSearch !== false) {
         await runDiscover(place, goal, {
@@ -190,7 +194,7 @@ export default function DiscoverScreen() {
     setLocatingMode("precise");
     setError(null);
     try {
-      const place = await detectCurrentPlace();
+      const place = await detectCurrentPlace(t("mobile.here"), locale);
       setCoarseHint(false);
       await applyPlace(place, { andSearch: true });
     } catch (e) {
@@ -204,7 +208,7 @@ export default function DiscoverScreen() {
       setLocating(false);
       setLocatingMode(null);
     }
-  }, [apiReady, applyPlace, t]);
+  }, [apiReady, applyPlace, locale, t]);
 
   useEffect(() => {
     if (!apiReady || autoStarted.current) return;
@@ -216,7 +220,6 @@ export default function DiscoverScreen() {
     setCoarseHint(false);
     setSelectedPlace(place);
     setOriginQuery(place.placeName);
-    setSuggestions([]);
     void runDiscover(place, goal);
   }
 
@@ -231,6 +234,8 @@ export default function DiscoverScreen() {
           const data = await apiGet<{ results?: PlaceDto[] }>("/api/search", {
             q: originQuery.trim(),
             limit: 1,
+            mode: "precise",
+            lang: locale === "fi" ? "fi" : "en",
           });
           const first = data.results?.[0];
           if (!first) {
@@ -288,81 +293,78 @@ export default function DiscoverScreen() {
 
       <View style={styles.panel}>
         <Text style={styles.label}>{t("search.whereFrom")}</Text>
-        <View style={styles.inputRow}>
-          <TextInput
-            value={originQuery}
-            onChangeText={(v) => {
-              setOriginQuery(v);
+        <PlaceAutocomplete
+          value={originQuery}
+          onChange={(v) => {
+            setOriginQuery(v);
+            setCoarseHint(false);
+          }}
+          onPlaceSelect={(place) => {
+            if (!place) {
               setSelectedPlace(null);
-              setCoarseHint(false);
-            }}
-            placeholder={
-              locatingMode === "precise"
-                ? t("location.detecting")
-                : locatingMode === "coarse"
-                  ? t("location.detectingCoarse")
-                  : t("location.placeholder")
+              return;
             }
-            placeholderTextColor={colors.outline}
-            accessibilityLabel={t("location.placeholder")}
-            style={styles.input}
-            autoCorrect={false}
-            editable={!locating}
-          />
-          <Pressable
-            onPress={() => void locatePrecise()}
-            disabled={locating || !apiReady}
-            accessibilityLabel={t("location.useMyLocation")}
-            style={[styles.geoBtn, locating && styles.disabled]}
-          >
-            {locating ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : (
-              <FontAwesome name="location-arrow" size={18} color={colors.primary} />
-            )}
-          </Pressable>
-        </View>
-
-        {(searchingPlaces || suggestions.length > 0) && (
-          <View style={styles.suggestions}>
-            {searchingPlaces && suggestions.length === 0 ? (
-              <Text style={styles.suggestionHint}>{t("search.searching")}</Text>
-            ) : (
-              suggestions.map((place) => (
-                <Pressable
-                  key={place.id}
-                  onPress={() => selectPlace(place)}
-                  style={styles.suggestion}
-                >
-                  <FontAwesome
-                    name="map-marker"
-                    size={14}
-                    color={colors.secondary}
-                    style={{ marginTop: 2 }}
-                  />
-                  <Text style={styles.suggestionText}>{place.placeName}</Text>
-                </Pressable>
-              ))
-            )}
-          </View>
-        )}
+            selectPlace(place);
+          }}
+          placeholder={
+            locatingMode === "precise"
+              ? t("location.detecting")
+              : locatingMode === "coarse"
+                ? t("location.detectingCoarse")
+                : t("location.placeholder")
+          }
+          proximity={
+            selectedPlace
+              ? { lat: selectedPlace.lat, lon: selectedPlace.lon }
+              : result
+                ? { lat: result.origin.lat, lon: result.origin.lon }
+                : null
+          }
+          selected={Boolean(selectedPlace)}
+          editable={!locating && apiReady}
+          trailing={
+            <Pressable
+              onPress={() => void locatePrecise()}
+              disabled={locating || !apiReady}
+              accessibilityLabel={t("location.useMyLocation")}
+              style={[styles.geoBtn, locating && styles.disabled]}
+            >
+              {locating ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <FontAwesome
+                  name="location-arrow"
+                  size={18}
+                  color={colors.primary}
+                />
+              )}
+            </Pressable>
+          }
+        />
 
         <Text style={styles.label}>{t("search.whenGoing")}</Text>
+        <Text style={styles.dateRangeHint}>{dateWindow.rangeLabel}</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chipRow}
         >
           {DATE_PRESETS.map((preset) => {
-            const active = datePreset === preset;
+            const active = dateWindow.preset === preset;
             return (
               <Pressable
                 key={preset}
                 onPress={() => {
-                  setDatePreset(preset);
-                  if (selectedPlace) {
+                  const next = resolveDateWindow({
+                    preset,
+                    startDate: dateWindow.startDate,
+                    endDate: dateWindow.endDate,
+                    locale,
+                  });
+                  setDateWindow(next);
+                  if (selectedPlace && preset !== "custom") {
                     void runDiscover(selectedPlace, goal, {
-                      datePreset: preset,
+                      dateWindow: next,
                     });
                   }
                 }}
@@ -375,6 +377,125 @@ export default function DiscoverScreen() {
             );
           })}
         </ScrollView>
+
+        {dateWindow.preset === "custom" && (
+          <View style={styles.customDates}>
+            <View style={styles.customDateField}>
+              <Text style={styles.customDateLabel}>{t("dates.start")}</Text>
+              <TextInput
+                value={dateWindow.startDate}
+                onChangeText={(v) => {
+                  const raw = v.trim();
+                  if (!isDateKey(raw)) {
+                    setDateWindow((prev) => ({ ...prev, startDate: raw }));
+                    return;
+                  }
+                  const startDate = clampDateKey(raw, minDate, maxDate);
+                  const endDate =
+                    dateWindow.endDate < startDate
+                      ? startDate
+                      : isDateKey(dateWindow.endDate)
+                        ? dateWindow.endDate
+                        : startDate;
+                  setDateWindow(
+                    resolveDateWindow({
+                      preset: "custom",
+                      startDate,
+                      endDate,
+                      locale,
+                    }),
+                  );
+                }}
+                onEndEditing={() => {
+                  const next = resolveDateWindow({
+                    preset: "custom",
+                    startDate: clampDateKey(
+                      dateWindow.startDate,
+                      minDate,
+                      maxDate,
+                    ),
+                    endDate: clampDateKey(
+                      dateWindow.endDate,
+                      minDate,
+                      maxDate,
+                    ),
+                    locale,
+                  });
+                  setDateWindow(next);
+                  if (selectedPlace) {
+                    void runDiscover(selectedPlace, goal, {
+                      dateWindow: next,
+                    });
+                  }
+                }}
+                placeholder={t("mobile.isoDatePlaceholder")}
+                placeholderTextColor={colors.outline}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.dateInput}
+                accessibilityLabel={t("dates.start")}
+              />
+            </View>
+            <View style={styles.customDateField}>
+              <Text style={styles.customDateLabel}>{t("dates.end")}</Text>
+              <TextInput
+                value={dateWindow.endDate}
+                onChangeText={(v) => {
+                  const raw = v.trim();
+                  if (!isDateKey(raw)) {
+                    setDateWindow((prev) => ({ ...prev, endDate: raw }));
+                    return;
+                  }
+                  const endDate = clampDateKey(
+                    raw,
+                    isDateKey(dateWindow.startDate)
+                      ? dateWindow.startDate
+                      : minDate,
+                    maxDate,
+                  );
+                  setDateWindow(
+                    resolveDateWindow({
+                      preset: "custom",
+                      startDate: isDateKey(dateWindow.startDate)
+                        ? dateWindow.startDate
+                        : endDate,
+                      endDate,
+                      locale,
+                    }),
+                  );
+                }}
+                onEndEditing={() => {
+                  const next = resolveDateWindow({
+                    preset: "custom",
+                    startDate: clampDateKey(
+                      dateWindow.startDate,
+                      minDate,
+                      maxDate,
+                    ),
+                    endDate: clampDateKey(
+                      dateWindow.endDate,
+                      minDate,
+                      maxDate,
+                    ),
+                    locale,
+                  });
+                  setDateWindow(next);
+                  if (selectedPlace) {
+                    void runDiscover(selectedPlace, goal, {
+                      dateWindow: next,
+                    });
+                  }
+                }}
+                placeholder={t("mobile.isoDatePlaceholder")}
+                placeholderTextColor={colors.outline}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.dateInput}
+                accessibilityLabel={t("dates.end")}
+              />
+            </View>
+          </View>
+        )}
 
         <Text style={styles.label}>{t("search.howFar")}</Text>
         <ScrollView
@@ -468,10 +589,10 @@ export default function DiscoverScreen() {
           ]}
         >
           {loading ? (
-            <ActivityIndicator color={colors.onPrimary} />
+            <ActivityIndicator color={colors.onAccent} />
           ) : (
             <>
-              <FontAwesome name="search" size={16} color={colors.onPrimary} />
+              <FontAwesome name="search" size={16} color={colors.onAccent} />
               <Text style={styles.searchBtnText}>{t("search.search")}</Text>
             </>
           )}
@@ -486,6 +607,20 @@ export default function DiscoverScreen() {
         <Text style={styles.error} accessibilityRole="alert">
           {error}
         </Text>
+      )}
+
+      {paywalled && (
+        <SoftPaywall
+          quota={quota}
+          onRedeemed={() => {
+            setPaywalled(false);
+            if (selectedPlace) void runDiscover(selectedPlace, goal);
+          }}
+        />
+      )}
+
+      {quota && !paywalled && (
+        <QuotaHint remaining={quota.remaining} limit={quota.limit} />
       )}
 
       {locating && !result && (
@@ -665,11 +800,36 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   chipActive: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   chipText: { fontWeight: "600", color: colors.onSurface, fontSize: 13 },
-  chipTextActive: { color: colors.onPrimary },
+  chipTextActive: { color: colors.onAccent },
+  dateRangeHint: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: colors.onSurfaceVariant,
+    marginTop: -4,
+  },
+  customDates: { flexDirection: "row", gap: 10 },
+  customDateField: { flex: 1, gap: 4 },
+  customDateLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.onSurfaceVariant,
+    textTransform: "uppercase",
+  },
+  dateInput: {
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceContainer,
+    paddingHorizontal: 12,
+    fontSize: 15,
+    fontWeight: "600",
+    color: colors.onSurface,
+  },
   customRadius: { gap: 6 },
   customRadiusLabel: {
     fontSize: 13,
@@ -691,14 +851,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
     minHeight: 54,
     borderRadius: 16,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center",
     flexDirection: "row",
     gap: 10,
   },
   searchBtnText: {
-    color: colors.onPrimary,
+    color: colors.onAccent,
     fontSize: 16,
     fontWeight: "700",
   },

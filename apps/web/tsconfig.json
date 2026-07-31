@@ -13,6 +13,7 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    "types": ["node", "jest", "geojson"],
     "plugins": [
       {
         "name": "next"

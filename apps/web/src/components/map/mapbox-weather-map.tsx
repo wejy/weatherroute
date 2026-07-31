@@ -36,10 +36,19 @@ export function MapboxWeatherMap({
   selectedIdRef.current = selectedId;
   const ignoreMapClickUntilRef = useRef(0);
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
+  const [densePopup, setDensePopup] = useState(false);
 
   const selectedMarker: MapMarkerDto | null =
     markers.find((m) => m.id === selectedId && !m.id.startsWith("origin-")) ??
     null;
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const sync = () => setDensePopup(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   // Staggered background Wikipedia prefetch for destination pins (~8).
   useEffect(() => {
@@ -95,7 +104,7 @@ export function MapboxWeatherMap({
           type: "fill",
           source: "search-radius",
           paint: {
-            "fill-color": "#3525cd",
+            "fill-color": "#4f46e5",
             "fill-opacity": 0.08,
           },
         });
@@ -104,7 +113,7 @@ export function MapboxWeatherMap({
           type: "line",
           source: "search-radius",
           paint: {
-            "line-color": "#3525cd",
+            "line-color": "#4f46e5",
             "line-width": 2,
             "line-opacity": 0.55,
           },
@@ -158,10 +167,26 @@ export function MapboxWeatherMap({
         el.style.minHeight = "32px";
 
         const selected = selectedIdRef.current === marker.id;
+        const tone = marker.tone ?? "clear";
+        const severe = marker.condition === "storm";
+        const toneBorder = severe
+          ? "#ba1a1a"
+          : tone === "warning"
+            ? "#006591"
+            : tone === "caution"
+              ? "#f59e0b"
+              : selected
+                ? "#4f46e5"
+                : "rgba(199,196,216,.5)";
+        const warnDot =
+          tone === "warning" || tone === "caution" || severe
+            ? `<span style="position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:999px;background:${severe ? "#ba1a1a" : tone === "warning" ? "#006591" : "#f59e0b"};border:2px solid #fff;" aria-hidden="true"></span>`
+            : "";
         el.innerHTML = isOrigin
-          ? `<div style="background:#3525cd;color:#fff;border-radius:999px;padding:8px 12px;font:600 12px/1 Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.18);border:2px solid #fff;">●</div>`
-          : `<div style="display:flex;align-items:center;gap:4px;background:rgba(252,248,255,.98);border-radius:999px;padding:8px 12px;font:600 13px/1 Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.12);border:2px solid ${selected ? "#3525cd" : "rgba(199,196,216,.5)"};color:#1b1b24;transform:${selected ? "scale(1.08)" : "none"};">
+          ? `<div style="background:#4f46e5;color:#fff;border-radius:999px;padding:8px 12px;font:600 12px/1 Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.18);border:2px solid #fff;">●</div>`
+          : `<div style="position:relative;display:flex;align-items:center;gap:4px;background:rgba(252,248,255,.98);border-radius:999px;padding:6px 10px;font:600 12px/1 Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.12);border:2px solid ${toneBorder};color:#1b1b24;">
               <span>${Math.round(marker.temperatureC)}°</span>
+              ${warnDot}
             </div>`;
 
         el.addEventListener("click", (e) => {
@@ -223,7 +248,29 @@ export function MapboxWeatherMap({
         </div>
       )}
 
-      {selectedMarker && anchor && (
+      {selectedMarker && densePopup ? (
+        <>
+          <button
+            type="button"
+            className="absolute inset-0 z-30 bg-inverse-surface/20"
+            aria-label={t("map.closePopup")}
+            onClick={() => setSelectedId(null)}
+          />
+          {/* Sit in the visible mid-band: below mobile header/filters, above bottom cards */}
+          <div className="pointer-events-none absolute inset-x-3 top-[28%] z-40 max-h-[min(42%,16rem)] sm:inset-x-4">
+            <div className="pointer-events-auto max-h-full overflow-y-auto overscroll-contain rounded-xl shadow-[0px_12px_36px_rgba(0,0,0,0.2)]">
+              <MapMarkerPopup
+                dense
+                marker={selectedMarker}
+                href={destinationHref(selectedMarker.id, locationQuery)}
+                onClose={() => setSelectedId(null)}
+              />
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {selectedMarker && anchor && !densePopup ? (
         <div
           className="pointer-events-none absolute z-30"
           style={{
@@ -240,7 +287,7 @@ export function MapboxWeatherMap({
             />
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Keep marker list accessible for no-JS / SEO fallback links */}
       <ul className="sr-only">

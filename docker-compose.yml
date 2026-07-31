@@ -1,0 +1,22 @@
+# Local Postgres (avoids host :5432 conflicts — use port 5433)
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: weathertrip-postgres
+    restart: unless-stopped
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: weathertrip
+      POSTGRES_PASSWORD: weathertrip
+      POSTGRES_DB: weathertrip
+    volumes:
+      - weathertrip_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U weathertrip -d weathertrip"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  weathertrip_pgdata:

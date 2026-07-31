@@ -3,6 +3,16 @@ import "server-only";
 import { env } from "@/lib/env";
 import type { WeatherDto } from "@/lib/types";
 import { localizeDayLabels, type DateLocale } from "@/lib/dates";
+import {
+  getDictionary,
+  translateCondition,
+  translateUv,
+} from "@weathertrip/i18n";
+import {
+  readWeatherCache,
+  writeWeatherCache,
+  weatherGridKey,
+} from "@/server/dal/weather-cache";
 import { mockWeatherProvider } from "./mock";
 import { openMeteoForecastBatch, openMeteoProvider } from "./openmeteo";
 import { yrProvider } from "./yr";
@@ -11,19 +21,33 @@ import type { WeatherProvider } from "./types";
 const memoryCache = new Map<string, { expiresAt: number; value: WeatherDto }>();
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
-function cacheKey(lat: number, lon: number) {
-  return `${lat.toFixed(2)},${lon.toFixed(2)}`;
-}
-
-function remember(result: WeatherDto) {
-  memoryCache.set(cacheKey(result.place.lat, result.place.lon), {
+function remember(result: WeatherDto, provider = "open-meteo") {
+  memoryCache.set(weatherGridKey(result.place.lat, result.place.lon), {
     value: result,
     expiresAt: Date.now() + CACHE_TTL_MS,
   });
+  void writeWeatherCache(result, provider);
 }
 
 function forLocale(result: WeatherDto, locale: DateLocale = "en"): WeatherDto {
-  return localizeDayLabels(result, locale);
+  const withDays = localizeDayLabels(result, locale);
+  const dict = getDictionary(locale);
+  return {
+    ...withDays,
+    current: {
+      ...withDays.current,
+      conditionLabel: translateCondition(dict, withDays.current.condition),
+      uvLabel: translateUv(dict, withDays.current.uvIndex),
+    },
+    daily: withDays.daily.map((d) => ({
+      ...d,
+      conditionLabel: translateCondition(dict, d.condition),
+    })),
+    hourly: withDays.hourly?.map((h) => ({
+      ...h,
+      conditionLabel: translateCondition(dict, h.condition),
+    })),
+  };
 }
 
 async function withFallback(
@@ -39,6 +63,35 @@ async function withFallback(
   }
 }
 
+async function lookupCache(
+  lat: number,
+  lon: number,
+): Promise<WeatherDto | null> {
+  const key = weatherGridKey(lat, lon);
+  const mem = memoryCache.get(key);
+  if (mem && mem.expiresAt > Date.now()) {
+    const hourly = mem.value.hourly;
+    if (
+      !hourly?.length ||
+      !hourly.some((h) => h.precipitationMm != null)
+    ) {
+      memoryCache.delete(key);
+    } else {
+      return mem.value;
+    }
+  }
+
+  const fromDb = await readWeatherCache(lat, lon);
+  if (fromDb) {
+    memoryCache.set(key, {
+      value: fromDb,
+      expiresAt: Date.now() + CACHE_TTL_MS,
+    });
+    return fromDb;
+  }
+  return null;
+}
+
 export async function fetchWeather(input: {
   lat: number;
   lon: number;
@@ -46,31 +99,30 @@ export async function fetchWeather(input: {
   locale?: DateLocale;
 }): Promise<WeatherDto> {
   const locale = input.locale ?? "en";
-  const key = cacheKey(input.lat, input.lon);
-  const cached = memoryCache.get(key);
-  if (cached && cached.expiresAt > Date.now()) {
-    return forLocale(cached.value, locale);
-  }
+  const cached = await lookupCache(input.lat, input.lon);
+  if (cached) return forLocale(cached, locale);
 
   let result: WeatherDto;
+  let provider = "open-meteo";
 
   if (env.useMockWeather) {
     result = await mockWeatherProvider.getForecast(input);
+    provider = "mock";
   } else {
     try {
       result = await withFallback(openMeteoProvider, yrProvider, input);
     } catch {
       result = await mockWeatherProvider.getForecast(input);
+      provider = "mock";
     }
   }
 
-  remember(result);
+  remember(result, provider);
   return forLocale(result, locale);
 }
 
 /**
- * Fetch many forecasts: cache hits first, then one Open-Meteo batch for misses.
- * Returns results aligned with `places` (null if that location failed).
+ * Fetch many forecasts: memory + DB cache hits first, then Open-Meteo batch.
  */
 export async function fetchWeatherBatch(
   places: Array<{ lat: number; lon: number; name?: string }>,
@@ -86,15 +138,16 @@ export async function fetchWeatherBatch(
     name?: string;
   }> = [];
 
-  for (let i = 0; i < places.length; i++) {
-    const place = places[i]!;
-    const cached = memoryCache.get(cacheKey(place.lat, place.lon));
-    if (cached && cached.expiresAt > Date.now()) {
-      results[i] = forLocale(cached.value, locale);
-    } else {
-      missing.push({ index: i, ...place });
-    }
-  }
+  await Promise.all(
+    places.map(async (place, i) => {
+      const cached = await lookupCache(place.lat, place.lon);
+      if (cached) {
+        results[i] = forLocale(cached, locale);
+      } else {
+        missing.push({ index: i, ...place });
+      }
+    }),
+  );
 
   if (missing.length === 0) return results;
 
@@ -103,7 +156,7 @@ export async function fetchWeatherBatch(
       missing.map(async (m) => {
         try {
           const w = await mockWeatherProvider.getForecast(m);
-          remember(w);
+          remember(w, "mock");
           results[m.index] = forLocale(w, locale);
         } catch {
           results[m.index] = null;
@@ -129,7 +182,7 @@ export async function fetchWeatherBatch(
             name: m.name?.split(",")[0]?.trim() || w.place.name,
           },
         };
-        remember(aligned);
+        remember(aligned, "open-meteo");
         results[m.index] = forLocale(aligned, locale);
       } else {
         results[m.index] = null;
@@ -141,12 +194,12 @@ export async function fetchWeatherBatch(
       missing.map(async (m) => {
         try {
           const w = await withFallback(openMeteoProvider, yrProvider, m);
-          remember(w);
+          remember(w, "open-meteo");
           results[m.index] = forLocale(w, locale);
         } catch {
           try {
             const w = await mockWeatherProvider.getForecast(m);
-            remember(w);
+            remember(w, "mock");
             results[m.index] = forLocale(w, locale);
           } catch {
             results[m.index] = null;

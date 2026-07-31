@@ -5,6 +5,7 @@ import { env, hasMapbox } from "@/lib/env";
 import { PLACES } from "@/server/integrations/mocks/data";
 import { openMeteoSearchPlaces } from "@/server/integrations/geocoding/openmeteo";
 import { nominatimReverse } from "@/server/integrations/geocoding/nominatim";
+import { filterBlockedPlaces, isBlockedPlace } from "@/lib/geo-block";
 
 const reverseCache = new Map<string, { expiresAt: number; value: PlaceDto }>();
 const REVERSE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -52,12 +53,13 @@ export async function searchPlaces(
 
   if (mode === "precise" && hasMapbox()) {
     try {
-      const results = await mapboxSearch(q, limit, {
+      const results = await mapboxSearch(q, Math.min(limit + 5, 10), {
         types: PRECISE_TYPES,
         lang: opts.lang,
         proximity: opts.proximity,
       });
-      if (results.length > 0) return results;
+      const filtered = filterBlockedPlaces(results).slice(0, limit);
+      if (filtered.length > 0) return filtered;
     } catch (error) {
       console.warn("[geocode] Mapbox precise search failed", error);
     }
@@ -65,27 +67,29 @@ export async function searchPlaces(
 
   // Cities mode, or precise fallback when Mapbox miss/unavailable.
   try {
-    const results = await openMeteoSearchPlaces(q, limit);
-    if (results.length > 0) {
-      return results.map((p) => ({ ...p, kind: "place" as const }));
-    }
+    const results = await openMeteoSearchPlaces(q, Math.min(limit + 5, 10));
+    const filtered = filterBlockedPlaces(results)
+      .slice(0, limit)
+      .map((p) => ({ ...p, kind: "place" as const }));
+    if (filtered.length > 0) return filtered;
   } catch (error) {
     console.warn("[geocode] Open-Meteo search failed", error);
   }
 
   if (hasMapbox()) {
     try {
-      return await mapboxSearch(q, limit, {
+      const results = await mapboxSearch(q, Math.min(limit + 5, 10), {
         types: mode === "cities" ? CITY_TYPES : PRECISE_TYPES,
         lang: opts.lang,
         proximity: opts.proximity,
       });
+      return filterBlockedPlaces(results).slice(0, limit);
     } catch (error) {
       console.warn("[geocode] Mapbox search failed", error);
     }
   }
 
-  return mockSearch(q, limit);
+  return filterBlockedPlaces(mockSearch(q, limit));
 }
 
 async function mapboxSearch(
@@ -159,36 +163,123 @@ function mockSearch(query: string, limit: number): PlaceDto[] {
 export async function reverseGeocode(
   lat: number,
   lon: number,
+  lang: "en" | "fi" = "en",
 ): Promise<PlaceDto> {
-  const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+  const key = `${lat.toFixed(2)},${lon.toFixed(2)}:${lang}`;
   const cached = reverseCache.get(key);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.value;
   }
 
-  try {
-    const place = await nominatimReverse(lat, lon);
+  const remember = (place: PlaceDto) => {
     reverseCache.set(key, {
       value: place,
       expiresAt: Date.now() + REVERSE_TTL_MS,
     });
     return place;
+  };
+
+  if (hasMapbox()) {
+    try {
+      const place = await mapboxReverse(lat, lon, lang);
+      if (place && !isBlockedPlace(place)) {
+        return remember(place);
+      }
+    } catch (error) {
+      console.warn("[geocode] Mapbox reverse failed", error);
+    }
+  }
+
+  try {
+    const place = await nominatimReverse(lat, lon, lang);
+    if (isBlockedPlace(place)) {
+      throw new Error("Blocked country");
+    }
+    return remember(place);
   } catch (error) {
     console.warn("[geocode] reverse failed, using nearest mock", error);
-    return nearestMock(lat, lon);
+    return remember(nearestMock(lat, lon, lang));
   }
 }
 
-function nearestMock(lat: number, lon: number): PlaceDto {
+async function mapboxReverse(
+  lat: number,
+  lon: number,
+  lang: "en" | "fi",
+): Promise<PlaceDto | null> {
+  const url = new URL(
+    `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json`,
+  );
+  url.searchParams.set("access_token", env.mapboxToken);
+  url.searchParams.set("limit", "1");
+  // Prefer a locality / place name for the origin field (not a raw street number).
+  url.searchParams.set("types", "place,locality,neighborhood,address,poi");
+  url.searchParams.set("language", lang);
+
+  const res = await fetch(url.toString(), { next: { revalidate: 86400 } });
+  if (!res.ok) throw new Error(`Mapbox reverse ${res.status}`);
+
+  const data = (await res.json()) as {
+    features?: Array<{
+      id: string;
+      place_name: string;
+      text: string;
+      center: [number, number];
+      place_type?: string[];
+      context?: Array<{ id: string; text: string; short_code?: string }>;
+    }>;
+  };
+
+  const f = data.features?.[0];
+  if (!f) return null;
+
+  const country = f.context?.find((c) => c.id.startsWith("country"));
+  const placeFeature = f.context?.find((c) => c.id.startsWith("place"));
+  const locality = f.context?.find(
+    (c) => c.id.startsWith("locality") || c.id.startsWith("neighborhood"),
+  );
+
+  // For address/POI hits, surface the city/locality as the short name when possible.
+  const isAddressOrPoi =
+    f.place_type?.includes("address") || f.place_type?.includes("poi");
+  const name = isAddressOrPoi
+    ? locality?.text || placeFeature?.text || f.text
+    : f.text;
+
+  const placeName = isAddressOrPoi
+    ? [name, country?.text].filter(Boolean).join(", ") || f.place_name
+    : f.place_name;
+
+  const typePrefix = f.place_type?.[0] ? `${f.place_type[0]}.x` : f.id;
+
+  return {
+    id: f.id,
+    name,
+    placeName,
+    country: country?.text,
+    countryCode: country?.short_code?.toUpperCase(),
+    // Keep the precise GPS point for discover radius (not the feature centroid).
+    lat,
+    lon,
+    kind: kindFromMapboxId(typePrefix),
+  };
+}
+
+function nearestMock(
+  lat: number,
+  lon: number,
+  lang: "en" | "fi" = "en",
+): PlaceDto {
   const nearest = PLACES.reduce((best, place) => {
     const d = Math.abs(place.lat - lat) + Math.abs(place.lon - lon);
     const bestD = Math.abs(best.lat - lat) + Math.abs(best.lon - lon);
     return d < bestD ? place : best;
   });
 
+  const approx = lang === "fi" ? "noin" : "approx.";
   return {
     ...nearest,
-    placeName: `${nearest.name} (approx.)`,
+    placeName: `${nearest.name} (${approx})`,
     lat,
     lon,
     kind: "place",
@@ -203,15 +294,18 @@ export type MapboxRoute = {
   /** [lon, lat] pairs along the road / path network. */
   geometry: [number, number][];
   profile: MapboxRouteProfile;
+  /** 0 = Mapbox primary (usually fastest); 1+ = alternatives. */
+  alternativeIndex: number;
 };
 
-/** Mapbox Directions — road/path route for driving or cycling. */
-export async function getMapboxRoute(
+/** Mapbox Directions — one or more road/path routes (optional alternatives). */
+export async function getMapboxRoutes(
   from: { lon: number; lat: number },
   to: { lon: number; lat: number },
   profile: MapboxRouteProfile = "driving",
-): Promise<MapboxRoute | null> {
-  if (!hasMapbox()) return null;
+  opts?: { alternatives?: boolean },
+): Promise<MapboxRoute[]> {
+  if (!hasMapbox()) return [];
 
   const coords = `${from.lon},${from.lat};${to.lon},${to.lat}`;
   const url = new URL(
@@ -221,6 +315,9 @@ export async function getMapboxRoute(
   url.searchParams.set("geometries", "geojson");
   url.searchParams.set("overview", "full");
   url.searchParams.set("steps", "false");
+  if (opts?.alternatives) {
+    url.searchParams.set("alternatives", "true");
+  }
 
   const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
   if (!res.ok) {
@@ -236,26 +333,37 @@ export async function getMapboxRoute(
     }>;
   };
 
-  const route = data.routes?.[0];
-  if (!route?.geometry?.coordinates?.length) {
-    return null;
-  }
+  const routes = data.routes ?? [];
+  return routes
+    .filter((route) => route.geometry?.coordinates?.length)
+    .map((route, i) => ({
+      distanceKm: Math.round(route.distance / 1000),
+      durationSeconds: Math.round(route.duration),
+      geometry: route.geometry.coordinates,
+      profile,
+      alternativeIndex: i,
+    }));
+}
 
-  return {
-    distanceKm: Math.round(route.distance / 1000),
-    durationSeconds: Math.round(route.duration),
-    geometry: route.geometry.coordinates,
-    profile,
-  };
+/** Primary (usually fastest) Mapbox route. */
+export async function getMapboxRoute(
+  from: { lon: number; lat: number },
+  to: { lon: number; lat: number },
+  profile: MapboxRouteProfile = "driving",
+): Promise<MapboxRoute | null> {
+  const routes = await getMapboxRoutes(from, to, profile, {
+    alternatives: false,
+  });
+  return routes[0] ?? null;
 }
 
 /** @deprecated Prefer getMapboxRoute(..., "driving") */
 export async function getDrivingRoute(
   from: { lon: number; lat: number },
   to: { lon: number; lat: number },
-): Promise<Omit<MapboxRoute, "profile"> | null> {
+): Promise<Omit<MapboxRoute, "profile" | "alternativeIndex"> | null> {
   const route = await getMapboxRoute(from, to, "driving");
   if (!route) return null;
-  const { profile: _p, ...rest } = route;
+  const { profile: _p, alternativeIndex: _i, ...rest } = route;
   return rest;
 }

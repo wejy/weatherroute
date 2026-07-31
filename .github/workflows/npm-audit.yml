@@ -1,0 +1,28 @@
+name: npm audit
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # Weekly Monday 06:00 UTC
+    - cron: "0 6 * * 1"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Full audit report
+        run: npm audit --omit=dev || true
+      - name: Fail on critical vulnerabilities
+        # Known high findings in Next/postcss/sharp and Expo transitive deps
+        # are tracked via Dependabot; gate CI on critical only.
+        run: npm audit --omit=dev --audit-level=critical

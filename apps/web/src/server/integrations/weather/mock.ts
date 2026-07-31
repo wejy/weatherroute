@@ -1,9 +1,55 @@
 import "server-only";
 
-import type { WeatherDto, DailyForecastDto } from "@/lib/types";
+import type {
+  WeatherDto,
+  DailyForecastDto,
+  HourlyForecastDto,
+} from "@/lib/types";
 import { uvLabel } from "@/server/integrations/mocks/data";
 import type { WeatherProvider } from "./types";
 import { weekdayShort, toDateKey } from "@/lib/dates";
+
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function buildHourly(
+  baseTemp: number,
+  seed: number,
+): HourlyForecastDto[] {
+  const now = new Date();
+  now.setMinutes(0, 0, 0);
+  return Array.from({ length: 48 }, (_, i) => {
+    const t = new Date(now.getTime() + i * 60 * 60 * 1000);
+    const precip = (seed + i * 11) % 55;
+    const cond =
+      precip >= 45
+        ? ("rainy" as const)
+        : precip >= 25
+          ? ("cloudy" as const)
+          : precip >= 15
+            ? ("partly_cloudy" as const)
+            : ("sunny" as const);
+    const label =
+      cond === "rainy"
+        ? "Rainy"
+        : cond === "cloudy"
+          ? "Cloudy"
+          : cond === "partly_cloudy"
+            ? "Partly cloudy"
+            : "Sunny";
+    return {
+      time: `${toDateKey(t)}T${pad(t.getHours())}:00`,
+      temperatureC: baseTemp - Math.round(Math.sin(i / 4) * 3),
+      precipitationProbability: precip,
+      precipitationMm:
+        Math.round(((precip / 100) * (0.2 + (seed % 7) / 10)) * 10) / 10,
+      cloudCover: 20 + ((seed + i * 3) % 60),
+      condition: cond,
+      conditionLabel: label,
+    };
+  });
+}
 
 export const mockWeatherProvider: WeatherProvider = {
   name: "mock",
@@ -11,6 +57,7 @@ export const mockWeatherProvider: WeatherProvider = {
     const placeName = name ?? "Mock Location";
     const isTurku = placeName.toLowerCase().includes("turku");
     const baseTemp = isTurku ? 21 : 18 + Math.round((lat % 5) + (lon % 3));
+    const seed = Math.abs(Math.round(lat * 10 + lon * 3));
 
     const patterns = [
       { precip: 20, cloud: 40, mm: 0.4, cond: "partly_cloudy" as const, label: "Partly cloudy" },
@@ -40,6 +87,8 @@ export const mockWeatherProvider: WeatherProvider = {
       };
     });
 
+    const hourly = buildHourly(baseTemp, seed);
+
     const dto: WeatherDto = {
       place: {
         id: `mock-${lat.toFixed(3)},${lon.toFixed(3)}`,
@@ -60,10 +109,11 @@ export const mockWeatherProvider: WeatherProvider = {
         uvLabel: uvLabel(5),
         condition: "partly_cloudy",
         conditionLabel: "Scattered Clouds",
-        precipitationProbability: 20,
+        precipitationProbability: hourly[0]?.precipitationProbability ?? 20,
         cloudCover: 40,
       },
       daily: days,
+      hourly,
     };
 
     return dto;

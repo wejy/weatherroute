@@ -51,6 +51,13 @@ export function MockMap({
     origin?: string;
     lat?: number;
     lon?: number;
+    datePreset?: string;
+    startDate?: string;
+    endDate?: string;
+    distance?: string;
+    radiusKm?: number;
+    weatherGoal?: string;
+    mode?: string;
   };
 }) {
   const { locale, t } = useI18n();
@@ -62,12 +69,21 @@ export function MockMap({
     lon: 24.94,
   };
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [densePopup, setDensePopup] = useState(false);
   const selected =
     markers.find((m) => m.id === selectedId && !m.id.startsWith("origin-")) ??
     null;
   const selectedPos = selected
     ? project(selected.lat, selected.lon, center, radiusKm)
     : null;
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023px)");
+    const sync = () => setDensePopup(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
 
   useEffect(() => {
     const places = markers
@@ -126,7 +142,7 @@ export function MockMap({
 
       {showRadius && (
         <div className="pointer-events-none absolute top-1/2 left-1/2 z-10 flex aspect-square h-[min(72vw,460px)] w-[min(72vw,460px)] -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border-2 border-primary/35 bg-primary/5">
-          <div className="h-4 w-4 rounded-full border-2 border-surface bg-primary shadow-[0_0_15px_rgba(53,37,205,0.5)]" />
+          <div className="h-4 w-4 rounded-full border-2 border-surface bg-primary shadow-[0_0_15px_rgba(79,70,229,0.5)]" />
           <div className="absolute top-4 rounded-full border border-primary/20 bg-surface/80 px-3 py-1 text-sm font-medium text-primary shadow-sm backdrop-blur-sm">
             {radiusKm >= 10000
               ? t("map.global")
@@ -174,9 +190,15 @@ export function MockMap({
                 "mb-1 flex items-center gap-2 rounded-full border px-3 py-1.5 shadow-lg backdrop-blur-md transition-transform",
                 isOrigin
                   ? "border-primary/40 bg-primary text-on-primary"
-                  : isSelected
-                    ? "scale-105 border-primary bg-surface/95"
-                    : "border-outline-variant/30 bg-surface/95",
+                  :                 isSelected
+                  ? "border-primary bg-surface/95"
+                  : marker.tone === "warning" || marker.condition === "storm"
+                      ? marker.condition === "storm"
+                        ? "border-error/60 bg-surface/95"
+                        : "border-secondary/60 bg-surface/95"
+                      : marker.tone === "caution"
+                        ? "border-amber-400/70 bg-surface/95"
+                        : "border-outline-variant/30 bg-surface/95",
               )}
             >
               {!isOrigin && (
@@ -205,7 +227,28 @@ export function MockMap({
         );
       })}
 
-      {selected && selectedPos && (
+      {selected && densePopup ? (
+        <>
+          <button
+            type="button"
+            className="absolute inset-0 z-30 bg-inverse-surface/20"
+            aria-label={t("map.closePopup")}
+            onClick={() => setSelectedId(null)}
+          />
+          <div className="absolute inset-x-3 top-[28%] z-40 max-h-[min(42%,16rem)] sm:inset-x-4">
+            <div className="max-h-full overflow-y-auto overscroll-contain rounded-xl shadow-[0px_12px_36px_rgba(0,0,0,0.2)]">
+              <MapMarkerPopup
+                dense
+                marker={selected}
+                href={destinationHref(selected.id, locationQuery)}
+                onClose={() => setSelectedId(null)}
+              />
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      {selected && selectedPos && !densePopup ? (
         <div
           className="absolute z-40 -translate-x-1/2 -translate-y-[calc(100%+10px)]"
           style={{
@@ -220,7 +263,7 @@ export function MockMap({
             onClose={() => setSelectedId(null)}
           />
         </div>
-      )}
+      ) : null}
 
       <div className="absolute right-4 bottom-4 z-20 rounded-xl border border-outline-variant/20 bg-surface/90 px-3 py-2 text-xs font-medium text-on-surface-variant shadow-sm backdrop-blur-md">
         Mock map · circle = search radius from start

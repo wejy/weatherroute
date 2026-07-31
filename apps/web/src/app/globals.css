@@ -18,32 +18,39 @@
   --inverse-on-surface: #f3effc;
   --outline: #5f5e6e;
   --outline-variant: #c7c4d8;
-  --primary: #3525cd;
+  --primary: #4f46e5;
   --on-primary: #ffffff;
-  --primary-container: #4f46e5;
-  --on-primary-container: #dad7ff;
-  --primary-fixed: #e2dfff;
-  --primary-fixed-dim: #c3c0ff;
-  --on-primary-fixed: #0f0069;
-  --on-primary-fixed-variant: #3323cc;
-  --inverse-primary: #c3c0ff;
+  --primary-container: #6366f1;
+  --on-primary-container: #e0e7ff;
+  --primary-fixed: #e0e7ff;
+  --primary-fixed-dim: #c7d2fe;
+  --on-primary-fixed: #1e1b4b;
+  --on-primary-fixed-variant: #4338ca;
+  --inverse-primary: #a5b4fc;
+  /* CTA / active filter accent (yellow-500) */
+  --accent: #eab308;
+  --on-accent: #422006;
+  --accent-container: #ca8a04;
+  --on-accent-container: #422006;
+  --accent-fixed: #fef08c;
+  --accent-fixed-dim: #fde047;
   --secondary: #006591;
   --on-secondary: #ffffff;
   --secondary-container: #39b8fd;
   --on-secondary-container: #004666;
   --secondary-fixed: #c9e6ff;
   --secondary-fixed-dim: #89ceff;
-  --tertiary: #005338;
-  --on-tertiary: #ffffff;
-  --tertiary-container: #006e4b;
-  --on-tertiary-container: #67f4b7;
-  --tertiary-fixed: #6ffbbe;
-  --tertiary-fixed-dim: #4edea3;
+  --tertiary: #38bdf8;
+  --on-tertiary: #0c4a6e;
+  --tertiary-container: #0ea5e9;
+  --on-tertiary-container: #082f49;
+  --tertiary-fixed: #e0f2fe;
+  --tertiary-fixed-dim: #7dd3fc;
   --error: #ba1a1a;
   --on-error: #ffffff;
   --error-container: #ffdad6;
   --on-error-container: #93000a;
-  --focus-ring: #3525cd;
+  --focus-ring: #4f46e5;
 }
 
 @theme inline {
@@ -73,6 +80,12 @@
   --color-on-primary-fixed: var(--on-primary-fixed);
   --color-on-primary-fixed-variant: var(--on-primary-fixed-variant);
   --color-inverse-primary: var(--inverse-primary);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-accent-container: var(--accent-container);
+  --color-on-accent-container: var(--on-accent-container);
+  --color-accent-fixed: var(--accent-fixed);
+  --color-accent-fixed-dim: var(--accent-fixed-dim);
   --color-secondary: var(--secondary);
   --color-on-secondary: var(--on-secondary);
   --color-secondary-container: var(--secondary-container);

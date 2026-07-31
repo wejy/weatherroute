@@ -3,15 +3,11 @@
 import {
   DEFAULT_TRAVEL_MODE,
   TRAVEL_MODES,
+  travelModeIcon,
   type TravelMode,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/components/i18n/locale-provider";
-
-const MODE_ICONS: Record<TravelMode, string> = {
-  driving: "directions_car",
-  cycling: "directions_bike",
-};
 
 export function TravelModeSelector({
   value,
@@ -49,12 +45,12 @@ export function TravelModeSelector({
               "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md font-semibold transition-colors",
               size === "sm" ? "px-2 py-1.5 text-sm" : "px-3 py-2 text-sm",
               selected
-                ? "bg-primary text-on-primary shadow-sm"
+                ? "bg-accent text-on-accent shadow-sm"
                 : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface",
             )}
           >
             <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
-              {MODE_ICONS[m]}
+              {travelModeIcon(m)}
             </span>
             <span>
               {m === "driving" ? t("travel.driving") : t("travel.cycling")}

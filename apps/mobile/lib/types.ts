@@ -91,6 +91,62 @@ export interface DiscoverResultDto {
   originForecast?: PeriodWeatherDto;
 }
 
+export type TravelMode = "driving" | "cycling";
+export type RoutePrefer = "fast" | "weather";
+export type WeatherTone = "clear" | "caution" | "warning";
+
+export interface WeatherAdvisoryDto {
+  id: string;
+  severity: "info" | "caution" | "warning";
+  title: string;
+  detail: string;
+}
+
+export interface RouteWaypointDto {
+  name: string;
+  role: "start" | "midpoint" | "destination";
+  timeLabel: string;
+  lat: number;
+  lon: number;
+  temperatureC: number;
+  condition: WeatherCondition;
+  rainProbability: number;
+  precipitationMm?: number;
+  tone: WeatherTone;
+  advisories: WeatherAdvisoryDto[];
+}
+
+export interface RouteAlternativeDto {
+  index: number;
+  distanceKm: number;
+  durationLabel: string;
+  durationMinutes: number;
+  dryness: number;
+  avgRainProbability: number;
+  selected: boolean;
+  isFastest: boolean;
+  isDriest: boolean;
+}
+
+export interface RouteDto {
+  id: string;
+  title: string;
+  from: PlaceDto;
+  to: PlaceDto;
+  distanceKm: number;
+  durationLabel: string;
+  travelMode?: TravelMode;
+  dryTripGuarantee: number;
+  bestDeparture: string;
+  departureHint: string;
+  waypoints: RouteWaypointDto[];
+  prefer?: RoutePrefer;
+  alternativesCompared?: number;
+  weatherRouteSelected?: boolean;
+  minutesVsFastest?: number | null;
+  alternatives?: RouteAlternativeDto[];
+}
+
 export interface WeatherDto {
   place: PlaceDto;
   provider: string;

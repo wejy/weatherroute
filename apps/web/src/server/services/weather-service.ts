@@ -29,14 +29,16 @@ import {
   DESTINATION_CATALOG,
   findPlace,
 } from "@/server/integrations/mocks/data";
+import { placeholderImageFor } from "@/server/integrations/places/candidates";
+import { buildWeatherAdvisories } from "@/lib/weather-advisories";
+import { weatherTone } from "@/lib/weather-tone";
+import { placesWithinRadius } from "@/server/dal/places";
+import { enrichDestinationImages, resolveDestinationImageUrl } from "@/server/services/place-images";
 import {
-  citiesWithinRadius,
-  placeholderImageFor,
-} from "@/server/integrations/places/candidates";
-import {
-  resolveRadiusKm,
-  DISCOVER_WEATHER_CANDIDATE_LIMIT,
-} from "@/lib/distance";
+  resolveDiscoverLimits,
+  weatherLimitForRadius,
+} from "@/server/dal/discover-limits";
+import { resolveRadiusKm } from "@/lib/distance";
 import { formatTravelDuration } from "@/lib/utils";
 
 function scoreWeather(
@@ -273,9 +275,12 @@ export async function discoverDestinations(
     locale,
   });
 
-  const candidates = citiesWithinRadius(origin, radiusKm, {
+  const limits = await resolveDiscoverLimits();
+  const weatherLimit = weatherLimitForRadius(radiusKm, limits.weather);
+
+  const candidates = await placesWithinRadius(origin, radiusKm, {
     excludeName: origin.name,
-    limit: DISCOVER_WEATHER_CANDIDATE_LIMIT,
+    limit: weatherLimit,
   });
 
   const catalogById = new Map(DESTINATION_CATALOG.map((d) => [d.id, d]));
@@ -293,6 +298,7 @@ export async function discoverDestinations(
   const originWeather = weatherBatch[0] ?? null;
   const candidateWeather = weatherBatch.slice(1);
 
+  const seenDestKeys = new Set<string>();
   const destinations: DestinationDto[] = candidates
     .flatMap((city, i) => {
       const weather = candidateWeather[i];
@@ -322,8 +328,15 @@ export async function discoverDestinations(
         imageUrl: catalog?.imageUrl ?? placeholderImageFor(city.id),
         description:
           catalog?.description ??
-          `${Math.round(city.distanceKm)} km from ${origin.name}`,
-        driveDurationLabel: formatTravelDuration(city.distanceKm, travelMode),
+          (locale === "fi"
+            ? `${Math.round(city.distanceKm)} km paikasta ${origin.name}`
+            : `${Math.round(city.distanceKm)} km from ${origin.name}`),
+        driveDurationLabel: formatTravelDuration(
+          city.distanceKm,
+          travelMode,
+          locale,
+        ),
+        travelMode,
         tempSeries,
         current: {
           temperatureC: weather.current.temperatureC,
@@ -347,7 +360,27 @@ export async function discoverDestinations(
       ];
     })
     .sort((a, b) => b.score - a.score || a.dest.distanceKm - b.dest.distanceKm)
-    .map(({ dest }) => dest);
+    .flatMap(({ dest }) => {
+      const nameKey = dest.name
+        .normalize("NFD")
+        .replace(/\p{M}/gu, "")
+        .toLowerCase()
+        .trim();
+      const geoKey = `${dest.lat.toFixed(2)},${dest.lon.toFixed(2)}`;
+      if (seenDestKeys.has(dest.id) || seenDestKeys.has(nameKey) || seenDestKeys.has(geoKey)) {
+        return [];
+      }
+      seenDestKeys.add(dest.id);
+      seenDestKeys.add(nameKey);
+      seenDestKeys.add(geoKey);
+      return [dest];
+    })
+    .slice(0, limits.display);
+
+  const destinationsWithImages = await enrichDestinationImages(destinations, {
+    locale,
+    curatedById: catalogById,
+  });
 
   const mapMarkers: MapMarkerDto[] = [
     {
@@ -357,11 +390,11 @@ export async function discoverDestinations(
       lon: origin.lon,
       temperatureC:
         originWeather?.current.temperatureC ??
-        destinations[0]?.current.temperatureC ??
+        destinationsWithImages[0]?.current.temperatureC ??
         18,
       condition: originWeather?.current.condition ?? "partly_cloudy",
     },
-    ...destinations.slice(0, 8).map((d) => ({
+    ...destinationsWithImages.map((d) => ({
       id: d.id,
       name: d.name,
       lat: d.lat,
@@ -378,7 +411,9 @@ export async function discoverDestinations(
       conditionLabel: d.forecast.conditionLabel,
       distanceKm: d.distanceKm,
       driveDurationLabel: d.driveDurationLabel,
+      travelMode: d.travelMode,
       tempSeries: d.tempSeries,
+      tone: weatherTone(d.rainProbability, d.condition),
     })),
   ];
 
@@ -392,7 +427,7 @@ export async function discoverDestinations(
     startDate: dateWindow.startDate,
     endDate: dateWindow.endDate,
     radiusKm,
-    destinations,
+    destinations: destinationsWithImages,
     mapMarkers,
     originCurrent: originWeather
       ? {
@@ -433,6 +468,22 @@ export function buildSuitability(
         "suitability.photoDesc": "Excellent visibility and soft light.",
         "suitability.wetTitle": "Pack a raincoat",
         "suitability.wetDesc": "{pct}% chance of heavy showers.",
+        "advisory.stormTitle": "Thunderstorm risk",
+        "advisory.stormDesc": "Expect thunderstorms — delay travel if you can.",
+        "advisory.snowTitle": "Snow / icy conditions",
+        "advisory.snowDesc": "Snow expected — allow extra travel time.",
+        "advisory.fogTitle": "Fog / low visibility",
+        "advisory.fogDesc": "Reduced visibility — drive carefully.",
+        "advisory.rainTitle": "Heavy rain likely",
+        "advisory.rainCautionTitle": "Showers possible",
+        "advisory.rainDesc": "{pct}% chance of rain.",
+        "advisory.windTitle": "Strong wind",
+        "advisory.windCautionTitle": "Windy",
+        "advisory.windDesc": "Wind around {speed} km/h.",
+        "advisory.heatTitle": "High temperature",
+        "advisory.heatDesc": "Around {temp}°C — stay hydrated.",
+        "advisory.coldTitle": "Very cold",
+        "advisory.coldDesc": "Around {temp}°C — dress warmly.",
       };
       let s = fallback[key] ?? key;
       if (vars) {
@@ -477,6 +528,38 @@ export function buildSuitability(
     });
   }
 
+  // Forecast-derived advisories (storm / snow / fog / wind / heat / cold).
+  const worstDaily = [...daily].sort(
+    (a, b) => b.precipitationProbability - a.precipitationProbability,
+  )[0];
+  const advisorySource = {
+    rainProbability: Math.max(
+      current.precipitationProbability,
+      worstDaily?.precipitationProbability ?? 0,
+    ),
+    condition:
+      current.condition === "storm" ||
+      current.condition === "snow" ||
+      current.condition === "fog"
+        ? current.condition
+        : (worstDaily?.condition ?? current.condition),
+    temperatureC: current.temperatureC,
+    windSpeedKmh: current.windSpeedKmh,
+  };
+  for (const a of buildWeatherAdvisories(advisorySource, tr)) {
+    // Avoid duplicating the wet-day umbrella badge for generic rain.
+    if (a.id === "rain" && wetDay) continue;
+    if (a.id === "rain-moderate" && wetDay) continue;
+    if (a.id === "rain-condition" && wetDay) continue;
+    badges.push({
+      id: a.id,
+      tone: a.tone === "warning" ? "warning" : "info",
+      icon: a.icon,
+      title: a.title,
+      description: a.description,
+    });
+  }
+
   return badges;
 }
 
@@ -486,26 +569,53 @@ export async function getDestinationBySlug(slug: string) {
   );
   if (fromCatalog) return fromCatalog;
 
-  const { WORLD_CITIES } = await import(
-    "@/server/integrations/places/candidates"
-  );
-  const city = WORLD_CITIES.find((c) => c.id === slug);
-  if (!city) return undefined;
+  const { getPlaceById } = await import("@/server/dal/places");
+  const { isBlockedPlace } = await import("@/lib/geo-block");
+  const place = await getPlaceById(slug);
+  if (!place) return undefined;
+
+  if (
+    isBlockedPlace({
+      country: "country" in place ? place.country : null,
+      countryCode: "countryCode" in place ? place.countryCode : null,
+      placeName: "placeName" in place ? place.placeName : null,
+    })
+  ) {
+    return undefined;
+  }
+
+  const id = "id" in place ? place.id : slug;
+  const name = place.name;
+  const placeName = "placeName" in place ? place.placeName : name;
+  const country =
+    ("country" in place && place.country) ||
+    ("countryCode" in place && place.countryCode) ||
+    "";
+  const lat = place.lat;
+  const lon = place.lon;
+
+  const imageUrl = await resolveDestinationImageUrl({
+    id,
+    name,
+    placeName,
+    lat,
+    lon,
+  });
 
   return {
-    id: city.id,
-    slug: city.id,
-    name: city.name,
-    country: city.country ?? "",
-    placeName: city.placeName,
-    lat: city.lat,
-    lon: city.lon,
+    id,
+    slug: id,
+    name,
+    country,
+    placeName,
+    lat,
+    lon,
     distanceKm: 0,
     temperatureC: 18,
     condition: "partly_cloudy" as const,
     conditionLabel: "Partly cloudy",
     rainProbability: 20,
     sunshineScore: 60,
-    imageUrl: placeholderImageFor(city.id),
+    imageUrl,
   };
 }

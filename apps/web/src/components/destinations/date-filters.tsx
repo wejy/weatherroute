@@ -107,7 +107,7 @@ export function DestinationDateFilters({
               className={cn(
                 "flex min-h-11 items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition-all hover:-translate-y-0.5 active:scale-95 motion-reduce:transform-none",
                 active
-                  ? "border-primary-fixed bg-primary text-on-primary shadow-md shadow-primary/25"
+                  ? "border-accent-fixed bg-accent text-on-accent shadow-md shadow-accent/25"
                   : "border-outline-variant/30 bg-surface text-on-surface hover:bg-surface-container-low",
               )}
             >

@@ -10,6 +10,7 @@ import {
 } from "@/server/services/weather-service";
 import { TopNav, BottomNav } from "@/components/layout/top-nav";
 import { ForecastCharts } from "@/components/destinations/forecast-charts";
+import { DestinationWikipedia } from "@/components/destinations/destination-wikipedia";
 import { DestinationDateFilters } from "@/components/destinations/date-filters";
 import { saveTripAction } from "@/server/actions/trips";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
@@ -21,8 +22,12 @@ import {
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator, translateCondition, translateUv } from "@/i18n/translate";
 import { routesHref } from "@/lib/discover-query";
+import { haversineKm } from "@/server/integrations/mocks/data";
+import { getDestinationWikipediaSummary } from "@/server/services/destination-wikipedia";
 
 export const dynamic = "force-dynamic";
+
+const HELSINKI = { lat: 60.1699, lon: 24.9384 };
 
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -66,18 +71,44 @@ export default async function DestinationPage({
     parseDatePreset(first(raw.datePreset)) ??
     (startDate ? "custom" : "weekend");
   const originName = first(raw.origin) || first(raw.from) || "Helsinki";
-  const originLat = first(raw.lat);
-  const originLon = first(raw.lon);
+  const originLatRaw = first(raw.lat) ?? first(raw.fromLat);
+  const originLonRaw = first(raw.lon) ?? first(raw.fromLon);
+  const parsedOriginLat = originLatRaw != null ? Number(originLatRaw) : NaN;
+  const parsedOriginLon = originLonRaw != null ? Number(originLonRaw) : NaN;
+  const originLat = Number.isFinite(parsedOriginLat)
+    ? parsedOriginLat
+    : HELSINKI.lat;
+  const originLon = Number.isFinite(parsedOriginLon)
+    ? parsedOriginLon
+    : HELSINKI.lon;
+  const modeRaw = first(raw.mode);
+  const mode =
+    modeRaw === "cycling" || modeRaw === "driving" ? modeRaw : "driving";
 
   const dest = await getDestinationBySlug(slug);
   if (!dest) notFound();
 
+  const distanceKm = Math.round(
+    haversineKm(
+      { lat: originLat, lon: originLon },
+      { lat: dest.lat, lon: dest.lon },
+    ),
+  );
+
   const locale = await getLocale();
+  const wikiLang = locale === "fi" ? "fi" : "en";
   const weather = await getWeatherForPlace({
     lat: dest.lat,
     lon: dest.lon,
     name: dest.placeName,
     locale,
+  });
+  const wikipedia = await getDestinationWikipediaSummary({
+    placeId: dest.id,
+    name: dest.placeName,
+    lat: dest.lat,
+    lon: dest.lon,
+    lang: wikiLang,
   });
   const dict = getDictionary(locale);
   const t = createTranslator(dict);
@@ -105,17 +136,21 @@ export default async function DestinationPage({
             src={dest.imageUrl}
             alt={dest.placeName}
             fill
+            unoptimized={
+              dest.imageUrl.startsWith("http://") ||
+              dest.imageUrl.startsWith("https://")
+            }
             className="object-cover"
             priority
             sizes="100vw"
           />
           <div className="absolute inset-0 z-10 bg-gradient-to-t from-inverse-surface/80 via-inverse-surface/30 to-transparent" />
           <div className="relative z-20 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
-            <div className="text-on-tertiary">
+            <div className="text-inverse-on-surface">
               <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
                 {dest.name}, {countryLabel}
               </h1>
-              <p className="mt-2 text-lg text-on-tertiary/80">
+              <p className="mt-2 text-lg text-inverse-on-surface/80">
                 {t("destination.nowPrefix")}{" "}
                 {translateCondition(dict, weather.current.condition)} •{" "}
                 {t("destination.feelsLike", {
@@ -130,7 +165,7 @@ export default async function DestinationPage({
               >
                 {weatherIcon(weather.current.condition)}
               </span>
-              <span className="text-4xl font-bold text-on-tertiary md:text-5xl">
+              <span className="text-4xl font-bold text-inverse-on-surface md:text-5xl">
                 {formatTemp(weather.current.temperatureC)}C
               </span>
             </div>
@@ -245,6 +280,14 @@ export default async function DestinationPage({
                 </div>
               ))}
             </section>
+
+            {wikipedia ? (
+              <DestinationWikipedia
+                summary={wikipedia}
+                title={t("destination.wikipediaTitle", { place: dest.name })}
+                linkLabel={t("destination.wikipediaLink")}
+              />
+            ) : null}
           </div>
 
           <div className="space-y-8 lg:col-span-4">
@@ -315,12 +358,22 @@ export default async function DestinationPage({
                 />
                 <input type="hidden" name="destinationLat" value={dest.lat} />
                 <input type="hidden" name="destinationLon" value={dest.lon} />
+                <input type="hidden" name="originLat" value={originLat} />
+                <input type="hidden" name="originLon" value={originLon} />
                 <input type="hidden" name="weatherGoal" value="best" />
-                <input
-                  type="hidden"
-                  name="distanceKm"
-                  value={dest.distanceKm}
-                />
+                <input type="hidden" name="travelMode" value={mode} />
+                <input type="hidden" name="datePreset" value={datePreset} />
+                {window.startDate ? (
+                  <input
+                    type="hidden"
+                    name="startDate"
+                    value={window.startDate}
+                  />
+                ) : null}
+                {window.endDate ? (
+                  <input type="hidden" name="endDate" value={window.endDate} />
+                ) : null}
+                <input type="hidden" name="distanceKm" value={distanceKm} />
                 <button
                   type="submit"
                   className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-on-primary shadow-sm transition-colors hover:bg-primary-container"
@@ -335,9 +388,16 @@ export default async function DestinationPage({
                 href={routesHref({
                   from: originName,
                   to: dest.name,
+                  datePreset,
+                  startDate: window.startDate,
+                  endDate: window.endDate,
+                  distance: first(raw.distance),
+                  radiusKm: first(raw.radiusKm),
+                  weatherGoal: first(raw.weatherGoal),
                   origin: originName,
                   lat: originLat,
                   lon: originLon,
+                  mode,
                 })}
                 className="flex w-full items-center justify-center gap-2 rounded-lg border border-secondary bg-transparent px-4 py-3 text-sm font-medium text-secondary transition-colors hover:bg-secondary-container/10"
               >

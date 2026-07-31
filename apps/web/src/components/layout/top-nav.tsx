@@ -14,7 +14,11 @@ function NavLinks({
   links: Array<{ href: string; label: string }>;
 }) {
   return (
-    <nav className="hidden items-center gap-8 md:flex" aria-label="WeatherTrip">
+    <nav
+      data-testid="top-nav-links"
+      className="hidden items-center gap-8 md:flex"
+      aria-label="WeatherTrip"
+    >
       {links.map((link) => {
         const preserve =
           link.href === "/" || link.href === "/map" || link.href === "/routes";
@@ -66,6 +70,7 @@ export async function TopNav({ active }: { active?: string }) {
       <Suspense fallback={null}>
         <DiscoverQueryLink
           href="/"
+          data-testid="site-brand"
           className="group flex items-center gap-2 text-xl font-bold text-primary md:text-[32px] md:leading-10"
         >
           <span
@@ -85,12 +90,12 @@ export async function TopNav({ active }: { active?: string }) {
       <div className="flex items-center gap-3">
         <LanguageSwitcher />
         <Link
-          href="/login"
-          aria-label={t("nav.profile")}
+          href="/settings"
+          aria-label={t("nav.sideSettings")}
           className="flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/30 bg-surface-container-low text-on-surface-variant shadow-sm transition-colors hover:bg-surface-container hover:text-primary-container"
         >
           <span className="material-symbols-outlined text-2xl" aria-hidden="true">
-            account_circle
+            settings
           </span>
         </Link>
       </div>
@@ -110,6 +115,7 @@ export async function BottomNav({ active }: { active?: string }) {
 
   return (
     <nav
+      data-testid="bottom-nav"
       className="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around rounded-t-xl bg-surface/95 px-2 pt-2 pb-4 shadow-[0px_-4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl lg:hidden"
       aria-label={t("brand")}
     >

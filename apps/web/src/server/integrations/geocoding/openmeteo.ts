@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { PlaceDto } from "@/lib/types";
+import { filterBlockedPlaces } from "@/lib/geo-block";
 
 interface OpenMeteoGeocodeResult {
   id: number;
@@ -41,7 +42,7 @@ export async function openMeteoSearchPlaces(
 
   const url = new URL("https://geocoding-api.open-meteo.com/v1/search");
   url.searchParams.set("name", q);
-  url.searchParams.set("count", String(Math.min(limit, 10)));
+  url.searchParams.set("count", String(Math.min(Math.max(limit, 5), 10)));
   url.searchParams.set("language", "en");
   url.searchParams.set("format", "json");
 
@@ -55,5 +56,8 @@ export async function openMeteoSearchPlaces(
   }
 
   const data = (await res.json()) as OpenMeteoGeocodeResponse;
-  return (data.results ?? []).map(toPlace);
+  return filterBlockedPlaces((data.results ?? []).map(toPlace)).slice(
+    0,
+    limit,
+  );
 }

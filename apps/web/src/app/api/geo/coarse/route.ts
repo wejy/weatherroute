@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getClientIp } from "@/lib/client-ip";
 import { rateLimit } from "@/lib/rate-limit";
 import {
   seedForCountryCode,
@@ -6,12 +7,6 @@ import {
   toCoarseResult,
   type CoarseGeoResult,
 } from "@/lib/coarse-geo";
-
-function clientIp(request: NextRequest): string | null {
-  const forwarded = request.headers.get("x-forwarded-for");
-  if (forwarded) return forwarded.split(",")[0]?.trim() || null;
-  return request.headers.get("x-real-ip");
-}
 
 function countryFromHeaders(request: NextRequest): string | null {
   const keys = [
@@ -74,8 +69,8 @@ async function lookupIpCountry(ip: string | null): Promise<{
 }
 
 export async function GET(request: NextRequest) {
-  const ip = clientIp(request) ?? "local";
-  const limited = rateLimit(`coarse-geo:${ip}`, 40);
+  const ip = getClientIp(request);
+  const limited = await rateLimit(`coarse-geo:${ip}`, 40);
   if (!limited.ok) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
@@ -94,7 +89,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!result) {
-    const lookedUp = await lookupIpCountry(clientIp(request));
+    const lookedUp = await lookupIpCountry(ip === "local" ? null : ip);
     if (lookedUp?.countryCode) {
       const seed = seedForCountryCode(lookedUp.countryCode);
       // Prefer live city coords when the IP lookup is more precise than the seed.

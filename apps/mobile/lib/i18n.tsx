@@ -7,18 +7,20 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { ActivityIndicator, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Localization from "expo-localization";
 import {
   createTranslator,
-  defaultLocale,
   getDictionary,
   localeFromTag,
   translateCondition,
+  translateUv,
   type Dictionary,
   type Locale,
   type Translator,
 } from "@weathertrip/i18n";
+import { colors } from "@/constants/Colors";
 
 const STORAGE_KEY = "wt_locale";
 
@@ -30,7 +32,8 @@ function deviceLocale(): Locale {
     const hit = localeFromTag(tag);
     if (hit) return hit;
   }
-  return defaultLocale;
+  // Prefer Finnish for FI-region devices that only expose region, else EN.
+  return "en";
 }
 
 type I18nContextValue = {
@@ -41,21 +44,26 @@ type I18nContextValue = {
   translateCondition: (
     condition: keyof Dictionary["conditions"],
   ) => string;
+  translateUv: (uvIndex: number) => string;
 };
 
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>(defaultLocale);
+  // Start from device language so FI users don't flash English before AsyncStorage loads.
+  const [locale, setLocaleState] = useState<Locale>(() => deviceLocale());
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     void (async () => {
-      const stored = await AsyncStorage.getItem(STORAGE_KEY);
-      if (stored === "en" || stored === "fi") {
-        setLocaleState(stored);
-        return;
+      try {
+        const stored = await AsyncStorage.getItem(STORAGE_KEY);
+        if (stored === "en" || stored === "fi") {
+          setLocaleState(stored);
+        }
+      } finally {
+        setHydrated(true);
       }
-      setLocaleState(deviceLocale());
     })();
   }, []);
 
@@ -74,8 +82,24 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       setLocale,
       translateCondition: (condition: keyof Dictionary["conditions"]) =>
         translateCondition(dict, condition),
+      translateUv: (uvIndex: number) => translateUv(dict, uvIndex),
     };
   }, [locale, setLocale]);
+
+  if (!hydrated) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: colors.background,
+        }}
+      >
+        <ActivityIndicator color={colors.primary} />
+      </View>
+    );
+  }
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

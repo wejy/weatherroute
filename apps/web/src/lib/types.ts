@@ -40,6 +40,11 @@ export function isTravelMode(value: string | undefined | null): value is TravelM
   return value === "driving" || value === "cycling";
 }
 
+/** Material Symbols icon name for a travel mode. */
+export function travelModeIcon(mode: TravelMode | string | undefined | null): string {
+  return mode === "cycling" ? "directions_bike" : "directions_car";
+}
+
 export interface Coordinates {
   lat: number;
   lon: number;
@@ -84,6 +89,19 @@ export interface DailyForecastDto {
   conditionLabel: string;
 }
 
+/** Hourly slot from the forecast provider (local timezone ISO-ish strings). */
+export interface HourlyForecastDto {
+  /** Local time, typically `YYYY-MM-DDTHH:00` */
+  time: string;
+  temperatureC: number;
+  precipitationProbability: number;
+  /** Expected precipitation for this hour (mm), when the provider supplies it. */
+  precipitationMm?: number;
+  cloudCover: number;
+  condition: WeatherCondition;
+  conditionLabel: string;
+}
+
 export interface PeriodWeatherDto {
   label: string;
   rangeLabel: string;
@@ -108,6 +126,8 @@ export interface WeatherDto {
   fetchedAt: string;
   current: CurrentWeatherDto;
   daily: DailyForecastDto[];
+  /** Next ~48h when the provider supplies it (used for route dryness). */
+  hourly?: HourlyForecastDto[];
 }
 
 export interface DestinationDto {
@@ -129,8 +149,10 @@ export interface DestinationDto {
   sunshineScore: number;
   imageUrl: string;
   description?: string;
-  /** Estimated drive time label from distance (e.g. "20 min"). */
+  /** Estimated travel time label from distance (e.g. "20 min"). */
   driveDurationLabel?: string;
+  /** Mode used for `driveDurationLabel`. */
+  travelMode?: TravelMode;
   /** Daily max temps in the selected window (for mini charts). */
   tempSeries?: number[];
   /** Live / now conditions at the destination. */
@@ -167,6 +189,18 @@ export interface DiscoverResultDto {
   originForecast?: PeriodWeatherDto;
 }
 
+/** Forecast-derived advisory (not official national CAP / Meteoalarm). */
+export interface WeatherAdvisoryDto {
+  id: string;
+  tone: "caution" | "warning";
+  icon: string;
+  title: string;
+  description: string;
+}
+
+/** clear / caution / warning — matches routes map legend. */
+export type WeatherTone = "clear" | "caution" | "warning";
+
 export interface MapMarkerDto {
   id: string;
   name: string;
@@ -185,7 +219,11 @@ export interface MapMarkerDto {
   conditionLabel?: string;
   distanceKm?: number;
   driveDurationLabel?: string;
+  travelMode?: TravelMode;
   tempSeries?: number[];
+  /** Corridor / forecast severity for marker chrome. */
+  tone?: WeatherTone;
+  advisories?: WeatherAdvisoryDto[];
 }
 
 export interface RouteWaypointDto {
@@ -197,6 +235,30 @@ export interface RouteWaypointDto {
   temperatureC: number;
   condition: WeatherCondition;
   rainProbability: number;
+  /** Expected precipitation around ETA (mm), when available. */
+  precipitationMm?: number;
+  tone: WeatherTone;
+  advisories: WeatherAdvisoryDto[];
+}
+
+export type RoutePrefer = "fast" | "weather";
+
+/** One Mapbox alternative considered for weather vs fast choice. */
+export interface RouteAlternativeDto {
+  index: number;
+  distanceKm: number;
+  durationLabel: string;
+  durationMinutes: number;
+  /** Dry-trip % for best departure on this corridor (when scored). */
+  dryness: number;
+  /** Average rain probability along corridor at that departure. */
+  avgRainProbability: number;
+  selected: boolean;
+  /** Shortest duration among compared alternatives. */
+  isFastest: boolean;
+  /** Highest dryness (then lowest avg rain) among alternatives. */
+  isDriest: boolean;
+  geometry: [number, number][];
 }
 
 export interface RouteDto {
@@ -214,6 +276,16 @@ export interface RouteDto {
   waypoints: RouteWaypointDto[];
   /** Road geometry as [lon, lat] pairs from Mapbox Directions (when available). */
   geometry?: [number, number][];
+  /** How this route was chosen. */
+  prefer?: RoutePrefer;
+  /** How many Mapbox alternatives were compared (incl. primary). */
+  alternativesCompared?: number;
+  /** True when weather prefer picked a non-primary alternative. */
+  weatherRouteSelected?: boolean;
+  /** Extra minutes vs the fastest alternative, when weather route is slower. */
+  minutesVsFastest?: number | null;
+  /** All Mapbox alternatives (scored when prefer=weather). */
+  alternatives?: RouteAlternativeDto[];
 }
 
 export interface TripDto {
@@ -223,8 +295,15 @@ export interface TripDto {
   destinationName: string;
   destinationLat: number;
   destinationLon: number;
+  originLat?: number | null;
+  originLon?: number | null;
   weatherGoal?: string | null;
+  travelMode?: TravelMode | string | null;
+  datePreset?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
   distanceKm?: number | null;
+  durationLabel?: string | null;
   createdAt: string;
 }
 

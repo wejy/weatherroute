@@ -65,6 +65,9 @@ export function DestinationCard({
             {destination.distanceKm > 0
               ? ` · ${destination.distanceKm} km`
               : ""}
+            {destination.driveDurationLabel
+              ? ` · ${destination.driveDurationLabel}`
+              : ""}
           </Text>
 
           <View style={styles.row}>

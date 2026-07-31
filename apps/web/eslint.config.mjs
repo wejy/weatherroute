@@ -13,6 +13,14 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
   ]),
+  {
+    rules: {
+      // eslint-plugin-react-hooks v7 (via eslint-config-next) adds React Compiler–oriented
+      // rules that flag valid Mapbox/ref-sync patterns. Keep them as warnings for now.
+      "react-hooks/set-state-in-effect": "warn",
+      "react-hooks/refs": "warn",
+    },
+  },
 ]);
 
 export default eslintConfig;

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { PlaceDto, RouteWaypointDto } from "@/lib/types";
+import type { PlaceDto, RouteAlternativeDto, RouteWaypointDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const MapboxRouteMap = dynamic(
@@ -20,10 +20,12 @@ const MapboxRouteMap = dynamic(
 function MockRouteMap({
   from,
   to,
+  waypoints,
   className,
 }: {
   from: PlaceDto;
   to: PlaceDto;
+  waypoints: RouteWaypointDto[];
   className?: string;
 }) {
   return (
@@ -50,12 +52,12 @@ function MockRouteMap({
         >
           <defs>
             <linearGradient id="route-gradient" x1="0%" y1="100%" x2="0%" y2="0%">
-              <stop offset="0%" stopColor="#4edea3" />
+              <stop offset="0%" stopColor="#38bdf8" />
               <stop offset="50%" stopColor="#f59e0b" />
-              <stop offset="100%" stopColor="#4edea3" />
+              <stop offset="100%" stopColor="#38bdf8" />
             </linearGradient>
           </defs>
-          <circle cx="150" cy="350" r="6" fill="#3525cd" />
+          <circle cx="150" cy="350" r="6" fill="#4f46e5" />
           <path
             d="M150,350 Q130,250 100,200 T50,50"
             fill="none"
@@ -63,9 +65,24 @@ function MockRouteMap({
             strokeWidth="4"
             strokeLinecap="round"
           />
-          <circle cx="50" cy="50" r="6" fill="#005338" />
+          <circle cx="50" cy="50" r="6" fill="#38bdf8" />
         </svg>
       </div>
+      {waypoints.length > 0 ? (
+        <div className="absolute top-4 left-4 right-4 flex flex-wrap gap-2">
+          {waypoints.map((wp) => (
+            <div
+              key={`${wp.name}-${wp.lat}`}
+              className="rounded-xl border border-outline-variant/30 bg-surface/95 px-3 py-2 text-xs shadow-sm backdrop-blur-md"
+            >
+              <p className="font-semibold text-on-surface">{wp.name}</p>
+              <p className="tabular-nums text-on-surface-variant">
+                {Math.round(wp.temperatureC)}° · {wp.rainProbability}%
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <div className="absolute bottom-4 left-4 right-4 rounded-xl border border-outline-variant/30 bg-surface/95 p-3 text-sm text-on-surface shadow-sm backdrop-blur-md">
         <p className="font-semibold text-on-surface">
           {from.name} → {to.name}
@@ -85,6 +102,7 @@ export function RouteMap({
   to,
   waypoints,
   geometry,
+  alternatives,
   mapboxToken,
   className,
 }: {
@@ -92,6 +110,7 @@ export function RouteMap({
   to: PlaceDto;
   waypoints: RouteWaypointDto[];
   geometry?: [number, number][];
+  alternatives?: RouteAlternativeDto[];
   mapboxToken?: string;
   className?: string;
 }) {
@@ -103,11 +122,19 @@ export function RouteMap({
         to={to}
         waypoints={waypoints}
         geometry={geometry}
+        alternatives={alternatives}
         token={token}
         className={className}
       />
     );
   }
 
-  return <MockRouteMap from={from} to={to} className={className} />;
+  return (
+    <MockRouteMap
+      from={from}
+      to={to}
+      waypoints={waypoints}
+      className={className}
+    />
+  );
 }
