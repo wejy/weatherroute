@@ -81,6 +81,8 @@ See [AGENTS.md](./AGENTS.md) and `.cursor/rules/dual-platform-i18n.mdc`:
 
 Full VPS guide (Node, Postgres, nginx/Caddy, env vars, systemd, Resend, Mapbox, Upstash): **[DEPLOYMENT.md](./DEPLOYMENT.md)**.
 
+Expo / Play Store / TestFlight (EAS Build, `EXPO_PUBLIC_API_URL`, what not to put in the app): **[EXPO_DEPLOYMENT.md](./EXPO_DEPLOYMENT.md)**.
+
 Quick env checklist before `NODE_ENV=production`:
 
 | Variable | Requirement |

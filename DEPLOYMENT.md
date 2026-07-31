@@ -1,6 +1,6 @@
 # WeatherTrip — production deployment
 
-Guide for running the **web app + API** (`apps/web`) on a Linux VPS (e.g. UpCloud, Hetzner, DigitalOcean). The Expo app (`apps/mobile`) is built separately and talks to this API via `EXPO_PUBLIC_API_URL`.
+Guide for running the **web app + API** (`apps/web`) on a Linux VPS (e.g. UpCloud, Hetzner, DigitalOcean). The Expo app (`apps/mobile`) is built separately and talks to this API via `EXPO_PUBLIC_API_URL` — see **[EXPO_DEPLOYMENT.md](./EXPO_DEPLOYMENT.md)** for store builds, EAS, and mobile env/token rules.
 
 There is **no** first-class Docker production image yet — deploy as a Node.js process behind a reverse proxy. Local Postgres is only for development (`docker compose`).
 
@@ -331,6 +331,8 @@ EXPO_PUBLIC_API_URL=https://weather.example.com
 ```
 
 Rebuild the Expo app after changing this. CORS must allow the origins your mobile WebView / Expo web uses if applicable; native `fetch` does not use browser CORS, but the API still rate-limits by IP / device header.
+
+Full mobile release process (EAS, stores, token rules): **[EXPO_DEPLOYMENT.md](./EXPO_DEPLOYMENT.md)**.
 
 ---
 
