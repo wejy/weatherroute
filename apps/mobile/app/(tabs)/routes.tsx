@@ -22,6 +22,7 @@ import {
   type DateWindow,
 } from "@/lib/dates";
 import { colors } from "@/constants/Colors";
+import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
 import type {
   PlaceDto,
   RouteAlternativeDto,
@@ -53,10 +54,6 @@ export default function RoutesScreen() {
   const [toQuery, setToQuery] = useState("");
   const [fromPlace, setFromPlace] = useState<PlaceDto | null>(null);
   const [toPlace, setToPlace] = useState<PlaceDto | null>(null);
-  const [fromSuggestions, setFromSuggestions] = useState<PlaceDto[]>([]);
-  const [toSuggestions, setToSuggestions] = useState<PlaceDto[]>([]);
-  const [searchingFrom, setSearchingFrom] = useState(false);
-  const [searchingTo, setSearchingTo] = useState(false);
   const [mode, setMode] = useState<TravelMode>("driving");
   const [dateWindow, setDateWindow] = useState<DateWindow>(() =>
     resolveDateWindow({ preset: "weekend", locale }),
@@ -65,52 +62,16 @@ export default function RoutesScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const searchPlaces = useCallback(
-    async (q: string, target: "from" | "to") => {
-      if (q.trim().length < 2 || !apiReady) {
-        if (target === "from") setFromSuggestions([]);
-        else setToSuggestions([]);
-        return;
-      }
-      if (target === "from") setSearchingFrom(true);
-      else setSearchingTo(true);
-      try {
-        const data = await apiGet<{ results?: PlaceDto[] }>("/api/search", {
-          q,
-          limit: 8,
-          mode: "precise",
-        });
-        const results = data.results?.slice(0, 8) ?? [];
-        if (target === "from") setFromSuggestions(results);
-        else setToSuggestions(results);
-      } catch {
-        if (target === "from") setFromSuggestions([]);
-        else setToSuggestions([]);
-      } finally {
-        if (target === "from") setSearchingFrom(false);
-        else setSearchingTo(false);
-      }
-    },
-    [apiReady],
-  );
-
   useEffect(() => {
-    const id = setTimeout(() => {
-      if (!fromPlace || fromQuery !== fromPlace.placeName) {
-        void searchPlaces(fromQuery, "from");
-      }
-    }, 280);
-    return () => clearTimeout(id);
-  }, [fromPlace, fromQuery, searchPlaces]);
-
-  useEffect(() => {
-    const id = setTimeout(() => {
-      if (!toPlace || toQuery !== toPlace.placeName) {
-        void searchPlaces(toQuery, "to");
-      }
-    }, 280);
-    return () => clearTimeout(id);
-  }, [toPlace, toQuery, searchPlaces]);
+    setDateWindow((prev) =>
+      resolveDateWindow({
+        preset: prev.preset,
+        startDate: prev.startDate,
+        endDate: prev.endDate,
+        locale,
+      }),
+    );
+  }, [locale]);
 
   const loadRoute = useCallback(
     async (opts?: { alt?: number; window?: DateWindow; travelMode?: TravelMode }) => {
@@ -186,72 +147,38 @@ export default function RoutesScreen() {
 
       <View style={styles.panel}>
         <Text style={styles.label}>{t("routes.from")}</Text>
-        <TextInput
+        <PlaceAutocomplete
           value={fromQuery}
-          onChangeText={(v) => {
-            setFromQuery(v);
-            setFromPlace(null);
-          }}
+          onChange={setFromQuery}
+          onPlaceSelect={setFromPlace}
           placeholder={t("routes.fromPlaceholder")}
-          placeholderTextColor={colors.outline}
-          style={styles.input}
-          autoCorrect={false}
+          selected={Boolean(fromPlace)}
+          proximity={
+            fromPlace
+              ? { lat: fromPlace.lat, lon: fromPlace.lon }
+              : toPlace
+                ? { lat: toPlace.lat, lon: toPlace.lon }
+                : null
+          }
+          editable={apiReady}
         />
-        {(searchingFrom || fromSuggestions.length > 0) && !fromPlace && (
-          <View style={styles.suggestions}>
-            {searchingFrom && fromSuggestions.length === 0 ? (
-              <Text style={styles.suggestionHint}>{t("search.searching")}</Text>
-            ) : (
-              fromSuggestions.map((place) => (
-                <Pressable
-                  key={`from-${place.id}`}
-                  onPress={() => {
-                    setFromPlace(place);
-                    setFromQuery(place.placeName);
-                    setFromSuggestions([]);
-                  }}
-                  style={styles.suggestion}
-                >
-                  <Text style={styles.suggestionText}>{place.placeName}</Text>
-                </Pressable>
-              ))
-            )}
-          </View>
-        )}
 
         <Text style={styles.label}>{t("routes.to")}</Text>
-        <TextInput
+        <PlaceAutocomplete
           value={toQuery}
-          onChangeText={(v) => {
-            setToQuery(v);
-            setToPlace(null);
-          }}
+          onChange={setToQuery}
+          onPlaceSelect={setToPlace}
           placeholder={t("routes.toPlaceholder")}
-          placeholderTextColor={colors.outline}
-          style={styles.input}
-          autoCorrect={false}
+          selected={Boolean(toPlace)}
+          proximity={
+            toPlace
+              ? { lat: toPlace.lat, lon: toPlace.lon }
+              : fromPlace
+                ? { lat: fromPlace.lat, lon: fromPlace.lon }
+                : null
+          }
+          editable={apiReady}
         />
-        {(searchingTo || toSuggestions.length > 0) && !toPlace && (
-          <View style={styles.suggestions}>
-            {searchingTo && toSuggestions.length === 0 ? (
-              <Text style={styles.suggestionHint}>{t("search.searching")}</Text>
-            ) : (
-              toSuggestions.map((place) => (
-                <Pressable
-                  key={`to-${place.id}`}
-                  onPress={() => {
-                    setToPlace(place);
-                    setToQuery(place.placeName);
-                    setToSuggestions([]);
-                  }}
-                  style={styles.suggestion}
-                >
-                  <Text style={styles.suggestionText}>{place.placeName}</Text>
-                </Pressable>
-              ))
-            )}
-          </View>
-        )}
 
         <Text style={styles.label}>{t("routes.travelMode")}</Text>
         <View style={styles.modeRow}>
@@ -355,7 +282,7 @@ export default function RoutesScreen() {
                     }),
                   );
                 }}
-                placeholder="YYYY-MM-DD"
+                placeholder={t("mobile.isoDatePlaceholder")}
                 placeholderTextColor={colors.outline}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -408,7 +335,7 @@ export default function RoutesScreen() {
                     }),
                   );
                 }}
-                placeholder="YYYY-MM-DD"
+                placeholder={t("mobile.isoDatePlaceholder")}
                 placeholderTextColor={colors.outline}
                 autoCapitalize="none"
                 autoCorrect={false}

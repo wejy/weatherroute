@@ -21,6 +21,10 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const place = await reverseGeocode(parsed.data.lat, parsed.data.lon);
+  const place = await reverseGeocode(
+    parsed.data.lat,
+    parsed.data.lon,
+    parsed.data.lang,
+  );
   return NextResponse.json({ place });
 }

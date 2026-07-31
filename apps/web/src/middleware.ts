@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { getCorsAllowedOrigins } from "@/lib/env";
+import { isCorsOriginAllowed } from "@/lib/env";
 
 /** Must match apps/web/src/server/dal/quota.ts */
 export const ANON_COOKIE = "wt_anon";
@@ -32,16 +32,15 @@ function securityHeaders(): Record<string, string> {
 
 function corsHeaders(origin: string | null): Record<string, string> | null {
   if (!origin) return null;
-  const allowed = getCorsAllowedOrigins();
-  const match = allowed.some(
-    (o) => o === origin || o === origin.replace(/\/$/, ""),
-  );
-  if (!match) return null;
+  if (!isCorsOriginAllowed(origin)) return null;
   return {
     "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, X-WeatherTrip-Device",
+    "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
+    "Access-Control-Allow-Headers":
+      "Content-Type, Authorization, X-WeatherTrip-Device, X-WeatherTrip-Session, X-WeatherTrip-Anon, Cookie",
+    "Access-Control-Allow-Credentials": "true",
     "Access-Control-Max-Age": "86400",
+    Vary: "Origin",
   };
 }
 

@@ -31,7 +31,7 @@ export default function DestinationScreen() {
     lon?: string;
     name?: string;
   }>();
-  const { t, translateCondition, locale } = useI18n();
+  const { t, translateCondition, translateUv, locale } = useI18n();
   const [weather, setWeather] = useState<WeatherDto | null>(null);
   const [wikipedia, setWikipedia] = useState<WikipediaSummary | null>(null);
   const [wikiLoading, setWikiLoading] = useState(false);
@@ -146,7 +146,7 @@ export default function DestinationScreen() {
               />
               <Metric
                 label={t("destination.uvIndex")}
-                value={`${weather.current.uvIndex} · ${weather.current.uvLabel}`}
+                value={`${weather.current.uvIndex} · ${translateUv(weather.current.uvIndex)}`}
               />
             </View>
 

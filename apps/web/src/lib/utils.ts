@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { createTranslator, getDictionary } from "@weathertrip/i18n";
 import {
   DEFAULT_TRAVEL_MODE,
   type TravelMode,
@@ -36,17 +37,19 @@ export function estimateDriveMinutes(distanceKm: number): number {
   return estimateTravelMinutes(distanceKm, "driving");
 }
 
-/** e.g. "20 min", "1 h", "1 h 10 min" */
+/** e.g. "20 min", "1 h", "1 h 10 min" — locale-aware via dictionary keys. */
 export function formatTravelDuration(
   distanceKm: number,
   mode: TravelMode = DEFAULT_TRAVEL_MODE,
+  locale: "en" | "fi" = "en",
 ): string {
   const minutes = estimateTravelMinutes(distanceKm, mode);
-  if (minutes < 60) return `${minutes} min`;
+  const t = createTranslator(getDictionary(locale));
+  if (minutes < 60) return t("routes.durationMinutes", { m: minutes });
   const hours = Math.floor(minutes / 60);
   const rem = minutes % 60;
-  if (rem === 0) return `${hours} h`;
-  return `${hours} h ${rem} min`;
+  if (rem === 0) return t("routes.durationHours", { h: hours });
+  return t("routes.durationHoursMinutes", { h: hours, m: rem });
 }
 
 /** @deprecated Prefer formatTravelDuration(distanceKm, mode) */

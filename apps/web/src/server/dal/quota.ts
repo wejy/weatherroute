@@ -64,7 +64,15 @@ async function ensureAnonSession(): Promise<{
   if (!db) return null;
 
   const jar = await cookies();
-  const cookieId = jar.get(ANON_COOKIE)?.value;
+  let cookieId = jar.get(ANON_COOKIE)?.value;
+  if (!cookieId) {
+    try {
+      const h = await headers();
+      cookieId = h.get("x-weathertrip-anon")?.trim() || undefined;
+    } catch {
+      // ignore
+    }
+  }
   if (!cookieId) return null;
 
   const [existing] = await db

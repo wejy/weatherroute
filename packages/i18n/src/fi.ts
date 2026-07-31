@@ -270,7 +270,7 @@ const fi = {
     codeLabel: "Kertakäyttökoodi",
     verifyCode: "Vahvista ja kirjaudu",
     codeSent:
-      "Koodi lähetetty osoitteeseen {email}. Tarkista inbox (tai palvelimen konsoli lokalisti).",
+      "Koodi lähetetty osoitteeseen {email}. Tarkista sähköposti (tai palvelimen konsoli lokalisti).",
     errorEmail: "Anna kelvollinen sähköposti.",
     errorSend: "Koodin lähetys epäonnistui. Yritä uudelleen.",
     errorCode: "Virheellinen tai vanhentunut koodi.",
@@ -283,14 +283,14 @@ const fi = {
   },
   settings: {
     title: "Omat asetukset",
-    subtitle: "Tili, discover-rajat, lähtöasetukset ja ulkoasu.",
+    subtitle: "Tili, hakurajat, lähtöasetukset ja ulkoasu.",
     saved: "Asetukset tallennettu.",
     save: "Tallenna",
     account: "Tili",
     notSignedIn: "Et ole kirjautunut sisään.",
     tierFree: "Tilaus: Ilmainen",
     tierPro: "Tilaus: Pro",
-    discoverTitle: "Discover-tulokset",
+    discoverTitle: "Löydä-tulokset",
     discoverHint:
       "Kuinka monta kohdetta näytetään rankingin jälkeen. Isompi määrä hakee enemmän säätä ja voi olla hieman hitaampi.",
     discoverLabel: "Näytettävät kohteet",
@@ -400,6 +400,17 @@ const fi = {
     errorGeneric: "Jokin meni pieleen. Tarkista yhteys ja API-osoite.",
     networkError:
       "Web-APIa ei tavoiteta. Varmista, että puhelin on samassa Wi‑Fissä ja EXPO_PUBLIC_API_URL osoittaa koneesi LAN-IP-osoitteeseen.",
+    mapNearbyHint:
+      "Lähialueen kohteet viimeisimmästä Löydä-hausta. Päivitä lista Löydä-välilehdellä.",
+    mapNearbyEmpty:
+      "Ei tallennettuja kohteita vielä. Tee ensin haku Löydä-välilehdellä ja palaa sitten tänne.",
+    notFoundTitle: "Hups!",
+    notFoundBody: "Tätä näyttöä ei ole.",
+    notFoundCta: "Siirry Löydä-välilehdelle",
+    here: "Täällä",
+    destinationTitle: "Kohde",
+    emailPlaceholder: "esim. nimi@osoite.fi",
+    isoDatePlaceholder: "VVVV-KK-PP",
   },
 } as const satisfies Dictionary;
 

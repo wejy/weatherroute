@@ -10,6 +10,7 @@
     "dev": "npm run dev -w @weathertrip/web",
     "dev:web": "npm run dev -w @weathertrip/web",
     "dev:mobile": "npm run start -w @weathertrip/mobile",
+    "dev:mobile:tunnel": "npm run start:tunnel -w @weathertrip/mobile",
     "build": "npm run build -w @weathertrip/web",
     "build:web": "npm run build -w @weathertrip/web",
     "lint": "npm run lint -w @weathertrip/web",

@@ -393,6 +393,17 @@ const en = {
     errorGeneric: "Something went wrong. Check your connection and API URL.",
     networkError:
       "Couldn’t reach the web API. Confirm the phone is on the same Wi‑Fi and EXPO_PUBLIC_API_URL points to your computer’s LAN IP.",
+    mapNearbyHint:
+      "Nearby destinations from your last Discover search. Open Discover to refresh results.",
+    mapNearbyEmpty:
+      "No cached destinations yet. Run a Discover search first, then return here.",
+    notFoundTitle: "Oops!",
+    notFoundBody: "This screen does not exist.",
+    notFoundCta: "Go to Discover",
+    here: "Here",
+    destinationTitle: "Destination",
+    emailPlaceholder: "you@example.com",
+    isoDatePlaceholder: "YYYY-MM-DD",
   },
 } as const;
 

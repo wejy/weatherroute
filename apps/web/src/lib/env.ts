@@ -82,13 +82,53 @@ export function getCorsAllowedOrigins(): string[] {
       .filter(Boolean);
   }
   const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+  // Expo web commonly uses 8081; also allow 19006 / 8080 / 19000 for Expo tooling.
   return [
     appUrl,
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:8081",
     "http://127.0.0.1:8081",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+    "http://localhost:19006",
+    "http://127.0.0.1:19006",
+    "http://localhost:19000",
+    "http://127.0.0.1:19000",
   ];
+}
+
+function isPrivateLanHostname(hostname: string): boolean {
+  if (hostname === "localhost" || hostname === "127.0.0.1") return true;
+  if (/^192\.168\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+  if (/^10\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) return true;
+  // RFC1918 172.16.0.0/12
+  const m = /^172\.(\d{1,3})\.\d{1,3}\.\d{1,3}$/.exec(hostname);
+  if (m) {
+    const second = Number(m[1]);
+    return second >= 16 && second <= 31;
+  }
+  return false;
+}
+
+/**
+ * Dev convenience: allow localhost / private LAN origins (Expo web often uses
+ * a free port on localhost or the machine LAN IP). Production: allowlist only.
+ */
+export function isCorsOriginAllowed(origin: string): boolean {
+  const allowed = getCorsAllowedOrigins();
+  const normalized = origin.replace(/\/$/, "");
+  if (allowed.some((o) => o === origin || o === normalized)) return true;
+  if (process.env.NODE_ENV === "production") return false;
+  try {
+    const url = new URL(origin);
+    return (
+      (url.protocol === "http:" || url.protocol === "https:") &&
+      isPrivateLanHostname(url.hostname)
+    );
+  } catch {
+    return false;
+  }
 }
 
 export const env = {

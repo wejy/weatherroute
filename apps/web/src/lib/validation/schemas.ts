@@ -21,6 +21,7 @@ export const searchQuerySchema = z.object({
 export const reverseQuerySchema = z.object({
   lat: z.coerce.number().min(-90).max(90),
   lon: z.coerce.number().min(-180).max(180),
+  lang: z.enum(["en", "fi"]).optional(),
 });
 
 /** Resolve a geocoded place onto an internal destination id. */

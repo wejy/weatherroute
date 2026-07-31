@@ -1,28 +1,104 @@
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
+import { Link, useFocusEffect } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getApiBaseUrl } from "@/lib/api";
+import {
+  fetchCurrentUser,
+  signOutRemote,
+  type SessionUser,
+} from "@/lib/session";
 import { colors } from "@/constants/Colors";
 
 export default function SettingsScreen() {
   const { t } = useI18n();
   const api = getApiBaseUrl();
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const refreshUser = useCallback(async () => {
+    setLoadingUser(true);
+    try {
+      const next = await fetchCurrentUser();
+      setUser(next);
+    } finally {
+      setLoadingUser(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshUser();
+    }, [refreshUser]),
+  );
+
+  useEffect(() => {
+    void refreshUser();
+  }, [refreshUser]);
+
+  const onSignOut = useCallback(async () => {
+    setSigningOut(true);
+    try {
+      await signOutRemote();
+      setUser(null);
+    } finally {
+      setSigningOut(false);
+    }
+  }, []);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       <Text style={styles.title}>{t("nav.sideSettings")}</Text>
+
+      <Text style={styles.label}>{t("settings.account")}</Text>
+      <View style={styles.card}>
+        {loadingUser ? (
+          <ActivityIndicator color={colors.primary} />
+        ) : user ? (
+          <>
+            <Text style={styles.cardTitle}>{user.displayName}</Text>
+            <Text style={styles.cardBody}>{user.email}</Text>
+            <Text style={styles.tier}>{t("settings.tierFree")}</Text>
+            <Pressable
+              onPress={() => void onSignOut()}
+              disabled={signingOut}
+              style={[styles.signOutBtn, signingOut && styles.disabled]}
+            >
+              {signingOut ? (
+                <ActivityIndicator color={colors.error} />
+              ) : (
+                <Text style={styles.signOutText}>{t("login.signOut")}</Text>
+              )}
+            </Pressable>
+          </>
+        ) : (
+          <>
+            <Text style={styles.cardBody}>{t("settings.notSignedIn")}</Text>
+            <Link href="/login" asChild>
+              <Pressable style={styles.signInBtn}>
+                <Text style={styles.signInText}>{t("paywall.signIn")}</Text>
+              </Pressable>
+            </Link>
+          </>
+        )}
+      </View>
 
       <Text style={styles.label}>{t("language.label")}</Text>
       <LanguageSwitcher />
 
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{t("brand")}</Text>
-        <Text style={styles.cardBody}>
-          {api || t("mobile.apiMissing")}
-        </Text>
-        {!api && (
-          <Text style={styles.hint}>{t("mobile.openWebHint")}</Text>
-        )}
+        <Text style={styles.cardBody}>{api || t("mobile.apiMissing")}</Text>
+        {!api && <Text style={styles.hint}>{t("mobile.openWebHint")}</Text>}
       </View>
     </ScrollView>
   );
@@ -43,7 +119,7 @@ const styles = StyleSheet.create({
     textTransform: "uppercase",
   },
   card: {
-    marginTop: 8,
+    marginTop: 4,
     padding: 16,
     borderRadius: 16,
     backgroundColor: colors.surfaceLowest,
@@ -52,6 +128,27 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cardTitle: { fontSize: 16, fontWeight: "700", color: colors.primary },
-  cardBody: { fontSize: 14, color: colors.onSurface, fontFamily: "monospace" },
+  cardBody: { fontSize: 14, color: colors.onSurface },
+  tier: { fontSize: 13, color: colors.onSurfaceVariant, fontWeight: "600" },
   hint: { fontSize: 13, color: colors.onSurfaceVariant },
+  signInBtn: {
+    marginTop: 4,
+    minHeight: 44,
+    borderRadius: 12,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  signInText: { color: colors.onPrimary, fontWeight: "700" },
+  signOutBtn: {
+    marginTop: 4,
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.error,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  signOutText: { color: colors.error, fontWeight: "700" },
+  disabled: { opacity: 0.55 },
 });

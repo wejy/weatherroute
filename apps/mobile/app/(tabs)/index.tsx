@@ -12,7 +12,8 @@ import {
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/lib/i18n";
-import { apiGet, getApiBaseUrl } from "@/lib/api";
+import { apiGet, getApiBaseUrl, ApiError, type PublicQuota } from "@/lib/api";
+import { saveLastDiscover } from "@/lib/discover-cache";
 import {
   detectCoarsePlace,
   detectCurrentPlace,
@@ -36,6 +37,8 @@ import {
 } from "@/lib/dates";
 import { colors } from "@/constants/Colors";
 import { DestinationCard } from "@/components/DestinationCard";
+import { SoftPaywall, QuotaHint } from "@/components/SoftPaywall";
+import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
 import type { DiscoverResultDto, PlaceDto, WeatherGoal } from "@/lib/types";
 
 const GOALS: WeatherGoal[] = ["best", "sun", "dry", "mild", "rain", "warm"];
@@ -51,8 +54,6 @@ export default function DiscoverScreen() {
 
   const [originQuery, setOriginQuery] = useState("");
   const [selectedPlace, setSelectedPlace] = useState<PlaceDto | null>(null);
-  const [suggestions, setSuggestions] = useState<PlaceDto[]>([]);
-  const [searchingPlaces, setSearchingPlaces] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locatingMode, setLocatingMode] = useState<"coarse" | "precise" | null>(
     null,
@@ -67,7 +68,20 @@ export default function DiscoverScreen() {
   const [result, setResult] = useState<DiscoverResultDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paywalled, setPaywalled] = useState(false);
+  const [quota, setQuota] = useState<PublicQuota | null>(null);
   const apiReady = Boolean(getApiBaseUrl());
+
+  useEffect(() => {
+    setDateWindow((prev) =>
+      resolveDateWindow({
+        preset: prev.preset,
+        startDate: prev.startDate,
+        endDate: prev.endDate,
+        locale,
+      }),
+    );
+  }, [locale]);
 
   const runDiscover = useCallback(
     async (
@@ -84,6 +98,7 @@ export default function DiscoverScreen() {
       const nextRadius = opts?.radiusKm ?? customRadiusKm;
       setLoading(true);
       setError(null);
+      setPaywalled(false);
       try {
         const data = await apiGet<DiscoverResultDto>("/api/discover", {
           origin: place.placeName,
@@ -101,54 +116,30 @@ export default function DiscoverScreen() {
           lang: locale,
         });
         setResult(data);
+        setQuota(null);
+        void saveLastDiscover(data);
       } catch (e) {
-        const message =
-          e instanceof Error && e.message === "MISSING_API_URL"
-            ? t("mobile.apiMissing")
-            : e instanceof Error && e.message === "NETWORK"
-              ? t("mobile.networkError")
-              : t("mobile.errorGeneric");
-        setError(message);
-        setResult(null);
+        if (e instanceof ApiError && e.isPaywall) {
+          setPaywalled(true);
+          setQuota(e.quota);
+          setResult(null);
+          setError(null);
+        } else {
+          const message =
+            e instanceof Error && e.message === "MISSING_API_URL"
+              ? t("mobile.apiMissing")
+              : e instanceof Error && e.message === "NETWORK"
+                ? t("mobile.networkError")
+                : t("mobile.errorGeneric");
+          setError(message);
+          setResult(null);
+        }
       } finally {
         setLoading(false);
       }
     },
     [customRadiusKm, dateWindow, distance, locale, t],
   );
-
-  const searchPlaces = useCallback(
-    async (q: string) => {
-      if (q.trim().length < 2 || !apiReady) {
-        setSuggestions([]);
-        setSearchingPlaces(false);
-        return;
-      }
-      setSearchingPlaces(true);
-      try {
-        const data = await apiGet<{ results?: PlaceDto[] }>("/api/search", {
-          q,
-          limit: 8,
-          mode: "precise",
-        });
-        setSuggestions(data.results?.slice(0, 8) ?? []);
-      } catch {
-        setSuggestions([]);
-      } finally {
-        setSearchingPlaces(false);
-      }
-    },
-    [apiReady],
-  );
-
-  useEffect(() => {
-    const id = setTimeout(() => {
-      if (!selectedPlace || originQuery !== selectedPlace.placeName) {
-        void searchPlaces(originQuery);
-      }
-    }, 280);
-    return () => clearTimeout(id);
-  }, [originQuery, searchPlaces, selectedPlace]);
 
   const applyPlace = useCallback(
     async (
@@ -160,7 +151,6 @@ export default function DiscoverScreen() {
     ) => {
       setSelectedPlace(place);
       setOriginQuery(place.placeName);
-      setSuggestions([]);
       if (opts?.distance) setDistance(opts.distance);
       if (opts?.andSearch !== false) {
         await runDiscover(place, goal, {
@@ -204,7 +194,7 @@ export default function DiscoverScreen() {
     setLocatingMode("precise");
     setError(null);
     try {
-      const place = await detectCurrentPlace();
+      const place = await detectCurrentPlace(t("mobile.here"), locale);
       setCoarseHint(false);
       await applyPlace(place, { andSearch: true });
     } catch (e) {
@@ -218,7 +208,7 @@ export default function DiscoverScreen() {
       setLocating(false);
       setLocatingMode(null);
     }
-  }, [apiReady, applyPlace, t]);
+  }, [apiReady, applyPlace, locale, t]);
 
   useEffect(() => {
     if (!apiReady || autoStarted.current) return;
@@ -230,7 +220,6 @@ export default function DiscoverScreen() {
     setCoarseHint(false);
     setSelectedPlace(place);
     setOriginQuery(place.placeName);
-    setSuggestions([]);
     void runDiscover(place, goal);
   }
 
@@ -245,6 +234,8 @@ export default function DiscoverScreen() {
           const data = await apiGet<{ results?: PlaceDto[] }>("/api/search", {
             q: originQuery.trim(),
             limit: 1,
+            mode: "precise",
+            lang: locale === "fi" ? "fi" : "en",
           });
           const first = data.results?.[0];
           if (!first) {
@@ -302,64 +293,54 @@ export default function DiscoverScreen() {
 
       <View style={styles.panel}>
         <Text style={styles.label}>{t("search.whereFrom")}</Text>
-        <View style={styles.inputRow}>
-          <TextInput
-            value={originQuery}
-            onChangeText={(v) => {
-              setOriginQuery(v);
+        <PlaceAutocomplete
+          value={originQuery}
+          onChange={(v) => {
+            setOriginQuery(v);
+            setCoarseHint(false);
+          }}
+          onPlaceSelect={(place) => {
+            if (!place) {
               setSelectedPlace(null);
-              setCoarseHint(false);
-            }}
-            placeholder={
-              locatingMode === "precise"
-                ? t("location.detecting")
-                : locatingMode === "coarse"
-                  ? t("location.detectingCoarse")
-                  : t("location.placeholder")
+              return;
             }
-            placeholderTextColor={colors.outline}
-            accessibilityLabel={t("location.placeholder")}
-            style={styles.input}
-            autoCorrect={false}
-            editable={!locating}
-          />
-          <Pressable
-            onPress={() => void locatePrecise()}
-            disabled={locating || !apiReady}
-            accessibilityLabel={t("location.useMyLocation")}
-            style={[styles.geoBtn, locating && styles.disabled]}
-          >
-            {locating ? (
-              <ActivityIndicator color={colors.primary} />
-            ) : (
-              <FontAwesome name="location-arrow" size={18} color={colors.primary} />
-            )}
-          </Pressable>
-        </View>
-
-        {(searchingPlaces || suggestions.length > 0) && (
-          <View style={styles.suggestions}>
-            {searchingPlaces && suggestions.length === 0 ? (
-              <Text style={styles.suggestionHint}>{t("search.searching")}</Text>
-            ) : (
-              suggestions.map((place) => (
-                <Pressable
-                  key={place.id}
-                  onPress={() => selectPlace(place)}
-                  style={styles.suggestion}
-                >
-                  <FontAwesome
-                    name="map-marker"
-                    size={14}
-                    color={colors.secondary}
-                    style={{ marginTop: 2 }}
-                  />
-                  <Text style={styles.suggestionText}>{place.placeName}</Text>
-                </Pressable>
-              ))
-            )}
-          </View>
-        )}
+            selectPlace(place);
+          }}
+          placeholder={
+            locatingMode === "precise"
+              ? t("location.detecting")
+              : locatingMode === "coarse"
+                ? t("location.detectingCoarse")
+                : t("location.placeholder")
+          }
+          proximity={
+            selectedPlace
+              ? { lat: selectedPlace.lat, lon: selectedPlace.lon }
+              : result
+                ? { lat: result.origin.lat, lon: result.origin.lon }
+                : null
+          }
+          selected={Boolean(selectedPlace)}
+          editable={!locating && apiReady}
+          trailing={
+            <Pressable
+              onPress={() => void locatePrecise()}
+              disabled={locating || !apiReady}
+              accessibilityLabel={t("location.useMyLocation")}
+              style={[styles.geoBtn, locating && styles.disabled]}
+            >
+              {locating ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <FontAwesome
+                  name="location-arrow"
+                  size={18}
+                  color={colors.primary}
+                />
+              )}
+            </Pressable>
+          }
+        />
 
         <Text style={styles.label}>{t("search.whenGoing")}</Text>
         <Text style={styles.dateRangeHint}>{dateWindow.rangeLabel}</Text>
@@ -447,7 +428,7 @@ export default function DiscoverScreen() {
                     });
                   }
                 }}
-                placeholder="YYYY-MM-DD"
+                placeholder={t("mobile.isoDatePlaceholder")}
                 placeholderTextColor={colors.outline}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -505,7 +486,7 @@ export default function DiscoverScreen() {
                     });
                   }
                 }}
-                placeholder="YYYY-MM-DD"
+                placeholder={t("mobile.isoDatePlaceholder")}
                 placeholderTextColor={colors.outline}
                 autoCapitalize="none"
                 autoCorrect={false}
@@ -626,6 +607,20 @@ export default function DiscoverScreen() {
         <Text style={styles.error} accessibilityRole="alert">
           {error}
         </Text>
+      )}
+
+      {paywalled && (
+        <SoftPaywall
+          quota={quota}
+          onRedeemed={() => {
+            setPaywalled(false);
+            if (selectedPlace) void runDiscover(selectedPlace, goal);
+          }}
+        />
+      )}
+
+      {quota && !paywalled && (
+        <QuotaHint remaining={quota.remaining} limit={quota.limit} />
       )}
 
       {locating && !result && (

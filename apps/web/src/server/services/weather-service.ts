@@ -328,8 +328,14 @@ export async function discoverDestinations(
         imageUrl: catalog?.imageUrl ?? placeholderImageFor(city.id),
         description:
           catalog?.description ??
-          `${Math.round(city.distanceKm)} km from ${origin.name}`,
-        driveDurationLabel: formatTravelDuration(city.distanceKm, travelMode),
+          (locale === "fi"
+            ? `${Math.round(city.distanceKm)} km paikasta ${origin.name}`
+            : `${Math.round(city.distanceKm)} km from ${origin.name}`),
+        driveDurationLabel: formatTravelDuration(
+          city.distanceKm,
+          travelMode,
+          locale,
+        ),
         travelMode,
         tempSeries,
         current: {

@@ -1,12 +1,14 @@
 import "server-only";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import type { UserDto } from "@/lib/types";
 import { auth, signIn, signOut as authSignOut } from "@/server/auth/auth";
 import { MOCK_USER } from "@/server/integrations/mocks/data";
 import { env, hasDatabase } from "@/lib/env";
+import { decodeAuthSessionToken } from "@/server/auth/mobile-session";
 
 const DEMO_COOKIE = "wt_session";
+const MOBILE_SESSION_HEADER = "x-weathertrip-session";
 
 function toUserDto(user: {
   id: string;
@@ -22,7 +24,27 @@ function toUserDto(user: {
   };
 }
 
+async function userFromMobileHeader(): Promise<UserDto | null> {
+  try {
+    const h = await headers();
+    const token = h.get(MOBILE_SESSION_HEADER)?.trim();
+    if (!token) return null;
+    const decoded = await decodeAuthSessionToken(token);
+    if (!decoded) return null;
+    return toUserDto({
+      id: decoded.id,
+      email: decoded.email,
+      name: decoded.name,
+    });
+  } catch {
+    return null;
+  }
+}
+
 export async function getCurrentUser(): Promise<UserDto | null> {
+  const fromHeader = await userFromMobileHeader();
+  if (fromHeader) return fromHeader;
+
   if (env.isProduction) {
     try {
       const session = await auth();

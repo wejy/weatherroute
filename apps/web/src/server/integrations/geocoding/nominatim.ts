@@ -30,6 +30,7 @@ interface NominatimReverse {
 export async function nominatimReverse(
   lat: number,
   lon: number,
+  lang: "en" | "fi" = "en",
 ): Promise<PlaceDto> {
   const url = new URL("https://nominatim.openstreetmap.org/reverse");
   url.searchParams.set("lat", String(lat));
@@ -41,6 +42,7 @@ export async function nominatimReverse(
   const res = await fetch(url.toString(), {
     headers: {
       Accept: "application/json",
+      "Accept-Language": lang === "fi" ? "fi,en" : "en",
       "User-Agent": "WeatherTrip/1.0 (https://github.com/weathertrip; demo)",
     },
     next: { revalidate: 86400 },
@@ -62,12 +64,14 @@ export async function nominatimReverse(
     addr.hamlet ||
     addr.county ||
     data.name ||
-    "Current location";
+    (lang === "fi" ? "Nykyinen sijainti" : "Current location");
 
   const placeName = [name, addr.state, addr.country].filter(Boolean).join(", ");
 
   return {
-    id: data.place_id ? `nom-${data.place_id}` : `rev-${lat.toFixed(3)},${lon.toFixed(3)}`,
+    id: data.place_id
+      ? `nom-${data.place_id}`
+      : `rev-${lat.toFixed(3)},${lon.toFixed(3)}`,
     name,
     placeName: placeName || data.display_name || name,
     country: addr.country,

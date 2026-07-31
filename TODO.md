@@ -11,15 +11,15 @@ Related: car + bike already use Mapbox `driving` / `cycling` via `getMapboxRoute
 
 ## Mobile Expo parity (phase 2–3)
 
-Expo app (`apps/mobile`, ~57) talks to web `/api/*` but is behind the web client.
+Expo app (`apps/mobile`, SDK 57) talks to web `/api/*`.
 
-- [ ] Travel mode (`driving` / `cycling`) + route screen parity
-- [ ] Anon quota / soft paywall (handle HTTP 402 from `/api/discover`) + share redeem
-- [ ] Auth.js session (SecureStore + cookie/header) / deep-link to web login
-- [ ] Map / nearby / Wikipedia popup (does not need 1:1 Mapbox on day one)
+- [x] Travel mode (`driving` / `cycling`) + route screen (API + chips)
+- [x] Anon quota / soft paywall (HTTP 402) + share create/redeem
+- [x] Auth OTP session via SecureStore (`X-WeatherTrip-Session` + `/api/auth/verify-otp`)
+- [x] Map tab = nearby list from last Discover (+ destination Wikipedia already done)
+- [ ] Full Mapbox GL map on mobile (optional later)
+- [ ] Route polyline / save-trip parity
 - [ ] Keep DTO/types in sync with `apps/web`
-
-Do this after web auth + quota + places seed are stable.
 
 ## Appearance
 
@@ -37,6 +37,10 @@ Logic: [`discover-limits.ts`](apps/web/src/server/dal/discover-limits.ts). Pro s
 
 ## Ops
 
-- [ ] UpCloud VPS + Managed Postgres + Caddy TLS
+Deployment runbook: **[DEPLOYMENT.md](./DEPLOYMENT.md)** (nginx *or* Caddy, env, systemd, migrate).
+
+- [ ] Provision VPS (e.g. UpCloud) + Managed Postgres + TLS (Caddy or nginx+certbot)
+- [ ] Set production env (`AUTH_SECRET`, Resend, Mapbox, CORS, Upstash) per DEPLOYMENT.md
 - [ ] `CRON_ENABLED=true` in production
 - [ ] Resend (`EMAIL_MODE=resend`) for OTP email
+- [ ] Point mobile `EXPO_PUBLIC_API_URL` at production API and rebuild

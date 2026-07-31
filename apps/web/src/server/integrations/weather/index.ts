@@ -4,6 +4,11 @@ import { env } from "@/lib/env";
 import type { WeatherDto } from "@/lib/types";
 import { localizeDayLabels, type DateLocale } from "@/lib/dates";
 import {
+  getDictionary,
+  translateCondition,
+  translateUv,
+} from "@weathertrip/i18n";
+import {
   readWeatherCache,
   writeWeatherCache,
   weatherGridKey,
@@ -25,7 +30,24 @@ function remember(result: WeatherDto, provider = "open-meteo") {
 }
 
 function forLocale(result: WeatherDto, locale: DateLocale = "en"): WeatherDto {
-  return localizeDayLabels(result, locale);
+  const withDays = localizeDayLabels(result, locale);
+  const dict = getDictionary(locale);
+  return {
+    ...withDays,
+    current: {
+      ...withDays.current,
+      conditionLabel: translateCondition(dict, withDays.current.condition),
+      uvLabel: translateUv(dict, withDays.current.uvIndex),
+    },
+    daily: withDays.daily.map((d) => ({
+      ...d,
+      conditionLabel: translateCondition(dict, d.condition),
+    })),
+    hourly: withDays.hourly?.map((h) => ({
+      ...h,
+      conditionLabel: translateCondition(dict, h.condition),
+    })),
+  };
 }
 
 async function withFallback(

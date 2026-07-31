@@ -163,39 +163,123 @@ function mockSearch(query: string, limit: number): PlaceDto[] {
 export async function reverseGeocode(
   lat: number,
   lon: number,
+  lang: "en" | "fi" = "en",
 ): Promise<PlaceDto> {
-  const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+  const key = `${lat.toFixed(2)},${lon.toFixed(2)}:${lang}`;
   const cached = reverseCache.get(key);
   if (cached && cached.expiresAt > Date.now()) {
     return cached.value;
   }
 
-  try {
-    const place = await nominatimReverse(lat, lon);
-    if (isBlockedPlace(place)) {
-      throw new Error("Blocked country");
-    }
+  const remember = (place: PlaceDto) => {
     reverseCache.set(key, {
       value: place,
       expiresAt: Date.now() + REVERSE_TTL_MS,
     });
     return place;
+  };
+
+  if (hasMapbox()) {
+    try {
+      const place = await mapboxReverse(lat, lon, lang);
+      if (place && !isBlockedPlace(place)) {
+        return remember(place);
+      }
+    } catch (error) {
+      console.warn("[geocode] Mapbox reverse failed", error);
+    }
+  }
+
+  try {
+    const place = await nominatimReverse(lat, lon, lang);
+    if (isBlockedPlace(place)) {
+      throw new Error("Blocked country");
+    }
+    return remember(place);
   } catch (error) {
     console.warn("[geocode] reverse failed, using nearest mock", error);
-    return nearestMock(lat, lon);
+    return remember(nearestMock(lat, lon, lang));
   }
 }
 
-function nearestMock(lat: number, lon: number): PlaceDto {
+async function mapboxReverse(
+  lat: number,
+  lon: number,
+  lang: "en" | "fi",
+): Promise<PlaceDto | null> {
+  const url = new URL(
+    `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json`,
+  );
+  url.searchParams.set("access_token", env.mapboxToken);
+  url.searchParams.set("limit", "1");
+  // Prefer a locality / place name for the origin field (not a raw street number).
+  url.searchParams.set("types", "place,locality,neighborhood,address,poi");
+  url.searchParams.set("language", lang);
+
+  const res = await fetch(url.toString(), { next: { revalidate: 86400 } });
+  if (!res.ok) throw new Error(`Mapbox reverse ${res.status}`);
+
+  const data = (await res.json()) as {
+    features?: Array<{
+      id: string;
+      place_name: string;
+      text: string;
+      center: [number, number];
+      place_type?: string[];
+      context?: Array<{ id: string; text: string; short_code?: string }>;
+    }>;
+  };
+
+  const f = data.features?.[0];
+  if (!f) return null;
+
+  const country = f.context?.find((c) => c.id.startsWith("country"));
+  const placeFeature = f.context?.find((c) => c.id.startsWith("place"));
+  const locality = f.context?.find(
+    (c) => c.id.startsWith("locality") || c.id.startsWith("neighborhood"),
+  );
+
+  // For address/POI hits, surface the city/locality as the short name when possible.
+  const isAddressOrPoi =
+    f.place_type?.includes("address") || f.place_type?.includes("poi");
+  const name = isAddressOrPoi
+    ? locality?.text || placeFeature?.text || f.text
+    : f.text;
+
+  const placeName = isAddressOrPoi
+    ? [name, country?.text].filter(Boolean).join(", ") || f.place_name
+    : f.place_name;
+
+  const typePrefix = f.place_type?.[0] ? `${f.place_type[0]}.x` : f.id;
+
+  return {
+    id: f.id,
+    name,
+    placeName,
+    country: country?.text,
+    countryCode: country?.short_code?.toUpperCase(),
+    // Keep the precise GPS point for discover radius (not the feature centroid).
+    lat,
+    lon,
+    kind: kindFromMapboxId(typePrefix),
+  };
+}
+
+function nearestMock(
+  lat: number,
+  lon: number,
+  lang: "en" | "fi" = "en",
+): PlaceDto {
   const nearest = PLACES.reduce((best, place) => {
     const d = Math.abs(place.lat - lat) + Math.abs(place.lon - lon);
     const bestD = Math.abs(best.lat - lat) + Math.abs(best.lon - lon);
     return d < bestD ? place : best;
   });
 
+  const approx = lang === "fi" ? "noin" : "approx.";
   return {
     ...nearest,
-    placeName: `${nearest.name} (approx.)`,
+    placeName: `${nearest.name} (${approx})`,
     lat,
     lon,
     kind: "place",
