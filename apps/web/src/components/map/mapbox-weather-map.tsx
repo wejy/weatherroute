@@ -169,7 +169,7 @@ export function MapboxWeatherMap({
 
         const selected = selectedIdRef.current === marker.id;
         const tone = marker.tone ?? "clear";
-        const severe = marker.condition === "storm";
+        const severe = marker.condition === "storm" || marker.condition === "hail" || marker.condition === "freezing_rain";
         const toneBorder = severe
           ? "#ba1a1a"
           : tone === "warning"

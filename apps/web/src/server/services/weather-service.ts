@@ -66,7 +66,15 @@ function scoreWeather(
     case "mild":
       return 100 - Math.abs(weather.temperatureC - 20) * 5;
     case "rain":
-      return weather.rainProbability * 2 + (weather.condition === "rainy" || weather.condition === "storm" ? 20 : 0);
+      return (
+        weather.rainProbability * 2 +
+        (weather.condition === "rainy" ||
+        weather.condition === "storm" ||
+        weather.condition === "hail" ||
+        weather.condition === "freezing_rain"
+          ? 20
+          : 0)
+      );
     case "warm":
       return weather.temperatureC * 3 + weather.sunshineScore / 2;
     case "calm":
@@ -495,10 +503,27 @@ export function buildSuitability(
         "suitability.outdoorDesc": "Low wind and clear skies expected.",
         "suitability.photoTitle": "Great for Photography",
         "suitability.photoDesc": "Excellent visibility and soft light.",
+        "suitability.kiteTitle": "Good for kite flying",
+        "suitability.kiteDesc": "A steady breeze and mild air — ideal for a kite.",
+        "suitability.cycleTitle": "Great for a bike ride",
+        "suitability.cycleDesc":
+          "Dry roads, gentle wind, and a comfortable temperature.",
+        "suitability.swimTitle": "Swimming weather",
+        "suitability.swimDesc":
+          "Warm enough for a dip if you find water nearby.",
         "suitability.wetTitle": "Pack a raincoat",
         "suitability.wetDesc": "{pct}% chance of heavy showers.",
         "advisory.stormTitle": "Thunderstorm risk",
         "advisory.stormDesc": "Expect thunderstorms — delay travel if you can.",
+        "advisory.hailTitle": "Hail risk",
+        "advisory.hailDesc":
+          "Thunderstorm with hail — seek sturdy cover and delay travel if you can.",
+        "advisory.freezingRainTitle": "Freezing rain",
+        "advisory.freezingRainDesc":
+          "Ice may form on roads and paths — allow extra time and drive carefully.",
+        "advisory.icingTitle": "Icy / slippery conditions",
+        "advisory.icingDesc":
+          "Near-freezing temperatures with moisture — watch for slippery surfaces.",
         "advisory.snowTitle": "Snow / icy conditions",
         "advisory.snowDesc": "Snow expected — allow extra travel time.",
         "advisory.fogTitle": "Fog / low visibility",
@@ -543,6 +568,62 @@ export function buildSuitability(
     });
   }
 
+  const severeSky =
+    current.condition === "storm" ||
+    current.condition === "hail" ||
+    current.condition === "freezing_rain";
+
+  // Steady breeze, mild, mostly dry — kite-friendly without needing a coast.
+  if (
+    !severeSky &&
+    current.windSpeedKmh >= 15 &&
+    current.windSpeedKmh <= 35 &&
+    current.precipitationProbability < 25 &&
+    current.temperatureC >= 8
+  ) {
+    badges.push({
+      id: "kite",
+      tone: "success",
+      icon: "paragliding",
+      title: tr("suitability.kiteTitle"),
+      description: tr("suitability.kiteDesc"),
+    });
+  }
+
+  // Dry, mild, not too windy — good cycling / short outing.
+  if (
+    !severeSky &&
+    current.condition !== "snow" &&
+    current.condition !== "fog" &&
+    current.precipitationProbability < 20 &&
+    current.windSpeedKmh < 25 &&
+    current.temperatureC >= 8 &&
+    current.temperatureC <= 28
+  ) {
+    badges.push({
+      id: "cycle",
+      tone: "success",
+      icon: "directions_bike",
+      title: tr("suitability.cycleTitle"),
+      description: tr("suitability.cycleDesc"),
+    });
+  }
+
+  // Warm enough for a dip (lake/sea) — no coastal metadata required.
+  if (
+    !severeSky &&
+    current.temperatureC >= 20 &&
+    current.precipitationProbability < 30
+  ) {
+    badges.push({
+      id: "swim",
+      tone: "success",
+      icon: "pool",
+      title: tr("suitability.swimTitle"),
+      description: tr("suitability.swimDesc"),
+    });
+  }
+
   const wetDay = daily.find((d) => d.precipitationProbability >= 50);
   if (wetDay) {
     const day = weekdayShort(wetDay.date, locale);
@@ -561,17 +642,29 @@ export function buildSuitability(
   const worstDaily = [...daily].sort(
     (a, b) => b.precipitationProbability - a.precipitationProbability,
   )[0];
+  const severeFromWindow =
+    daily.find(
+      (d) =>
+        d.condition === "hail" ||
+        d.condition === "storm" ||
+        d.condition === "freezing_rain",
+    ) ?? null;
+  const currentSevere =
+    current.condition === "storm" ||
+    current.condition === "hail" ||
+    current.condition === "freezing_rain" ||
+    current.condition === "snow" ||
+    current.condition === "fog";
   const advisorySource = {
     rainProbability: Math.max(
       current.precipitationProbability,
       worstDaily?.precipitationProbability ?? 0,
     ),
-    condition:
-      current.condition === "storm" ||
-      current.condition === "snow" ||
-      current.condition === "fog"
-        ? current.condition
-        : (worstDaily?.condition ?? current.condition),
+    condition: currentSevere
+      ? current.condition
+      : (severeFromWindow?.condition ??
+        worstDaily?.condition ??
+        current.condition),
     temperatureC: current.temperatureC,
     windSpeedKmh: current.windSpeedKmh,
   };

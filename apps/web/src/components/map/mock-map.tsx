@@ -193,8 +193,13 @@ export function MockMap({
                   ? "border-primary/40 bg-primary text-on-primary"
                   :                 isSelected
                   ? "border-primary bg-surface/95"
-                  : marker.tone === "warning" || marker.condition === "storm"
-                      ? marker.condition === "storm"
+                  : marker.tone === "warning" ||
+                      marker.condition === "storm" ||
+                      marker.condition === "hail" ||
+                      marker.condition === "freezing_rain"
+                      ? marker.condition === "storm" ||
+                        marker.condition === "hail" ||
+                        marker.condition === "freezing_rain"
                         ? "border-error/60 bg-surface/95"
                         : "border-secondary/60 bg-surface/95"
                       : marker.tone === "caution"

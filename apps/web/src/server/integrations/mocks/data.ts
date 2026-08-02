@@ -298,12 +298,31 @@ export function conditionFromCode(code: number): {
 } {
   if (code === 0) return { condition: "sunny", label: "Clear" };
   if (code <= 2) return { condition: "partly_cloudy", label: "Partly cloudy" };
-  if (code <= 3) return { condition: "cloudy", label: "Cloudy" };
-  if (code <= 48) return { condition: "fog", label: "Foggy" };
-  if (code <= 67 || (code >= 80 && code <= 82))
+  if (code === 3) return { condition: "cloudy", label: "Cloudy" };
+  if (code === 45 || code === 48) return { condition: "fog", label: "Foggy" };
+  // Freezing drizzle (56–57) / freezing rain (66–67)
+  if (code === 56 || code === 57 || code === 66 || code === 67) {
+    return { condition: "freezing_rain", label: "Freezing rain" };
+  }
+  // Drizzle, rain, rain showers
+  if (
+    (code >= 51 && code <= 55) ||
+    (code >= 61 && code <= 65) ||
+    (code >= 80 && code <= 82)
+  ) {
     return { condition: "rainy", label: "Rainy" };
-  if (code <= 77 || code >= 85) return { condition: "snow", label: "Snow" };
-  if (code >= 95) return { condition: "storm", label: "Storm" };
+  }
+  // Snow fall, snow grains, snow showers
+  if ((code >= 71 && code <= 77) || code === 85 || code === 86) {
+    return { condition: "snow", label: "Snow" };
+  }
+  // Thunderstorm with hail (Central Europe models often)
+  if (code === 96 || code === 99) {
+    return { condition: "hail", label: "Hail" };
+  }
+  if (code === 95 || code > 95) {
+    return { condition: "storm", label: "Storm" };
+  }
   return { condition: "cloudy", label: "Cloudy" };
 }
 

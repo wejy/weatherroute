@@ -3,7 +3,9 @@ export type WeatherCondition =
   | "partly_cloudy"
   | "cloudy"
   | "rainy"
+  | "freezing_rain"
   | "storm"
+  | "hail"
   | "snow"
   | "fog";
 

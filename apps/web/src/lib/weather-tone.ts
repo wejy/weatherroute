@@ -21,7 +21,14 @@ export function weatherTone(
   rainProbability: number,
   condition: WeatherCondition,
 ): WeatherTone {
-  if (condition === "storm" || rainProbability >= 50) return "warning";
+  if (
+    condition === "storm" ||
+    condition === "hail" ||
+    condition === "freezing_rain" ||
+    rainProbability >= 50
+  ) {
+    return "warning";
+  }
   if (
     condition === "rainy" ||
     condition === "snow" ||
@@ -38,13 +45,24 @@ export function worseTone(a: WeatherTone, b: WeatherTone): WeatherTone {
   return rank[a] >= rank[b] ? a : b;
 }
 
-/** True when the point should use alarm red on the map (storm), not rain blue. */
+/** True when the point should use alarm red on the map (storm/hail/freezing rain). */
 export function isSevereMapAlert(
   condition: WeatherCondition,
   advisories?: Array<{ id: string }>,
 ): boolean {
-  if (condition === "storm") return true;
-  return Boolean(advisories?.some((a) => a.id === "storm"));
+  if (
+    condition === "storm" ||
+    condition === "hail" ||
+    condition === "freezing_rain"
+  ) {
+    return true;
+  }
+  return Boolean(
+    advisories?.some(
+      (a) =>
+        a.id === "storm" || a.id === "hail" || a.id === "freezing_rain",
+    ),
+  );
 }
 
 /** Border / line color for a map marker or route segment. */

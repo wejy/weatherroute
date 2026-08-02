@@ -79,9 +79,16 @@ function coloredSegmentsGeoJSON(
     const b = waypoints[i + 1]!;
     const tone = worseTone(a.tone, b.tone);
     const condition =
-      a.condition === "storm" || b.condition === "storm"
-        ? "storm"
-        : a.condition;
+      a.condition === "storm" ||
+      b.condition === "storm" ||
+      a.condition === "hail" ||
+      b.condition === "hail"
+        ? a.condition === "hail" || b.condition === "hail"
+          ? "hail"
+          : "storm"
+        : a.condition === "freezing_rain" || b.condition === "freezing_rain"
+          ? "freezing_rain"
+          : a.condition;
     const color = mapWeatherColor(tone, condition, [
       ...a.advisories,
       ...b.advisories,

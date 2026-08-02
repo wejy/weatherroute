@@ -5,7 +5,9 @@ const ICONS: Record<WeatherCondition, string> = {
   partly_cloudy: "partly_cloudy_day",
   cloudy: "cloud",
   rainy: "rainy",
+  freezing_rain: "ac_unit",
   storm: "thunderstorm",
+  hail: "weather_hail",
   snow: "weather_snowy",
   fog: "foggy",
 };
@@ -21,7 +23,9 @@ export function weatherIconClass(condition: WeatherCondition): string {
     case "partly_cloudy":
       return "text-secondary";
     case "rainy":
+    case "freezing_rain":
     case "storm":
+    case "hail":
       return "text-primary";
     default:
       return "text-outline";

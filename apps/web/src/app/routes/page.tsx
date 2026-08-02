@@ -478,7 +478,9 @@ export default async function RoutesPage({
                 <div key={`${wp.role}-${wp.name}-${wp.lat}`} className="relative">
                   <div
                     className={`absolute -left-[23px] top-1 h-3 w-3 rounded-full border-4 border-surface-bright ${
-                      wp.condition === "storm"
+                      wp.condition === "storm" ||
+                      wp.condition === "hail" ||
+                      wp.condition === "freezing_rain"
                         ? "bg-error"
                         : wp.tone === "warning"
                           ? "bg-secondary"
@@ -541,7 +543,9 @@ export default async function RoutesPage({
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-variant">
                       <div
                         className={
-                          wp.condition === "storm"
+                          wp.condition === "storm" ||
+                          wp.condition === "hail" ||
+                          wp.condition === "freezing_rain"
                             ? "h-full bg-error"
                             : wp.tone === "warning"
                               ? "h-full bg-secondary"
