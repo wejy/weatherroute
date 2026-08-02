@@ -13,6 +13,7 @@ import {
 import { ShareTokenRedeemer } from "@/components/discover/share-token-redeemer";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp } from "@/lib/utils";
+import { formatDistanceKm } from "@/lib/distance";
 import { getMapboxPublicToken, getMapboxServerToken } from "@/lib/env";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator, translateCondition } from "@/i18n/translate";
@@ -188,9 +189,7 @@ export default async function HomePage({
                       <>
                         {dateWindow.rangeLabel} ·{" "}
                         {t("home.withinOf", {
-                          radius: result.radiusKm.toLocaleString(
-                            locale === "fi" ? "fi-FI" : "en-GB",
-                          ),
+                          radius: formatDistanceKm(result.radiusKm, locale),
                           place: result.origin.placeName,
                         })}
                         {result.destinations.length > 0

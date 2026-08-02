@@ -24,6 +24,7 @@ import {
   DISTANCE_PRESET_KEYS,
   DISTANCE_RADIUS_KM,
   FREE_MAX_DISTANCE_KEY,
+  formatDistanceKm,
   isProDistance,
   resolveRadiusKm,
   type DistanceKey,
@@ -478,10 +479,7 @@ export function DiscoverSearch({
             <div className="flex items-center justify-between gap-2 text-xs font-medium text-on-surface-variant">
               <span>{t("search.customRadius")}</span>
               <span className="tabular-nums text-on-surface">
-                {customRadiusKm.toLocaleString(
-                  locale === "fi" ? "fi-FI" : "en-GB",
-                )}{" "}
-                km
+                {formatDistanceKm(customRadiusKm, locale)}
               </span>
             </div>
             <input
@@ -520,10 +518,7 @@ export function DiscoverSearch({
         )}
         {distance !== "custom" && (
           <p className="mt-1 text-left text-[10px] leading-snug text-outline">
-            {effectiveRadiusKm.toLocaleString(
-              locale === "fi" ? "fi-FI" : "en-GB",
-            )}{" "}
-            km
+            {formatDistanceKm(effectiveRadiusKm, locale)}
           </p>
         )}
       </div>

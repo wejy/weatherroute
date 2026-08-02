@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { MapMarkerDto } from "@/lib/types";
 import { travelModeIcon } from "@/lib/types";
 import { formatTemp, cn } from "@/lib/utils";
+import { formatDistanceKm } from "@/lib/distance";
 import { TempSparkline } from "@/components/map/map-nearby-card";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { translateCondition } from "@/i18n/translate";
@@ -150,7 +151,7 @@ export function MapMarkerPopup({
                   ? ` · ${translateCondition(dict, marker.condition)}`
                   : ""}
                 {marker.distanceKm != null
-                  ? ` · ${Math.round(marker.distanceKm)} km`
+                  ? ` · ${formatDistanceKm(marker.distanceKm, locale)}`
                   : ""}
               </p>
             </>
@@ -185,7 +186,7 @@ export function MapMarkerPopup({
 
         {!dense && marker.distanceKm != null && (
           <p className="flex flex-wrap items-center gap-x-1.5 text-sm text-on-surface-variant">
-            <span>{Math.round(marker.distanceKm)} km</span>
+            <span>{formatDistanceKm(marker.distanceKm, locale)}</span>
             {marker.driveDurationLabel ? (
               <span className="inline-flex items-center gap-0.5">
                 <span aria-hidden="true">·</span>

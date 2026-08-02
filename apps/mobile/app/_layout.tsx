@@ -41,6 +41,7 @@ function RootNavigator() {
           }}
         />
         <Stack.Screen name="login" options={{ presentation: "modal" }} />
+        <Stack.Screen name="pro" options={{ presentation: "card" }} />
       </Stack>
     </>
   );

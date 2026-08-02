@@ -3,6 +3,7 @@ import { Image } from "expo-image";
 import { Link } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useI18n } from "@/lib/i18n";
+import { formatDistanceKm } from "@/lib/distance";
 import { getApiBaseUrl } from "@/lib/api";
 import { colors } from "@/constants/Colors";
 import type { DestinationDto } from "@/lib/types";
@@ -20,7 +21,7 @@ export function DestinationCard({
 }: {
   destination: DestinationDto;
 }) {
-  const { t, translateCondition } = useI18n();
+  const { t, translateCondition, locale } = useI18n();
   const forecast = destination.forecast;
   const imageUri = resolveImageUrl(destination.imageUrl);
   const href = {
@@ -63,7 +64,7 @@ export function DestinationCard({
             {translateCondition(forecast.condition)} ·{" "}
             {t("card.rain", { pct: forecast.rainProbability })}
             {destination.distanceKm > 0
-              ? ` · ${destination.distanceKm} km`
+              ? ` · ${formatDistanceKm(destination.distanceKm, locale)}`
               : ""}
             {destination.driveDurationLabel
               ? ` · ${destination.driveDurationLabel}`

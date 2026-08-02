@@ -2,14 +2,19 @@ import { and, eq, gte, lte } from "drizzle-orm";
 import { haversineKm } from "@/server/integrations/mocks/data";
 import {
   CITY_INDEX,
-  candidateRankScore,
   type CityIndexEntry,
 } from "@/server/integrations/places/city-index";
 import { getDb } from "@/db";
 import { places } from "@/db/schema";
 import { isBlockedCountryCode, isBlockedPlace } from "@/lib/geo-block";
+import { selectAcrossDistanceBands } from "@/server/dal/place-candidate-select";
 
 export type PlaceCandidate = CityIndexEntry & { distanceKm: number };
+
+export {
+  allocateDistanceBandQuotas,
+  selectAcrossDistanceBands,
+} from "@/server/dal/place-candidate-select";
 
 function notBlockedCandidate(city: {
   country?: string | null;
@@ -66,8 +71,27 @@ export function dedupePlaceCandidates<
   return out;
 }
 
+function byPopulationThenDistance(
+  a: { population: number; distanceKm: number },
+  b: { population: number; distanceKm: number },
+): number {
+  return b.population - a.population || a.distanceKm - b.distanceKm;
+}
+
+function finalizeCandidates(
+  filtered: PlaceCandidate[],
+  radiusKm: number,
+  limit: number,
+): PlaceCandidate[] {
+  const deduped = dedupePlaceCandidates(
+    filtered.sort(byPopulationThenDistance),
+  );
+  return selectAcrossDistanceBands(deduped, radiusKm, limit);
+}
+
 /**
  * Discover candidates: Postgres `places` when available, else CITY_INDEX.
+ * Returns a geographically spread sample for weather ranking (not nearest-only).
  */
 export async function placesWithinRadius(
   origin: { lat: number; lon: number },
@@ -77,6 +101,8 @@ export async function placesWithinRadius(
   const exclude = opts?.excludeName?.toLowerCase().trim();
   const limit = opts?.limit ?? 14;
   const db = getDb();
+  /** Wide bbox pool so far-band towns exist before band selection. */
+  const poolLimit = Math.min(2500, Math.max(500, limit * 50));
 
   if (db) {
     const latDelta = radiusKm / 111;
@@ -94,10 +120,10 @@ export async function placesWithinRadius(
           lte(places.lon, origin.lon + lonDelta),
         ),
       )
-      .limit(500);
+      .limit(poolLimit);
 
     if (rows.length > 0) {
-      const ranked = rows
+      const filtered = rows
         .map((row) => ({
           id: row.id,
           name: row.name,
@@ -114,36 +140,23 @@ export async function placesWithinRadius(
           if (city.distanceKm < 5) return false;
           if (exclude && city.name.toLowerCase() === exclude) return false;
           return city.distanceKm <= radiusKm;
-        })
-        .sort(
-          (a, b) =>
-            candidateRankScore(b.population, b.distanceKm) -
-              candidateRankScore(a.population, a.distanceKm) ||
-            a.distanceKm - b.distanceKm,
-        );
+        });
 
-      return dedupePlaceCandidates(ranked).slice(0, limit);
+      return finalizeCandidates(filtered, radiusKm, limit);
     }
   }
 
-  const ranked = CITY_INDEX.map((city) => ({
+  const filtered = CITY_INDEX.map((city) => ({
     ...city,
     distanceKm: haversineKm(origin, city),
-  }))
-    .filter((city) => {
-      if (!notBlockedCandidate(city)) return false;
-      if (city.distanceKm < 5) return false;
-      if (exclude && city.name.toLowerCase() === exclude) return false;
-      return city.distanceKm <= radiusKm;
-    })
-    .sort(
-      (a, b) =>
-        candidateRankScore(b.population, b.distanceKm) -
-          candidateRankScore(a.population, a.distanceKm) ||
-        a.distanceKm - b.distanceKm,
-    );
+  })).filter((city) => {
+    if (!notBlockedCandidate(city)) return false;
+    if (city.distanceKm < 5) return false;
+    if (exclude && city.name.toLowerCase() === exclude) return false;
+    return city.distanceKm <= radiusKm;
+  });
 
-  return dedupePlaceCandidates(ranked).slice(0, limit);
+  return finalizeCandidates(filtered, radiusKm, limit);
 }
 
 export async function getPlaceById(id: string) {

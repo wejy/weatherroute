@@ -53,12 +53,14 @@ async function main() {
       .values({
         userId,
         status: "active",
+        plan: "monthly",
         updatedAt: new Date(),
       })
       .onConflictDoUpdate({
         target: subscriptions.userId,
         set: {
           status: "active",
+          plan: "monthly",
           updatedAt: new Date(),
         },
       });

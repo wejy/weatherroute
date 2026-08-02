@@ -5,6 +5,7 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import Link from "next/link";
 import { cn, formatTemp } from "@/lib/utils";
+import { formatDistanceKm } from "@/lib/distance";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { circlePolygon, type WeatherMapProps } from "@/components/map/geo";
 import { destinationHref } from "@/lib/discover-query";
@@ -244,7 +245,9 @@ export function MapboxWeatherMap({
       <div ref={containerRef} className="absolute inset-0 h-full w-full" />
       {showRadius && radiusKm < 15000 && (
         <div className="pointer-events-none absolute top-4 left-4 z-10 rounded-full border border-primary/20 bg-surface/90 px-3 py-1.5 text-sm font-medium text-primary shadow-sm backdrop-blur-md">
-          {t("map.radiusKm", { km: radiusKm.toLocaleString() })}
+          {t("map.radiusKm", {
+            radius: formatDistanceKm(radiusKm, locale),
+          })}
         </div>
       )}
 

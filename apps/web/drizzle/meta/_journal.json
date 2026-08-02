@@ -15,6 +15,20 @@
       "when": 1785070850106,
       "tag": "0001_trips_travel_meta",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785740000000,
+      "tag": "0002_billing_plans",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1785741000000,
+      "tag": "0003_subscriptions_customer_unique",
+      "breakpoints": true
     }
   ]
 }

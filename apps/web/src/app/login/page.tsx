@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { TopNav } from "@/components/layout/top-nav";
+import { LoginOtpForm } from "@/components/auth/login-otp-form";
 import {
   loginDemoAction,
   logoutAction,
-  requestOtpAction,
-  verifyOtpAction,
 } from "@/server/actions/trips";
 import { getCurrentUser } from "@/server/auth/session";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
@@ -97,59 +96,11 @@ export default async function LoginPage({
               </form>
             </div>
           ) : mode === "otp" ? (
-            <div className="space-y-6">
-              <form action={requestOtpAction} className="space-y-3">
-                <input type="hidden" name="next" value={nextParam} />
-                <label className="block text-sm font-medium text-on-surface">
-                  {t("login.emailLabel")}
-                  <input
-                    type="email"
-                    name="email"
-                    required
-                    defaultValue={emailParam}
-                    autoComplete="email"
-                    className="mt-1 w-full rounded-lg border border-outline-variant/40 bg-surface px-3 py-2.5 text-on-surface"
-                    placeholder="you@example.com"
-                  />
-                </label>
-                <button
-                  type="submit"
-                  className="w-full rounded-lg bg-primary py-3 font-semibold text-on-primary"
-                >
-                  {t("login.sendCode")}
-                </button>
-              </form>
-
-              {sent || emailParam ? (
-                <form action={verifyOtpAction} className="space-y-3 border-t border-outline-variant/20 pt-6">
-                  <input type="hidden" name="email" value={emailParam} />
-                  <input type="hidden" name="next" value={nextParam} />
-                  <p className="text-sm text-on-surface-variant">
-                    {t("login.codeSent", { email: emailParam || "…" })}
-                  </p>
-                  <label className="block text-sm font-medium text-on-surface">
-                    {t("login.codeLabel")}
-                    <input
-                      type="text"
-                      name="code"
-                      required
-                      inputMode="numeric"
-                      autoComplete="one-time-code"
-                      pattern="[0-9]{6}"
-                      maxLength={6}
-                      className="mt-1 w-full rounded-lg border border-outline-variant/40 bg-surface px-3 py-2.5 tracking-widest text-on-surface"
-                      placeholder="123456"
-                    />
-                  </label>
-                  <button
-                    type="submit"
-                    className="w-full rounded-lg bg-primary py-3 font-semibold text-on-primary"
-                  >
-                    {t("login.verifyCode")}
-                  </button>
-                </form>
-              ) : null}
-            </div>
+            <LoginOtpForm
+              initialEmail={emailParam}
+              initialSent={sent}
+              nextParam={nextParam}
+            />
           ) : (
             <form action={loginDemoAction}>
               <button

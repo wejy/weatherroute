@@ -1,5 +1,6 @@
 import type { PlaceDto } from "@/lib/types";
 import { haversineKm } from "@/server/integrations/mocks/data";
+import { selectAcrossDistanceBands } from "@/server/dal/place-candidate-select";
 
 /** Static settlement used for discover radius queries (no network). */
 export type CityIndexEntry = PlaceDto & {
@@ -265,7 +266,7 @@ export const CITY_INDEX: CityIndexEntry[] = [
   { id: "singapore", name: "Singapore", placeName: "Singapore", country: "Singapore", countryCode: "SG", lat: 1.3521, lon: 103.8198, population: 5700000 },
 ];
 
-/** Larger + nearer wins before weather is fetched. Distance weighs more so short radii fill with local options. */
+/** Population wins within a distance band; discover uses selectAcrossDistanceBands. */
 export function candidateRankScore(population: number, distanceKm: number): number {
   return Math.log10(population + 1) * 30 - distanceKm * 1.8;
 }
@@ -278,22 +279,22 @@ export function citiesWithinRadius(
   const exclude = opts?.excludeName?.toLowerCase().trim();
   const limit = opts?.limit ?? 14;
 
-  return CITY_INDEX.map((city) => ({
+  const filtered = CITY_INDEX.map((city) => ({
     ...city,
     distanceKm: haversineKm(origin, city),
-  }))
-    .filter((city) => {
-      if (city.distanceKm < 5) return false;
-      if (exclude && city.name.toLowerCase() === exclude) return false;
-      return city.distanceKm <= radiusKm;
-    })
-    .sort(
-      (a, b) =>
-        candidateRankScore(b.population, b.distanceKm) -
-          candidateRankScore(a.population, a.distanceKm) ||
-        a.distanceKm - b.distanceKm,
-    )
-    .slice(0, limit);
+  })).filter((city) => {
+    if (city.distanceKm < 5) return false;
+    if (exclude && city.name.toLowerCase() === exclude) return false;
+    return city.distanceKm <= radiusKm;
+  });
+
+  return selectAcrossDistanceBands(
+    filtered.sort(
+      (a, b) => b.population - a.population || a.distanceKm - b.distanceKm,
+    ),
+    radiusKm,
+    limit,
+  );
 }
 
 /** @deprecated Prefer CITY_INDEX — kept for slug lookups. */

@@ -3,6 +3,8 @@ import {
   CUSTOM_RADIUS_MAX_KM,
   DISTANCE_RADIUS_KM,
   clampDistanceForTier,
+  formatDistanceKm,
+  kmToMiles,
   resolveRadiusKm,
 } from "@/lib/distance";
 
@@ -24,6 +26,25 @@ describe("resolveRadiusKm", () => {
     expect(resolveRadiusKm("custom", -10)).toBe(0);
     expect(resolveRadiusKm("custom", 99999)).toBe(CUSTOM_RADIUS_MAX_KM);
     expect(resolveRadiusKm("custom", 120.6)).toBe(121);
+  });
+});
+
+describe("formatDistanceKm", () => {
+  it("appends miles for English", () => {
+    expect(formatDistanceKm(200, "en")).toBe("200 km (~124 mi)");
+    expect(formatDistanceKm(30, "en")).toBe("30 km (~19 mi)");
+  });
+
+  it("keeps Finnish as kilometres only", () => {
+    expect(formatDistanceKm(200, "fi")).toBe("200 km");
+    expect(formatDistanceKm(1000, "fi")).toBe("1\u00a0000 km");
+  });
+});
+
+describe("kmToMiles", () => {
+  it("rounds to nearest mile", () => {
+    expect(kmToMiles(200)).toBe(124);
+    expect(kmToMiles(0)).toBe(0);
   });
 });
 

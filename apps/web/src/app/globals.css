@@ -187,6 +187,27 @@ body {
   font-family: var(--font-inter), system-ui, sans-serif;
 }
 
+/* Interactive affordance — browsers default buttons to cursor: default */
+button:not(:disabled),
+[type="submit"]:not(:disabled),
+[type="button"]:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+summary {
+  cursor: pointer;
+}
+
+button:disabled,
+[type="submit"]:disabled,
+[type="button"]:disabled,
+[aria-disabled="true"],
+a[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+a[href] {
+  cursor: pointer;
+}
+
 ::selection {
   background: var(--primary-container);
   color: var(--on-primary-container);

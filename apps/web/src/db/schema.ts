@@ -82,8 +82,15 @@ export const subscriptions = pgTable("subscriptions", {
     .notNull()
     .references(() => users.id, { onDelete: "cascade" })
     .unique(),
+  /** free | active | trial | past_due | canceled */
   status: text("status").notNull().default("free"),
-  stripeCustomerId: text("stripe_customer_id"),
+  /** none | one_time | monthly */
+  plan: text("plan").notNull().default("none"),
+  stripeCustomerId: text("stripe_customer_id").unique(),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  /** Set when one-time Pro was purchased (kept if monthly later cancels). */
+  oneTimePaidAt: timestamp("one_time_paid_at", { withTimezone: true }),
+  currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

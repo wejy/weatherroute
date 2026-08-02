@@ -38,7 +38,7 @@ import {
   resolveDiscoverLimits,
   weatherLimitForRadius,
 } from "@/server/dal/discover-limits";
-import { resolveRadiusKm, clampDistanceForTier } from "@/lib/distance";
+import { resolveRadiusKm, clampDistanceForTier, formatDistanceKm } from "@/lib/distance";
 import { formatTravelDuration } from "@/lib/utils";
 
 function scoreWeather(
@@ -334,8 +334,8 @@ export async function discoverDestinations(
         description:
           catalog?.description ??
           (locale === "fi"
-            ? `${Math.round(city.distanceKm)} km paikasta ${origin.name}`
-            : `${Math.round(city.distanceKm)} km from ${origin.name}`),
+            ? `${formatDistanceKm(city.distanceKm, "fi")} paikasta ${origin.name}`
+            : `${formatDistanceKm(city.distanceKm, "en")} from ${origin.name}`),
         driveDurationLabel: formatTravelDuration(
           city.distanceKm,
           travelMode,

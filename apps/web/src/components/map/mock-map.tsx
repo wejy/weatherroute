@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { MapMarkerDto, PlaceDto } from "@/lib/types";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp, cn } from "@/lib/utils";
+import { formatDistanceKm } from "@/lib/distance";
 import { destinationHref } from "@/lib/discover-query";
 import { MapMarkerPopup } from "@/components/map/map-marker-popup";
 import { useI18n } from "@/components/i18n/locale-provider";
@@ -147,7 +148,7 @@ export function MockMap({
             {radiusKm >= 10000
               ? t("map.global")
               : t("map.radiusKm", {
-                  km: radiusKm.toLocaleString(),
+                  radius: formatDistanceKm(radiusKm, locale),
                 })}
           </div>
         </div>

@@ -34,8 +34,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (
         !env.isProduction &&
         error instanceof Error &&
-        error.name === "JWTSessionError"
+        (error.name === "JWTSessionError" || error.name === "UntrustedHost")
       ) {
+        if (error.name === "UntrustedHost") {
+          log.warn(
+            "UntrustedHost — set AUTH_TRUST_HOST=true in apps/web/.env.local (dev default is on after restart)",
+          );
+        }
         return;
       }
       log.error({ err: error }, "error");

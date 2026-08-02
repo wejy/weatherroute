@@ -116,6 +116,19 @@ chmod 600 /var/www/solviax/apps/web/.env.production
 | `EMAIL_FROM` | Verified Resend sender, e.g. `Solviax <noreply@example.com>` |
 | `CRON_ENABLED` | `true` in production (nightly weather cache warm) |
 
+### Stripe billing (required for `/pro` checkout)
+
+Without these, the Pro page shows plans but checkout stays disabled.
+
+| Variable | Notes |
+|---|---|
+| `STRIPE_SECRET_KEY` | **Live** secret `sk_live_…` (Dashboard → Developers → API keys) |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret for the **production** webhook endpoint (`whsec_…`) |
+| `STRIPE_PRICE_ONE_TIME` | Live Price id for **€1** one-time Pro (`mode=payment`) |
+| `STRIPE_PRICE_MONTHLY` | Live Price id for **€2.80 / month** Pro (`mode=subscription`) |
+
+See **[Stripe (production)](#stripe-production)** below for Dashboard steps. Product details: [PAID_FEATURES.md](./PAID_FEATURES.md).
+
 ### Optional / defaults
 
 | Variable | Default | Notes |
@@ -159,6 +172,11 @@ MAPBOX_ACCESS_TOKEN=pk.xxxx
 CRON_ENABLED=true
 ANON_DISCOVER_LIMIT=3
 ANON_IP_DISCOVER_LIMIT=10
+
+STRIPE_SECRET_KEY=sk_live_xxxx
+STRIPE_WEBHOOK_SECRET=whsec_xxxx
+STRIPE_PRICE_ONE_TIME=price_xxxx
+STRIPE_PRICE_MONTHLY=price_xxxx
 ```
 
 Generate secrets:
@@ -342,7 +360,72 @@ Also set `AUTH_TRUST_HOST=true`.
 2. **Resend** — verify domain / sender; set `EMAIL_MODE=resend` + API key.
 3. **Mapbox** — create tokens; restrict `pk.` by URL; never expose `sk.` to the client (`NEXT_PUBLIC_*` must stay `pk.`).
 4. **Upstash Redis** — create REST database; paste URL + token (rate limits across restarts / multiple hosts).
-5. **DNS** — point domain at VPS; wait for propagation before TLS.
+5. **Stripe** — live products/prices, webhook to `https://…/api/stripe/webhook`, Customer Portal (see below).
+6. **DNS** — point domain at VPS; wait for propagation before TLS.
+
+---
+
+## Stripe (production)
+
+Paid plans: **One-time €1** (max 2 saved routes) and **Monthly €2.80** (unlimited saved routes). Both unlock Pro discover features. Full matrix: [PAID_FEATURES.md](./PAID_FEATURES.md).
+
+### 1. Create live products / prices
+
+In [Stripe Dashboard](https://dashboard.stripe.com) (toggle **Live** mode):
+
+| Product | Price | Checkout mode |
+|---|---|---|
+| Solviax Pro — One-time | €1.00 EUR, one-time | `payment` |
+| Solviax Pro — Monthly | €2.80 EUR, recurring monthly | `subscription` |
+
+Or from a machine with the **live** secret key:
+
+```bash
+STRIPE_SECRET_KEY=sk_live_... npm run stripe:setup -w @solviax/web
+```
+
+Copy the printed `STRIPE_PRICE_ONE_TIME` / `STRIPE_PRICE_MONTHLY` into `.env.production`.
+
+### 2. Webhook endpoint
+
+Dashboard → **Developers → Webhooks → Add endpoint**:
+
+- URL: `https://weather.example.com/api/stripe/webhook`
+- Events (minimum):
+  - `checkout.session.completed`
+  - `customer.subscription.updated`
+  - `customer.subscription.deleted`
+
+Copy the endpoint **Signing secret** → `STRIPE_WEBHOOK_SECRET` (this is **not** the same as the Stripe CLI `whsec_` used in local dev).
+
+Reverse proxy already forwards `/` to Next.js — no extra nginx location is required for the webhook path.
+
+### 3. Customer Portal
+
+Dashboard → **Settings → Billing → Customer portal**: enable so users can cancel / update payment method from Settings → **Manage billing** (`/api/billing/portal`).
+
+Set portal return URL / branding to your production domain if prompted.
+
+### 4. App URL
+
+`NEXT_PUBLIC_APP_URL` / `AUTH_URL` must be the public `https://…` origin. Checkout success/cancel redirects use this base (`/pro?checkout=…`).
+
+### 5. Migrate before go-live
+
+Billing columns live in migration `0002_billing_plans`. Always run after deploy:
+
+```bash
+set -a && source apps/web/.env.production && set +a
+npm run db:migrate -w @solviax/web
+```
+
+### 6. Smoke-test payments
+
+1. Use a live card only after you are ready to charge — prefer Stripe **test mode** on staging first.
+2. Complete One-time and Monthly checkout from `/pro` while signed in.
+3. Confirm `subscriptions` row: `status=active`, `plan=one_time|monthly`.
+4. Incomplete / unpaid checkouts must **not** grant Pro (see webhook hardening in [PAID_FEATURES.md](./PAID_FEATURES.md)).
+5. Cancel Monthly via Customer Portal → user should fall back to One-time if they bought it earlier, else Free.
 
 ---
 
@@ -394,6 +477,9 @@ pm2 save
 - [ ] Logs: `pm2 logs solviax` — no boot errors about `AUTH_SECRET` / `EMAIL_MODE` / `USE_MOCKS`
 - [ ] Cron: after boot, log line mentioning scheduled nightly weather warm when `CRON_ENABLED=true`
 - [ ] After reboot: `pm2 status` shows `solviax` online (`pm2 startup` + `pm2 save` done)
+- [ ] Stripe: `/pro` shows Buy / Subscribe (keys set); webhook endpoint healthy in Dashboard
+- [ ] Stripe: test One-time + Monthly checkout; `subscriptions.plan` updates after webhook
+- [ ] Stripe: Customer Portal opens from Settings → Manage billing
 
 ---
 
@@ -416,5 +502,6 @@ pm2 save
 | Blue/green / zero-downtime multi-instance | Out of scope; cron assumes one instance |
 | Mobile store release (EAS) | Separate from this guide |
 | CDN / object storage for images | App uses Mapbox / remote URLs today |
+| Stripe Tax / invoices / VAT ID collection | Not configured — enable in Stripe if you need them |
 
 See also [TODO.md](./TODO.md) (ops + product backlog) and the short checklist in [README.md](./README.md#production-checklist).

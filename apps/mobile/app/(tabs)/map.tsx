@@ -13,12 +13,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/lib/i18n";
 import { loadLastDiscover } from "@/lib/discover-cache";
 import { getApiBaseUrl } from "@/lib/api";
+import { formatDistanceKm } from "@/lib/distance";
 import { colors } from "@/constants/Colors";
 import { DestinationCard } from "@/components/DestinationCard";
 import type { DiscoverResultDto } from "@/lib/types";
 
 export default function MapNearbyScreen() {
-  const { t, translateCondition } = useI18n();
+  const { t, translateCondition, locale } = useI18n();
   const insets = useSafeAreaInsets();
   const [result, setResult] = useState<DiscoverResultDto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -76,7 +77,7 @@ export default function MapNearbyScreen() {
           <Text style={styles.meta}>
             {result.origin.placeName} · {result.dateRangeLabel} ·{" "}
             {t("home.withinOf", {
-              radius: result.radiusKm,
+              radius: formatDistanceKm(result.radiusKm, locale),
               place: result.origin.placeName,
             })}
           </Text>

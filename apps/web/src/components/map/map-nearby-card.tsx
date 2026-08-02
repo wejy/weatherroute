@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { DestinationDto } from "@/lib/types";
 import { travelModeIcon } from "@/lib/types";
 import { cn, formatTemp } from "@/lib/utils";
+import { formatDistanceKm } from "@/lib/distance";
 import {
   temperatureColor,
   temperatureInkColor,
@@ -117,7 +118,7 @@ export function MapNearbyCard({
   href: string;
   compact?: boolean;
 }) {
-  const { t, dict } = useI18n();
+  const { t, dict, locale } = useI18n();
   const d = destination;
   const duration = d.driveDurationLabel ?? "";
   const series = d.tempSeries ?? [];
@@ -149,7 +150,7 @@ export function MapNearbyCard({
         </span>
       </div>
       <p className="mb-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm text-on-surface-variant">
-        <span>{Math.round(d.distanceKm)} km</span>
+        <span>{formatDistanceKm(d.distanceKm, locale)}</span>
         {duration ? (
           <span className="inline-flex items-center gap-0.5">
             <span aria-hidden="true">·</span>

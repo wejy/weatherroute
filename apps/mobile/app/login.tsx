@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -16,15 +16,43 @@ import { ApiError } from "@/lib/api";
 import { requestOtp, verifyOtp } from "@/lib/session";
 import { colors } from "@/constants/Colors";
 
+const COOLDOWN_MS = 30_000;
+
 export default function LoginScreen() {
   const { t } = useI18n();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
-  const [step, setStep] = useState<"email" | "code">("email");
-  const [busy, setBusy] = useState(false);
+  const [sentEmail, setSentEmail] = useState<string | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+  const [busy, setBusy] = useState<"send" | "verify" | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [info, setInfo] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (cooldownUntil <= Date.now()) return;
+    const id = setInterval(() => setNow(Date.now()), 250);
+    return () => clearInterval(id);
+  }, [cooldownUntil]);
+
+  const secondsLeft = useMemo(() => {
+    if (!cooldownUntil) return 0;
+    return Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
+  }, [cooldownUntil, now]);
+
+  const emailNormalized = email.trim().toLowerCase();
+  const showVerify = Boolean(sentEmail);
+  const sameEmailOnCooldown =
+    Boolean(sentEmail) &&
+    emailNormalized === sentEmail &&
+    secondsLeft > 0;
+  const sendDisabled = busy != null || sameEmailOnCooldown;
+
+  const sendLabel = sameEmailOnCooldown
+    ? t("login.sendCodeWait", { seconds: secondsLeft })
+    : showVerify
+      ? t("login.sendCodeAgain")
+      : t("login.sendCode");
 
   const sendCode = useCallback(async () => {
     const trimmed = email.trim();
@@ -32,13 +60,14 @@ export default function LoginScreen() {
       setError(t("login.errorEmail"));
       return;
     }
-    setBusy(true);
+    setBusy("send");
     setError(null);
-    setInfo(null);
     try {
       await requestOtp(trimmed);
-      setStep("code");
-      setInfo(t("login.codeSent", { email: trimmed }));
+      const normalized = trimmed.toLowerCase();
+      setSentEmail(normalized);
+      setCooldownUntil(Date.now() + COOLDOWN_MS);
+      setCode("");
     } catch (e) {
       if (e instanceof ApiError && e.status === 429) {
         setError(t("login.errorSend"));
@@ -46,12 +75,12 @@ export default function LoginScreen() {
         setError(t("login.errorSend"));
       }
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }, [email, t]);
 
   const verify = useCallback(async () => {
-    setBusy(true);
+    setBusy("verify");
     setError(null);
     try {
       await verifyOtp(email.trim(), code.trim());
@@ -59,7 +88,7 @@ export default function LoginScreen() {
     } catch {
       setError(t("login.errorCode"));
     } finally {
-      setBusy(false);
+      setBusy(null);
     }
   }, [code, email, router, t]);
 
@@ -84,61 +113,60 @@ export default function LoginScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             autoCorrect={false}
-            editable={step === "email" || !busy}
+            editable={busy == null}
             style={styles.input}
             placeholder={t("mobile.emailPlaceholder")}
             placeholderTextColor={colors.outline}
           />
 
-          {step === "email" ? (
-            <Pressable
-              onPress={() => void sendCode()}
-              disabled={busy}
-              style={[styles.btn, busy && styles.disabled]}
-            >
-              {busy ? (
-                <ActivityIndicator color={colors.onPrimary} />
-              ) : (
-                <Text style={styles.btnText}>{t("login.sendCode")}</Text>
-              )}
-            </Pressable>
-          ) : (
-            <>
+          <Pressable
+            onPress={() => void sendCode()}
+            disabled={sendDisabled}
+            style={[styles.btn, sendDisabled && styles.disabled]}
+          >
+            {busy === "send" ? (
+              <ActivityIndicator color={colors.onPrimary} />
+            ) : (
+              <Text style={styles.btnText}>{sendLabel}</Text>
+            )}
+          </Pressable>
+          {sameEmailOnCooldown ? (
+            <Text style={styles.hintSmall}>{t("login.changeEmailHint")}</Text>
+          ) : null}
+
+          {showVerify ? (
+            <View style={styles.verifyBlock}>
+              <Text style={styles.info}>
+                {t("login.codeSent", { email: sentEmail || email })}
+              </Text>
               <Text style={styles.label}>{t("login.codeLabel")}</Text>
               <TextInput
                 value={code}
                 onChangeText={setCode}
                 keyboardType="number-pad"
                 autoCapitalize="none"
+                editable={busy == null}
                 style={styles.input}
                 placeholder="123456"
                 placeholderTextColor={colors.outline}
               />
               <Pressable
                 onPress={() => void verify()}
-                disabled={busy || code.trim().length < 4}
-                style={[styles.btn, busy && styles.disabled]}
+                disabled={busy != null || code.trim().length < 4}
+                style={[
+                  styles.btn,
+                  (busy != null || code.trim().length < 4) && styles.disabled,
+                ]}
               >
-                {busy ? (
+                {busy === "verify" ? (
                   <ActivityIndicator color={colors.onPrimary} />
                 ) : (
                   <Text style={styles.btnText}>{t("login.verifyCode")}</Text>
                 )}
               </Pressable>
-              <Pressable
-                onPress={() => {
-                  setStep("email");
-                  setCode("");
-                  setInfo(null);
-                }}
-                style={styles.linkBtn}
-              >
-                <Text style={styles.linkText}>{t("login.sendCode")}</Text>
-              </Pressable>
-            </>
-          )}
+            </View>
+          ) : null}
 
-          {info ? <Text style={styles.info}>{info}</Text> : null}
           {error ? (
             <Text style={styles.error} accessibilityRole="alert">
               {error}
@@ -164,6 +192,11 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: 8,
   },
+  hintSmall: {
+    fontSize: 12,
+    color: colors.onSurfaceVariant,
+    lineHeight: 18,
+  },
   label: {
     fontSize: 12,
     fontWeight: "700",
@@ -182,7 +215,7 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
   },
   btn: {
-    marginTop: 8,
+    marginTop: 4,
     minHeight: 52,
     borderRadius: 14,
     backgroundColor: colors.primary,
@@ -190,9 +223,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   btnText: { color: colors.onPrimary, fontWeight: "700", fontSize: 16 },
-  linkBtn: { alignItems: "center", padding: 12 },
-  linkText: { color: colors.secondary, fontWeight: "600" },
-  info: { color: colors.primary, fontSize: 14 },
+  verifyBlock: {
+    marginTop: 8,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    gap: 12,
+  },
+  info: { color: colors.primary, fontSize: 14, lineHeight: 20 },
   error: { color: colors.error, fontWeight: "600" },
   disabled: { opacity: 0.55 },
 });

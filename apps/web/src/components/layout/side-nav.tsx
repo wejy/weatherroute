@@ -44,6 +44,12 @@ export async function SideNav({
       preserve: false,
     },
     {
+      href: "/about",
+      label: t("nav.sideAbout"),
+      icon: "info",
+      preserve: false,
+    },
+    {
       href: "/settings",
       label: t("nav.sideSettings"),
       icon: "settings",

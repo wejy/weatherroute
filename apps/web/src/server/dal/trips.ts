@@ -1,14 +1,19 @@
 import "server-only";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import type { TripDto, UserDto, TravelMode } from "@/lib/types";
 import { isTravelMode } from "@/lib/types";
 import { MOCK_TRIPS, MOCK_USER } from "@/server/integrations/mocks/data";
 import { getCurrentUser } from "@/server/auth/session";
 import { getDb } from "@/db";
-import { trips } from "@/db/schema";
+import { subscriptions, trips } from "@/db/schema";
 import { env, hasDatabase } from "@/lib/env";
+import {
+  isPaidPlan,
+  isProBillingStatus,
+  maxSavedTripsForPlan,
+} from "@/server/billing/plans";
 
 /** In-memory store when DATABASE_URL / mocks path. */
 const tripStore = new Map<string, TripDto[]>([
@@ -71,16 +76,29 @@ export async function listTripsForUser(
 
 export type CreateTripInput = Omit<TripDto, "id" | "createdAt">;
 
+export class TripSaveLimitError extends Error {
+  readonly code = "trip_limit" as const;
+  constructor(
+    message: string,
+    readonly maxSavedTrips: number | null,
+    readonly savedTripCount: number,
+  ) {
+    super(message);
+    this.name = "TripSaveLimitError";
+  }
+}
+
 export async function createTrip(
   userId: string,
   input: CreateTripInput,
 ): Promise<TripDto> {
+  const db = getDb();
+  const mocks = !db || env.useMocks || !hasDatabase();
   const travelMode = isTravelMode(input.travelMode)
     ? input.travelMode
     : "driving";
 
-  const db = getDb();
-  if (!db || env.useMocks || !hasDatabase()) {
+  if (mocks) {
     const trip: TripDto = {
       ...input,
       travelMode,
@@ -92,27 +110,64 @@ export async function createTrip(
     return trip;
   }
 
-  const [row] = await db
-    .insert(trips)
-    .values({
-      userId,
-      title: input.title,
-      originName: input.originName,
-      destinationName: input.destinationName,
-      destinationLat: input.destinationLat,
-      destinationLon: input.destinationLon,
-      originLat: input.originLat ?? null,
-      originLon: input.originLon ?? null,
-      weatherGoal: input.weatherGoal ?? null,
-      travelMode,
-      datePreset: input.datePreset ?? null,
-      startDate: input.startDate ?? null,
-      endDate: input.endDate ?? null,
-      distanceKm:
-        input.distanceKm != null ? Math.round(Number(input.distanceKm)) : null,
-      durationLabel: input.durationLabel ?? null,
-    })
-    .returning();
+  if (!db) throw new Error("Database required");
+
+  const values = {
+    userId,
+    title: input.title,
+    originName: input.originName,
+    destinationName: input.destinationName,
+    destinationLat: input.destinationLat,
+    destinationLon: input.destinationLon,
+    originLat: input.originLat ?? null,
+    originLon: input.originLon ?? null,
+    weatherGoal: input.weatherGoal ?? null,
+    travelMode,
+    datePreset: input.datePreset ?? null,
+    startDate: input.startDate ?? null,
+    endDate: input.endDate ?? null,
+    distanceKm:
+      input.distanceKm != null ? Math.round(Number(input.distanceKm)) : null,
+    durationLabel: input.durationLabel ?? null,
+  };
+
+  /** Serialize saves per user (closes check-then-insert TOCTOU). */
+  const row = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`);
+
+    const [sub] = await tx
+      .select({
+        status: subscriptions.status,
+        plan: subscriptions.plan,
+      })
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, userId))
+      .limit(1);
+
+    const [countRow] = await tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(trips)
+      .where(eq(trips.userId, userId));
+    const savedTripCount = Number(countRow?.count ?? 0);
+
+    const plan = sub?.plan ?? "none";
+    const status = sub?.status ?? "free";
+    const pro = isProBillingStatus(status) && isPaidPlan(plan);
+    const maxSaved = maxSavedTripsForPlan(plan, status);
+    const canSave =
+      maxSaved === null ? pro : Boolean(pro && savedTripCount < maxSaved);
+
+    if (!canSave) {
+      throw new TripSaveLimitError(
+        "Saved route limit reached for your plan",
+        maxSaved,
+        savedTripCount,
+      );
+    }
+
+    const [inserted] = await tx.insert(trips).values(values).returning();
+    return inserted;
+  });
 
   if (!row) throw new Error("Failed to create trip");
   return rowToDto(row);

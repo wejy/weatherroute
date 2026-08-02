@@ -75,5 +75,31 @@ export function resolveRadiusKm(
   return DISTANCE_RADIUS_KM[FREE_MAX_DISTANCE_KEY];
 }
 
+/** Statute miles per kilometre. */
+export const KM_PER_MILE = 1 / 1.609344;
+
+export function kmToMiles(km: number): number {
+  if (!Number.isFinite(km) || km <= 0) return 0;
+  return Math.round(km * KM_PER_MILE);
+}
+
+export type DistanceLocale = "en" | "fi";
+
+/**
+ * Format a great-circle / road distance for UI.
+ * EN: `200 km (~124 mi)` · FI: `200 km`
+ */
+export function formatDistanceKm(
+  km: number,
+  locale: DistanceLocale = "en",
+): string {
+  const value = Number.isFinite(km) ? Math.max(0, km) : 0;
+  const rounded = Math.round(value);
+  const tag = locale === "fi" ? "fi-FI" : "en-GB";
+  const kmLabel = `${rounded.toLocaleString(tag)} km`;
+  if (locale !== "en") return kmLabel;
+  return `${kmLabel} (~${kmToMiles(value).toLocaleString("en-GB")} mi)`;
+}
+
 /** Matches web discover weather batch cap (anon). */
 export const DISCOVER_WEATHER_CANDIDATE_LIMIT = 14;

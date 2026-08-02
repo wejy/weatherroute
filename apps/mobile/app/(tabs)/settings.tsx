@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from "react-native";
-import { Link, useFocusEffect } from "expo-router";
+import { Link, useFocusEffect, type Href } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getApiBaseUrl } from "@/lib/api";
@@ -95,6 +95,27 @@ export default function SettingsScreen() {
             </Link>
           </>
         )}
+      </View>
+
+      <Text style={styles.label}>{t("nav.about")}</Text>
+      <View style={styles.card}>
+        <Text style={styles.cardBody}>{t("about.lead")}</Text>
+        <Link href={"/(tabs)/about" as Href} asChild>
+          <Pressable style={styles.signInBtn}>
+            <Text style={styles.signInText}>{t("nav.about")}</Text>
+          </Pressable>
+        </Link>
+      </View>
+
+      <Text style={styles.label}>{t("settings.subscriptionTitle")}</Text>
+      <View style={styles.card}>
+        <Text style={styles.cardBody}>{t("settings.subscriptionBody")}</Text>
+        <Link href={"/pro" as Href} asChild>
+          <Pressable style={styles.signInBtn}>
+            <Text style={styles.signInText}>{t("settings.subscriptionCta")}</Text>
+          </Pressable>
+        </Link>
+        <Text style={styles.hint}>{t("settings.subscriptionSoon")}</Text>
       </View>
 
       <Text style={styles.label}>{t("language.label")}</Text>

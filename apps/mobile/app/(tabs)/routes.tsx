@@ -12,6 +12,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/lib/i18n";
 import { apiGet, getApiBaseUrl } from "@/lib/api";
+import { formatDistanceKm } from "@/lib/distance";
 import {
   clampDateKey,
   isDateKey,
@@ -399,7 +400,7 @@ export default function RoutesScreen() {
             <View style={styles.summaryBody}>
               <Text style={styles.summaryTitle}>{route.title}</Text>
               <Text style={styles.summaryMeta}>
-                {route.durationLabel} · {route.distanceKm} km
+                {route.durationLabel} · {formatDistanceKm(route.distanceKm, locale)}
               </Text>
               <Text style={styles.summaryLabel}>{t("routes.dryTrip")}</Text>
             </View>
@@ -444,7 +445,7 @@ export default function RoutesScreen() {
                       <Text style={styles.altMeta}>
                         {t("routes.alternativeDryness", { pct: alt.dryness })}
                         {" · "}
-                        {alt.distanceKm} km
+                        {formatDistanceKm(alt.distanceKm, locale)}
                       </Text>
                       <Text style={styles.altMeta}>
                         {t("routes.alternativeAvgRain", {

@@ -25,6 +25,7 @@ import {
   CUSTOM_RADIUS_MIN_KM,
   DISTANCE_PRESET_KEYS,
   FREE_MAX_DISTANCE_KEY,
+  formatDistanceKm,
   isProDistance,
   resolveRadiusKm,
 } from "@/lib/distance";
@@ -583,7 +584,8 @@ export default function DiscoverScreen() {
         {distance === "custom" && isPro && (
           <View style={styles.customRadius}>
             <Text style={styles.customRadiusLabel}>
-              {t("search.customRadius")} · {customRadiusKm} km
+              {t("search.customRadius")} ·{" "}
+              {formatDistanceKm(customRadiusKm, locale)}
             </Text>
             <TextInput
               value={String(customRadiusKm)}
@@ -696,7 +698,7 @@ export default function DiscoverScreen() {
             <Text style={styles.resultsMeta}>
               {result.dateRangeLabel} ·{" "}
               {t("home.withinOf", {
-                radius: result.radiusKm,
+                radius: formatDistanceKm(result.radiusKm, locale),
                 place: result.origin.placeName,
               })}
               {result.destinations.length > 0

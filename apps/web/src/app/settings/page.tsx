@@ -15,6 +15,7 @@ import {
   saveEarliestDepartureAction,
   settingsSignOutAction,
 } from "@/server/actions/settings";
+import { openBillingPortalAction } from "@/server/actions/billing";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import {
@@ -22,6 +23,8 @@ import {
   DISCOVER_FREE_DISPLAY,
   DISCOVER_PRO_DISPLAY_MAX,
 } from "@/lib/distance";
+import { getBillingEntitlement } from "@/server/dal/subscriptions";
+import { isStripeBillingConfigured } from "@/server/billing/plans";
 
 export const dynamic = "force-dynamic";
 
@@ -43,8 +46,14 @@ export default async function SettingsPage({
   const t = createTranslator(getDictionary(locale));
   const caps = await getDiscoverTierForSettings();
   const departurePrefs = await getEffectiveEarliestDepartureHour();
+  const billing = await getBillingEntitlement(user?.id ?? null);
+  const stripeReady = isStripeBillingConfigured();
   const raw = await searchParams;
   const saved = raw.saved === "1";
+  const billingFlash =
+    raw.billing === "unavailable" || raw.billing === "error"
+      ? String(raw.billing)
+      : "";
 
   const preferred = Math.min(
     caps.maxSelectable,
@@ -61,6 +70,14 @@ export default async function SettingsPage({
       ? String(departurePrefs.preference)
       : "any";
   const isPro = caps.tier === "pro";
+  const planLabel =
+    billing.plan === "one_time"
+      ? t("settings.planOneTime")
+      : billing.plan === "monthly"
+        ? t("settings.planMonthly")
+        : isPro
+          ? t("settings.tierPro")
+          : t("settings.tierFree");
 
   return (
     <>
@@ -94,7 +111,7 @@ export default async function SettingsPage({
                   <p className="font-medium text-on-surface">{user.displayName}</p>
                   <p className="text-sm text-on-surface-variant">{user.email}</p>
                   <p className="mt-1 text-xs text-on-surface-variant">
-                    {isPro ? t("settings.tierPro") : t("settings.tierFree")}
+                    {planLabel}
                   </p>
                 </div>
                 <form action={settingsSignOutAction}>
@@ -277,17 +294,36 @@ export default async function SettingsPage({
             <p className="mb-4 text-sm text-on-surface-variant">
               {t("settings.subscriptionBody")}
             </p>
-            <button
-              type="button"
-              disabled
-              className="w-full rounded-lg bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary opacity-70 sm:w-auto"
-              title={t("settings.subscriptionSoon")}
-            >
-              {t("settings.subscriptionCta")}
-            </button>
-            <p className="mt-2 text-xs text-on-surface-variant">
-              {t("settings.subscriptionSoon")}
-            </p>
+            {billingFlash ? (
+              <p className="mb-3 text-sm text-on-surface-variant" role="status">
+                {billingFlash === "unavailable"
+                  ? t("settings.subscriptionSoon")
+                  : t("pro.checkoutError")}
+              </p>
+            ) : null}
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+              <Link
+                href="/pro"
+                className="inline-flex items-center justify-center rounded-lg bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary"
+              >
+                {t("settings.subscriptionCta")}
+              </Link>
+              {user && billing.hasMonthlySubscription && stripeReady ? (
+                <form action={openBillingPortalAction}>
+                  <button
+                    type="submit"
+                    className="w-full rounded-lg border border-outline-variant px-4 py-3 text-sm font-semibold text-on-surface-variant sm:w-auto"
+                  >
+                    {t("settings.subscriptionManage")}
+                  </button>
+                </form>
+              ) : null}
+            </div>
+            {!stripeReady ? (
+              <p className="mt-2 text-xs text-on-surface-variant">
+                {t("settings.subscriptionSoon")}
+              </p>
+            ) : null}
           </div>
         </section>
       </main>

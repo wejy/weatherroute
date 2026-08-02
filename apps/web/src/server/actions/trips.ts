@@ -10,7 +10,7 @@ import {
   signOut,
 } from "@/server/auth/session";
 import { requestEmailOtp } from "@/server/auth/otp";
-import { createTrip, deleteTrip } from "@/server/dal/trips";
+import { createTrip, deleteTrip, TripSaveLimitError } from "@/server/dal/trips";
 import { haversineKm } from "@/server/integrations/mocks/data";
 import { getClientIpFromHeaders } from "@/lib/client-ip";
 import { saveTripInputSchema } from "@/lib/validation/schemas";
@@ -119,7 +119,14 @@ export async function saveTripAction(formData: FormData) {
     throw new Error("Invalid trip data");
   }
 
-  await createTrip(user.id, parsed.data);
+  try {
+    await createTrip(user.id, parsed.data);
+  } catch (err) {
+    if (err instanceof TripSaveLimitError) {
+      redirect("/pro?checkout=trip_limit");
+    }
+    throw err;
+  }
 
   revalidatePath("/trips");
   redirect("/trips");

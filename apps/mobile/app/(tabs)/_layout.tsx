@@ -57,6 +57,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="about"
+        options={{
+          title: t("nav.about"),
+          tabBarIcon: ({ color }) => (
+            <TabBarIcon name="info-circle" color={String(color)} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: t("nav.sideSettings"),

@@ -7,6 +7,7 @@ import { RouteMap } from "@/components/map/route-map";
 import { RouteEndpointsForm } from "@/components/routes/route-endpoints-form";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp } from "@/lib/utils";
+import { formatDistanceKm } from "@/lib/distance";
 import { travelModeIcon } from "@/lib/types";
 import { getMapboxPublicToken } from "@/lib/env";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
@@ -21,6 +22,7 @@ import {
 import { resolveDateWindow, type DatePreset } from "@/lib/dates";
 import { RouteShareActions } from "@/components/routes/route-share-actions";
 import { getEffectiveEarliestDepartureHour } from "@/server/dal/user-prefs";
+import { getBillingEntitlement } from "@/server/dal/subscriptions";
 import { WEATHER_TONE_COLORS } from "@/lib/weather-tone";
 
 export async function generateMetadata() {
@@ -89,6 +91,8 @@ export default async function RoutesPage({
   });
   const departurePrefs = await getEffectiveEarliestDepartureHour();
   const isPro = departurePrefs.tier === "pro";
+  const user = await getCurrentUser();
+  const billing = await getBillingEntitlement(user?.id ?? null);
   const route = await getRouteWeather(from, to, {
     fromLat,
     fromLon,
@@ -106,7 +110,6 @@ export default async function RoutesPage({
   });
   const t = createTranslator(getDictionary(locale));
   const mapboxToken = getMapboxPublicToken();
-  const user = await getCurrentUser();
 
   // TODO: Let users set earliest departure on this page per trip (overrides
   // the Pro settings default). Wire via search param e.g. `earliestHour`.
@@ -171,7 +174,7 @@ export default async function RoutesPage({
                   <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
                     straighten
                   </span>
-                  {route.distanceKm} km
+                  {formatDistanceKm(route.distanceKm, locale)}
                 </span>
                 <span className="h-1 w-1 rounded-full bg-outline-variant" />
                 <span className="flex items-center gap-1">
@@ -198,6 +201,7 @@ export default async function RoutesPage({
             </Suspense>
 
             {user ? (
+              billing.canSaveTrip ? (
               <form action={saveTripAction}>
                 <input
                   type="hidden"
@@ -235,6 +239,19 @@ export default async function RoutesPage({
                   {t("routes.saveRoute")}
                 </button>
               </form>
+              ) : (
+                <Link
+                  href="/pro?checkout=trip_limit"
+                  className="flex w-full items-center justify-center gap-2 rounded-lg border border-outline-variant px-4 py-3 text-sm font-medium text-on-surface-variant"
+                >
+                  <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                    lock
+                  </span>
+                  {billing.tier === "pro"
+                    ? t("routes.saveRouteLimit")
+                    : t("routes.saveRouteUpgrade")}
+                </Link>
+              )
             ) : (
               <Link
                 href={`/login?next=${encodeURIComponent(`/routes?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&mode=${mode}`)}`}
@@ -338,7 +355,7 @@ export default async function RoutesPage({
                         <p className="mt-1.5 text-xs text-on-surface-variant">
                           {t("routes.alternativeDryness", { pct: alt.dryness })}
                           {" · "}
-                          {alt.distanceKm} km
+                          {formatDistanceKm(alt.distanceKm, locale)}
                         </p>
                         <p className="mt-0.5 text-xs text-on-surface-variant">
                           {t("routes.alternativeAvgRain", {

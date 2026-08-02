@@ -1,10 +1,15 @@
 import "server-only";
 
 import { cookies } from "next/headers";
-import { eq } from "drizzle-orm";
-import { getDb } from "@/db";
-import { subscriptions } from "@/db/schema";
 import { getCurrentUser } from "@/server/auth/session";
+import {
+  getBillingEntitlement,
+  getSubscriptionRow,
+} from "@/server/dal/subscriptions";
+import {
+  isPaidPlan,
+  isProBillingStatus,
+} from "@/server/billing/plans";
 import type { DiscoverTier } from "@/server/dal/discover-limits";
 
 export const EARLIEST_DEPARTURE_COOKIE = "wt_earliest_departure";
@@ -24,20 +29,13 @@ export async function resolveUserTier(
 ): Promise<DiscoverTier> {
   if (!userId) return "anon";
 
-  const db = getDb();
-  if (!db) return "free";
-
-  try {
-    const [sub] = await db
-      .select({ status: subscriptions.status })
-      .from(subscriptions)
-      .where(eq(subscriptions.userId, userId))
-      .limit(1);
-    if (sub?.status === "active" || sub?.status === "trial") {
-      return "pro";
-    }
-  } catch {
-    // ignore — treat as free
+  const row = await getSubscriptionRow(userId);
+  if (
+    row &&
+    isProBillingStatus(row.status) &&
+    isPaidPlan(row.plan)
+  ) {
+    return "pro";
   }
   return "free";
 }
@@ -70,4 +68,9 @@ export async function getEffectiveEarliestDepartureHour(): Promise<{
     preference,
     effectiveHour: tier === "pro" ? preference : null,
   };
+}
+
+export async function getCurrentBillingEntitlement() {
+  const user = await getCurrentUser();
+  return getBillingEntitlement(user?.id ?? null);
 }

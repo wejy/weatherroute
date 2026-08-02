@@ -5,6 +5,7 @@ import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { DiscoverQueryLink } from "@/components/discover/discover-query-link";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
+import { getCurrentUser } from "@/server/auth/session";
 
 function NavLinks({
   active,
@@ -60,12 +61,15 @@ function NavLinks({
 export async function TopNav({ active }: { active?: string }) {
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
+  const user = await getCurrentUser();
   const links = [
     { href: "/", label: t("nav.discover") },
     { href: "/map", label: t("nav.map") },
     { href: "/routes", label: t("nav.routes") },
     { href: "/trips", label: t("nav.trips") },
+    { href: "/about", label: t("nav.about") },
   ];
+  const loginHref = `/login?next=${encodeURIComponent(active && active !== "/login" ? active : "/settings")}`;
 
   return (
     <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between border-b border-outline-variant/20 bg-surface/90 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl transition-all duration-300 md:px-margin-desktop">
@@ -89,17 +93,58 @@ export async function TopNav({ active }: { active?: string }) {
         <NavLinks active={active} links={links} brand={t("brand")} />
       </Suspense>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2 sm:gap-3">
         <LanguageSwitcher />
-        <Link
-          href="/settings"
-          aria-label={t("nav.sideSettings")}
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/30 bg-surface-container-low text-on-surface-variant shadow-sm transition-colors hover:bg-surface-container hover:text-primary-container"
-        >
-          <span className="material-symbols-outlined text-2xl" aria-hidden="true">
-            settings
-          </span>
-        </Link>
+        {user ? (
+          <Link
+            href="/settings"
+            aria-label={t("nav.accountMenu")}
+            title={t("nav.signedInAs", { name: user.displayName })}
+            aria-current={active === "/settings" ? "page" : undefined}
+            data-testid="nav-account"
+            className={cn(
+              "flex h-11 max-w-[12rem] items-center gap-2 rounded-full border px-2.5 shadow-sm transition-colors sm:px-3",
+              active === "/settings"
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-primary/25 bg-primary/5 text-on-surface hover:bg-primary/10 hover:text-primary",
+            )}
+          >
+            <span className="relative flex h-8 w-8 shrink-0 items-center justify-center">
+              <span
+                className="material-symbols-outlined fill-icon text-[28px] text-primary"
+                aria-hidden="true"
+              >
+                account_circle
+              </span>
+              <span
+                className="absolute right-0 bottom-0 h-2.5 w-2.5 rounded-full border-2 border-surface bg-secondary"
+                aria-hidden="true"
+              />
+            </span>
+            <span className="hidden min-w-0 flex-col leading-tight sm:flex">
+              <span className="truncate text-xs font-semibold text-on-surface">
+                {user.displayName}
+              </span>
+              <span className="text-[10px] font-medium text-secondary">
+                {t("nav.sideSettings")}
+              </span>
+            </span>
+            <span
+              className="material-symbols-outlined hidden text-[20px] text-on-surface-variant sm:inline"
+              aria-hidden="true"
+            >
+              settings
+            </span>
+          </Link>
+        ) : (
+          <Link
+            href={loginHref}
+            data-testid="nav-sign-in"
+            className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container"
+          >
+            {t("nav.signIn")}
+          </Link>
+        )}
       </div>
     </header>
   );

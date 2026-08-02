@@ -6,6 +6,7 @@ import Image from "next/image";
 import type { DestinationDto } from "@/lib/types";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp } from "@/lib/utils";
+import { formatDistanceKm } from "@/lib/distance";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { translateCondition } from "@/i18n/translate";
 import { resolveDateWindow, type DatePreset } from "@/lib/dates";
@@ -114,7 +115,10 @@ export function DestinationCard({
               {translateCondition(dict, forecast.condition)} ·{" "}
               {t("card.rain", { pct: forecast.rainProbability })}
               {destination.distanceKm > 0 && (
-                <span> · {destination.distanceKm} km</span>
+                <span>
+                  {" "}
+                  · {formatDistanceKm(destination.distanceKm, locale)}
+                </span>
               )}
               {destination.driveDurationLabel ? (
                 <span className="inline-flex items-center gap-0.5">

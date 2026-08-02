@@ -5,6 +5,7 @@ import { listTripsForUser } from "@/server/dal/trips";
 import { deleteTripAction } from "@/server/actions/trips";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
+import { formatDistanceKm } from "@/lib/distance";
 import { env, hasDatabase } from "@/lib/env";
 import {
   isTravelMode,
@@ -232,7 +233,7 @@ export default async function TripsPage({
                         <span className="material-symbols-outlined text-[18px]">
                           straighten
                         </span>
-                        {trip.distanceKm} km
+                        {formatDistanceKm(trip.distanceKm, locale)}
                       </span>
                     )}
                     {trip.durationLabel ? (

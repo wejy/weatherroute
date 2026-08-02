@@ -63,13 +63,16 @@ export function getAuthSecret(): string {
 }
 
 /**
- * Auth.js trustHost — default false (safe).
- * Set AUTH_TRUST_HOST=true only behind a trusted reverse proxy that sets Host correctly
- * (e.g. Vercel, Cloudflare, nginx). Never enable on a publicly reachable origin that
- * can be spoofed via Host header.
+ * Auth.js trustHost.
+ * - Production: default **false** — set AUTH_TRUST_HOST=true only behind a trusted
+ *   reverse proxy (nginx/Caddy/Vercel) that sets Host / X-Forwarded-Host correctly.
+ * - Development: default **true** — Next often binds `0.0.0.0` and you may open
+ *   localhost / 127.0.0.1 / LAN IP; without trustHost Auth.js throws UntrustedHost
+ *   and OTP “succeeds” without a session cookie.
+ * Override anytime with AUTH_TRUST_HOST=true|false.
  */
 export function shouldTrustAuthHost(): boolean {
-  return flag(process.env.AUTH_TRUST_HOST, false);
+  return flag(process.env.AUTH_TRUST_HOST, !isProduction);
 }
 
 /** Comma-separated origins for CORS (API). Falls back to app URL + local dev. */
