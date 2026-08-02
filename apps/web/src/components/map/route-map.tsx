@@ -57,7 +57,7 @@ function MockRouteMap({
               <stop offset="100%" stopColor="#38bdf8" />
             </linearGradient>
           </defs>
-          <circle cx="150" cy="350" r="6" fill="#4f46e5" />
+          <circle cx="150" cy="350" r="6" fill="#14b863" />
           <path
             d="M150,350 Q130,250 100,200 T50,50"
             fill="none"

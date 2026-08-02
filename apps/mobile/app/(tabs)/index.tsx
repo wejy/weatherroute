@@ -878,7 +878,12 @@ const styles = StyleSheet.create({
   },
   chipActive: {
     backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    borderColor: colors.accentContainer,
+    shadowColor: colors.accentContainer,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    elevation: 4,
   },
   chipLocked: {
     opacity: 0.55,

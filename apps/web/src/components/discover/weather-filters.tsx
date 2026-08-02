@@ -110,8 +110,8 @@ export function WeatherFilters({
                 "relative flex min-h-11 items-center gap-2 rounded-full border font-medium shadow-sm transition-all hover:-translate-y-0.5 motion-reduce:transform-none",
                 compact ? "px-3 py-2 text-xs" : "px-5 py-2.5 text-sm",
                 isActive
-                  ? "border-accent-fixed bg-accent text-on-accent shadow-lg shadow-accent/30"
-                  : "border-outline-variant/30 bg-surface/95 text-on-surface shadow-[0px_4px_16px_rgba(0,0,0,0.08)] backdrop-blur-xl hover:bg-surface",
+                  ? "border-accent-container bg-accent text-on-accent shadow-[0_4px_18px_rgba(250,204,21,0.55)]"
+                  : "border-outline-variant/40 bg-surface text-on-surface shadow-sm hover:border-outline-variant/70 hover:bg-surface-container-low",
               )}
             >
               <span

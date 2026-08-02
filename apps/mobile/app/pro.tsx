@@ -212,8 +212,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   proCard: {
-    borderColor: "rgba(79, 70, 229, 0.35)",
-    backgroundColor: "rgba(79, 70, 229, 0.06)",
+    borderColor: "rgba(20, 184, 99, 0.35)",
+    backgroundColor: "rgba(20, 184, 99, 0.06)",
   },
   badge: {
     alignSelf: "flex-start",
@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: "700",
     color: colors.primary,
-    backgroundColor: "rgba(79, 70, 229, 0.12)",
+    backgroundColor: "rgba(20, 184, 99, 0.12)",
     overflow: "hidden",
     paddingHorizontal: 8,
     paddingVertical: 4,

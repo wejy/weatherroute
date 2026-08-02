@@ -178,7 +178,7 @@ export default async function AboutPage() {
                 ))}
               </ul>
             </div>
-            <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-[0px_8px_24px_rgba(79,70,229,0.08)]">
+            <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-[0px_8px_24px_rgba(20,184,99,0.08)]">
               <span className="inline-flex rounded-lg bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary">
                 {t("about.proTitle")}
               </span>
