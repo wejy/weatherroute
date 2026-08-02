@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -8,11 +8,19 @@ import {
   Text,
   View,
 } from "react-native";
-import { Link, Stack, useFocusEffect, type Href } from "expo-router";
+import { Link, Stack, useFocusEffect, useLocalSearchParams, type Href } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { colors } from "@/constants/Colors";
 import { apiPost } from "@/lib/api";
-import { fetchSession } from "@/lib/session";
+import {
+  isStripeCheckoutAllowed,
+  openWebProPage,
+} from "@/lib/billing";
+import {
+  fetchSession,
+  type BillingPlan,
+  type DiscoverTier,
+} from "@/lib/session";
 
 const FEATURE_KEYS = [
   "radius",
@@ -35,22 +43,94 @@ type CheckoutPlan = "one_time" | "monthly";
 
 export default function ProMarketingScreen() {
   const { t } = useI18n();
+  const params = useLocalSearchParams<{
+    checkout?: string | string[];
+    plan?: string | string[];
+  }>();
   const [signedIn, setSignedIn] = useState(false);
-  const [busy, setBusy] = useState<CheckoutPlan | "portal" | null>(null);
+  const [tier, setTier] = useState<DiscoverTier>("anon");
+  const [plan, setPlan] = useState<BillingPlan>("free");
+  const [busy, setBusy] = useState<CheckoutPlan | "portal" | "web" | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [flash, setFlash] = useState<string | null>(null);
+  const allowStripe = isStripeCheckoutAllowed();
+
+  const refresh = useCallback(async () => {
+    const s = await fetchSession();
+    setSignedIn(Boolean(s.user));
+    setTier(s.tier);
+    setPlan(s.plan);
+  }, []);
 
   useFocusEffect(
     useCallback(() => {
-      void fetchSession().then((s) => setSignedIn(Boolean(s.user)));
-    }, []),
+      void refresh();
+    }, [refresh]),
   );
 
-  const startCheckout = useCallback(async (plan: CheckoutPlan) => {
+  useEffect(() => {
+    const checkout = Array.isArray(params.checkout)
+      ? params.checkout[0]
+      : params.checkout;
+    if (checkout === "success") {
+      setFlash(t("pro.checkoutSuccess"));
+      void refresh();
+    } else if (checkout === "cancel") {
+      setFlash(t("pro.checkoutCancel"));
+    }
+  }, [params.checkout, refresh, t]);
+
+  const startCheckout = useCallback(
+    async (checkoutPlan: CheckoutPlan) => {
+      setError(null);
+      setFlash(null);
+      if (!allowStripe) {
+        setBusy("web");
+        try {
+          const ok = await openWebProPage();
+          if (!ok) setError(t("pro.checkoutUnavailable"));
+        } catch {
+          setError(t("pro.checkoutError"));
+        } finally {
+          setBusy(null);
+        }
+        return;
+      }
+      setBusy(checkoutPlan);
+      try {
+        const data = await apiPost<{ url: string }>("/api/billing/checkout", {
+          plan: checkoutPlan,
+          returnToApp: true,
+        });
+        await Linking.openURL(data.url);
+      } catch {
+        setError(t("pro.checkoutError"));
+      } finally {
+        setBusy(null);
+      }
+    },
+    [allowStripe, t],
+  );
+
+  const openPortal = useCallback(async () => {
     setError(null);
-    setBusy(plan);
+    setFlash(null);
+    if (!allowStripe) {
+      setBusy("web");
+      try {
+        const ok = await openWebProPage();
+        if (!ok) setError(t("pro.checkoutUnavailable"));
+      } catch {
+        setError(t("pro.checkoutError"));
+      } finally {
+        setBusy(null);
+      }
+      return;
+    }
+    setBusy("portal");
     try {
-      const data = await apiPost<{ url: string }>("/api/billing/checkout", {
-        plan,
+      const data = await apiPost<{ url: string }>("/api/billing/portal", {
+        returnToApp: true,
       });
       await Linking.openURL(data.url);
     } catch {
@@ -58,20 +138,17 @@ export default function ProMarketingScreen() {
     } finally {
       setBusy(null);
     }
-  }, [t]);
+  }, [allowStripe, t]);
 
-  const openPortal = useCallback(async () => {
-    setError(null);
-    setBusy("portal");
-    try {
-      const data = await apiPost<{ url: string }>("/api/billing/portal", {});
-      await Linking.openURL(data.url);
-    } catch {
-      setError(t("pro.checkoutError"));
-    } finally {
-      setBusy(null);
-    }
-  }, [t]);
+  const isPro = tier === "pro";
+  const planLabel =
+    plan === "one_time"
+      ? t("settings.planOneTime")
+      : plan === "monthly"
+        ? t("settings.planMonthly")
+        : isPro
+          ? t("settings.tierPro")
+          : t("settings.tierFree");
 
   return (
     <>
@@ -80,7 +157,16 @@ export default function ProMarketingScreen() {
         <Text style={styles.brand}>{t("brand")}</Text>
         <Text style={styles.title}>{t("pro.title")}</Text>
         <Text style={styles.subtitle}>{t("pro.subtitle")}</Text>
+        {signedIn ? (
+          <Text style={styles.currentPlan}>
+            {t("pro.currentPlan", { plan: planLabel })}
+          </Text>
+        ) : null}
+        {flash ? <Text style={styles.flash}>{flash}</Text> : null}
         {error ? <Text style={styles.error}>{error}</Text> : null}
+        {!allowStripe ? (
+          <Text style={styles.storeNote}>{t("pro.storePurchaseNote")}</Text>
+        ) : null}
 
         <View style={styles.planCard}>
           <Text style={styles.badge}>{t("pro.oneTimeBadge")}</Text>
@@ -90,13 +176,17 @@ export default function ProMarketingScreen() {
           {signedIn ? (
             <Pressable
               style={styles.secondaryBtn}
-              disabled={busy != null}
+              disabled={busy != null || isPro}
               onPress={() => void startCheckout("one_time")}
             >
-              {busy === "one_time" ? (
+              {busy === "one_time" || busy === "web" ? (
                 <ActivityIndicator color={colors.primary} />
               ) : (
-                <Text style={styles.secondaryText}>{t("pro.buyOneTime")}</Text>
+                <Text style={styles.secondaryText}>
+                  {allowStripe
+                    ? t("pro.buyOneTime")
+                    : t("pro.openWebToBuy")}
+                </Text>
               )}
             </Pressable>
           ) : (
@@ -118,13 +208,17 @@ export default function ProMarketingScreen() {
           {signedIn ? (
             <Pressable
               style={styles.primaryBtn}
-              disabled={busy != null}
+              disabled={busy != null || (isPro && plan === "monthly")}
               onPress={() => void startCheckout("monthly")}
             >
-              {busy === "monthly" ? (
+              {busy === "monthly" || busy === "web" ? (
                 <ActivityIndicator color={colors.onPrimary} />
               ) : (
-                <Text style={styles.primaryText}>{t("pro.buyMonthly")}</Text>
+                <Text style={styles.primaryText}>
+                  {allowStripe
+                    ? t("pro.buyMonthly")
+                    : t("pro.openWebToBuy")}
+                </Text>
               )}
             </Pressable>
           ) : (
@@ -142,10 +236,14 @@ export default function ProMarketingScreen() {
             disabled={busy != null}
             onPress={() => void openPortal()}
           >
-            {busy === "portal" ? (
+            {busy === "portal" || busy === "web" ? (
               <ActivityIndicator color={colors.primary} />
             ) : (
-              <Text style={styles.secondaryText}>{t("pro.manageBilling")}</Text>
+              <Text style={styles.secondaryText}>
+                {allowStripe
+                  ? t("pro.manageBilling")
+                  : t("pro.manageOnWeb")}
+              </Text>
             )}
           </Pressable>
         ) : null}
@@ -202,7 +300,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: colors.onSurfaceVariant,
-    marginBottom: 8,
+    marginBottom: 4,
+  },
+  currentPlan: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.primary,
+  },
+  flash: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.primary,
+    backgroundColor: "rgba(20, 184, 99, 0.1)",
+    padding: 12,
+    borderRadius: 12,
+    overflow: "hidden",
+  },
+  storeNote: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.onSurfaceVariant,
   },
   error: { color: colors.error, fontSize: 14 },
   planCard: {

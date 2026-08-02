@@ -25,6 +25,7 @@ export default function SettingsScreen() {
   const api = getApiBaseUrl();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [tier, setTier] = useState<DiscoverTier>("anon");
+  const [plan, setPlan] = useState<"free" | "one_time" | "monthly">("free");
   const [sameCountryOnly, setSameCountryOnly] = useState(false);
   const [sameCountryEffective, setSameCountryEffective] = useState(false);
   const [loadingUser, setLoadingUser] = useState(true);
@@ -37,6 +38,7 @@ export default function SettingsScreen() {
       const next = await fetchSession();
       setUser(next.user);
       setTier(next.tier);
+      setPlan(next.plan);
       setSameCountryOnly(next.sameCountryOnly);
       setSameCountryEffective(next.sameCountryOnlyEffective);
     } finally {
@@ -59,6 +61,8 @@ export default function SettingsScreen() {
     try {
       await signOutRemote();
       setUser(null);
+      setTier("anon");
+      setPlan("free");
       setSameCountryOnly(false);
       setSameCountryEffective(false);
     } finally {
@@ -89,6 +93,14 @@ export default function SettingsScreen() {
   );
 
   const isPro = tier === "pro";
+  const planLabel =
+    plan === "one_time"
+      ? t("settings.planOneTime")
+      : plan === "monthly"
+        ? t("settings.planMonthly")
+        : isPro
+          ? t("settings.tierPro")
+          : t("settings.tierFree");
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -102,9 +114,7 @@ export default function SettingsScreen() {
           <>
             <Text style={styles.cardTitle}>{user.displayName}</Text>
             <Text style={styles.cardBody}>{user.email}</Text>
-            <Text style={styles.tier}>
-              {isPro ? t("settings.tierPro") : t("settings.tierFree")}
-            </Text>
+            <Text style={styles.tier}>{planLabel}</Text>
             <Pressable
               onPress={() => void onSignOut()}
               disabled={signingOut}
@@ -176,12 +186,16 @@ export default function SettingsScreen() {
       <Text style={styles.label}>{t("settings.subscriptionTitle")}</Text>
       <View style={styles.card}>
         <Text style={styles.cardBody}>{t("settings.subscriptionBody")}</Text>
+        {user ? (
+          <Text style={styles.tier}>{planLabel}</Text>
+        ) : (
+          <Text style={styles.hint}>{t("settings.subscriptionSignInHint")}</Text>
+        )}
         <Link href={"/pro" as Href} asChild>
           <Pressable style={styles.signInBtn}>
             <Text style={styles.signInText}>{t("settings.subscriptionCta")}</Text>
           </Pressable>
         </Link>
-        <Text style={styles.hint}>{t("settings.subscriptionSoon")}</Text>
       </View>
 
       <Text style={styles.label}>{t("language.label")}</Text>

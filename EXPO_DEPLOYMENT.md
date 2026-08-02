@@ -276,6 +276,18 @@ eas build --platform all --profile production --auto-submit
 - [ ] Support URL / contact email
 - [ ] Export compliance / encryption questions (standard HTTPS → usually exempt)
 - [ ] Android: target API level required by Play (EAS SDK 57 defaults usually OK — verify before submit)
+- [ ] **Billing:** set `EXPO_PUBLIC_ALLOW_STRIPE_CHECKOUT=0` on production/store EAS profiles (digital Pro must not sell via Stripe inside the store binary). Buy on the website; same account unlocks Pro in the app.
+- [ ] Optional: `EXPO_PUBLIC_WEB_ORIGIN=https://your-domain` if the marketing site differs from the API host
+
+### Billing / Pro (mobile)
+
+| Build | `EXPO_PUBLIC_ALLOW_STRIPE_CHECKOUT` | Behavior |
+|---|---|---|
+| Expo Go / `__DEV__` | omit or `1` | In-app CTA → Stripe Checkout in browser → `/open-app` → `solviax://pro?checkout=…` refreshes tier |
+| App Store / Play | `0` | CTAs open the website `/pro`; no Stripe session started from the binary |
+
+After web purchase, sign in with the same email in the app (`GET /api/auth/me` → `tier: "pro"`).
+
 
 ### Versioning
 

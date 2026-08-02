@@ -16,11 +16,23 @@ export async function POST(request: Request) {
       );
     }
     try {
+      let returnToApp = false;
+      try {
+        const body = await request.json();
+        returnToApp = Boolean(
+          body &&
+            typeof body === "object" &&
+            (body as { returnToApp?: unknown }).returnToApp === true,
+        );
+      } catch {
+        // empty body is fine
+      }
       const session = await createBillingPortalSession({
         userId: user.id,
         email: user.email,
+        returnToApp,
       });
-      log.info({ userId: user.id }, "portal session created");
+      log.info({ userId: user.id, returnToApp }, "portal session created");
       return NextResponse.json({ url: session.url });
     } catch (err) {
       log.error({ err, userId: user.id }, "portal failed");

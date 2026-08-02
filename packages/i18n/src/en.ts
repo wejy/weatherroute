@@ -337,6 +337,7 @@ const en = {
       "Unlock wider search radii, more discover results, earliest departure, same-country filtering, and saved routes with One-time or Monthly Pro.",
     subscriptionCta: "View plans & pricing",
     subscriptionSoon: "Stripe keys are not configured yet.",
+    subscriptionSignInHint: "Sign in to see your plan and manage billing.",
     subscriptionManage: "Manage billing",
     planOneTime: "Plan: One-time Pro",
     planMonthly: "Plan: Monthly Pro",
@@ -500,6 +501,10 @@ const en = {
     buyOneTime: "Buy One-time · €1",
     buyMonthly: "Subscribe Monthly · €2.80",
     manageBilling: "Manage subscription",
+    openWebToBuy: "Continue on the website",
+    manageOnWeb: "Manage on the website",
+    storePurchaseNote:
+      "In the App Store / Play Store build, Pro is purchased on the Solviax website with the same account — then open the app again.",
     currentPlan: "Your plan: {plan}",
     checkoutSuccess: "Payment successful — Pro is active. Thanks!",
     checkoutCancel: "Checkout canceled — no charge was made.",
@@ -596,6 +601,12 @@ const en = {
     destinationTitle: "Destination",
     emailPlaceholder: "you@example.com",
     isoDatePlaceholder: "YYYY-MM-DD",
+  },
+  mobileOpenApp: {
+    title: "Opening Solviax…",
+    body: "If the app does not open automatically, tap the button below.",
+    open: "Open Solviax app",
+    webFallback: "Continue on the website",
   },
 } as const;
 

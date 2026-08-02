@@ -15,9 +15,12 @@ export type SessionUser = {
 
 export type DiscoverTier = "anon" | "free" | "pro";
 
+export type BillingPlan = "free" | "one_time" | "monthly";
+
 export type SessionSnapshot = {
   user: SessionUser | null;
   tier: DiscoverTier;
+  plan: BillingPlan;
   sameCountryOnly: boolean;
   sameCountryOnlyEffective: boolean;
 };
@@ -27,12 +30,14 @@ export async function fetchSession(): Promise<SessionSnapshot> {
     const data = await apiGet<{
       user: SessionUser | null;
       tier?: DiscoverTier;
+      plan?: BillingPlan;
       sameCountryOnly?: boolean;
       sameCountryOnlyEffective?: boolean;
     }>("/api/auth/me");
     return {
       user: data.user,
       tier: data.tier ?? (data.user ? "free" : "anon"),
+      plan: data.plan ?? "free",
       sameCountryOnly: Boolean(data.sameCountryOnly),
       sameCountryOnlyEffective: Boolean(data.sameCountryOnlyEffective),
     };
@@ -41,6 +46,7 @@ export async function fetchSession(): Promise<SessionSnapshot> {
     return {
       user: null,
       tier: "anon",
+      plan: "free",
       sameCountryOnly: false,
       sameCountryOnlyEffective: false,
     };

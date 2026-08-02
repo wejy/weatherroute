@@ -341,6 +341,7 @@ const fi = {
       "Avaa laajemmat säteet, enemmän Löydä-tuloksia, aikaisin lähtöaika, saman maan rajaus ja tallennetut reitit Kerta- tai Jatkuva-Prolla.",
     subscriptionCta: "Katso tilaukset ja hinnat",
     subscriptionSoon: "Stripe-avaimia ei ole vielä määritetty.",
+    subscriptionSignInHint: "Kirjaudu nähdäksesi tilauksesi ja hallitaksesi laskutusta.",
     subscriptionManage: "Hallitse laskutusta",
     planOneTime: "Tilaus: Kerta-Pro",
     planMonthly: "Tilaus: Jatkuva Pro",
@@ -411,7 +412,7 @@ const fi = {
       saves: "Tallennetut reitit (2 Kerta-tilauksella · rajaton Jatkuvalla)",
     },
     plansCta: "Vertaa tilauksia ja tilaa",
-    plansHint: "Täysi hinnasto ja kassa ovat tilaussivulla.",
+    plansHint: "Täysi hinnasto ja maksutavat ovat tilaussivulla.",
     ctaDiscover: "Löydä paikkasi auringossa",
   },
   pro: {
@@ -505,10 +506,14 @@ const fi = {
     buyOneTime: "Osta Kerta · 1 €",
     buyMonthly: "Tilaa Jatkuva · 2,80 €",
     manageBilling: "Hallitse tilausta",
+    openWebToBuy: "Jatka verkkosivulla",
+    manageOnWeb: "Hallitse verkkosivulla",
+    storePurchaseNote:
+      "App Store- / Play-buildissa Pro ostetaan Solviaxin verkkosivulta samalla tilillä — avaa sitten sovellus uudelleen.",
     currentPlan: "Tilauksesi: {plan}",
     checkoutSuccess: "Maksu onnistui — Pro on käytössä. Kiitos!",
-    checkoutCancel: "Kassalta poistuttiin — veloitusta ei tehty.",
-    checkoutError: "Kassaa ei voitu aloittaa. Yritä uudelleen tai tarkista Stripe-asetukset.",
+    checkoutCancel: "Maksusta poistuttiin — veloitusta ei tehty.",
+    checkoutError: "Maksuprosessia ei voitu aloittaa. Yritä uudelleen tai tarkista Stripe-asetukset.",
     checkoutUnavailable:
       "Laskutusta ei ole määritetty tällä palvelimella (Stripe-avaimet puuttuvat).",
     checkoutTripLimit:
@@ -604,6 +609,12 @@ const fi = {
     destinationTitle: "Kohde",
     emailPlaceholder: "esim. nimi@osoite.fi",
     isoDatePlaceholder: "VVVV-KK-PP",
+  },
+  mobileOpenApp: {
+    title: "Avataan Solviax…",
+    body: "Jos sovellus ei aukea automaattisesti, napauta painiketta.",
+    open: "Avaa Solviax-sovellus",
+    webFallback: "Jatka verkkosivulla",
   },
 } as const satisfies Dictionary;
 

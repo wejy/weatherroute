@@ -43,13 +43,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "invalid_plan" }, { status: 400 });
     }
 
+    const returnToApp = Boolean(
+      body &&
+        typeof body === "object" &&
+        (body as { returnToApp?: unknown }).returnToApp === true,
+    );
+
     try {
       const session = await createCheckoutSession({
         userId: user.id,
         email: user.email,
         plan,
+        returnToApp,
       });
-      log.info({ userId: user.id, plan }, "checkout session created");
+      log.info({ userId: user.id, plan, returnToApp }, "checkout session created");
       return NextResponse.json({ url: session.url });
     } catch (err) {
       log.error({ err, userId: user.id, plan }, "checkout failed");

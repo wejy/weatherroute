@@ -64,6 +64,8 @@ export async function createCheckoutSession(opts: {
   userId: string;
   email: string;
   plan: CheckoutPlan;
+  /** When true, Stripe returns via /open-app → solviax:// deep link. */
+  returnToApp?: boolean;
 }): Promise<{ url: string }> {
   if (!isStripeBillingConfigured()) {
     throw new Error("Stripe billing is not configured");
@@ -80,13 +82,22 @@ export async function createCheckoutSession(opts: {
   const base = env.appUrl.replace(/\/$/, "");
   const mode = opts.plan === "monthly" ? "subscription" : "payment";
 
+  const successWeb = `${base}/pro?checkout=success&plan=${opts.plan}`;
+  const cancelWeb = `${base}/pro?checkout=cancel`;
+  const successUrl = opts.returnToApp
+    ? `${base}/open-app?to=${encodeURIComponent(`solviax://pro?checkout=success&plan=${opts.plan}`)}`
+    : successWeb;
+  const cancelUrl = opts.returnToApp
+    ? `${base}/open-app?to=${encodeURIComponent("solviax://pro?checkout=cancel")}`
+    : cancelWeb;
+
   const session = await stripe.checkout.sessions.create({
     mode,
     customer: customerId,
     client_reference_id: opts.userId,
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${base}/pro?checkout=success&plan=${opts.plan}`,
-    cancel_url: `${base}/pro?checkout=cancel`,
+    success_url: successUrl,
+    cancel_url: cancelUrl,
     metadata: {
       userId: opts.userId,
       plan: opts.plan,
@@ -111,6 +122,7 @@ export async function createCheckoutSession(opts: {
 export async function createBillingPortalSession(opts: {
   userId: string;
   email: string;
+  returnToApp?: boolean;
 }): Promise<{ url: string }> {
   if (!process.env.STRIPE_SECRET_KEY?.trim()) {
     throw new Error("Stripe is not configured");
@@ -118,9 +130,12 @@ export async function createBillingPortalSession(opts: {
   const customerId = await ensureStripeCustomer(opts);
   const stripe = getStripe();
   const base = env.appUrl.replace(/\/$/, "");
+  const returnUrl = opts.returnToApp
+    ? `${base}/open-app?to=${encodeURIComponent("solviax://pro")}`
+    : `${base}/settings`;
   const portal = await stripe.billingPortal.sessions.create({
     customer: customerId,
-    return_url: `${base}/settings`,
+    return_url: returnUrl,
   });
   return { url: portal.url };
 }
