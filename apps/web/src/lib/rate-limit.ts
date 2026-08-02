@@ -4,6 +4,8 @@ type Bucket = { count: number; resetAt: number };
 
 const memoryBuckets = new Map<string, Bucket>();
 
+const isProduction = process.env.NODE_ENV === "production";
+
 function memoryRateLimit(
   key: string,
   limit: number,
@@ -38,7 +40,11 @@ function memoryRateLimit(
   };
 }
 
-/** Upstash Redis REST counter (optional). */
+function denyAll(limit: number): { ok: boolean; remaining: number; count: number } {
+  return { ok: false, remaining: 0, count: limit };
+}
+
+/** Upstash Redis REST counter (required in production). */
 async function upstashRateLimit(
   key: string,
   limit: number,
@@ -115,6 +121,12 @@ export async function rateLimit(
   const consume = opts?.consume !== false;
   const distributed = await upstashRateLimit(key, limit, windowMs, consume);
   if (distributed) return distributed;
+
+  // Production: never fall open to process memory (multi-instance / restart bypass).
+  if (isProduction) {
+    return denyAll(limit);
+  }
+
   return memoryRateLimit(key, limit, windowMs, consume);
 }
 

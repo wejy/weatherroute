@@ -3,8 +3,11 @@
  */
 
 import {
+  isOneTimeWithinValidity,
   isProBillingStatus,
   maxSavedTripsForPlan,
+  ONE_TIME_VALIDITY_DAYS,
+  subscriptionGrantsPro,
 } from "@/server/billing/plans";
 import {
   customerUserBindingOk,
@@ -24,10 +27,44 @@ describe("billing plans", () => {
     expect(isProBillingStatus("canceled")).toBe(false);
   });
 
-  it("caps one-time at 2 saved routes", () => {
-    expect(maxSavedTripsForPlan("one_time", "active")).toBe(2);
+  it("caps one-time at 2 saved routes while valid", () => {
+    const recent = new Date();
+    expect(maxSavedTripsForPlan("one_time", "active", recent)).toBe(2);
     expect(maxSavedTripsForPlan("monthly", "active")).toBeNull();
     expect(maxSavedTripsForPlan("none", "free")).toBe(0);
+  });
+
+  it(`expires one-time Pro after ${ONE_TIME_VALIDITY_DAYS} days`, () => {
+    const now = new Date("2026-08-02T12:00:00.000Z");
+    const fresh = new Date("2026-07-01T12:00:00.000Z");
+    const expired = new Date("2026-04-01T12:00:00.000Z");
+
+    expect(isOneTimeWithinValidity(fresh, now)).toBe(true);
+    expect(isOneTimeWithinValidity(expired, now)).toBe(false);
+
+    expect(
+      subscriptionGrantsPro({
+        status: "active",
+        plan: "one_time",
+        oneTimePaidAt: fresh,
+      }),
+    ).toBe(true);
+    expect(
+      subscriptionGrantsPro({
+        status: "active",
+        plan: "one_time",
+        oneTimePaidAt: expired,
+      }),
+    ).toBe(false);
+    expect(
+      subscriptionGrantsPro({
+        status: "active",
+        plan: "monthly",
+        oneTimePaidAt: null,
+      }),
+    ).toBe(true);
+
+    expect(maxSavedTripsForPlan("one_time", "active", expired)).toBe(0);
   });
 });
 

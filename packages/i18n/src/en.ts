@@ -395,7 +395,7 @@ const en = {
       "Free covers everyday discovers nearby. Pro unlocks wider radii, more results, earliest departure, optional same-country filtering, and saved routes.",
     freeTitle: "Free",
     freeItems: {
-      discovers: "Unlimited discovers when signed in (within Wider Region)",
+      discovers: "50 discovers per calendar month when signed in (within Wider Region)",
       results: "Up to 20 ranked destinations",
       mapRoutes: "Map, route planning, and Wikipedia place info",
     },
@@ -424,7 +424,7 @@ const en = {
     monthlyBadge: "Subscription",
     oneTimePrice: "€1",
     monthlyPrice: "€2.80 / month",
-    oneTimePriceNote: "One payment · Pro features · save up to 2 routes",
+    oneTimePriceNote: "One payment · Pro for 90 days · save up to 2 routes",
     monthlyPriceNote: "Billed monthly · Pro features · unlimited saved routes",
     comparisonTitle: "Compare plans",
     freeCol: "Free",
@@ -471,10 +471,12 @@ const en = {
       },
       discovers: {
         title: "Discover searches",
-        free: "Unlimited when signed in (guests have a daily free quota)",
-        oneTime: "Unlimited",
-        monthly: "Unlimited",
-        pro: "Unlimited — same as signed-in Free",
+        free: "50 per calendar month when signed in (guests have a small free quota)",
+        /** Exact one-time fair-use — the one place we show the number */
+        oneTime: "Up to 400 during 90-day Pro",
+        /** Exact monthly fair-use — the one place we show the number */
+        monthly: "Up to 200 per calendar month",
+        pro: "Hundreds of discover searches",
       },
     },
     highlightsTitle: "Pro features (both paid plans)",
@@ -487,11 +489,12 @@ const en = {
       sameCountry:
         "Keep Discover inside one country — optional, applies to all your searches.",
       routes: "Save routes — 2 on One-time, unlimited on Monthly.",
+      discovers: "Hundreds of discover searches while Pro is active.",
       future: "Future Pro features as we ship them.",
     },
     freeNoteTitle: "What Free already includes",
     freeNoteBody:
-      "Signed-in Free unlocks unlimited discovers within Wider Region (200 km), up to 20 destinations, map, and route planning. Saving routes and wider Pro radii require One-time or Monthly.",
+      "Signed-in Free includes 50 discovers per calendar month within Wider Region (200 km), up to 20 destinations, map, and route planning. Saving routes and wider Pro radii require One-time (90 days) or Monthly.",
     ctaTitle: "Choose a plan",
     ctaBody: "You’ll complete payment securely with Stripe Checkout.",
     ctaSoon: "Billing not configured",
@@ -517,7 +520,17 @@ const en = {
   },
   paywall: {
     title: "You’ve used your free searches",
-    body: "Sign in with email for unlimited discovers, or share Solviax for one extra search.",
+    titleFree: "Monthly discovers used up",
+    body: "Sign in with email for 50 discovers per month, or share Solviax for one extra search.",
+    bodyFree:
+      "You’ve used your 50 discovers this calendar month. Upgrade to Pro for hundreds of discover searches.",
+    titleProMonthly: "Monthly Pro discovers used up",
+    bodyProMonthly:
+      "You’ve used this month’s Pro discover allowance. It resets at the start of next calendar month.",
+    titleProOneTime: "One-time Pro discovers used up",
+    bodyProOneTime:
+      "You’ve used the discover allowance for this 90-day Pro period. Subscribe to Monthly for ongoing searches, or buy One-time again after it ends.",
+    upgradePro: "View Pro plans",
     quotaUsed: "Used {used} of {limit} free searches",
     remaining: "{remaining} of {limit} free searches left",
     signIn: "Sign in with email",

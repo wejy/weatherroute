@@ -7,6 +7,8 @@ import {
   isPaidPlan,
   isProBillingStatus,
   maxSavedTripsForPlan,
+  oneTimeExpiresAt,
+  subscriptionGrantsPro,
   type BillingPlan,
   type CheckoutPlan,
 } from "@/server/billing/plans";
@@ -31,7 +33,13 @@ export type BillingEntitlement = {
   canSaveTrip: boolean;
   stripeCustomerId: string | null;
   hasMonthlySubscription: boolean;
+  /** Ever purchased one-time (may be expired). */
   oneTimePurchased: boolean;
+  /** One-time Pro still within 90-day window. */
+  oneTimeActive: boolean;
+  /** Purchase time that starts the 90-day + discover window. */
+  oneTimePaidAt: string | null;
+  oneTimeExpiresAt: string | null;
 };
 
 function emptyEntitlement(tier: DiscoverTier): BillingEntitlement {
@@ -45,6 +53,9 @@ function emptyEntitlement(tier: DiscoverTier): BillingEntitlement {
     stripeCustomerId: null,
     hasMonthlySubscription: false,
     oneTimePurchased: false,
+    oneTimeActive: false,
+    oneTimePaidAt: null,
+    oneTimeExpiresAt: null,
   };
 }
 
@@ -99,22 +110,37 @@ export async function getBillingEntitlement(
   }
 
   const plan = (isPaidPlan(row.plan) ? row.plan : "none") as BillingPlan;
-  const pro =
-    isProBillingStatus(row.status) && isPaidPlan(plan);
-  const maxSaved = maxSavedTripsForPlan(plan, row.status);
+  const oneTimeActive =
+    plan === "one_time" &&
+    isProBillingStatus(row.status) &&
+    subscriptionGrantsPro(row);
+  const pro = subscriptionGrantsPro(row);
+  const effectivePlan: BillingPlan = pro ? plan : "none";
+  const maxSaved = maxSavedTripsForPlan(
+    row.plan,
+    row.status,
+    row.oneTimePaidAt,
+  );
   const canSaveTrip =
     maxSaved === null ? pro : pro && savedTripCount < maxSaved;
+  const expires = oneTimeExpiresAt(row.oneTimePaidAt);
 
   return {
     tier: pro ? "pro" : "free",
-    plan: pro ? plan : "none",
+    plan: effectivePlan,
     status: row.status,
     maxSavedTrips: maxSaved,
     savedTripCount,
     canSaveTrip,
     stripeCustomerId: row.stripeCustomerId,
-    hasMonthlySubscription: Boolean(row.stripeSubscriptionId) && plan === "monthly",
+    hasMonthlySubscription:
+      Boolean(row.stripeSubscriptionId) && plan === "monthly" && pro,
     oneTimePurchased: Boolean(row.oneTimePaidAt),
+    oneTimeActive,
+    oneTimePaidAt: row.oneTimePaidAt
+      ? row.oneTimePaidAt.toISOString()
+      : null,
+    oneTimeExpiresAt: expires ? expires.toISOString() : null,
   };
 }
 
@@ -197,9 +223,10 @@ export async function activateCheckoutPlan(opts: {
   currentPeriodEnd?: Date | null;
 }): Promise<void> {
   const existing = await getSubscriptionRow(opts.userId);
+  // Refresh the 90-day window on every one-time purchase.
   const oneTimePaidAt =
     opts.plan === "one_time"
-      ? existing?.oneTimePaidAt ?? new Date()
+      ? new Date()
       : existing?.oneTimePaidAt ?? null;
 
   await upsertSubscription(opts.userId, {
@@ -216,14 +243,18 @@ export async function activateCheckoutPlan(opts: {
   });
 }
 
-/** Monthly subscription ended — fall back to one-time Pro if purchased. */
+/** Monthly subscription ended — fall back to one-time Pro if still within 90 days. */
 export async function deactivateMonthlySubscription(
   userId: string,
 ): Promise<void> {
   const existing = await getSubscriptionRow(userId);
   if (!existing) return;
 
-  if (existing.oneTimePaidAt) {
+  if (subscriptionGrantsPro({
+    status: "active",
+    plan: "one_time",
+    oneTimePaidAt: existing.oneTimePaidAt,
+  })) {
     await upsertSubscription(userId, {
       status: "active",
       plan: "one_time",
@@ -240,7 +271,7 @@ export async function deactivateMonthlySubscription(
     plan: "none",
     stripeCustomerId: existing.stripeCustomerId,
     stripeSubscriptionId: null,
-    oneTimePaidAt: null,
+    oneTimePaidAt: existing.oneTimePaidAt,
     currentPeriodEnd: null,
   });
 }

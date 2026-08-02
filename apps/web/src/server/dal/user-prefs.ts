@@ -7,10 +7,7 @@ import {
   getBillingEntitlement,
   getSubscriptionRow,
 } from "@/server/dal/subscriptions";
-import {
-  isPaidPlan,
-  isProBillingStatus,
-} from "@/server/billing/plans";
+import { subscriptionGrantsPro } from "@/server/billing/plans";
 import type { DiscoverTier } from "@/server/dal/discover-limits";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
@@ -26,11 +23,7 @@ export async function resolveUserTier(
   if (!userId) return "anon";
 
   const row = await getSubscriptionRow(userId);
-  if (
-    row &&
-    isProBillingStatus(row.status) &&
-    isPaidPlan(row.plan)
-  ) {
+  if (row && subscriptionGrantsPro(row)) {
     return "pro";
   }
   return "free";

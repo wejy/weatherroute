@@ -10,6 +10,7 @@ type QuotaView = {
   limit: number;
   searchesUsed: number;
   bonusCredits: number;
+  kind?: "anon" | "free" | "pro_monthly" | "pro_one_time";
 };
 
 export function SoftPaywall({
@@ -21,6 +22,10 @@ export function SoftPaywall({
 }) {
   const { t } = useI18n();
   const router = useRouter();
+  const isFreeTier = quota?.kind === "free";
+  const isProMonthlyCap = quota?.kind === "pro_monthly";
+  const isProOneTimeCap = quota?.kind === "pro_one_time";
+  const isProFairUseCap = isProMonthlyCap || isProOneTimeCap;
   const [shareBusy, setShareBusy] = useState(false);
   const [redeemToken, setRedeemToken] = useState(initialShareToken ?? "");
   const [redeemBusy, setRedeemBusy] = useState(false);
@@ -99,9 +104,23 @@ export function SoftPaywall({
         id="paywall-title"
         className="text-2xl font-bold tracking-tight text-on-surface"
       >
-        {t("paywall.title")}
+        {isFreeTier
+          ? t("paywall.titleFree")
+          : isProMonthlyCap
+            ? t("paywall.titleProMonthly")
+            : isProOneTimeCap
+              ? t("paywall.titleProOneTime")
+              : t("paywall.title")}
       </h2>
-      <p className="mt-3 text-on-surface-variant">{t("paywall.body")}</p>
+      <p className="mt-3 text-on-surface-variant">
+        {isFreeTier
+          ? t("paywall.bodyFree")
+          : isProMonthlyCap
+            ? t("paywall.bodyProMonthly")
+            : isProOneTimeCap
+              ? t("paywall.bodyProOneTime")
+              : t("paywall.body")}
+      </p>
       {quota ? (
         <p className="mt-2 text-sm text-on-surface-variant">
           {t("paywall.quotaUsed", {
@@ -112,22 +131,41 @@ export function SoftPaywall({
       ) : null}
 
       <div className="mt-8 flex flex-col gap-3">
-        <Link
-          href="/login"
-          className="rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container"
-        >
-          {t("paywall.signIn")}
-        </Link>
-        <button
-          type="button"
-          onClick={() => void createAndShare()}
-          disabled={shareBusy}
-          className="rounded-lg border border-outline-variant px-5 py-3 font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
-        >
-          {shareBusy ? t("paywall.sharing") : t("paywall.shareForCredit")}
-        </button>
+        {isProMonthlyCap ? (
+          <Link
+            href="/"
+            className="rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          >
+            {t("pro.ctaDiscover")}
+          </Link>
+        ) : isProOneTimeCap || isFreeTier ? (
+          <Link
+            href="/pro"
+            className="rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          >
+            {t("paywall.upgradePro")}
+          </Link>
+        ) : (
+          <>
+            <Link
+              href="/login"
+              className="rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container"
+            >
+              {t("paywall.signIn")}
+            </Link>
+            <button
+              type="button"
+              onClick={() => void createAndShare()}
+              disabled={shareBusy}
+              className="rounded-lg border border-outline-variant px-5 py-3 font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+            >
+              {shareBusy ? t("paywall.sharing") : t("paywall.shareForCredit")}
+            </button>
+          </>
+        )}
       </div>
 
+      {!isFreeTier && !isProFairUseCap ? (
       <div className="mt-8 border-t border-outline-variant/25 pt-6 text-left">
         <label className="block text-sm font-medium text-on-surface">
           {t("paywall.redeemLabel")}
@@ -148,6 +186,7 @@ export function SoftPaywall({
           {redeemBusy ? t("paywall.redeeming") : t("paywall.redeem")}
         </button>
       </div>
+      ) : null}
 
       {message ? (
         <p className="mt-4 text-sm text-primary" role="status">

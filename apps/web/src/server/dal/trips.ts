@@ -10,9 +10,8 @@ import { getDb } from "@/db";
 import { subscriptions, trips } from "@/db/schema";
 import { env, hasDatabase } from "@/lib/env";
 import {
-  isPaidPlan,
-  isProBillingStatus,
   maxSavedTripsForPlan,
+  subscriptionGrantsPro,
 } from "@/server/billing/plans";
 
 /** In-memory store when DATABASE_URL / mocks path. */
@@ -139,6 +138,7 @@ export async function createTrip(
       .select({
         status: subscriptions.status,
         plan: subscriptions.plan,
+        oneTimePaidAt: subscriptions.oneTimePaidAt,
       })
       .from(subscriptions)
       .where(eq(subscriptions.userId, userId))
@@ -152,8 +152,9 @@ export async function createTrip(
 
     const plan = sub?.plan ?? "none";
     const status = sub?.status ?? "free";
-    const pro = isProBillingStatus(status) && isPaidPlan(plan);
-    const maxSaved = maxSavedTripsForPlan(plan, status);
+    const oneTimePaidAt = sub?.oneTimePaidAt ?? null;
+    const pro = subscriptionGrantsPro({ status, plan, oneTimePaidAt });
+    const maxSaved = maxSavedTripsForPlan(plan, status, oneTimePaidAt);
     const canSave =
       maxSaved === null ? pro : Boolean(pro && savedTripCount < maxSaved);
 

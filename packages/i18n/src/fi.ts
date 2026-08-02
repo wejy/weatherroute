@@ -400,7 +400,7 @@ const fi = {
       "Ilmaisella haet lähialueelta. Pro avaa laajemmat haut, enemmän tuloksia, aikaisimman lähtöajan, valinnaisen saman maan rajauksen ja mahdollisuuden tallentaa reittejä.",
     freeTitle: "Ilmainen",
     freeItems: {
-      discovers: "Rajattomat haut kirjautuneena (Alueellinen säde)",
+      discovers: "50 hakua kalenterikuukaudessa kirjautuneena (Alueellinen säde)",
       results: "Enintään 20 parasta kohdetta",
       mapRoutes: "Kartta, reittisuunnittelu ja Wikipedia-tiedot",
     },
@@ -429,7 +429,7 @@ const fi = {
     monthlyBadge: "Tilaus",
     oneTimePrice: "1 €",
     monthlyPrice: "2,80 € / kk",
-    oneTimePriceNote: "Yksi maksu · Pro-ominaisuudet · enintään 2 reittiä",
+    oneTimePriceNote: "Yksi maksu · Pro 90 päivää · enintään 2 reittiä",
     monthlyPriceNote: "Laskutus kuukausittain · Pro-ominaisuudet · rajattomasti reittejä",
     comparisonTitle: "Vertaa tilauksia",
     freeCol: "Ilmainen",
@@ -476,10 +476,11 @@ const fi = {
       },
       discovers: {
         title: "Löydä-haut",
-        free: "Rajattomasti kirjautuneena (vierailla päivittäinen kiintiö)",
-        oneTime: "Rajattomasti",
-        monthly: "Rajattomasti",
-        pro: "Rajattomasti — sama kuin kirjautuneella Ilmaisella",
+        free: "50 kalenterikuukaudessa kirjautuneena (vierailla pieni kiintiö)",
+        /** Tarkka kertakiintiö — ainoa paikka jossa luku näytetään */
+        oneTime: "Enintään 400 90 päivän Pro-jakson ajan",
+        monthly: "Enintään 200 kalenterikuukaudessa",
+        pro: "Satoja Löydä-hakuja",
       },
     },
     highlightsTitle: "Pro-ominaisuudet (molemmat maksulliset)",
@@ -492,11 +493,12 @@ const fi = {
       sameCountry:
         "Pidä Löydä yhdessä maassa — valinnainen asetus, koskee kaikkia hakuja.",
       routes: "Tallenna reittejä — 2 Kerta-tilauksella, rajattomasti Jatkuvalla.",
+      discovers: "Satoja Löydä-hakuja Pro-jakson ajan.",
       future: "Tulevat Pro-ominaisuudet sitä mukaa kun ne julkaistaan.",
     },
     freeNoteTitle: "Mitä Ilmainen jo sisältää",
     freeNoteBody:
-      "Kirjautunut Ilmainen avaa rajattomat haut Alueellisella säteellä (200 km), jopa 20 kohdetta, kartan ja reittisuunnittelun. Reittien tallennus ja laajemmat Pro-säteet vaativat Kerta- tai Jatkuva-tilauksen.",
+      "Kirjautunut Ilmainen sisältää 50 hakua kalenterikuukaudessa Alueellisella säteellä (200 km), jopa 20 kohdetta, kartan ja reittisuunnittelun. Reittien tallennus ja laajemmat Pro-säteet vaativat Kerta- (90 pv) tai Jatkuva-tilauksen.",
     ctaTitle: "Valitse tilaus",
     ctaBody: "Maksu hoituu turvallisesti Stripe Checkoutissa.",
     ctaSoon: "Laskutusta ei ole määritetty",
@@ -522,7 +524,17 @@ const fi = {
   },
   paywall: {
     title: "Ilmaiset haut käytetty",
-    body: "Kirjaudu sähköpostilla rajattomiin hakuihin, tai jaa Solviax saadaksesi yhden lisähaun.",
+    titleFree: "Kuukauden haut käytetty",
+    body: "Kirjaudu sähköpostilla 50 hakuun kuukaudessa, tai jaa Solviax saadaksesi yhden lisähaun.",
+    bodyFree:
+      "Olet käyttänyt 50 hakua tältä kalenterikuukaudelta. Päivitä Prohon satoihin Löydä-hakuihin.",
+    titleProMonthly: "Jatkuva-Pro:n kuukauden haut käytetty",
+    bodyProMonthly:
+      "Olet käyttänyt tämän kuukauden Pro-hakuvarauksen. Kiintiö nollautuu seuraavan kalenterikuukauden alussa.",
+    titleProOneTime: "Kerta-Pro:n haut käytetty",
+    bodyProOneTime:
+      "Olet käyttänyt tämän 90 päivän Pro-jakson Löydä-hakuvarauksen. Tilaa Jatkuva jatkuviin hakuihin, tai osta Kerta uudelleen jakson päätyttyä.",
+    upgradePro: "Katso Pro-tilaukset",
     quotaUsed: "Käytetty {used}/{limit} ilmaista hakua",
     remaining: "{remaining}/{limit} ilmaista hakua jäljellä",
     signIn: "Kirjaudu sähköpostilla",

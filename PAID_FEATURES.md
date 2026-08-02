@@ -88,12 +88,12 @@ Pro can set “Don’t leave before HH:00” in settings.
 | Plan | Max saved routes |
 |---|---:|
 | free / anon | 0 (cannot save) |
-| one_time | 2 |
+| one_time | 2 (Pro valid **90 days** from purchase) |
 | monthly | unlimited |
 
 ### 5. Soft paywall vs Pro
 
-Anonymous users have a **daily discover search quota**. Sign-in (free) → unlimited discovers within free radius. Pro → wider radii + higher caps + departure + route saves.
+Anonymous users have a **cookie + IP discover quota**. Sign-in (free) → **50 discovers per UTC calendar month** within free radius. Pro monthly → **200 discovers / month** (marketed as “hundreds”). Pro one-time (within 90 days) → **400 discovers / purchase window** (marketed as “hundreds”) + wider radii + higher caps + departure + route saves.
 
 ---
 

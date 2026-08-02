@@ -1,10 +1,17 @@
 import "server-only";
 
 import { getCurrentUser } from "@/server/auth/session";
+import { resolveUserTier } from "@/server/dal/user-prefs";
+import { getBillingEntitlement } from "@/server/dal/subscriptions";
 import {
   consumeDiscoverQuota,
+  consumeFreeUserDiscover,
+  consumeProMonthlyDiscover,
+  consumeProOneTimeDiscover,
   getAnonQuota,
-  loggedInHasUnlimitedDiscover,
+  getFreeUserQuota,
+  getProMonthlyQuota,
+  getProOneTimeQuota,
   toPublicQuota,
   type PublicQuotaStatus,
 } from "@/server/dal/quota";
@@ -14,8 +21,11 @@ export type DiscoverGate =
   | { ok: false; paywalled: true; quota: PublicQuotaStatus | null };
 
 /**
- * Gate anonymous discover usage.
- * Pass `consume=false` for read-only quota display (e.g. pending origin).
+ * Gate discover usage:
+ * - anon: cookie + IP
+ * - free: 50 / UTC month
+ * - Pro monthly: 200 / UTC month (fair-use)
+ * - Pro one_time (within 90d): 400 / purchase window (fair-use)
  */
 export async function gateDiscoverAccess(opts: {
   consume: boolean;
@@ -23,8 +33,83 @@ export async function gateDiscoverAccess(opts: {
   clientKey?: string;
 }): Promise<DiscoverGate> {
   const user = await getCurrentUser();
-  if (user && loggedInHasUnlimitedDiscover()) {
-    return { ok: true, paywalled: false, quota: null };
+  if (user) {
+    const tier = await resolveUserTier(user.id);
+    if (tier === "pro") {
+      const billing = await getBillingEntitlement(user.id);
+      if (billing.plan === "monthly") {
+        if (!opts.consume) {
+          const quota = await getProMonthlyQuota(user.id);
+          if (!quota.allowed) {
+            return { ok: false, paywalled: true, quota: toPublicQuota(quota) };
+          }
+          return { ok: true, paywalled: false, quota: toPublicQuota(quota) };
+        }
+        const consumed = await consumeProMonthlyDiscover(user.id, opts.meta);
+        if (!consumed.ok) {
+          return {
+            ok: false,
+            paywalled: true,
+            quota: toPublicQuota(consumed.quota),
+          };
+        }
+        return {
+          ok: true,
+          paywalled: false,
+          quota: toPublicQuota(consumed.quota),
+        };
+      }
+
+      // one_time Pro — fair-use within the purchase window
+      const windowStart = billing.oneTimePaidAt
+        ? new Date(billing.oneTimePaidAt)
+        : null;
+      if (windowStart && !Number.isNaN(windowStart.getTime())) {
+        if (!opts.consume) {
+          const quota = await getProOneTimeQuota(user.id, windowStart);
+          if (!quota.allowed) {
+            return { ok: false, paywalled: true, quota: toPublicQuota(quota) };
+          }
+          return { ok: true, paywalled: false, quota: toPublicQuota(quota) };
+        }
+        const consumed = await consumeProOneTimeDiscover(
+          user.id,
+          windowStart,
+          opts.meta,
+        );
+        if (!consumed.ok) {
+          return {
+            ok: false,
+            paywalled: true,
+            quota: toPublicQuota(consumed.quota),
+          };
+        }
+        return {
+          ok: true,
+          paywalled: false,
+          quota: toPublicQuota(consumed.quota),
+        };
+      }
+      return { ok: true, paywalled: false, quota: null };
+    }
+
+    if (!opts.consume) {
+      const quota = await getFreeUserQuota(user.id);
+      if (!quota.allowed) {
+        return { ok: false, paywalled: true, quota: toPublicQuota(quota) };
+      }
+      return { ok: true, paywalled: false, quota: toPublicQuota(quota) };
+    }
+
+    const consumed = await consumeFreeUserDiscover(user.id, opts.meta);
+    if (!consumed.ok) {
+      return {
+        ok: false,
+        paywalled: true,
+        quota: toPublicQuota(consumed.quota),
+      };
+    }
+    return { ok: true, paywalled: false, quota: toPublicQuota(consumed.quota) };
   }
 
   if (!opts.consume) {

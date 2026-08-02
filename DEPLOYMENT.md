@@ -13,7 +13,7 @@ Internet
    │
    ▼
 ┌──────────────────┐
-│  nginx or Caddy  │  TLS termination, HTTP→HTTPS, proxy to :3000
+│  nginx           │  TLS, HTTP/2, gzip, proxy → :3000
 └────────┬─────────┘
          │
          ▼
@@ -22,7 +22,7 @@ Internet
 └────────┬─────────┘
          │
          ├──────────► PostgreSQL (managed or self-hosted)
-         ├──────────► Upstash Redis REST (rate limits)
+         ├──────────► Upstash Redis REST (rate limits — required in prod)
          ├──────────► Resend (OTP email)
          ├──────────► Mapbox (maps / geocoding / directions)
          └──────────► Open-Meteo (weather, no API key)
@@ -43,8 +43,8 @@ Internet
 | **git** | Deploy from repo |
 | **PM2** | Process manager, auto-restart, boot start, logs |
 | **PostgreSQL 16** | App DB — *or* use a managed DB and skip local install |
-| **nginx** *or* **Caddy** | Reverse proxy + TLS |
-| **certbot** | Only if using nginx (Let’s Encrypt). Caddy handles TLS itself |
+| **nginx** | Reverse proxy + TLS + HTTP/2 |
+| **certbot** | Let’s Encrypt certificates (`python3-certbot-nginx`) |
 | **ufw** (or equivalent) | Firewall: 22, 80, 443 |
 | **build tools** | `build-essential` / `python3` — needed for native deps (e.g. `sharp`) |
 
@@ -53,6 +53,8 @@ Optional:
 | Software | Why |
 |---|---|
 | **fail2ban** | SSH brute-force hardening |
+
+External (not installed on the VPS): **Upstash Redis REST** — required for production rate limits (see [Upstash Redis](#upstash-redis-required)).
 
 ### Install sketch (Ubuntu)
 
@@ -64,10 +66,8 @@ sudo apt-get install -y nodejs git build-essential python3
 # PM2 (global)
 sudo npm install -g pm2
 
-# Reverse proxy — pick ONE
+# Reverse proxy + TLS
 sudo apt-get install -y nginx certbot python3-certbot-nginx
-# OR
-sudo apt-get install -y caddy
 
 # Firewall
 sudo ufw allow OpenSSH
@@ -105,14 +105,21 @@ chmod 600 /var/www/solviax/apps/web/.env.production
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | Public token starting with `pk.` (browser map) |
 | `MAPBOX_ACCESS_TOKEN` | Server token (`pk.` or `sk.`) for geocoding / directions |
 
+### Required for rate limits (production)
+
+Without these, production **deny-alls** rate-limited routes (no in-memory fallback).
+
+| Variable | Notes |
+|---|---|
+| `UPSTASH_REDIS_REST_URL` | From Upstash console → Redis → REST API (see [Upstash Redis](#upstash-redis-required)) |
+| `UPSTASH_REDIS_REST_TOKEN` | Pair with URL above |
+
 ### Strongly recommended
 
 | Variable | Notes |
 |---|---|
-| `AUTH_TRUST_HOST` | `true` **only** behind nginx/Caddy/Cloudflare that you control |
-| `CORS_ALLOWED_ORIGINS` | `https://weather.example.com` (+ Expo LAN origins only if needed) |
-| `UPSTASH_REDIS_REST_URL` | Multi-instance / durable rate limits |
-| `UPSTASH_REDIS_REST_TOKEN` | Pair with URL above |
+| `AUTH_TRUST_HOST` | `true` **only** behind nginx / Cloudflare that you control |
+| `CORS_ALLOWED_ORIGINS` | `https://weather.example.com` (+ Expo origins only if needed; no localhost in prod) |
 | `EMAIL_FROM` | Verified Resend sender, e.g. `Solviax <noreply@example.com>` |
 | `CRON_ENABLED` | `true` in production (nightly weather cache warm) |
 
@@ -135,7 +142,11 @@ See **[Stripe (production)](#stripe-production)** below for Dashboard steps. Pro
 |---|---|---|
 | `ANON_DISCOVER_LIMIT` | `3` | Soft paywall credits per anon cookie |
 | `ANON_SHARE_BONUS_CAP` | `2` | Share redeem bonus cap |
-| `ANON_IP_DISCOVER_LIMIT` | `10` | Cookie-less / device IP daily limit |
+| `ANON_IP_DISCOVER_LIMIT` | `10` | Per-IP discover cap / 24h (layered with cookie) |
+| `ANON_SESSION_MINT_LIMIT` | `20` | New anon sessions per IP / 24h |
+| `FREE_MONTHLY_DISCOVER_LIMIT` | `50` | Signed-in Free discovers per UTC calendar month |
+| `PRO_MONTHLY_DISCOVER_LIMIT` | `200` | Monthly Pro fair-use discovers / UTC month |
+| `PRO_ONE_TIME_DISCOVER_LIMIT` | `400` | One-time Pro fair-use discovers / 90-day window |
 | `USE_MOCK_WEATHER` | `false` | Keep `false` in prod |
 | `PORT` | `3000` | Must match reverse proxy upstream |
 | `LOG_LEVEL` | `info` (prod) / `debug` (dev) | Pino via `@solviax/logger` — JSON stdout in production |
@@ -288,78 +299,223 @@ curl -sI http://127.0.0.1:3000 | head
 
 ---
 
-## Reverse proxy
+## Reverse proxy (nginx)
 
-Point DNS `A`/`AAAA` for `weather.example.com` at the VPS before issuing certificates.
+Point DNS `A`/`AAAA` for `weather.example.com` at the VPS before issuing certificates. Set `AUTH_TRUST_HOST=true` in `.env.production` once nginx terminates TLS in front of Next.js.
 
-### Option A — nginx + Let’s Encrypt
+### Global hardening (once per host)
+
+`/etc/nginx/nginx.conf` — inside the `http { }` block, ensure:
+
+```nginx
+http {
+    # Hide nginx version from Server header / error pages
+    server_tokens off;
+
+    # Compression (Next.js payloads + JSON APIs)
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 5;
+    gzip_min_length 256;
+    gzip_types
+        text/plain
+        text/css
+        text/javascript
+        application/javascript
+        application/json
+        application/xml
+        image/svg+xml
+        font/woff2;
+
+    # Reasonable defaults for reverse-proxied Node
+    keepalive_timeout 65;
+    types_hash_max_size 2048;
+    client_max_body_size 10m;
+
+    # … include /etc/nginx/sites-enabled/*;
+}
+```
+
+Optional: install `libnginx-mod-http-brotli` (distro-dependent) and enable `brotli on;` for extra compression. Gzip alone is enough for MVP.
+
+### Site config + Let’s Encrypt
 
 `/etc/nginx/sites-available/solviax`:
 
 ```nginx
+# Redirect all HTTP → HTTPS
 server {
     listen 80;
+    listen [::]:80;
     server_name weather.example.com;
-    return 301 https://$host$request_uri;
+
+    # ACME HTTP-01 (certbot); keep before the redirect if you renew with webroot
+    location ^~ /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+        default_type "text/plain";
+    }
+
+    location / {
+        return 301 https://$host$request_uri;
+    }
+}
+
+upstream solviax_next {
+    server 127.0.0.1:3000;
+    keepalive 32;
 }
 
 server {
+    # Ubuntu 24.04 / nginx 1.24: http2 flag on listen.
+    # nginx ≥ 1.25.1 may prefer: listen 443 ssl; listen [::]:443 ssl; http2 on;
     listen 443 ssl http2;
+    listen [::]:443 ssl http2;
     server_name weather.example.com;
 
-    # certbot will fill these, or use:
-    # ssl_certificate     /etc/letsencrypt/live/weather.example.com/fullchain.pem;
-    # ssl_certificate_key /etc/letsencrypt/live/weather.example.com/privkey.pem;
+    # certbot --nginx fills these (or set manually after first issue):
+    ssl_certificate     /etc/letsencrypt/live/weather.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/weather.example.com/privkey.pem;
+    # Recommended extras (certbot often drops ssl-dhparams):
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Modern TLS (options-ssl-nginx.conf usually already sets protocols/ciphers)
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    # OCSP stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 1.1.1.1 8.8.8.8 valid=300s;
+    resolver_timeout 5s;
+
+    # HSTS — also set by Next middleware; edge copy is fine
+    add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload" always;
+
+    # Defense-in-depth (middleware also sends CSP / nosniff / etc.)
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
 
     client_max_body_size 10m;
 
+    # Next.js (App Router, RSC, websockets / HMR not used in prod)
     location / {
-        proxy_pass http://127.0.0.1:3000;
+        proxy_pass http://solviax_next;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
+        # Trust this nginx as the only edge: do NOT append client-supplied XFF
         proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
         proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
+        proxy_set_header Connection "";
+
+        proxy_connect_timeout 10s;
+        proxy_send_timeout 120s;
+        proxy_read_timeout 120s;
+
+        # Buffering helps large discover JSON; disable if you stream later
+        proxy_buffering on;
+        proxy_buffers 16 32k;
+        proxy_buffer_size 32k;
     }
 }
 ```
 
+Enable and issue the certificate:
+
 ```bash
-sudo ln -s /etc/nginx/sites-available/solviax /etc/nginx/sites-enabled/
+sudo mkdir -p /var/www/certbot
+sudo ln -sf /etc/nginx/sites-available/solviax /etc/nginx/sites-enabled/
+sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl reload nginx
+
+# First certificate (opens 80, writes ssl paths into the site or use --nginx)
 sudo certbot --nginx -d weather.example.com
+
+sudo nginx -t && sudo systemctl reload nginx
 ```
 
-With nginx in front, set `AUTH_TRUST_HOST=true`.
+Confirm HTTP/2 and headers:
 
-### Option B — Caddy (automatic HTTPS)
+```bash
+curl -sI --http2 https://weather.example.com | head -20
+# Expect: HTTP/2 200  (or 3xx), and HSTS / nosniff
+```
 
-`/etc/caddy/Caddyfile`:
+### Cloudflare (optional)
 
-```caddy
-weather.example.com {
-    encode gzip
-    reverse_proxy 127.0.0.1:3000
-}
+If Cloudflare sits in front of nginx, enable **Authenticated Origin Pulls** or at least restrict origin to CF IPs, and use nginx `real_ip` so rate limits see the visitor IP:
+
+```nginx
+# Inside the HTTPS server block — keep CF IP lists updated:
+# https://www.cloudflare.com/ips/
+set_real_ip_from 173.245.48.0/20;
+# … remaining Cloudflare ranges …
+real_ip_header CF-Connecting-IP;
+```
+
+Then set `proxy_set_header X-Forwarded-For $remote_addr;` as above (after `real_ip` rewrites `$remote_addr`).
+
+---
+
+## Upstash Redis (required)
+
+Production rate limiting uses **Upstash Redis REST** (`UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`). There is **no** in-memory fallback when `NODE_ENV=production`: missing or unreachable Upstash causes limited routes to **deny** (fail-closed).
+
+You do **not** install Redis on the VPS. The app talks to Upstash over HTTPS REST (not `redis://`).
+
+### 1. Create a database
+
+1. Sign up at [upstash.com](https://upstash.com) → **Redis** → **Create database**.
+2. Pick a region **close to your VPS** (lower latency for every rate-limited API call).
+3. Type: **Regional** is fine for MVP. Enable **TLS** (default).
+4. After create, open the database → **REST API** tab.
+5. Copy:
+   - `UPSTASH_REDIS_REST_URL` — looks like `https://<id>.upstash.io`
+   - `UPSTASH_REDIS_REST_TOKEN` — long secret token
+
+### 2. Put credentials in production env
+
+```bash
+# apps/web/.env.production
+UPSTASH_REDIS_REST_URL=https://xxxx.upstash.io
+UPSTASH_REDIS_REST_TOKEN=AXxxxx
 ```
 
 ```bash
-sudo systemctl reload caddy
+chmod 600 /var/www/solviax/apps/web/.env.production
+pm2 restart solviax
 ```
 
-Also set `AUTH_TRUST_HOST=true`.
+Free tier is enough for OTP / discover / search rate limits at early traffic. Watch the Upstash dashboard if you scale.
+
+### 3. Verify
+
+```bash
+# From the VPS — should return PONG (or similar) with your token
+curl -sS "$UPSTASH_REDIS_REST_URL/ping" \
+  -H "Authorization: Bearer $UPSTASH_REDIS_REST_TOKEN"
+
+# App smoke: anonymous discover should count toward limits, not 429 everything
+curl -sI "https://weather.example.com/api/discover?origin=Helsinki" | head
+```
+
+If Upstash env vars are missing in production, expect rate-limited endpoints to fail closed (clients see 429 / blocked) until Redis is configured.
 
 ---
 
 ## External services checklist
 
 1. **Postgres** — create DB + user; run migrations; prefer TLS (`sslmode=require`).
-2. **Resend** — verify domain / sender; set `EMAIL_MODE=resend` + API key.
-3. **Mapbox** — create tokens; restrict `pk.` by URL; never expose `sk.` to the client (`NEXT_PUBLIC_*` must stay `pk.`).
-4. **Upstash Redis** — create REST database; paste URL + token (rate limits across restarts / multiple hosts).
+2. **Upstash Redis REST** — create DB; set URL + token ([steps above](#upstash-redis-required)).
+3. **Resend** — verify domain / sender; set `EMAIL_MODE=resend` + API key.
+4. **Mapbox** — create tokens; restrict `pk.` by URL; never expose `sk.` to the client (`NEXT_PUBLIC_*` must stay `pk.`).
 5. **Stripe** — live products/prices, webhook to `https://…/api/stripe/webhook`, Customer Portal (see below).
 6. **DNS** — point domain at VPS; wait for propagation before TLS.
 
@@ -468,12 +624,13 @@ pm2 save
 
 ## Post-deploy smoke checklist
 
-- [ ] `https://weather.example.com` loads (valid TLS)
+- [ ] `https://weather.example.com` loads (valid TLS, **HTTP/2**)
+- [ ] Upstash: `ping` works; discover/search are not globally deny-all’d
 - [ ] Discover search returns places (DB + Mapbox / places seed)
 - [ ] Map loads with `pk.` token
 - [ ] Login OTP: email arrives via Resend (not console)
 - [ ] Anon discover hits soft paywall after limit
-- [ ] `curl -I https://weather.example.com` shows security headers (CSP / HSTS from middleware)
+- [ ] `curl -sI --http2 https://weather.example.com` shows HSTS / nosniff (nginx + middleware)
 - [ ] Logs: `pm2 logs solviax` — no boot errors about `AUTH_SECRET` / `EMAIL_MODE` / `USE_MOCKS`
 - [ ] Cron: after boot, log line mentioning scheduled nightly weather warm when `CRON_ENABLED=true`
 - [ ] After reboot: `pm2 status` shows `solviax` online (`pm2 startup` + `pm2 save` done)
@@ -486,10 +643,12 @@ pm2 save
 ## Security notes (ops)
 
 - Prefer **managed Postgres**; do not expose Postgres port publicly.
-- Keep `AUTH_TRUST_HOST=true` only behind a trusted proxy.
-- Set `CORS_ALLOWED_ORIGINS` to your real origins (no `*`).
-- Upstash is recommended once you have more than one process or frequent restarts (in-memory rate limits reset otherwise).
-- Known soft limits (MVP): anon cookie reset can mint new discover credits; harden later if needed.
+- Keep `AUTH_TRUST_HOST=true` only behind **nginx** (or Cloudflare + nginx) that you control.
+- Set `CORS_ALLOWED_ORIGINS` to your real origins (no `*`, no leftover localhost in prod).
+- **Upstash Redis REST is required in production** — without it, rate-limited routes deny all traffic.
+- nginx must set `X-Forwarded-For` / `X-Real-IP` from `$remote_addr` (or Cloudflare `real_ip`) so clients cannot spoof IPs used for quotas.
+- Anon cookie rotation is mitigated with IP discover caps + per-IP session mint limits.
+- Keep `server_tokens off`, TLS 1.2+, HSTS, and HTTP→HTTPS redirect on nginx.
 - `npm audit` CI gates **critical** issues; review Dependabot PRs for Next/Expo transitive CVEs.
 
 ---

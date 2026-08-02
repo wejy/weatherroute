@@ -25,6 +25,9 @@ export function SoftPaywall({
   onRedeemed?: () => void;
 }) {
   const { t } = useI18n();
+  const isFreeTier = quota?.kind === "free";
+  const isProMonthlyCap = quota?.kind === "pro_monthly";
+  const isProOneTimeCap = quota?.kind === "pro_one_time";
   const [shareBusy, setShareBusy] = useState(false);
   const [redeemToken, setRedeemToken] = useState("");
   const [redeemBusy, setRedeemBusy] = useState(false);
@@ -89,8 +92,24 @@ export function SoftPaywall({
         color={colors.primary}
         style={styles.icon}
       />
-      <Text style={styles.title}>{t("paywall.title")}</Text>
-      <Text style={styles.body}>{t("paywall.body")}</Text>
+      <Text style={styles.title}>
+        {isFreeTier
+          ? t("paywall.titleFree")
+          : isProMonthlyCap
+            ? t("paywall.titleProMonthly")
+            : isProOneTimeCap
+              ? t("paywall.titleProOneTime")
+              : t("paywall.title")}
+      </Text>
+      <Text style={styles.body}>
+        {isFreeTier
+          ? t("paywall.bodyFree")
+          : isProMonthlyCap
+            ? t("paywall.bodyProMonthly")
+            : isProOneTimeCap
+              ? t("paywall.bodyProOneTime")
+              : t("paywall.body")}
+      </Text>
       {quota ? (
         <Text style={styles.quota}>
           {t("paywall.quotaUsed", {
@@ -100,52 +119,68 @@ export function SoftPaywall({
         </Text>
       ) : null}
 
-      <Link href="/login" asChild>
-        <Pressable style={styles.primaryBtn}>
-          <Text style={styles.primaryBtnText}>{t("paywall.signIn")}</Text>
-        </Pressable>
-      </Link>
+      {isProMonthlyCap ? (
+        <Link href="/(tabs)" asChild>
+          <Pressable style={styles.primaryBtn}>
+            <Text style={styles.primaryBtnText}>{t("pro.ctaDiscover")}</Text>
+          </Pressable>
+        </Link>
+      ) : isProOneTimeCap || isFreeTier ? (
+        <Link href="/pro" asChild>
+          <Pressable style={styles.primaryBtn}>
+            <Text style={styles.primaryBtnText}>{t("paywall.upgradePro")}</Text>
+          </Pressable>
+        </Link>
+      ) : (
+        <>
+          <Link href="/login" asChild>
+            <Pressable style={styles.primaryBtn}>
+              <Text style={styles.primaryBtnText}>{t("paywall.signIn")}</Text>
+            </Pressable>
+          </Link>
 
-      <Pressable
-        onPress={() => void createAndShare()}
-        disabled={shareBusy}
-        style={[styles.secondaryBtn, shareBusy && styles.disabled]}
-      >
-        {shareBusy ? (
-          <ActivityIndicator color={colors.onSurface} />
-        ) : (
-          <Text style={styles.secondaryBtnText}>
-            {t("paywall.shareForCredit")}
-          </Text>
-        )}
-      </Pressable>
+          <Pressable
+            onPress={() => void createAndShare()}
+            disabled={shareBusy}
+            style={[styles.secondaryBtn, shareBusy && styles.disabled]}
+          >
+            {shareBusy ? (
+              <ActivityIndicator color={colors.onSurface} />
+            ) : (
+              <Text style={styles.secondaryBtnText}>
+                {t("paywall.shareForCredit")}
+              </Text>
+            )}
+          </Pressable>
 
-      <View style={styles.redeemBox}>
-        <Text style={styles.redeemLabel}>{t("paywall.redeemLabel")}</Text>
-        <TextInput
-          value={redeemToken}
-          onChangeText={setRedeemToken}
-          placeholder={t("paywall.redeemPlaceholder")}
-          placeholderTextColor={colors.outline}
-          autoCapitalize="none"
-          autoCorrect={false}
-          style={styles.input}
-        />
-        <Pressable
-          onPress={() => void redeem()}
-          disabled={redeemBusy || !redeemToken.trim()}
-          style={[
-            styles.secondaryBtn,
-            (redeemBusy || !redeemToken.trim()) && styles.disabled,
-          ]}
-        >
-          {redeemBusy ? (
-            <ActivityIndicator color={colors.onSurface} />
-          ) : (
-            <Text style={styles.secondaryBtnText}>{t("paywall.redeem")}</Text>
-          )}
-        </Pressable>
-      </View>
+          <View style={styles.redeemBox}>
+            <Text style={styles.redeemLabel}>{t("paywall.redeemLabel")}</Text>
+            <TextInput
+              value={redeemToken}
+              onChangeText={setRedeemToken}
+              placeholder={t("paywall.redeemPlaceholder")}
+              placeholderTextColor={colors.outline}
+              autoCapitalize="none"
+              autoCorrect={false}
+              style={styles.input}
+            />
+            <Pressable
+              onPress={() => void redeem()}
+              disabled={redeemBusy || !redeemToken.trim()}
+              style={[
+                styles.secondaryBtn,
+                (redeemBusy || !redeemToken.trim()) && styles.disabled,
+              ]}
+            >
+              {redeemBusy ? (
+                <ActivityIndicator color={colors.onSurface} />
+              ) : (
+                <Text style={styles.secondaryBtnText}>{t("paywall.redeem")}</Text>
+              )}
+            </Pressable>
+          </View>
+        </>
+      )}
 
       {message ? (
         <Text style={styles.message} accessibilityRole="text">

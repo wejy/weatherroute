@@ -2,10 +2,11 @@ import "server-only";
 
 import { createModuleLogger } from "@/lib/logger";
 import { cookies, headers } from "next/headers";
-import { and, desc, eq, gt } from "drizzle-orm";
+import { and, desc, eq, gt, gte, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { env } from "@/lib/env";
 import { rateLimit, peekRateLimit } from "@/lib/rate-limit";
+import { getClientIpFromHeaders } from "@/lib/client-ip";
 import { getDb } from "@/db";
 import {
   anonymousSessions,
@@ -26,6 +27,20 @@ function discoverFingerprint(meta?: Record<string, unknown>): string {
   return `${origin}|${goal}`;
 }
 
+/** UTC calendar month [start, nextMonth). */
+export function utcMonthWindow(now: Date = new Date()): {
+  start: Date;
+  next: Date;
+} {
+  const start = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1, 0, 0, 0, 0),
+  );
+  const next = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1, 0, 0, 0, 0),
+  );
+  return { start, next };
+}
+
 export type QuotaStatus = {
   cookieId?: string;
   searchesUsed: number;
@@ -33,6 +48,8 @@ export type QuotaStatus = {
   limit: number;
   remaining: number;
   allowed: boolean;
+  /** free | anon | pro_monthly | pro_one_time — helps clients label the meter */
+  kind?: "anon" | "free" | "pro_monthly" | "pro_one_time";
 };
 
 /** Client-safe quota (no session identifiers). */
@@ -56,6 +73,18 @@ async function resolveClientKey(explicit?: string): Promise<string | null> {
   return null;
 }
 
+/** Prefer real client IP for layered anon anti-abuse. */
+async function resolveIpKey(): Promise<string | null> {
+  try {
+    const h = await headers();
+    const ip = getClientIpFromHeaders(h);
+    if (!ip || ip === "local") return null;
+    return `ip:${ip}`;
+  } catch {
+    return null;
+  }
+}
+
 async function ensureAnonSession(): Promise<{
   id: string;
   cookieId: string;
@@ -77,6 +106,9 @@ async function ensureAnonSession(): Promise<{
   }
   if (!cookieId) return null;
 
+  // Reject obviously forged / oversized ids
+  if (cookieId.length < 8 || cookieId.length > 80) return null;
+
   const [existing] = await db
     .select()
     .from(anonymousSessions)
@@ -90,6 +122,20 @@ async function ensureAnonSession(): Promise<{
       searchesUsed: existing.searchesUsed,
       bonusCredits: existing.bonusCredits,
     };
+  }
+
+  // Rate-limit new anon session minting per IP (cookie rotation defense).
+  const ipKey = await resolveIpKey();
+  if (ipKey) {
+    const mint = await rateLimit(
+      `anon-mint:${ipKey}`,
+      env.anonSessionMintLimit,
+      IP_QUOTA_WINDOW_MS,
+    );
+    if (!mint.ok) {
+      log.warn({ ipKey }, "[quota] anon session mint rate limited");
+      return null;
+    }
   }
 
   const [created] = await db
@@ -117,6 +163,7 @@ async function getIpQuotaStatus(clientKey: string): Promise<QuotaStatus> {
     limit: env.anonIpDiscoverLimit,
     remaining,
     allowed: remaining > 0,
+    kind: "anon",
   };
 }
 
@@ -134,6 +181,7 @@ async function consumeIpQuota(clientKey: string): Promise<{
     limit: env.anonIpDiscoverLimit,
     remaining,
     allowed: remaining > 0,
+    kind: "anon",
   };
   if (!bucket.ok) {
     return {
@@ -144,6 +192,21 @@ async function consumeIpQuota(clientKey: string): Promise<{
   return { ok: true, quota };
 }
 
+/** Layer IP cap on top of cookie quota (stops cookie rotation abuse). */
+async function ipLayerAllowsDiscover(): Promise<boolean> {
+  const ipKey = await resolveIpKey();
+  if (!ipKey) return true;
+  const status = await getIpQuotaStatus(ipKey);
+  return status.allowed;
+}
+
+async function consumeIpLayer(): Promise<boolean> {
+  const ipKey = await resolveIpKey();
+  if (!ipKey) return true;
+  const consumed = await consumeIpQuota(ipKey);
+  return consumed.ok;
+}
+
 export async function getAnonQuota(
   clientKey?: string,
 ): Promise<QuotaStatus | null> {
@@ -151,19 +214,310 @@ export async function getAnonQuota(
   if (session) {
     const limit = env.anonDiscoverLimit + session.bonusCredits;
     const remaining = Math.max(0, limit - session.searchesUsed);
+    const ipOk = await ipLayerAllowsDiscover();
     return {
       cookieId: session.cookieId,
       searchesUsed: session.searchesUsed,
       bonusCredits: session.bonusCredits,
       limit,
-      remaining,
-      allowed: remaining > 0,
+      remaining: ipOk ? remaining : 0,
+      allowed: remaining > 0 && ipOk,
+      kind: "anon",
     };
   }
 
-  const key = await resolveClientKey(clientKey);
+  const key = (await resolveClientKey(clientKey)) ?? (await resolveIpKey());
   if (!key) return null;
   return getIpQuotaStatus(key);
+}
+
+async function countUserDiscoversSince(
+  userId: string,
+  since: Date,
+): Promise<number> {
+  const db = getDb();
+  if (!db) return 0;
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(usageEvents)
+    .where(
+      and(
+        eq(usageEvents.userId, userId),
+        eq(usageEvents.type, "discover"),
+        gte(usageEvents.createdAt, since),
+      ),
+    );
+  return Number(row?.count ?? 0);
+}
+
+async function countUserDiscoversThisMonth(userId: string): Promise<number> {
+  const { start } = utcMonthWindow();
+  return countUserDiscoversSince(userId, start);
+}
+
+export async function getUserMonthlyQuota(
+  userId: string,
+  limit: number,
+  kind: "free" | "pro_monthly",
+): Promise<QuotaStatus> {
+  const searchesUsed = await countUserDiscoversThisMonth(userId);
+  const remaining = Math.max(0, limit - searchesUsed);
+  return {
+    searchesUsed,
+    bonusCredits: 0,
+    limit,
+    remaining,
+    allowed: remaining > 0,
+    kind,
+  };
+}
+
+export async function getFreeUserQuota(userId: string): Promise<QuotaStatus> {
+  return getUserMonthlyQuota(userId, env.freeMonthlyDiscoverLimit, "free");
+}
+
+export async function getProMonthlyQuota(userId: string): Promise<QuotaStatus> {
+  return getUserMonthlyQuota(userId, env.proMonthlyDiscoverLimit, "pro_monthly");
+}
+
+export async function consumeUserMonthlyDiscover(
+  userId: string,
+  limit: number,
+  kind: "free" | "pro_monthly",
+  meta?: Record<string, unknown>,
+): Promise<{
+  ok: boolean;
+  quota: QuotaStatus;
+  reason?: "paywall" | "no_db";
+}> {
+  const db = getDb();
+  if (!db) {
+    return {
+      ok: false,
+      reason: "no_db",
+      quota: {
+        searchesUsed: 0,
+        bonusCredits: 0,
+        limit,
+        remaining: 0,
+        allowed: false,
+        kind,
+      },
+    };
+  }
+
+  const used = await countUserDiscoversThisMonth(userId);
+  if (used >= limit) {
+    return {
+      ok: false,
+      reason: "paywall",
+      quota: {
+        searchesUsed: used,
+        bonusCredits: 0,
+        limit,
+        remaining: 0,
+        allowed: false,
+        kind,
+      },
+    };
+  }
+
+  const fp = discoverFingerprint(meta);
+  if (fp) {
+    const since = new Date(Date.now() - DEDUPE_WINDOW_MS);
+    const [recent] = await db
+      .select()
+      .from(usageEvents)
+      .where(
+        and(
+          eq(usageEvents.userId, userId),
+          eq(usageEvents.type, "discover"),
+          gt(usageEvents.createdAt, since),
+        ),
+      )
+      .orderBy(desc(usageEvents.createdAt))
+      .limit(1);
+
+    const recentMeta = recent?.meta as Record<string, unknown> | null;
+    if (recent && discoverFingerprint(recentMeta ?? undefined) === fp) {
+      return {
+        ok: true,
+        quota: {
+          searchesUsed: used,
+          bonusCredits: 0,
+          limit,
+          remaining: Math.max(0, limit - used),
+          allowed: true,
+          kind,
+        },
+      };
+    }
+  }
+
+  await db.insert(usageEvents).values({
+    userId,
+    type: "discover",
+    meta: meta ?? null,
+  });
+
+  const searchesUsed = used + 1;
+  const remaining = Math.max(0, limit - searchesUsed);
+  return {
+    ok: true,
+    quota: {
+      searchesUsed,
+      bonusCredits: 0,
+      limit,
+      remaining,
+      allowed: remaining > 0,
+      kind,
+    },
+  };
+}
+
+export async function consumeFreeUserDiscover(
+  userId: string,
+  meta?: Record<string, unknown>,
+): Promise<{
+  ok: boolean;
+  quota: QuotaStatus;
+  reason?: "paywall" | "no_db";
+}> {
+  return consumeUserMonthlyDiscover(
+    userId,
+    env.freeMonthlyDiscoverLimit,
+    "free",
+    meta,
+  );
+}
+
+export async function consumeProMonthlyDiscover(
+  userId: string,
+  meta?: Record<string, unknown>,
+): Promise<{
+  ok: boolean;
+  quota: QuotaStatus;
+  reason?: "paywall" | "no_db";
+}> {
+  return consumeUserMonthlyDiscover(
+    userId,
+    env.proMonthlyDiscoverLimit,
+    "pro_monthly",
+    meta,
+  );
+}
+
+export async function getProOneTimeQuota(
+  userId: string,
+  windowStart: Date,
+): Promise<QuotaStatus> {
+  const limit = env.proOneTimeDiscoverLimit;
+  const searchesUsed = await countUserDiscoversSince(userId, windowStart);
+  const remaining = Math.max(0, limit - searchesUsed);
+  return {
+    searchesUsed,
+    bonusCredits: 0,
+    limit,
+    remaining,
+    allowed: remaining > 0,
+    kind: "pro_one_time",
+  };
+}
+
+export async function consumeProOneTimeDiscover(
+  userId: string,
+  windowStart: Date,
+  meta?: Record<string, unknown>,
+): Promise<{
+  ok: boolean;
+  quota: QuotaStatus;
+  reason?: "paywall" | "no_db";
+}> {
+  const limit = env.proOneTimeDiscoverLimit;
+  const kind = "pro_one_time" as const;
+  const db = getDb();
+  if (!db) {
+    return {
+      ok: false,
+      reason: "no_db",
+      quota: {
+        searchesUsed: 0,
+        bonusCredits: 0,
+        limit,
+        remaining: 0,
+        allowed: false,
+        kind,
+      },
+    };
+  }
+
+  const used = await countUserDiscoversSince(userId, windowStart);
+  if (used >= limit) {
+    return {
+      ok: false,
+      reason: "paywall",
+      quota: {
+        searchesUsed: used,
+        bonusCredits: 0,
+        limit,
+        remaining: 0,
+        allowed: false,
+        kind,
+      },
+    };
+  }
+
+  const fp = discoverFingerprint(meta);
+  if (fp) {
+    const since = new Date(Date.now() - DEDUPE_WINDOW_MS);
+    const [recent] = await db
+      .select()
+      .from(usageEvents)
+      .where(
+        and(
+          eq(usageEvents.userId, userId),
+          eq(usageEvents.type, "discover"),
+          gt(usageEvents.createdAt, since),
+        ),
+      )
+      .orderBy(desc(usageEvents.createdAt))
+      .limit(1);
+
+    const recentMeta = recent?.meta as Record<string, unknown> | null;
+    if (recent && discoverFingerprint(recentMeta ?? undefined) === fp) {
+      return {
+        ok: true,
+        quota: {
+          searchesUsed: used,
+          bonusCredits: 0,
+          limit,
+          remaining: Math.max(0, limit - used),
+          allowed: true,
+          kind,
+        },
+      };
+    }
+  }
+
+  await db.insert(usageEvents).values({
+    userId,
+    type: "discover",
+    meta: meta ?? null,
+  });
+
+  const searchesUsed = used + 1;
+  const remaining = Math.max(0, limit - searchesUsed);
+  return {
+    ok: true,
+    quota: {
+      searchesUsed,
+      bonusCredits: 0,
+      limit,
+      remaining,
+      allowed: remaining > 0,
+      kind,
+    },
+  };
 }
 
 /** Consume one discover credit. Returns quota after consume, or paywall flag. */
@@ -182,7 +536,8 @@ export async function consumeDiscoverQuota(
 
   const session = await ensureAnonSession();
   if (!session) {
-    const key = await resolveClientKey(opts?.clientKey);
+    const key =
+      (await resolveClientKey(opts?.clientKey)) ?? (await resolveIpKey());
     if (!key) {
       return { ok: false, quota: null, reason: "no_session" };
     }
@@ -205,6 +560,24 @@ export async function consumeDiscoverQuota(
         limit,
         remaining: 0,
         allowed: false,
+        kind: "anon",
+      },
+    };
+  }
+
+  // IP layer before spending cookie credit
+  if (!(await ipLayerAllowsDiscover())) {
+    return {
+      ok: false,
+      reason: "paywall",
+      quota: {
+        cookieId: session.cookieId,
+        searchesUsed: session.searchesUsed,
+        bonusCredits: session.bonusCredits,
+        limit,
+        remaining: 0,
+        allowed: false,
+        kind: "anon",
       },
     };
   }
@@ -236,9 +609,26 @@ export async function consumeDiscoverQuota(
           limit,
           remaining: Math.max(0, limit - session.searchesUsed),
           allowed: true,
+          kind: "anon",
         },
       };
     }
+  }
+
+  if (!(await consumeIpLayer())) {
+    return {
+      ok: false,
+      reason: "paywall",
+      quota: {
+        cookieId: session.cookieId,
+        searchesUsed: session.searchesUsed,
+        bonusCredits: session.bonusCredits,
+        limit,
+        remaining: 0,
+        allowed: false,
+        kind: "anon",
+      },
+    };
   }
 
   const [updated] = await db
@@ -270,6 +660,7 @@ export async function consumeDiscoverQuota(
       limit: nextLimit,
       remaining,
       allowed: remaining > 0,
+      kind: "anon",
     },
   };
 }
@@ -367,6 +758,7 @@ export async function redeemShareToken(token: string): Promise<{
           limit,
           remaining,
           allowed: remaining > 0,
+          kind: "anon",
         }),
       };
     });
@@ -374,9 +766,4 @@ export async function redeemShareToken(token: string): Promise<{
     log.error({ err: error }, "[share] redeem failed");
     return { ok: false, error: "Redeem failed" };
   }
-}
-
-/** Soft unlimited for signed-in users until Stripe. */
-export function loggedInHasUnlimitedDiscover(): boolean {
-  return true;
 }

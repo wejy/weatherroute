@@ -36,6 +36,7 @@ const HIGHLIGHT_KEYS = [
   "departure",
   "sameCountry",
   "routes",
+  "discovers",
   "future",
 ] as const;
 

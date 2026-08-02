@@ -158,6 +158,11 @@ export const usageEvents = pgTable(
       t.type,
       t.createdAt,
     ),
+    index("usage_events_user_type_created_idx").on(
+      t.userId,
+      t.type,
+      t.createdAt,
+    ),
   ],
 );
 

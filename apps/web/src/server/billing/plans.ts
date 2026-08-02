@@ -5,6 +5,9 @@ export type BillingPlan = "none" | "one_time" | "monthly";
 
 export type CheckoutPlan = "one_time" | "monthly";
 
+/** One-time Pro access window from `oneTimePaidAt`. */
+export const ONE_TIME_VALIDITY_DAYS = 90;
+
 export const BILLING_PLANS = {
   one_time: {
     key: "one_time" as const,
@@ -14,6 +17,7 @@ export const BILLING_PLANS = {
     mode: "payment" as const,
     /** Max saved routes; null = unlimited */
     maxSavedTrips: 2,
+    validityDays: ONE_TIME_VALIDITY_DAYS,
   },
   monthly: {
     key: "monthly" as const,
@@ -21,6 +25,7 @@ export const BILLING_PLANS = {
     currency: "eur",
     mode: "subscription" as const,
     maxSavedTrips: null as number | null,
+    validityDays: null as number | null,
   },
 } as const;
 
@@ -32,12 +37,49 @@ export function isPaidPlan(plan: string | null | undefined): plan is CheckoutPla
   return plan === "one_time" || plan === "monthly";
 }
 
+/** Whether a one-time purchase is still inside its validity window. */
+export function isOneTimeWithinValidity(
+  paidAt: Date | string | null | undefined,
+  now: Date = new Date(),
+): boolean {
+  if (!paidAt) return false;
+  const start = paidAt instanceof Date ? paidAt : new Date(paidAt);
+  if (Number.isNaN(start.getTime())) return false;
+  const expiresAt =
+    start.getTime() + ONE_TIME_VALIDITY_DAYS * 24 * 60 * 60 * 1000;
+  return now.getTime() < expiresAt;
+}
+
+export function oneTimeExpiresAt(
+  paidAt: Date | string | null | undefined,
+): Date | null {
+  if (!paidAt) return null;
+  const start = paidAt instanceof Date ? paidAt : new Date(paidAt);
+  if (Number.isNaN(start.getTime())) return null;
+  return new Date(
+    start.getTime() + ONE_TIME_VALIDITY_DAYS * 24 * 60 * 60 * 1000,
+  );
+}
+
+/** Active Pro entitlement including one-time 90-day TTL. */
+export function subscriptionGrantsPro(row: {
+  status: string | null | undefined;
+  plan: string | null | undefined;
+  oneTimePaidAt?: Date | string | null;
+}): boolean {
+  if (!isProBillingStatus(row.status) || !isPaidPlan(row.plan)) return false;
+  if (row.plan === "monthly") return true;
+  return isOneTimeWithinValidity(row.oneTimePaidAt);
+}
+
 /** null = unlimited; 0 = cannot save. */
 export function maxSavedTripsForPlan(
   plan: string | null | undefined,
   status: string | null | undefined,
+  oneTimePaidAt?: Date | string | null,
 ): number | null {
-  if (!isProBillingStatus(status) || !isPaidPlan(plan)) return 0;
+  if (!subscriptionGrantsPro({ status, plan, oneTimePaidAt })) return 0;
+  if (!isPaidPlan(plan)) return 0;
   return BILLING_PLANS[plan].maxSavedTrips;
 }
 

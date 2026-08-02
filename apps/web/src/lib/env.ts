@@ -146,6 +146,20 @@ export const env = {
   anonDiscoverLimit: Number(process.env.ANON_DISCOVER_LIMIT || 3),
   anonShareBonusCap: Number(process.env.ANON_SHARE_BONUS_CAP || 2),
   anonIpDiscoverLimit: Number(process.env.ANON_IP_DISCOVER_LIMIT || 10),
+  /** Max new wt_anon / X-Solviax-Anon sessions per IP per 24h */
+  anonSessionMintLimit: Number(process.env.ANON_SESSION_MINT_LIMIT || 20),
+  /** Calendar-month discover searches for signed-in Free users */
+  freeMonthlyDiscoverLimit: Number(
+    process.env.FREE_MONTHLY_DISCOVER_LIMIT || 50,
+  ),
+  /** Calendar-month discover searches for Monthly Pro (fair-use; soft-marketed) */
+  proMonthlyDiscoverLimit: Number(
+    process.env.PRO_MONTHLY_DISCOVER_LIMIT || 200,
+  ),
+  /** Discover searches for One-time Pro within the 90-day window (soft-marketed) */
+  proOneTimeDiscoverLimit: Number(
+    process.env.PRO_ONE_TIME_DISCOVER_LIMIT || 400,
+  ),
   mapboxToken: getMapboxServerToken(),
   mapboxPublicToken: getMapboxPublicToken(),
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || "",
