@@ -15,7 +15,7 @@ const FEATURES = [
 ] as const;
 
 const FREE_KEYS = ["discovers", "results", "mapRoutes"] as const;
-const PRO_KEYS = ["radius", "results", "saves"] as const;
+const PRO_KEYS = ["radius", "results", "sameCountry", "saves"] as const;
 
 export default function AboutScreen() {
   const { t } = useI18n();

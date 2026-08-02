@@ -77,7 +77,7 @@ Free/anon may use up to **Wider Region · 200 km** (FI: Alueellinen).
 |---|---:|---:|
 | anon | 10 | 14 |
 | free | 20 | 24 |
-| pro | 30 default, up to **50** (settings) | scales with display |
+| pro | 30 default, up to **30** (settings) | scales with display |
 
 ### 3. Earliest departure (routes)
 

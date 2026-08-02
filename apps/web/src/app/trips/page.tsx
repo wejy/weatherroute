@@ -14,7 +14,7 @@ import {
 } from "@/lib/types";
 import { withQuery } from "@/lib/discover-query";
 import { RouteShareActions } from "@/components/routes/route-share-actions";
-import { getEffectiveEarliestDepartureHour } from "@/server/dal/user-prefs";
+import { resolveUserTier } from "@/server/dal/user-prefs";
 
 export const dynamic = "force-dynamic";
 
@@ -116,8 +116,8 @@ export default async function TripsPage({
   }
 
   const trips = await listTripsForUser(user.id, { mode: modeFilter });
-  const departurePrefs = await getEffectiveEarliestDepartureHour();
-  const isPro = departurePrefs.tier === "pro";
+  const tier = await resolveUserTier(user.id);
+  const isPro = tier === "pro";
   const filters: { id: "all" | TravelMode; label: string; icon: string }[] = [
     { id: "all", label: t("trips.filterAll"), icon: "filter_list" },
     { id: "driving", label: t("travel.driving"), icon: travelModeIcon("driving") },

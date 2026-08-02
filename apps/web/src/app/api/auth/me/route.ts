@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, signOut } from "@/server/auth/session";
 import { authSessionCookieName } from "@/server/auth/mobile-session";
-import { resolveUserTier } from "@/server/dal/user-prefs";
+import {
+  getEffectiveSameCountryOnly,
+  resolveUserTier,
+} from "@/server/dal/user-prefs";
 import { getBillingEntitlement } from "@/server/dal/subscriptions";
 import { withApiLog } from "@/lib/api-log";
 
@@ -10,6 +13,9 @@ export async function GET(request: Request) {
     const user = await getCurrentUser();
     const tier = await resolveUserTier(user?.id ?? null);
     const billing = await getBillingEntitlement(user?.id ?? null);
+    const sameCountry = user
+      ? await getEffectiveSameCountryOnly()
+      : { preference: false, effective: false, tier };
     log.info(
       {
         signedIn: Boolean(user),
@@ -26,6 +32,8 @@ export async function GET(request: Request) {
       maxSavedTrips: billing.maxSavedTrips,
       savedTripCount: billing.savedTripCount,
       canSaveTrip: billing.canSaveTrip,
+      sameCountryOnly: sameCountry.preference,
+      sameCountryOnlyEffective: sameCountry.effective,
     });
   });
 }

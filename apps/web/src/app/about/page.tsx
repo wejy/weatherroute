@@ -17,7 +17,7 @@ const FEATURES = [
 ] as const;
 
 const FREE_KEYS = ["discovers", "results", "mapRoutes"] as const;
-const PRO_KEYS = ["radius", "results", "saves"] as const;
+const PRO_KEYS = ["radius", "results", "sameCountry", "saves"] as const;
 
 export async function generateMetadata() {
   const locale = await getLocale();

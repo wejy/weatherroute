@@ -4,13 +4,14 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   View,
 } from "react-native";
 import { Link, useFocusEffect, type Href } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { getApiBaseUrl } from "@/lib/api";
+import { apiPatch, getApiBaseUrl } from "@/lib/api";
 import {
   fetchSession,
   signOutRemote,
@@ -24,7 +25,10 @@ export default function SettingsScreen() {
   const api = getApiBaseUrl();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [tier, setTier] = useState<DiscoverTier>("anon");
+  const [sameCountryOnly, setSameCountryOnly] = useState(false);
+  const [sameCountryEffective, setSameCountryEffective] = useState(false);
   const [loadingUser, setLoadingUser] = useState(true);
+  const [savingCountry, setSavingCountry] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
   const refreshUser = useCallback(async () => {
@@ -33,6 +37,8 @@ export default function SettingsScreen() {
       const next = await fetchSession();
       setUser(next.user);
       setTier(next.tier);
+      setSameCountryOnly(next.sameCountryOnly);
+      setSameCountryEffective(next.sameCountryOnlyEffective);
     } finally {
       setLoadingUser(false);
     }
@@ -53,10 +59,36 @@ export default function SettingsScreen() {
     try {
       await signOutRemote();
       setUser(null);
+      setSameCountryOnly(false);
+      setSameCountryEffective(false);
     } finally {
       setSigningOut(false);
     }
   }, []);
+
+  const onToggleSameCountry = useCallback(
+    async (next: boolean) => {
+      if (!user || savingCountry) return;
+      const prev = sameCountryOnly;
+      setSameCountryOnly(next);
+      setSavingCountry(true);
+      try {
+        const data = await apiPatch<{
+          sameCountryOnly: boolean;
+          sameCountryOnlyEffective: boolean;
+        }>("/api/settings/preferences", { sameCountryOnly: next });
+        setSameCountryOnly(data.sameCountryOnly);
+        setSameCountryEffective(data.sameCountryOnlyEffective);
+      } catch {
+        setSameCountryOnly(prev);
+      } finally {
+        setSavingCountry(false);
+      }
+    },
+    [user, savingCountry, sameCountryOnly],
+  );
+
+  const isPro = tier === "pro";
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -71,7 +103,7 @@ export default function SettingsScreen() {
             <Text style={styles.cardTitle}>{user.displayName}</Text>
             <Text style={styles.cardBody}>{user.email}</Text>
             <Text style={styles.tier}>
-              {tier === "pro" ? t("settings.tierPro") : t("settings.tierFree")}
+              {isPro ? t("settings.tierPro") : t("settings.tierFree")}
             </Text>
             <Pressable
               onPress={() => void onSignOut()}
@@ -94,6 +126,40 @@ export default function SettingsScreen() {
               </Pressable>
             </Link>
           </>
+        )}
+      </View>
+
+      <Text style={styles.label}>{t("settings.sameCountryTitle")}</Text>
+      <View style={styles.card}>
+        <Text style={styles.cardBody}>{t("settings.sameCountryHint")}</Text>
+        {user ? (
+          <>
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>
+                {t("settings.sameCountryLabel")}
+              </Text>
+              {savingCountry ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <Switch
+                  value={sameCountryOnly}
+                  onValueChange={(v) => void onToggleSameCountry(v)}
+                  trackColor={{
+                    false: colors.outlineVariant,
+                    true: colors.primaryContainer,
+                  }}
+                  thumbColor={sameCountryOnly ? colors.primary : colors.surfaceLowest}
+                />
+              )}
+            </View>
+            {!isPro ? (
+              <Text style={styles.hint}>{t("settings.sameCountryProNote")}</Text>
+            ) : sameCountryEffective ? (
+              <Text style={styles.hint}>{t("settings.sameCountryActive")}</Text>
+            ) : null}
+          </>
+        ) : (
+          <Text style={styles.hint}>{t("settings.sameCountrySignInNote")}</Text>
         )}
       </View>
 
@@ -157,6 +223,19 @@ const styles = StyleSheet.create({
   cardBody: { fontSize: 14, color: colors.onSurface },
   tier: { fontSize: 13, color: colors.onSurfaceVariant, fontWeight: "600" },
   hint: { fontSize: 13, color: colors.onSurfaceVariant },
+  switchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 12,
+    marginTop: 4,
+  },
+  switchLabel: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.onSurface,
+  },
   signInBtn: {
     marginTop: 4,
     minHeight: 44,

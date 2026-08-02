@@ -115,9 +115,9 @@ export const DISCOVER_ANON_WEATHER = 14;
 export const DISCOVER_FREE_DISPLAY = 20;
 export const DISCOVER_FREE_WEATHER = 24;
 
-/** Paid (Stripe later) — settings can raise display up to max */
+/** Paid — settings can raise display up to max */
 export const DISCOVER_PRO_DISPLAY_DEFAULT = 30;
-export const DISCOVER_PRO_DISPLAY_MAX = 50;
+export const DISCOVER_PRO_DISPLAY_MAX = 30;
 export const DISCOVER_PRO_WEATHER_BASE = 36;
 
 /**

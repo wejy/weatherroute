@@ -1,4 +1,4 @@
-import { and, eq, gte, lte } from "drizzle-orm";
+import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import { haversineKm } from "@/server/integrations/mocks/data";
 import {
   CITY_INDEX,
@@ -6,7 +6,12 @@ import {
 } from "@/server/integrations/places/city-index";
 import { getDb } from "@/db";
 import { places } from "@/db/schema";
-import { isBlockedCountryCode, isBlockedPlace } from "@/lib/geo-block";
+import {
+  countryCodeMatchSet,
+  isBlockedCountryCode,
+  isBlockedPlace,
+  isSameCountryCode,
+} from "@/lib/geo-block";
 import { selectAcrossDistanceBands } from "@/server/dal/place-candidate-select";
 
 export type PlaceCandidate = CityIndexEntry & { distanceKm: number };
@@ -96,10 +101,18 @@ function finalizeCandidates(
 export async function placesWithinRadius(
   origin: { lat: number; lon: number },
   radiusKm: number,
-  opts?: { excludeName?: string; limit?: number },
+  opts?: {
+    excludeName?: string;
+    limit?: number;
+    /** When set, only candidates with a matching ISO country code. */
+    countryCode?: string;
+  },
 ): Promise<PlaceCandidate[]> {
   const exclude = opts?.excludeName?.toLowerCase().trim();
   const limit = opts?.limit ?? 14;
+  const countryCodes = opts?.countryCode
+    ? countryCodeMatchSet(opts.countryCode)
+    : null;
   const db = getDb();
   /** Wide bbox pool so far-band towns exist before band selection. */
   const poolLimit = Math.min(2500, Math.max(500, limit * 50));
@@ -109,17 +122,20 @@ export async function placesWithinRadius(
     const lonDelta =
       radiusKm / (111 * Math.max(0.2, Math.cos((origin.lat * Math.PI) / 180)));
 
+    const conditions = [
+      gte(places.lat, origin.lat - latDelta),
+      lte(places.lat, origin.lat + latDelta),
+      gte(places.lon, origin.lon - lonDelta),
+      lte(places.lon, origin.lon + lonDelta),
+    ];
+    if (countryCodes) {
+      conditions.push(inArray(places.countryCode, countryCodes));
+    }
+
     const rows = await db
       .select()
       .from(places)
-      .where(
-        and(
-          gte(places.lat, origin.lat - latDelta),
-          lte(places.lat, origin.lat + latDelta),
-          gte(places.lon, origin.lon - lonDelta),
-          lte(places.lon, origin.lon + lonDelta),
-        ),
-      )
+      .where(and(...conditions))
       .limit(poolLimit);
 
     if (rows.length > 0) {
@@ -139,6 +155,12 @@ export async function placesWithinRadius(
           if (!notBlockedCandidate(city)) return false;
           if (city.distanceKm < 5) return false;
           if (exclude && city.name.toLowerCase() === exclude) return false;
+          if (
+            countryCodes &&
+            !isSameCountryCode(opts?.countryCode, city.countryCode)
+          ) {
+            return false;
+          }
           return city.distanceKm <= radiusKm;
         });
 
@@ -153,6 +175,12 @@ export async function placesWithinRadius(
     if (!notBlockedCandidate(city)) return false;
     if (city.distanceKm < 5) return false;
     if (exclude && city.name.toLowerCase() === exclude) return false;
+    if (
+      countryCodes &&
+      !isSameCountryCode(opts?.countryCode, city.countryCode)
+    ) {
+      return false;
+    }
     return city.distanceKm <= radiusKm;
   });
 

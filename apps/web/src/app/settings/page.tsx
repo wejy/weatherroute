@@ -6,13 +6,11 @@ import {
   getDiscoverTierForSettings,
 } from "@/server/dal/discover-limits";
 import {
-  EARLIEST_DEPARTURE_HOURS,
-  formatHourOption,
-  getEffectiveEarliestDepartureHour,
+  getEffectiveSameCountryOnly,
 } from "@/server/dal/user-prefs";
 import {
   saveDiscoverDisplayAction,
-  saveEarliestDepartureAction,
+  saveSameCountryOnlyAction,
   settingsSignOutAction,
 } from "@/server/actions/settings";
 import { openBillingPortalAction } from "@/server/actions/billing";
@@ -45,7 +43,7 @@ export default async function SettingsPage({
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
   const caps = await getDiscoverTierForSettings();
-  const departurePrefs = await getEffectiveEarliestDepartureHour();
+  const sameCountryPrefs = await getEffectiveSameCountryOnly();
   const billing = await getBillingEntitlement(user?.id ?? null);
   const stripeReady = isStripeBillingConfigured();
   const raw = await searchParams;
@@ -65,10 +63,6 @@ export default async function SettingsPage({
           : DISCOVER_ANON_DISPLAY),
   );
 
-  const earliestDefault =
-    departurePrefs.preference != null
-      ? String(departurePrefs.preference)
-      : "any";
   const isPro = caps.tier === "pro";
   const planLabel =
     billing.plan === "one_time"
@@ -191,44 +185,34 @@ export default async function SettingsPage({
 
         <section className="mt-10 space-y-4">
           <h2 className="text-lg font-semibold text-on-surface">
-            {t("settings.departureTitle")}
+            {t("settings.sameCountryTitle")}
           </h2>
           <p className="text-sm text-on-surface-variant">
-            {t("settings.departureHint")}
+            {t("settings.sameCountryHint")}
           </p>
           <div className="rounded-2xl border border-outline-variant/25 bg-surface-container-lowest p-5">
             {user ? (
-              <form action={saveEarliestDepartureAction} className="space-y-4">
-                <label className="block text-sm font-medium text-on-surface">
-                  {t("settings.departureLabel")}
-                  <select
-                    name="earliestDeparture"
-                    defaultValue={earliestDefault}
-                    className="mt-2 w-full rounded-lg border border-outline-variant/40 bg-surface px-3 py-2.5 text-on-surface"
-                  >
-                    <option value="any">{t("settings.departureAny")}</option>
-                    {EARLIEST_DEPARTURE_HOURS.map((h) => (
-                      <option key={h} value={h}>
-                        {isPro
-                          ? formatHourOption(h)
-                          : t("settings.departureOptionPro", {
-                              time: formatHourOption(h),
-                            })}
-                      </option>
-                    ))}
-                  </select>
+              <form action={saveSameCountryOnlyAction} className="space-y-4">
+                <label className="flex cursor-pointer items-start gap-3 text-sm font-medium text-on-surface">
+                  <input
+                    type="checkbox"
+                    name="sameCountryOnly"
+                    defaultChecked={sameCountryPrefs.preference}
+                    className="mt-1 size-4 rounded border-outline-variant accent-primary"
+                  />
+                  <span>
+                    {t("settings.sameCountryLabel")}
+                    {!isPro ? (
+                      <span className="mt-1 block text-xs font-normal text-on-surface-variant">
+                        {t("settings.sameCountryProNote")}
+                      </span>
+                    ) : sameCountryPrefs.effective ? (
+                      <span className="mt-1 block text-xs font-normal text-on-surface-variant">
+                        {t("settings.sameCountryActive")}
+                      </span>
+                    ) : null}
+                  </span>
                 </label>
-                {!isPro ? (
-                  <p className="text-xs text-on-surface-variant">
-                    {t("settings.departureProNote")}
-                  </p>
-                ) : departurePrefs.effectiveHour != null ? (
-                  <p className="text-xs text-on-surface-variant">
-                    {t("settings.departureActive", {
-                      time: formatHourOption(departurePrefs.effectiveHour),
-                    })}
-                  </p>
-                ) : null}
                 <button
                   type="submit"
                   className="rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary"
@@ -238,7 +222,7 @@ export default async function SettingsPage({
               </form>
             ) : (
               <p className="text-sm text-on-surface-variant">
-                {t("settings.departureSignInNote")}
+                {t("settings.sameCountrySignInNote")}
               </p>
             )}
           </div>

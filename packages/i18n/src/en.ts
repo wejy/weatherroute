@@ -235,6 +235,11 @@ const en = {
       "Leave around {time} on this route from {from} to {to} ({extra}). Highest rain risk near {place} ({rain}%).",
     pickBoth: "Pick both start and destination from the suggestions.",
     travelMode: "How are you traveling?",
+    earliestDepartureLabel: "Don’t leave before",
+    earliestDepartureAny: "No limit",
+    earliestDepartureOptionPro: "{time} (Pro)",
+    earliestDepartureProNote: "Pro feature — set a floor for best departure suggestions.",
+    earliestDepartureUpgrade: "View plans",
     saveRoute: "Save route",
     saveRouteSignIn: "Sign in to save this route",
     saveRouteUpgrade: "Upgrade to Pro to save routes",
@@ -296,7 +301,7 @@ const en = {
   },
   settings: {
     title: "My settings",
-    subtitle: "Account, discover limits, departure preferences, and appearance.",
+    subtitle: "Account, discover limits, and appearance.",
     saved: "Settings saved.",
     save: "Save",
     account: "Account",
@@ -313,17 +318,15 @@ const en = {
       "Free accounts show up to {free}. Pro unlocks up to {max} — your choice is saved for when you upgrade.",
     discoverAnonNote:
       "Without signing in you get {count} destinations. Sign in for more.",
-    departureTitle: "Earliest departure",
-    departureHint:
-      "Routes will only suggest leaving at or after this time. Pro feature — used for best departure on the route page.",
-    departureLabel: "Don’t leave before",
-    departureAny: "No limit",
-    departureOptionPro: "{time} (Pro)",
-    departureProNote:
-      "Saved for when you upgrade to Pro. Until then, route suggestions can use any hour.",
-    departureActive: "Active on routes: no suggestions before {time}.",
-    departureSignInNote:
-      "Sign in and upgrade to Pro to set an earliest departure time.",
+    sameCountryTitle: "Same country only",
+    sameCountryHint:
+      "When enabled, Discover and Map only show destinations in the same country as your starting point (for example Oulu won’t return Swedish towns). Applies to all your searches.",
+    sameCountryLabel: "Limit results to the origin country",
+    sameCountryProNote:
+      "Saved for when you upgrade to Pro. Until then, searches can include nearby countries.",
+    sameCountryActive: "Active: destinations stay in the same country as your start.",
+    sameCountrySignInNote:
+      "Sign in and upgrade to Pro to limit Discover to one country.",
     appearanceTitle: "Appearance",
     themeLabel: "Theme",
     themeLight: "Light",
@@ -331,7 +334,7 @@ const en = {
     themeComingSoon: "Dark mode is coming soon — light mode is used for now.",
     subscriptionTitle: "Subscription",
     subscriptionBody:
-      "Unlock wider search radii, more discover results, earliest departure, and saved routes with One-time or Monthly Pro.",
+      "Unlock wider search radii, more discover results, earliest departure, same-country filtering, and saved routes with One-time or Monthly Pro.",
     subscriptionCta: "View plans & pricing",
     subscriptionSoon: "Stripe keys are not configured yet.",
     subscriptionManage: "Manage billing",
@@ -388,7 +391,7 @@ const en = {
     },
     plansTitle: "Free vs Pro — short version",
     plansLead:
-      "Free covers everyday discovers nearby. Pro unlocks wider radii, more results, earliest departure, and saved routes.",
+      "Free covers everyday discovers nearby. Pro unlocks wider radii, more results, earliest departure, optional same-country filtering, and saved routes.",
     freeTitle: "Free",
     freeItems: {
       discovers: "Unlimited discovers when signed in (within Wider Region)",
@@ -398,7 +401,8 @@ const en = {
     proTitle: "Pro",
     proItems: {
       radius: "National, Continent, and custom search radius",
-      results: "Up to 50 destinations + earliest departure",
+      results: "Up to 30 destinations + earliest departure",
+      sameCountry: "Optional same-country-only destination filter",
       saves: "Saved routes (2 on One-time · unlimited on Monthly)",
     },
     plansCta: "Compare plans & subscribe",
@@ -439,16 +443,23 @@ const en = {
       results: {
         title: "Discover destinations shown",
         free: "Up to 20 after ranking (10 if you’re not signed in)",
-        oneTime: "Up to 50 — choose in Settings",
-        monthly: "Up to 50 — choose in Settings",
-        pro: "Up to 50 — choose in Settings",
+        oneTime: "Up to 30 — choose in Settings",
+        monthly: "Up to 30 — choose in Settings",
+        pro: "Up to 30 — choose in Settings",
       },
       departure: {
         title: "Earliest departure (routes)",
         free: "Not applied — suggestions can use any hour",
-        oneTime: "Set “Don’t leave before” in Settings",
-        monthly: "Set “Don’t leave before” in Settings",
-        pro: "Set “Don’t leave before” in Settings; route suggestions respect it",
+        oneTime: "Set “Don’t leave before” on the route page",
+        monthly: "Set “Don’t leave before” on the route page",
+        pro: "Set per trip on the route page; suggestions respect it",
+      },
+      sameCountry: {
+        title: "Same country only (Discover)",
+        free: "Not applied — nearby countries can appear in results",
+        oneTime: "Optional toggle in Settings — all searches",
+        monthly: "Optional toggle in Settings — all searches",
+        pro: "Optional toggle in Settings — all searches",
       },
       routes: {
         title: "Saved routes",
@@ -469,9 +480,11 @@ const en = {
     highlights: {
       radius:
         "Search farther: National Level, Continent, and your own custom radius.",
-      results: "See more ranked destinations — up to 50 per search.",
+      results: "See more ranked destinations — up to 30 per search.",
       departure:
-        "Control earliest departure so route suggestions match your schedule.",
+        "On each route, set earliest departure so suggestions match your schedule.",
+      sameCountry:
+        "Keep Discover inside one country — optional, applies to all your searches.",
       routes: "Save routes — 2 on One-time, unlimited on Monthly.",
       future: "Future Pro features as we ship them.",
     },

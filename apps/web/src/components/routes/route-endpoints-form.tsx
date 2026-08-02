@@ -19,6 +19,10 @@ import {
   type DatePreset,
   type DateWindow,
 } from "@/lib/dates";
+import {
+  EARLIEST_DEPARTURE_HOURS,
+  formatHourOption,
+} from "@/lib/departure";
 
 function parsePreset(raw: string | null): DatePreset | undefined {
   if (
@@ -41,6 +45,8 @@ export function RouteEndpointsForm({
   initialDatePreset,
   initialStartDate,
   initialEndDate,
+  initialEarliestHour = null,
+  isPro = false,
 }: {
   initialFrom: string;
   initialTo: string;
@@ -50,6 +56,8 @@ export function RouteEndpointsForm({
   initialDatePreset?: string | null;
   initialStartDate?: string | null;
   initialEndDate?: string | null;
+  initialEarliestHour?: number | null;
+  isPro?: boolean;
 }) {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -60,6 +68,9 @@ export function RouteEndpointsForm({
   const [to, setTo] = useState<PlaceDto | null>(toPlace ?? null);
   const [mode, setMode] = useState<TravelMode>(
     isTravelMode(initialMode) ? initialMode : DEFAULT_TRAVEL_MODE,
+  );
+  const [earliestHour, setEarliestHour] = useState<number | null>(
+    initialEarliestHour,
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -109,6 +120,7 @@ export function RouteEndpointsForm({
     nextWhen: DateWindow,
     nextFrom: PlaceDto,
     nextTo: PlaceDto,
+    nextEarliest: number | null = earliestHour,
   ): URLSearchParams {
     const params = new URLSearchParams();
     params.set("from", nextFrom.placeName);
@@ -130,19 +142,23 @@ export function RouteEndpointsForm({
     params.set("datePreset", nextWhen.preset);
     params.set("startDate", nextWhen.startDate);
     params.set("endDate", nextWhen.endDate);
+    if (isPro && nextEarliest != null) {
+      params.set("earliestHour", String(nextEarliest));
+    }
     return params;
   }
 
   function applyRoute(
     nextMode: TravelMode = mode,
     nextWhen: DateWindow = when,
+    nextEarliest: number | null = earliestHour,
   ) {
     if (!from || !to) {
       setError(t("routes.pickBoth"));
       return;
     }
     setError(null);
-    const params = buildParams(nextMode, nextWhen, from, to);
+    const params = buildParams(nextMode, nextWhen, from, to, nextEarliest);
     startTransition(() => {
       router.push(`/routes?${params.toString()}`);
     });
@@ -151,14 +167,24 @@ export function RouteEndpointsForm({
   function onModeChange(next: TravelMode) {
     setMode(next);
     if (from && to) {
-      applyRoute(next, when);
+      applyRoute(next, when, earliestHour);
     }
   }
 
   function onWhenChange(next: DateWindow) {
     setWhen(next);
     if (from && to) {
-      applyRoute(mode, next);
+      applyRoute(mode, next, earliestHour);
+    }
+  }
+
+  function onEarliestChange(raw: string) {
+    const next = raw === "any" ? null : Number(raw);
+    const hour =
+      next != null && EARLIEST_DEPARTURE_HOURS.includes(next) ? next : null;
+    setEarliestHour(hour);
+    if (isPro && from && to) {
+      applyRoute(mode, when, hour);
     }
   }
 
@@ -260,6 +286,41 @@ export function RouteEndpointsForm({
           {error}
         </p>
       )}
+
+      <div>
+        <label
+          htmlFor="route-earliest"
+          className="mb-1.5 block text-sm font-medium tracking-wide text-on-surface-variant uppercase"
+        >
+          {t("routes.earliestDepartureLabel")}
+        </label>
+        <select
+          id="route-earliest"
+          value={earliestHour == null ? "any" : String(earliestHour)}
+          onChange={(e) => onEarliestChange(e.target.value)}
+          disabled={!isPro}
+          className="w-full min-h-11 rounded-lg border border-outline-variant/30 bg-surface px-3 py-2.5 text-base text-on-surface disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          <option value="any">{t("routes.earliestDepartureAny")}</option>
+          {EARLIEST_DEPARTURE_HOURS.map((h) => (
+            <option key={h} value={h}>
+              {isPro
+                ? formatHourOption(h)
+                : t("routes.earliestDepartureOptionPro", {
+                    time: formatHourOption(h),
+                  })}
+            </option>
+          ))}
+        </select>
+        {!isPro ? (
+          <p className="mt-1.5 text-xs text-on-surface-variant">
+            {t("routes.earliestDepartureProNote")}{" "}
+            <Link href="/pro" className="font-medium text-primary underline-offset-2 hover:underline">
+              {t("routes.earliestDepartureUpgrade")}
+            </Link>
+          </p>
+        ) : null}
+      </div>
 
       <button
         type="button"

@@ -237,6 +237,11 @@ const fi = {
       "Lähde noin {time} tällä reitillä {from} → {to} ({extra}). Suurin saderiski lähellä: {place} ({rain} %).",
     pickBoth: "Valitse sekä lähtö että kohde ehdotuksista.",
     travelMode: "Millä matkustat?",
+    earliestDepartureLabel: "Älä ehdota lähtöä ennen",
+    earliestDepartureAny: "Ei rajoitusta",
+    earliestDepartureOptionPro: "{time} (Pro)",
+    earliestDepartureProNote: "Pro-ominaisuus — aseta lattia parhaalle lähtöehdotukselle.",
+    earliestDepartureUpgrade: "Katso tilaukset",
     saveRoute: "Tallenna reitti",
     saveRouteSignIn: "Kirjaudu tallentaaksesi reitin",
     saveRouteUpgrade: "Päivitä Prohon tallentaaksesi reittejä",
@@ -300,7 +305,7 @@ const fi = {
   },
   settings: {
     title: "Omat asetukset",
-    subtitle: "Tili, hakurajat, lähtöasetukset ja ulkoasu.",
+    subtitle: "Tili, hakurajat ja ulkoasu.",
     saved: "Asetukset tallennettu.",
     save: "Tallenna",
     account: "Tili",
@@ -317,17 +322,15 @@ const fi = {
       "Ilmaisella tilillä näytetään enintään {free}. Pro avaa jopa {max} — valintasi tallentuu päivitystä varten.",
     discoverAnonNote:
       "Ilman kirjautumista näet {count} kohdetta. Kirjaudu saadaksesi enemmän.",
-    departureTitle: "Aikaisin lähtöaika",
-    departureHint:
-      "Reittiehdotukset ehdottavat lähtöä vasta tästä kellonajasta eteenpäin. Pro-ominaisuus — vaikuttaa reittisivun parhaaseen lähtöaikaan.",
-    departureLabel: "Älä ehdota lähtöä ennen",
-    departureAny: "Ei rajoitusta",
-    departureOptionPro: "{time} (Pro)",
-    departureProNote:
-      "Tallennus odottaa Pro-päivitystä. Siihen asti reitti voi ehdottaa mitä tahansa tuntia.",
-    departureActive: "Käytössä reiteillä: ei ehdotuksia ennen klo {time}.",
-    departureSignInNote:
-      "Kirjaudu ja päivitä Prohon asettaaksesi aikaisimman lähtöajan.",
+    sameCountryTitle: "Vain sama maa",
+    sameCountryHint:
+      "Kun asetus on päällä, Löydä ja Kartta näyttävät vain kohteita samasta maasta kuin lähtöpaikkasi (esim. Oulusta ei näy Ruotsin kaupunkeja). Koskee kaikkia hakuja.",
+    sameCountryLabel: "Rajoita tulokset lähtömaan sisälle",
+    sameCountryProNote:
+      "Tallennus odottaa Pro-päivitystä. Siihen asti hauissa voi olla naapurimaita.",
+    sameCountryActive: "Käytössä: kohteet pysyvät samassa maassa kuin lähtö.",
+    sameCountrySignInNote:
+      "Kirjaudu ja päivitä Prohon rajoittaaksesi haun yhteen maahan.",
     appearanceTitle: "Ulkoasu",
     themeLabel: "Teema",
     themeLight: "Vaalea",
@@ -335,7 +338,7 @@ const fi = {
     themeComingSoon: "Tumma tila tulee pian — toistaiseksi käytössä on vaalea.",
     subscriptionTitle: "Tilaus",
     subscriptionBody:
-      "Avaa laajemmat säteet, enemmän Löydä-tuloksia, aikaisin lähtöaika ja tallennetut reitit Kerta- tai Jatkuva-Prolla.",
+      "Avaa laajemmat säteet, enemmän Löydä-tuloksia, aikaisin lähtöaika, saman maan rajaus ja tallennetut reitit Kerta- tai Jatkuva-Prolla.",
     subscriptionCta: "Katso tilaukset ja hinnat",
     subscriptionSoon: "Stripe-avaimia ei ole vielä määritetty.",
     subscriptionManage: "Hallitse laskutusta",
@@ -393,7 +396,7 @@ const fi = {
     },
     plansTitle: "Ilmainen vs Pro — lyhyesti",
     plansLead:
-      "Ilmaisella haet lähialueelta. Pro avaa laajemmat haut, enemmän tuloksia, aikaisimman lähtöajan ja mahdollisuuden tallentaa reittejä.",
+      "Ilmaisella haet lähialueelta. Pro avaa laajemmat haut, enemmän tuloksia, aikaisimman lähtöajan, valinnaisen saman maan rajauksen ja mahdollisuuden tallentaa reittejä.",
     freeTitle: "Ilmainen",
     freeItems: {
       discovers: "Rajattomat haut kirjautuneena (Alueellinen säde)",
@@ -403,7 +406,8 @@ const fi = {
     proTitle: "Pro",
     proItems: {
       radius: "Valtakunnallinen, Manner ja oma hakusäde",
-      results: "Enintään 50 kohdetta + aikaisin lähtöaika",
+      results: "Enintään 30 kohdetta + aikaisin lähtöaika",
+      sameCountry: "Valinnainen rajoitus: näytä vain saman maan kohteet",
       saves: "Tallennetut reitit (2 Kerta-tilauksella · rajaton Jatkuvalla)",
     },
     plansCta: "Vertaa tilauksia ja tilaa",
@@ -444,16 +448,23 @@ const fi = {
       results: {
         title: "Näytettävät Löydä-kohteet",
         free: "Enintään 20 rankingin jälkeen (10 ilman kirjautumista)",
-        oneTime: "Enintään 50 — valitse Asetuksissa",
-        monthly: "Enintään 50 — valitse Asetuksissa",
-        pro: "Enintään 50 — valitse Asetuksissa",
+        oneTime: "Enintään 30 — valitse Asetuksissa",
+        monthly: "Enintään 30 — valitse Asetuksissa",
+        pro: "Enintään 30 — valitse Asetuksissa",
       },
       departure: {
         title: "Aikaisin lähtöaika (reitit)",
         free: "Ei käytössä — ehdotukset voivat käyttää mitä tahansa tuntia",
-        oneTime: "Aseta ”Älä ehdota lähtöä ennen” Asetuksissa",
-        monthly: "Aseta ”Älä ehdota lähtöä ennen” Asetuksissa",
-        pro: "Aseta ”Älä ehdota lähtöä ennen” Asetuksissa; reittiehdotukset noudattavat sitä",
+        oneTime: "Aseta ”Älä ehdota lähtöä ennen” reittisivulla",
+        monthly: "Aseta ”Älä ehdota lähtöä ennen” reittisivulla",
+        pro: "Aseta per reitti reittisivulla; ehdotukset noudattavat sitä",
+      },
+      sameCountry: {
+        title: "Vain saman maan kohteet (Löydä)",
+        free: "Ei käytössä — naapurimaiden kohteet voivat näkyä",
+        oneTime: "Valinnainen asetus Asetuksissa — kaikki haut",
+        monthly: "Valinnainen asetus Asetuksissa — kaikki haut",
+        pro: "Valinnainen asetus Asetuksissa — kaikki haut",
       },
       routes: {
         title: "Tallennetut reitit",
@@ -474,9 +485,11 @@ const fi = {
     highlights: {
       radius:
         "Hae kauempaa: Valtakunnallinen, Manner ja oma säde.",
-      results: "Näe enemmän rankattuja kohteita — jopa 50 per haku.",
+      results: "Näe enemmän rankattuja kohteita — jopa 30 per haku.",
       departure:
-        "Hallitse aikaisinta lähtöaikaa, jotta reittiehdotukset sopivat aikatauluusi.",
+        "Jokaisella reitillä voit asettaa aikaisimman lähtöajan, jotta ehdotukset sopivat aikatauluusi.",
+      sameCountry:
+        "Pidä Löydä yhdessä maassa — valinnainen asetus, koskee kaikkia hakuja.",
       routes: "Tallenna reittejä — 2 Kerta-tilauksella, rajattomasti Jatkuvalla.",
       future: "Tulevat Pro-ominaisuudet sitä mukaa kun ne julkaistaan.",
     },

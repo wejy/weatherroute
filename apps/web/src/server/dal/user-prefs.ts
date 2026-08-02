@@ -1,5 +1,6 @@
 import "server-only";
 
+import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { getCurrentUser } from "@/server/auth/session";
 import {
@@ -11,18 +12,13 @@ import {
   isProBillingStatus,
 } from "@/server/billing/plans";
 import type { DiscoverTier } from "@/server/dal/discover-limits";
+import { getDb } from "@/db";
+import { users } from "@/db/schema";
+import { parseEarliestHourParam } from "@/lib/departure";
 
-export const EARLIEST_DEPARTURE_COOKIE = "wt_earliest_departure";
+export { EARLIEST_DEPARTURE_HOURS, formatHourOption, parseEarliestHourParam } from "@/lib/departure";
 
-/** Hours of day (0–23) offered in settings. */
-export const EARLIEST_DEPARTURE_HOURS = Array.from(
-  { length: 24 },
-  (_, h) => h,
-) as readonly number[];
-
-export function formatHourOption(hour: number): string {
-  return `${String(hour).padStart(2, "0")}:00`;
-}
+export const SAME_COUNTRY_COOKIE = "wt_same_country_only";
 
 export async function resolveUserTier(
   userId: string | null,
@@ -40,33 +36,86 @@ export async function resolveUserTier(
   return "free";
 }
 
-export async function readEarliestDeparturePreference(): Promise<number | null> {
-  const jar = await cookies();
-  const raw = jar.get(EARLIEST_DEPARTURE_COOKIE)?.value;
-  if (raw == null || raw === "" || raw === "any") return null;
-  const n = Number(raw);
-  if (!Number.isInteger(n) || n < 0 || n > 23) return null;
-  return n;
-}
-
 /**
- * Effective earliest departure hour for route suggestions.
- * Pro-only: free/anon always get null (no floor), even if a cookie is stored.
+ * Per-route earliest departure from query/body.
+ * Applied only for Pro; free/anon ignore the requested hour.
  */
-export async function getEffectiveEarliestDepartureHour(): Promise<{
+export async function resolveRouteEarliestHour(
+  requested: number | null | undefined,
+): Promise<{
   tier: DiscoverTier;
-  /** Stored preference (may exist on free for after upgrade). */
-  preference: number | null;
-  /** Applied on routes when tier is pro. */
   effectiveHour: number | null;
 }> {
   const user = await getCurrentUser();
   const tier = await resolveUserTier(user?.id ?? null);
-  const preference = await readEarliestDeparturePreference();
+  const hour = parseEarliestHourParam(requested ?? null);
+  return {
+    tier,
+    effectiveHour: tier === "pro" ? hour : null,
+  };
+}
+
+async function readSameCountryOnlyFromCookie(): Promise<boolean> {
+  const jar = await cookies();
+  return jar.get(SAME_COUNTRY_COOKIE)?.value === "1";
+}
+
+export async function readSameCountryOnlyPreference(
+  userId?: string | null,
+): Promise<boolean> {
+  const id = userId ?? (await getCurrentUser())?.id ?? null;
+  if (id) {
+    const db = getDb();
+    if (db) {
+      const [row] = await db
+        .select({ sameCountryOnly: users.sameCountryOnly })
+        .from(users)
+        .where(eq(users.id, id))
+        .limit(1);
+      if (row) return Boolean(row.sameCountryOnly);
+    }
+  }
+  return readSameCountryOnlyFromCookie();
+}
+
+export async function writeSameCountryOnlyPreference(
+  userId: string,
+  enabled: boolean,
+): Promise<void> {
+  const db = getDb();
+  if (db) {
+    await db
+      .update(users)
+      .set({ sameCountryOnly: enabled })
+      .where(eq(users.id, userId));
+  }
+
+  const jar = await cookies();
+  jar.set(SAME_COUNTRY_COOKIE, enabled ? "1" : "0", {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: 60 * 60 * 24 * 365,
+  });
+}
+
+/**
+ * Effective same-country discover filter.
+ * Pro-only: free/anon never filter by country, even if preference is stored.
+ */
+export async function getEffectiveSameCountryOnly(): Promise<{
+  tier: DiscoverTier;
+  preference: boolean;
+  effective: boolean;
+}> {
+  const user = await getCurrentUser();
+  const tier = await resolveUserTier(user?.id ?? null);
+  const preference = await readSameCountryOnlyPreference(user?.id ?? null);
   return {
     tier,
     preference,
-    effectiveHour: tier === "pro" ? preference : null,
+    effective: tier === "pro" && preference,
   };
 }
 

@@ -18,6 +18,8 @@ export type DiscoverTier = "anon" | "free" | "pro";
 export type SessionSnapshot = {
   user: SessionUser | null;
   tier: DiscoverTier;
+  sameCountryOnly: boolean;
+  sameCountryOnlyEffective: boolean;
 };
 
 export async function fetchSession(): Promise<SessionSnapshot> {
@@ -25,14 +27,23 @@ export async function fetchSession(): Promise<SessionSnapshot> {
     const data = await apiGet<{
       user: SessionUser | null;
       tier?: DiscoverTier;
+      sameCountryOnly?: boolean;
+      sameCountryOnlyEffective?: boolean;
     }>("/api/auth/me");
     return {
       user: data.user,
       tier: data.tier ?? (data.user ? "free" : "anon"),
+      sameCountryOnly: Boolean(data.sameCountryOnly),
+      sameCountryOnlyEffective: Boolean(data.sameCountryOnlyEffective),
     };
   } catch (err) {
     log.warn({ err }, "fetchSession failed");
-    return { user: null, tier: "anon" };
+    return {
+      user: null,
+      tier: "anon",
+      sameCountryOnly: false,
+      sameCountryOnlyEffective: false,
+    };
   }
 }
 

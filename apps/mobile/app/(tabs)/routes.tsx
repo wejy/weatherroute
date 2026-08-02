@@ -9,10 +9,15 @@ import {
   View,
 } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Link, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/lib/i18n";
 import { apiGet, getApiBaseUrl } from "@/lib/api";
 import { formatDistanceKm } from "@/lib/distance";
+import {
+  EARLIEST_DEPARTURE_HOURS,
+  formatHourOption,
+} from "@/lib/departure";
 import {
   clampDateKey,
   isDateKey,
@@ -30,6 +35,7 @@ import type {
   RouteDto,
   TravelMode,
 } from "@/lib/types";
+import { fetchSession, type DiscoverTier } from "@/lib/session";
 import { createModuleLogger } from "@/lib/logger";
 
 const log = createModuleLogger("routes");
@@ -62,9 +68,15 @@ export default function RoutesScreen() {
   const [dateWindow, setDateWindow] = useState<DateWindow>(() =>
     resolveDateWindow({ preset: "weekend", locale }),
   );
+  const [earliestHour, setEarliestHour] = useState<number | null>(null);
+  const [tier, setTier] = useState<DiscoverTier>("anon");
   const [route, setRoute] = useState<RouteDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void fetchSession().then((s) => setTier(s.tier));
+  }, []);
 
   useEffect(() => {
     setDateWindow((prev) =>
@@ -77,8 +89,15 @@ export default function RoutesScreen() {
     );
   }, [locale]);
 
+  const isPro = tier === "pro";
+
   const loadRoute = useCallback(
-    async (opts?: { alt?: number; window?: DateWindow; travelMode?: TravelMode }) => {
+    async (opts?: {
+      alt?: number;
+      window?: DateWindow;
+      travelMode?: TravelMode;
+      earliest?: number | null;
+    }) => {
       if (!apiReady) {
         setError(t("mobile.apiMissing"));
         return;
@@ -89,6 +108,8 @@ export default function RoutesScreen() {
       }
       const nextWindow = opts?.window ?? dateWindow;
       const nextMode = opts?.travelMode ?? mode;
+      const nextEarliest =
+        opts && "earliest" in opts ? opts.earliest : earliestHour;
       setLoading(true);
       setError(null);
       try {
@@ -113,6 +134,7 @@ export default function RoutesScreen() {
           endDate: nextWindow.endDate,
           alt: opts?.alt,
           lang: locale,
+          earliestHour: isPro && nextEarliest != null ? nextEarliest : undefined,
         });
         setRoute(data);
         log.info(
@@ -135,7 +157,7 @@ export default function RoutesScreen() {
         setLoading(false);
       }
     },
-    [apiReady, dateWindow, fromPlace, locale, mode, t, toPlace],
+    [apiReady, dateWindow, earliestHour, fromPlace, isPro, locale, mode, t, toPlace],
   );
 
   const sortedAlts = route?.alternatives
@@ -366,6 +388,69 @@ export default function RoutesScreen() {
           </View>
         )}
 
+        <Text style={styles.label}>{t("routes.earliestDepartureLabel")}</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipRow}
+        >
+          <Pressable
+            onPress={() => setEarliestHour(null)}
+            style={[styles.chip, earliestHour == null && styles.chipActive]}
+            disabled={!isPro}
+          >
+            <Text
+              style={[
+                styles.chipText,
+                earliestHour == null && styles.chipTextActive,
+                !isPro && styles.chipTextLocked,
+              ]}
+            >
+              {t("routes.earliestDepartureAny")}
+            </Text>
+          </Pressable>
+          {EARLIEST_DEPARTURE_HOURS.filter((h) => h % 2 === 0).map((h) => {
+            const active = earliestHour === h;
+            return (
+              <Pressable
+                key={h}
+                onPress={() => {
+                  if (!isPro) return;
+                  setEarliestHour(h);
+                }}
+                style={[
+                  styles.chip,
+                  active && styles.chipActive,
+                  !isPro && styles.chipLocked,
+                ]}
+                disabled={!isPro}
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    active && styles.chipTextActive,
+                    !isPro && styles.chipTextLocked,
+                  ]}
+                >
+                  {isPro
+                    ? formatHourOption(h)
+                    : t("routes.earliestDepartureOptionPro", {
+                        time: formatHourOption(h),
+                      })}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+        {!isPro ? (
+          <Text style={styles.hint}>
+            {t("routes.earliestDepartureProNote")}{" "}
+            <Link href={"/pro" as Href} style={styles.hintLink}>
+              {t("routes.earliestDepartureUpgrade")}
+            </Link>
+          </Text>
+        ) : null}
+
         <Pressable
           onPress={() => void loadRoute()}
           disabled={loading || !apiReady}
@@ -592,10 +677,19 @@ const styles = StyleSheet.create({
   },
   chipActive: {
     backgroundColor: colors.accent,
-    borderColor: colors.accent,
+    borderColor: colors.accentContainer,
+    shadowColor: colors.accentContainer,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    elevation: 4,
   },
+  chipLocked: { opacity: 0.55 },
   chipText: { fontWeight: "600", color: colors.onSurface, fontSize: 13 },
   chipTextActive: { color: colors.onAccent },
+  chipTextLocked: { color: colors.onSurfaceVariant },
+  hint: { fontSize: 13, color: colors.onSurfaceVariant, lineHeight: 18 },
+  hintLink: { color: colors.primary, fontWeight: "700" },
   dateRangeHint: {
     fontSize: 13,
     fontWeight: "600",

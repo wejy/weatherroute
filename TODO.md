@@ -31,7 +31,7 @@ Expo app (`apps/mobile`, SDK 57) talks to web `/api/*`.
 |------|---------|--------------|
 | Anon | 10 | ~14 (+ radius bump) |
 | Signed-in free | 20 | ~24–28 |
-| Pro (`subscriptions.status` active/trial) | default 30, max 50 | ~display×1.2 |
+| Pro (`subscriptions.status` active/trial) | default 30, max 30 | ~display×1.2 |
 
 Logic: [`discover-limits.ts`](apps/web/src/server/dal/discover-limits.ts). Pro settings UI later.
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { routeQuerySchema } from "@/lib/validation/schemas";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRouteWeather } from "@/server/services/location-service";
+import { resolveRouteEarliestHour } from "@/server/dal/user-prefs";
 import { withApiLog } from "@/lib/api-log";
 
 export async function GET(request: NextRequest) {
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const departure = await resolveRouteEarliestHour(parsed.data.earliestHour);
     const route = await getRouteWeather(parsed.data.from, parsed.data.to, {
       fromLat: parsed.data.fromLat,
       fromLon: parsed.data.fromLon,
@@ -36,11 +38,13 @@ export async function GET(request: NextRequest) {
       startDate: parsed.data.startDate,
       endDate: parsed.data.endDate,
       locale: parsed.data.lang,
+      earliestDepartureHour: departure.effectiveHour,
     });
     log.info(
       {
         mode: parsed.data.mode,
         prefer: parsed.data.prefer,
+        earliestHour: departure.effectiveHour,
         waypoints: route.waypoints?.length ?? 0,
         alternatives: route.alternatives?.length ?? 0,
       },

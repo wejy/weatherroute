@@ -38,6 +38,7 @@ import {
   resolveDiscoverLimits,
   weatherLimitForRadius,
 } from "@/server/dal/discover-limits";
+import { getEffectiveSameCountryOnly } from "@/server/dal/user-prefs";
 import { resolveRadiusKm, clampDistanceForTier, formatDistanceKm } from "@/lib/distance";
 import { formatTravelDuration } from "@/lib/utils";
 
@@ -219,6 +220,18 @@ async function resolveOrigin(query: DiscoverQuery): Promise<PlaceDto | null> {
   return matches[0] ?? null;
 }
 
+/** Ensure origin has countryCode when same-country filtering is required. */
+async function ensureOriginCountry(origin: PlaceDto): Promise<PlaceDto> {
+  if (origin.countryCode) return origin;
+  const reversed = await reverseGeocode(origin.lat, origin.lon);
+  if (!reversed?.countryCode) return origin;
+  return {
+    ...origin,
+    country: reversed.country ?? origin.country,
+    countryCode: reversed.countryCode,
+  };
+}
+
 function emptyDiscoverResult(
   query: DiscoverQuery,
   locale: DateLocale = "en",
@@ -258,12 +271,17 @@ export async function discoverDestinations(
   query: DiscoverQuery,
   locale: DateLocale = "en",
 ): Promise<DiscoverResultDto> {
-  const origin = await resolveOrigin(query);
+  let origin = await resolveOrigin(query);
   if (!origin) {
     return emptyDiscoverResult(query, locale);
   }
 
   const limits = await resolveDiscoverLimits();
+  const sameCountry = await getEffectiveSameCountryOnly();
+  if (sameCountry.effective) {
+    origin = await ensureOriginCountry(origin);
+  }
+
   const clamped = clampDistanceForTier(
     query.distance,
     query.radiusKm,
@@ -286,6 +304,10 @@ export async function discoverDestinations(
   const candidates = await placesWithinRadius(origin, radiusKm, {
     excludeName: origin.name,
     limit: weatherLimit,
+    countryCode:
+      sameCountry.effective && origin.countryCode
+        ? origin.countryCode
+        : undefined,
   });
 
   const catalogById = new Map(DESTINATION_CATALOG.map((d) => [d.id, d]));

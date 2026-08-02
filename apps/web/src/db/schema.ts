@@ -6,6 +6,7 @@ import {
   doublePrecision,
   integer,
   jsonb,
+  boolean,
   primaryKey,
 } from "drizzle-orm/pg-core";
 
@@ -18,6 +19,8 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   emailVerified: timestamp("email_verified", { withTimezone: true }),
   image: text("image"),
+  /** Pro preference: limit discover candidates to origin country. */
+  sameCountryOnly: boolean("same_country_only").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

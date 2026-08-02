@@ -16,6 +16,7 @@ const FEATURE_KEYS = [
   "radius",
   "results",
   "departure",
+  "sameCountry",
   "routes",
   "discovers",
 ] as const;
@@ -23,6 +24,7 @@ const HIGHLIGHT_KEYS = [
   "radius",
   "results",
   "departure",
+  "sameCountry",
   "routes",
   "future",
 ] as const;

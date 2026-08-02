@@ -57,3 +57,25 @@ export function filterBlockedPlaces<T extends {
 }>(places: T[]): T[] {
   return places.filter((p) => !isBlockedPlace(p));
 }
+
+/** Åland (AX) treated as Finland for “same country” discover filtering. */
+export function normalizeCountryCode(code: string): string {
+  const upper = code.trim().toUpperCase();
+  if (upper === "AX") return "FI";
+  return upper;
+}
+
+/** ISO codes that match the same “country group” for discover filtering. */
+export function countryCodeMatchSet(code: string): string[] {
+  const normalized = normalizeCountryCode(code);
+  if (normalized === "FI") return ["FI", "AX"];
+  return [normalized];
+}
+
+export function isSameCountryCode(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  if (!a || !b) return false;
+  return normalizeCountryCode(a) === normalizeCountryCode(b);
+}

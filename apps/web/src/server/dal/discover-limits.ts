@@ -24,7 +24,7 @@ export type DiscoverLimits = {
 
 export const DISCOVER_DISPLAY_COOKIE = "wt_discover_display";
 
-export const DISCOVER_DISPLAY_OPTIONS = [10, 20, 30, 40, 50] as const;
+export const DISCOVER_DISPLAY_OPTIONS = [10, 20, 30] as const;
 
 async function resolveTier(userId: string | null): Promise<DiscoverTier> {
   return resolveUserTier(userId);
@@ -41,7 +41,7 @@ export async function readDiscoverDisplayPreference(): Promise<number | null> {
 
 /**
  * Resolve discover result caps by auth/subscription tier.
- * Pro (and stored preference) can raise display up to 50.
+ * Pro (and stored preference) can raise display up to DISCOVER_PRO_DISPLAY_MAX (30).
  */
 export async function resolveDiscoverLimits(opts?: {
   proDisplayPreference?: number;

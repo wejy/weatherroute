@@ -93,6 +93,8 @@ export const routeQuerySchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .optional(),
   lang: z.enum(["en", "fi"]).optional(),
+  /** Pro-only floor for best departure (0–23). Ignored unless Pro. */
+  earliestHour: z.coerce.number().int().min(0).max(23).optional(),
 });
 
 export const wikipediaQuerySchema = z.object({
