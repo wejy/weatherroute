@@ -1,5 +1,8 @@
 import "server-only";
 
+import { createModuleLogger } from "@/lib/logger";
+
+const log = createModuleLogger("server.integrations.wikipedia");
 export type WikipediaSummary = {
   title: string;
   extract: string;
@@ -55,7 +58,7 @@ async function fetchSummary(
 
   if (res.status === 404) return null;
   if (!res.ok) {
-    console.warn(`[wikipedia] summary ${lang}/${title} → ${res.status}`);
+    log.warn(`[wikipedia] summary ${lang}/${title} → ${res.status}`);
     return null;
   }
 
@@ -191,7 +194,7 @@ export async function fetchWikipediaPlaceSummary(input: {
       value = await resolveForLang("en", name, input.lat, input.lon);
     }
   } catch (error) {
-    console.warn("[wikipedia] fetch failed", error);
+    log.warn({ err: error }, "[wikipedia] fetch failed");
     value = null;
   }
 

@@ -63,6 +63,8 @@ export interface DestinationDto {
   description?: string;
   driveDurationLabel?: string;
   tempSeries?: number[];
+  /** Weekday short labels aligned with `tempSeries` (locale-aware). */
+  tempDayLabels?: string[];
   current: {
     temperatureC: number;
     condition: WeatherCondition;

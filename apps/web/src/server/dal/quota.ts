@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createModuleLogger } from "@/lib/logger";
 import { cookies, headers } from "next/headers";
 import { and, desc, eq, gt } from "drizzle-orm";
 import { nanoid } from "nanoid";
@@ -12,6 +13,7 @@ import {
   usageEvents,
 } from "@/db/schema";
 
+const log = createModuleLogger("server.dal.quota");
 const ANON_COOKIE = "wt_anon";
 const DEDUPE_WINDOW_MS = 10 * 60 * 1000;
 const IP_QUOTA_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -369,7 +371,7 @@ export async function redeemShareToken(token: string): Promise<{
       };
     });
   } catch (error) {
-    console.error("[share] redeem failed", error);
+    log.error({ err: error }, "[share] redeem failed");
     return { ok: false, error: "Redeem failed" };
   }
 }

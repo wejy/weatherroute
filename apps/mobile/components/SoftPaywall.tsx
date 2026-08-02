@@ -13,6 +13,9 @@ import { Link } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { apiPost, getApiBaseUrl, type PublicQuota } from "@/lib/api";
 import { colors } from "@/constants/Colors";
+import { createModuleLogger } from "@/lib/logger";
+
+const log = createModuleLogger("paywall");
 
 export function SoftPaywall({
   quota,
@@ -46,7 +49,9 @@ export function SoftPaywall({
         title: t("brand"),
       });
       setMessage(t("paywall.shareDone"));
-    } catch {
+      log.info("share created");
+    } catch (e) {
+      log.warn({ err: e }, "share failed");
       setError(t("paywall.shareError"));
     } finally {
       setShareBusy(false);
@@ -66,8 +71,10 @@ export function SoftPaywall({
       });
       if (!data.ok) throw new Error("redeem_failed");
       setMessage(t("paywall.redeemDone"));
+      log.info("share redeemed");
       onRedeemed?.();
-    } catch {
+    } catch (e) {
+      log.warn({ err: e }, "redeem failed");
       setError(t("paywall.redeemError"));
     } finally {
       setRedeemBusy(false);

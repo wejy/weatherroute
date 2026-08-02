@@ -295,7 +295,11 @@ export function MapMarkerPopup({
             <p className="mb-1 text-[11px] font-semibold tracking-wide text-on-surface-variant uppercase">
               {t("map.hoverTempChart")}
             </p>
-            <TempSparkline values={marker.tempSeries} height={48} />
+            <TempSparkline
+              values={marker.tempSeries}
+              labels={marker.tempDayLabels}
+              height={60}
+            />
           </div>
         )}
 

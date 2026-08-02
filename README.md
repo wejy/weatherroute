@@ -7,6 +7,7 @@ Map-based weather trip planner — **npm workspaces monorepo**.
 | `@weathertrip/web` | `apps/web` | Next.js App Router web app + API |
 | `@weathertrip/mobile` | `apps/mobile` | Expo (React Native) mobile app |
 | `@weathertrip/i18n` | `packages/i18n` | Shared EN + FI dictionaries |
+| `@weathertrip/logger` | `packages/logger` | Shared Pino logger (web server + Expo) |
 
 ## Quick start
 

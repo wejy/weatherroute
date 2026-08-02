@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createModuleLogger } from "@/lib/logger";
 import { env } from "@/lib/env";
 import type { WeatherDto } from "@/lib/types";
 import { localizeDayLabels, type DateLocale } from "@/lib/dates";
@@ -18,6 +19,7 @@ import { openMeteoForecastBatch, openMeteoProvider } from "./openmeteo";
 import { yrProvider } from "./yr";
 import type { WeatherProvider } from "./types";
 
+const log = createModuleLogger("server.integrations.weather");
 const memoryCache = new Map<string, { expiresAt: number; value: WeatherDto }>();
 const CACHE_TTL_MS = 10 * 60 * 1000;
 
@@ -58,7 +60,7 @@ async function withFallback(
   try {
     return await primary.getForecast(input);
   } catch (error) {
-    console.warn(`[weather] ${primary.name} failed, trying ${fallback.name}`, error);
+    log.warn({ err: error }, `[weather] ${primary.name} failed, trying ${fallback.name}`);
     return fallback.getForecast(input);
   }
 }
@@ -189,7 +191,7 @@ export async function fetchWeatherBatch(
       }
     }
   } catch (error) {
-    console.warn("[weather] batch failed, falling back per-place", error);
+    log.warn({ err: error }, "[weather] batch failed, falling back per-place");
     await Promise.all(
       missing.map(async (m) => {
         try {

@@ -155,6 +155,8 @@ export interface DestinationDto {
   travelMode?: TravelMode;
   /** Daily max temps in the selected window (for mini charts). */
   tempSeries?: number[];
+  /** Weekday short labels aligned with `tempSeries` (locale-aware). */
+  tempDayLabels?: string[];
   /** Live / now conditions at the destination. */
   current: {
     temperatureC: number;
@@ -221,6 +223,8 @@ export interface MapMarkerDto {
   driveDurationLabel?: string;
   travelMode?: TravelMode;
   tempSeries?: number[];
+  /** Weekday short labels aligned with `tempSeries` (locale-aware). */
+  tempDayLabels?: string[];
   /** Corridor / forecast severity for marker chrome. */
   tone?: WeatherTone;
   advisories?: WeatherAdvisoryDto[];

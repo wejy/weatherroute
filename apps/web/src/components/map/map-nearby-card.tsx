@@ -15,10 +15,13 @@ import { translateCondition } from "@/i18n/translate";
 /** Compact 7-day max-temp bars colored by absolute °C scale. */
 export function TempSparkline({
   values,
+  labels,
   className,
   height = 56,
 }: {
   values: number[];
+  /** Weekday short labels under each bar (same length as values when provided). */
+  labels?: string[];
   className?: string;
   height?: number;
 }) {
@@ -26,7 +29,8 @@ export function TempSparkline({
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = Math.max(max - min, 1);
-  const barMax = Math.max(height - 18, 24);
+  const showLabels = Boolean(labels && labels.length === values.length);
+  const barMax = Math.max(height - (showLabels ? 28 : 18), 20);
 
   return (
     <div
@@ -39,6 +43,7 @@ export function TempSparkline({
         const h = 10 + ((v - min) / span) * (barMax - 10);
         const fill = temperatureColor(v);
         const ink = temperatureInkColor(v);
+        const day = labels?.[i] ? formatSparkDayLabel(labels[i]!) : null;
         return (
           <div
             key={i}
@@ -55,6 +60,11 @@ export function TempSparkline({
               className="w-full max-w-[18px] rounded-t-sm"
               style={{ height: h, backgroundColor: fill }}
             />
+            {day ? (
+              <span className="text-[9px] leading-none font-medium text-on-surface-variant">
+                {day}
+              </span>
+            ) : null}
           </div>
         );
       })}
@@ -62,24 +72,40 @@ export function TempSparkline({
   );
 }
 
+/** Capitalize weekday short for bar labels (fi: ma → Ma). */
+function formatSparkDayLabel(raw: string): string {
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  return trimmed.charAt(0).toLocaleUpperCase() + trimmed.slice(1);
+}
+
 /** Inline HTML for Mapbox popups (no React). */
-export function tempSeriesBarsHtml(series: number[]): string {
+export function tempSeriesBarsHtml(
+  series: number[],
+  labels?: string[],
+): string {
   if (series.length < 2) return "";
   const min = Math.min(...series);
   const max = Math.max(...series);
   const span = Math.max(max - min, 1);
+  const showLabels = Boolean(labels && labels.length === series.length);
   const bars = series
-    .map((v) => {
-      const h = 10 + ((v - min) / span) * 36;
+    .map((v, i) => {
+      const h = 10 + ((v - min) / span) * (showLabels ? 28 : 36);
       const fill = temperatureColor(v);
       const ink = temperatureInkColor(v);
+      const day = labels?.[i] ? formatSparkDayLabel(labels[i]!) : "";
+      const dayHtml = day
+        ? `<span style="font-size:9px;font-weight:500;color:#5f6368;line-height:1">${day}</span>`
+        : "";
       return `<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
         <span style="font-size:10px;font-weight:600;color:${ink};line-height:1">${Math.round(v)}°</span>
         <div style="width:100%;max-width:16px;height:${h}px;background:${fill};border-radius:3px 3px 0 0"></div>
+        ${dayHtml}
       </div>`;
     })
     .join("");
-  return `<div style="display:flex;align-items:flex-end;gap:3px;height:58px;margin-top:4px;width:100%">${bars}</div>`;
+  return `<div style="display:flex;align-items:flex-end;gap:3px;height:${showLabels ? 70 : 58}px;margin-top:4px;width:100%">${bars}</div>`;
 }
 
 export function MapNearbyCard({
@@ -95,6 +121,7 @@ export function MapNearbyCard({
   const d = destination;
   const duration = d.driveDurationLabel ?? "";
   const series = d.tempSeries ?? [];
+  const dayLabels = d.tempDayLabels;
   const modeIcon = travelModeIcon(d.travelMode);
 
   return (
@@ -152,7 +179,11 @@ export function MapNearbyCard({
           <p className="mb-1 text-[11px] font-semibold tracking-wide text-on-surface-variant uppercase">
             {t("map.hoverTempChart")}
           </p>
-          <TempSparkline values={series} height={compact ? 48 : 56} />
+          <TempSparkline
+            values={series}
+            labels={dayLabels}
+            height={compact ? 60 : 68}
+          />
         </div>
       )}
 

@@ -29,6 +29,9 @@ import type {
   RouteDto,
   TravelMode,
 } from "@/lib/types";
+import { createModuleLogger } from "@/lib/logger";
+
+const log = createModuleLogger("routes");
 
 const DATE_PRESETS: DatePreset[] = ["today", "tomorrow", "weekend", "custom"];
 const TRAVEL_MODES: TravelMode[] = ["driving", "cycling"];
@@ -88,6 +91,14 @@ export default function RoutesScreen() {
       setLoading(true);
       setError(null);
       try {
+        log.info(
+          {
+            from: fromPlace.name,
+            to: toPlace.name,
+            mode: nextMode,
+          },
+          "route start",
+        );
         const data = await apiGet<RouteDto>("/api/routes", {
           from: fromPlace.placeName,
           to: toPlace.placeName,
@@ -103,7 +114,16 @@ export default function RoutesScreen() {
           lang: locale,
         });
         setRoute(data);
+        log.info(
+          {
+            from: fromPlace.name,
+            to: toPlace.name,
+            waypoints: data.waypoints?.length ?? 0,
+          },
+          "route ok",
+        );
       } catch (e) {
+        log.warn({ err: e }, "route failed");
         const message =
           e instanceof Error && e.message === "NETWORK"
             ? t("mobile.networkError")

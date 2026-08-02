@@ -1,6 +1,6 @@
 # WeatherTrip monorepo
 
-npm workspaces: `apps/web` (Next.js), `apps/mobile` (Expo), `packages/i18n` (shared EN/FI).
+npm workspaces: `apps/web` (Next.js), `apps/mobile` (Expo), `packages/i18n` (shared EN/FI), `packages/logger` (Pino).
 
 ## Dual-platform rule (always)
 

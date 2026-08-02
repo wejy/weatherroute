@@ -40,6 +40,9 @@ import { DestinationCard } from "@/components/DestinationCard";
 import { SoftPaywall, QuotaHint } from "@/components/SoftPaywall";
 import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
 import type { DiscoverResultDto, PlaceDto, WeatherGoal } from "@/lib/types";
+import { createModuleLogger } from "@/lib/logger";
+
+const log = createModuleLogger("discover");
 
 const GOALS: WeatherGoal[] = ["best", "sun", "dry", "mild", "rain", "warm"];
 const DATE_PRESETS: DatePreset[] = ["today", "tomorrow", "weekend", "custom"];
@@ -100,6 +103,14 @@ export default function DiscoverScreen() {
       setError(null);
       setPaywalled(false);
       try {
+        log.info(
+          {
+            origin: place.name,
+            weatherGoal,
+            distance: nextDistance,
+          },
+          "discover start",
+        );
         const data = await apiGet<DiscoverResultDto>("/api/discover", {
           origin: place.placeName,
           lat: place.lat,
@@ -118,13 +129,25 @@ export default function DiscoverScreen() {
         setResult(data);
         setQuota(null);
         void saveLastDiscover(data);
+        log.info(
+          {
+            origin: place.name,
+            destinations: data.destinations.length,
+          },
+          "discover ok",
+        );
       } catch (e) {
         if (e instanceof ApiError && e.isPaywall) {
+          log.warn(
+            { origin: place.name, remaining: e.quota?.remaining },
+            "discover paywalled",
+          );
           setPaywalled(true);
           setQuota(e.quota);
           setResult(null);
           setError(null);
         } else {
+          log.warn({ err: e, origin: place.name }, "discover failed");
           const message =
             e instanceof Error && e.message === "MISSING_API_URL"
               ? t("mobile.apiMissing")

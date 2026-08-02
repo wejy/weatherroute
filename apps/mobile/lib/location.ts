@@ -3,6 +3,9 @@ import * as Location from "expo-location";
 import { apiGet } from "@/lib/api";
 import type { PlaceDto } from "@/lib/types";
 import type { Locale } from "@weathertrip/i18n";
+import { createModuleLogger } from "@/lib/logger";
+
+const log = createModuleLogger("location");
 
 export type LocationErrorCode = "denied" | "timeout" | "unavailable" | "failed";
 
@@ -186,12 +189,22 @@ async function reverseViaDevice(
 /** IP / timezone coarse region — no GPS permission. */
 export async function detectCoarsePlace(): Promise<CoarsePlaceResult> {
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  log.info({ tz, platform: Platform.OS }, "coarse locate start");
   const data = await apiGet<CoarsePlaceResult>("/api/geo/coarse", {
     tz: tz || undefined,
   });
   if (!data.place?.lat || !data.place?.lon) {
+    log.warn("coarse locate missing place");
     throw new LocationDetectError("failed");
   }
+  log.info(
+    {
+      name: data.place.name,
+      source: data.source,
+      suggestedDistance: data.suggestedDistance,
+    },
+    "coarse locate ok",
+  );
   return data;
 }
 
@@ -203,10 +216,13 @@ export async function detectCurrentPlace(
   fallbackName = "Here",
   locale: Locale = "en",
 ): Promise<PlaceDto> {
+  log.info({ platform: Platform.OS, locale }, "precise locate start");
   const { lat, lon } = await readCoords();
+  log.debug({ lat, lon }, "precise coords");
 
   const fromApi = await reverseViaApi(lat, lon, locale);
   if (fromApi) {
+    log.info({ name: fromApi.name, via: "api" }, "precise locate ok");
     return {
       ...fromApi,
       lat,
@@ -215,7 +231,11 @@ export async function detectCurrentPlace(
   }
 
   const fromDevice = await reverseViaDevice(lat, lon, fallbackName);
-  if (fromDevice) return fromDevice;
+  if (fromDevice) {
+    log.info({ name: fromDevice.name, via: "device" }, "precise locate ok");
+    return fromDevice;
+  }
 
+  log.warn({ lat, lon }, "precise locate fallback name only");
   return placeFromCoords(lat, lon, undefined, fallbackName);
 }

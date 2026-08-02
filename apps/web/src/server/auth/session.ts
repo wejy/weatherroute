@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createModuleLogger } from "@/lib/logger";
 import { cookies, headers } from "next/headers";
 import type { UserDto } from "@/lib/types";
 import { auth, signIn, signOut as authSignOut } from "@/server/auth/auth";
@@ -7,6 +8,7 @@ import { MOCK_USER } from "@/server/integrations/mocks/data";
 import { env, hasDatabase } from "@/lib/env";
 import { decodeAuthSessionToken } from "@/server/auth/mobile-session";
 
+const log = createModuleLogger("server.auth.session");
 const DEMO_COOKIE = "wt_session";
 const MOBILE_SESSION_HEADER = "x-weathertrip-session";
 
@@ -51,7 +53,7 @@ export async function getCurrentUser(): Promise<UserDto | null> {
       if (!session?.user?.id) return null;
       return toUserDto(session.user);
     } catch (error) {
-      console.warn("[auth] getCurrentUser failed", error);
+      log.warn({ err: error }, "[auth] getCurrentUser failed");
       return null;
     }
   }
@@ -68,7 +70,7 @@ export async function getCurrentUser(): Promise<UserDto | null> {
     if (!session?.user?.id) return null;
     return toUserDto(session.user);
   } catch (error) {
-    console.warn("[auth] getCurrentUser failed", error);
+    log.warn({ err: error }, "[auth] getCurrentUser failed");
     return null;
   }
 }

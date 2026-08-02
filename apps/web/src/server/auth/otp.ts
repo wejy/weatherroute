@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createModuleLogger } from "@/lib/logger";
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
 import { z } from "zod";
@@ -8,6 +9,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { getDb } from "@/db";
 import { emailOtps, users } from "@/db/schema";
 
+const log = createModuleLogger("server.auth.otp");
 const OTP_SEND_PER_EMAIL = 3;
 const OTP_SEND_PER_IP = 10;
 const OTP_SEND_WINDOW_MS = 60 * 60 * 1000;
@@ -47,7 +49,10 @@ async function sendOtpEmail(email: string, code: string): Promise<void> {
     });
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      console.error(`[otp] Resend failed: ${res.status}`, text);
+      log.error(
+        { status: res.status, body: text.slice(0, 200) },
+        "Resend OTP email failed",
+      );
       throw new Error("Failed to send code");
     }
     return;
@@ -57,9 +62,10 @@ async function sendOtpEmail(email: string, code: string): Promise<void> {
     throw new Error("Email provider not configured");
   }
 
-  console.info(`[email:console] to=${email} — OTP sent (code redacted in logs)`);
+  log.info({ email }, "console OTP sent (code not logged)");
   if (process.env.LOG_OTP_CODE === "1") {
-    console.info(`[email:console] debug code=${code}`);
+    // Explicit local debug only — never enable in production.
+    log.warn({ email, debugCode: code }, "LOG_OTP_CODE=1 — OTP visible");
   }
 }
 

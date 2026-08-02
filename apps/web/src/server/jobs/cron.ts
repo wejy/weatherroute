@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createModuleLogger } from "@/lib/logger";
 import { desc } from "drizzle-orm";
 import cron from "node-cron";
 import { env } from "@/lib/env";
@@ -7,6 +8,7 @@ import { getDb } from "@/db";
 import { places } from "@/db/schema";
 import { fetchWeatherBatch } from "@/server/integrations/weather";
 
+const log = createModuleLogger("server.jobs.cron");
 const globalCron = globalThis as unknown as {
   weathertripCronStarted?: boolean;
 };
@@ -17,7 +19,7 @@ const globalCron = globalThis as unknown as {
 export async function warmPopularWeather(limit = 200): Promise<number> {
   const db = getDb();
   if (!db) {
-    console.info("[cron] skip warm — no database");
+    log.info("[cron] skip warm — no database");
     return 0;
   }
 
@@ -34,19 +36,19 @@ export async function warmPopularWeather(limit = 200): Promise<number> {
 
   if (rows.length === 0) return 0;
 
-  console.info(`[cron] warming weather for ${rows.length} places…`);
+  log.info(`[cron] warming weather for ${rows.length} places…`);
   const batch = await fetchWeatherBatch(
     rows.map((r) => ({ lat: r.lat, lon: r.lon, name: r.name })),
     "en",
   );
   const ok = batch.filter(Boolean).length;
-  console.info(`[cron] warm complete: ${ok}/${rows.length}`);
+  log.info(`[cron] warm complete: ${ok}/${rows.length}`);
   return ok;
 }
 
 export function startCronJobs(): void {
   if (!env.cronEnabled) {
-    console.info("[cron] CRON_ENABLED=false — jobs not scheduled");
+    log.info("[cron] CRON_ENABLED=false — jobs not scheduled");
     return;
   }
   if (globalCron.weathertripCronStarted) return;
@@ -55,9 +57,9 @@ export function startCronJobs(): void {
   // 02:00 UTC daily
   cron.schedule("0 2 * * *", () => {
     void warmPopularWeather(250).catch((err) =>
-      console.error("[cron] warm failed", err),
+      log.error({ err }, "[cron] warm failed"),
     );
   });
 
-  console.info("[cron] scheduled nightly weather warm at 02:00 UTC");
+  log.info("[cron] scheduled nightly weather warm at 02:00 UTC");
 }

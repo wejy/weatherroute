@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getClientIp } from "@/lib/client-ip";
 import { rateLimit } from "@/lib/rate-limit";
 import {
   seedForCountryCode,
@@ -7,6 +6,7 @@ import {
   toCoarseResult,
   type CoarseGeoResult,
 } from "@/lib/coarse-geo";
+import { withApiLog } from "@/lib/api-log";
 
 function countryFromHeaders(request: NextRequest): string | null {
   const keys = [
@@ -29,7 +29,6 @@ async function lookupIpCountry(ip: string | null): Promise<{
   lat?: number;
   lon?: number;
 } | null> {
-  // Skip private / local IPs — external lookup won't help.
   if (
     !ip ||
     ip === "::1" ||
@@ -69,69 +68,80 @@ async function lookupIpCountry(ip: string | null): Promise<{
 }
 
 export async function GET(request: NextRequest) {
-  const ip = getClientIp(request);
-  const limited = await rateLimit(`coarse-geo:${ip}`, 40);
-  if (!limited.ok) {
-    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
-  }
+  return withApiLog(request, "geo.coarse", async ({ log, ip }) => {
+    const limited = await rateLimit(`coarse-geo:${ip}`, 40);
+    if (!limited.ok) {
+      return NextResponse.json(
+        { error: "Rate limit exceeded" },
+        { status: 429 },
+      );
+    }
 
-  const tz = request.nextUrl.searchParams.get("tz") ?? undefined;
-  const headerCountry = countryFromHeaders(request);
+    const tz = request.nextUrl.searchParams.get("tz") ?? undefined;
+    const headerCountry = countryFromHeaders(request);
 
-  let result: CoarseGeoResult | null = null;
+    let result: CoarseGeoResult | null = null;
 
-  if (headerCountry) {
-    result = toCoarseResult(
-      seedForCountryCode(headerCountry),
-      "header",
-      headerCountry,
-    );
-  }
+    if (headerCountry) {
+      result = toCoarseResult(
+        seedForCountryCode(headerCountry),
+        "header",
+        headerCountry,
+      );
+    }
 
-  if (!result) {
-    const lookedUp = await lookupIpCountry(ip === "local" ? null : ip);
-    if (lookedUp?.countryCode) {
-      const seed = seedForCountryCode(lookedUp.countryCode);
-      // Prefer live city coords when the IP lookup is more precise than the seed.
-      if (
-        lookedUp.city &&
-        lookedUp.lat != null &&
-        lookedUp.lon != null &&
-        Number.isFinite(lookedUp.lat) &&
-        Number.isFinite(lookedUp.lon)
-      ) {
-        result = {
-          place: {
-            id: `coarse-ip-${lookedUp.countryCode}`,
-            name: lookedUp.city,
-            placeName: `${lookedUp.city}, ${seed.place.country ?? lookedUp.countryCode}`,
-            country: seed.place.country,
+    if (!result) {
+      const lookedUp = await lookupIpCountry(ip === "local" ? null : ip);
+      if (lookedUp?.countryCode) {
+        const seed = seedForCountryCode(lookedUp.countryCode);
+        if (
+          lookedUp.city &&
+          lookedUp.lat != null &&
+          lookedUp.lon != null &&
+          Number.isFinite(lookedUp.lat) &&
+          Number.isFinite(lookedUp.lon)
+        ) {
+          result = {
+            place: {
+              id: `coarse-ip-${lookedUp.countryCode}`,
+              name: lookedUp.city,
+              placeName: `${lookedUp.city}, ${seed.place.country ?? lookedUp.countryCode}`,
+              country: seed.place.country,
+              countryCode: lookedUp.countryCode,
+              lat: lookedUp.lat,
+              lon: lookedUp.lon,
+            },
+            source: "ip",
             countryCode: lookedUp.countryCode,
-            lat: lookedUp.lat,
-            lon: lookedUp.lon,
-          },
-          source: "ip",
-          countryCode: lookedUp.countryCode,
-          region: seed.region,
-          suggestedDistance: seed.suggestedDistance,
-          label: `${lookedUp.city}, ${seed.place.country ?? lookedUp.countryCode}`,
-        };
-      } else {
-        result = toCoarseResult(seed, "ip", lookedUp.countryCode);
+            region: seed.region,
+            suggestedDistance: seed.suggestedDistance,
+            label: `${lookedUp.city}, ${seed.place.country ?? lookedUp.countryCode}`,
+          };
+        } else {
+          result = toCoarseResult(seed, "ip", lookedUp.countryCode);
+        }
       }
     }
-  }
 
-  if (!result) {
-    const fromTz = seedFromTimezone(tz);
-    if (fromTz) {
-      result = toCoarseResult(fromTz, "timezone");
+    if (!result) {
+      const fromTz = seedFromTimezone(tz);
+      if (fromTz) {
+        result = toCoarseResult(fromTz, "timezone");
+      }
     }
-  }
 
-  if (!result) {
-    result = toCoarseResult(seedForCountryCode("FI"), "fallback", "FI");
-  }
+    if (!result) {
+      result = toCoarseResult(seedForCountryCode("FI"), "fallback", "FI");
+    }
 
-  return NextResponse.json(result);
+    log.info(
+      {
+        source: result.source,
+        countryCode: result.countryCode,
+        name: result.place.name,
+      },
+      "coarse geo ok",
+    );
+    return NextResponse.json(result);
+  });
 }

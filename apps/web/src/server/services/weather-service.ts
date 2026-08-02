@@ -306,9 +306,9 @@ export async function discoverDestinations(
       const catalog = catalogById.get(city.id);
       const forecast = summarizePeriod(weather, dateWindow);
       // Always use a multi-day series for sparkline (trip window alone may be 1 day).
-      const tempSeries = weather.daily
-        .slice(0, 7)
-        .map((d) => Math.round(d.tempMaxC));
+      const sparkDays = weather.daily.slice(0, 7);
+      const tempSeries = sparkDays.map((d) => Math.round(d.tempMaxC));
+      const tempDayLabels = sparkDays.map((d) => weekdayShort(d.date, locale));
 
       const dest: DestinationDto = {
         id: city.id,
@@ -338,6 +338,7 @@ export async function discoverDestinations(
         ),
         travelMode,
         tempSeries,
+        tempDayLabels,
         current: {
           temperatureC: weather.current.temperatureC,
           condition: weather.current.condition,
@@ -413,6 +414,7 @@ export async function discoverDestinations(
       driveDurationLabel: d.driveDurationLabel,
       travelMode: d.travelMode,
       tempSeries: d.tempSeries,
+      tempDayLabels: d.tempDayLabels,
       tone: weatherTone(d.rainProbability, d.condition),
     })),
   ];

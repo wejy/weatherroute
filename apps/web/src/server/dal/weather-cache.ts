@@ -1,10 +1,12 @@
 import "server-only";
 
+import { createModuleLogger } from "@/lib/logger";
 import { eq, gt } from "drizzle-orm";
 import type { WeatherDto } from "@/lib/types";
 import { getDb } from "@/db";
 import { weatherCache } from "@/db/schema";
 
+const log = createModuleLogger("server.dal.weather-cache");
 const DB_TTL_MS = 8 * 60 * 60 * 1000; // 8h
 
 export function weatherGridKey(lat: number, lon: number): string {
@@ -35,7 +37,7 @@ export async function readWeatherCache(
     if (!payload.hourly.some((h) => h.precipitationMm != null)) return null;
     return payload;
   } catch (error) {
-    console.warn("[weather-cache] read failed", error);
+    log.warn({ err: error }, "[weather-cache] read failed");
     return null;
   }
 }
@@ -72,7 +74,7 @@ export async function writeWeatherCache(
         },
       });
   } catch (error) {
-    console.warn("[weather-cache] write failed", error);
+    log.warn({ err: error }, "[weather-cache] write failed");
   }
 }
 

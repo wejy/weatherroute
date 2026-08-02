@@ -1,8 +1,10 @@
 import "server-only";
 
+import { createModuleLogger } from "@/lib/logger";
 import type { PlaceDto } from "@/lib/types";
 import { haversineKm } from "@/server/integrations/mocks/data";
 
+const log = createModuleLogger("server.integrations.places.nearby-overpass");
 type OverpassElement = {
   type: string;
   id: number;
@@ -197,13 +199,14 @@ export async function fetchNearbySettlements(
     if (!data?.elements) {
       failureCooldown.set(key, Date.now() + FAILURE_COOLDOWN_MS);
       if (lastError && !(lastError instanceof Error && lastError.name === "AbortError") && !(lastError instanceof DOMException && lastError.name === "TimeoutError")) {
-        console.warn(
-          "[places] Overpass unavailable:",
-          lastError instanceof Error ? lastError.message : lastError,
+        log.warn(
+          { err: lastError instanceof Error ? lastError.message : lastError },
+          "Overpass unavailable",
         );
       } else {
-        console.warn(
-          `[places] Overpass skipped (timeout/busy) for ${key}; using curated places`,
+        log.warn(
+          { key },
+          "Overpass skipped (timeout/busy); using curated places",
         );
       }
       return [];
@@ -221,13 +224,11 @@ export async function fetchNearbySettlements(
     failureCooldown.set(key, Date.now() + FAILURE_COOLDOWN_MS);
     const name = error instanceof Error ? error.name : "";
     if (name === "AbortError" || name === "TimeoutError") {
-      console.warn(
-        `[places] Overpass timed out for ${key}; using curated places`,
-      );
+      log.warn({ key }, "Overpass timed out; using curated places");
     } else {
-      console.warn(
-        "[places] Overpass nearby failed:",
-        error instanceof Error ? error.message : error,
+      log.warn(
+        { err: error instanceof Error ? error.message : error, key },
+        "Overpass nearby failed",
       );
     }
     return [];

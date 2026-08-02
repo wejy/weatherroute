@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createModuleLogger } from "@/lib/logger";
 import {
   getMapboxRoutes,
   searchPlaces,
@@ -40,6 +41,7 @@ import {
 } from "@/lib/weather-advisories";
 import { CITY_INDEX } from "@/server/integrations/places/city-index";
 
+const log = createModuleLogger("server.services.location-service");
 function durationMinutesFromSeconds(seconds: number): number {
   return Math.max(1, Math.round(seconds / 60));
 }
@@ -336,7 +338,7 @@ export async function getRouteWeather(
     // Always request alternatives so we can compare / overlay on the map.
     candidates = await getMapboxRoutes(from, to, mode, { alternatives: true });
   } catch (error) {
-    console.warn(`[route] Mapbox directions (${mode}) failed`, error);
+    log.warn({ err: error }, `[route] Mapbox directions (${mode}) failed`);
   }
 
   let routed: MapboxRoute | null = candidates[0] ?? null;

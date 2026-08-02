@@ -1,3 +1,4 @@
+import { createModuleLogger } from "@/lib/logger";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { DrizzleAdapter } from "@auth/drizzle-adapter";
@@ -10,6 +11,8 @@ import {
 } from "@/db/schema";
 import { verifyEmailOtp } from "@/server/auth/otp";
 import { env, getAuthSecret, shouldTrustAuthHost } from "@/lib/env";
+
+const log = createModuleLogger("server.auth.auth");
 
 function buildAdapter() {
   const db = getDb();
@@ -35,7 +38,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       ) {
         return;
       }
-      console.error(error);
+      log.error({ err: error }, "error");
     },
   },
   session: { strategy: "jwt" },

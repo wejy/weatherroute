@@ -116,6 +116,8 @@ Put these in a file the process manager loads (e.g. `/var/www/weathertrip/apps/w
 | `ANON_IP_DISCOVER_LIMIT` | `10` | Cookie-less / device IP daily limit |
 | `USE_MOCK_WEATHER` | `false` | Keep `false` in prod |
 | `PORT` | `3000` | Must match reverse proxy upstream |
+| `LOG_LEVEL` | `info` (prod) / `debug` (dev) | Pino via `@weathertrip/logger` — JSON stdout in production |
+| `LOG_PRETTY` | pretty on in dev | Set `0` to force JSON locally |
 
 ### Example production env file
 
@@ -358,7 +360,7 @@ sudo systemctl restart weathertrip
 - [ ] Anon discover hits soft paywall after limit
 - [ ] `curl -I https://weather.example.com` shows security headers (CSP / HSTS from middleware)
 - [ ] Logs: `journalctl -u weathertrip -f` — no boot errors about `AUTH_SECRET` / `EMAIL_MODE` / `USE_MOCKS`
-- [ ] Cron: after boot, log line `[cron] scheduled nightly weather warm…` when `CRON_ENABLED=true`
+- [ ] Cron: after boot, log line mentioning scheduled nightly weather warm when `CRON_ENABLED=true`
 
 ---
 

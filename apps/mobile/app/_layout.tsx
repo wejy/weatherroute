@@ -1,10 +1,26 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useEffect } from "react";
+import { Platform } from "react-native";
 import { I18nProvider, useI18n } from "@/lib/i18n";
 import { colors } from "@/constants/Colors";
+import { createModuleLogger } from "@/lib/logger";
+import { getApiBaseUrl } from "@/lib/api";
+
+const log = createModuleLogger("root");
 
 function RootNavigator() {
   const { t } = useI18n();
+
+  useEffect(() => {
+    log.info(
+      {
+        platform: Platform.OS,
+        apiBase: getApiBaseUrl() || null,
+      },
+      "WeatherTrip mobile started",
+    );
+  }, []);
 
   return (
     <>

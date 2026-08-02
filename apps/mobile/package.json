@@ -15,6 +15,7 @@
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "^3.1.1",
     "@weathertrip/i18n": "*",
+    "@weathertrip/logger": "*",
     "expo": "^57.0.8",
     "expo-constants": "~57.0.7",
     "expo-font": "~57.0.1",

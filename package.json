@@ -14,7 +14,7 @@
     "build": "npm run build -w @weathertrip/web",
     "build:web": "npm run build -w @weathertrip/web",
     "lint": "npm run lint -w @weathertrip/web",
-    "typecheck": "npm run typecheck -w @weathertrip/i18n && npm run typecheck -w @weathertrip/web && npm run typecheck -w @weathertrip/mobile",
+    "typecheck": "npm run typecheck -w @weathertrip/i18n && npm run typecheck -w @weathertrip/logger && npm run typecheck -w @weathertrip/web && npm run typecheck -w @weathertrip/mobile",
     "test": "npm run test -w @weathertrip/web",
     "test:e2e": "npm run test:e2e -w @weathertrip/web",
     "db:generate": "npm run db:generate -w @weathertrip/web",

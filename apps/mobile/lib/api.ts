@@ -3,6 +3,13 @@ import type { Locale } from "@weathertrip/i18n";
 import { getDeviceId } from "@/lib/device-id";
 import { getAnonCookieId } from "@/lib/anon";
 import { getSessionToken } from "@/lib/session-store";
+import { createModuleLogger } from "@/lib/logger";
+
+const log = createModuleLogger("api");
+
+function newRequestId(): string {
+  return `m-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 /**
  * Base URL of the Next.js API (apps/web).
@@ -126,6 +133,15 @@ async function request<T>(
   const headers = await buildHeaders(
     options?.body != null ? { "Content-Type": "application/json" } : undefined,
   );
+  const requestId = newRequestId();
+  headers["X-Request-Id"] = requestId;
+  headers["X-WeatherTrip-Request-Id"] = requestId;
+
+  const startedAt = Date.now();
+  log.debug(
+    { method, path: url.pathname, requestId },
+    "API request",
+  );
 
   const res = await fetch(url.toString(), {
     method,
@@ -134,10 +150,22 @@ async function request<T>(
     signal: options?.signal,
   }).catch((err: unknown) => {
     if (err instanceof Error && err.name === "AbortError") throw err;
+    log.warn(
+      {
+        err,
+        method,
+        path: url.pathname,
+        requestId,
+        ms: Date.now() - startedAt,
+        platform: Platform.OS,
+      },
+      "API network error",
+    );
     throw new Error("NETWORK");
   });
 
   const body = await parseBody(res);
+  const ms = Date.now() - startedAt;
   if (!res.ok) {
     const msg =
       typeof body === "object" &&
@@ -146,8 +174,43 @@ async function request<T>(
       typeof (body as { error: unknown }).error === "string"
         ? (body as { error: string }).error
         : `API ${res.status}`;
+    if (res.status === 402) {
+      log.warn(
+        { method, path: url.pathname, status: res.status, requestId, ms },
+        "API paywall",
+      );
+    } else if (res.status >= 500) {
+      log.error(
+        {
+          method,
+          path: url.pathname,
+          status: res.status,
+          error: msg,
+          requestId,
+          ms,
+        },
+        "API server error",
+      );
+    } else {
+      log.info(
+        {
+          method,
+          path: url.pathname,
+          status: res.status,
+          error: msg,
+          requestId,
+          ms,
+        },
+        "API client error",
+      );
+    }
     throw new ApiError(res.status, body, msg);
   }
+
+  log.debug(
+    { method, path: url.pathname, status: res.status, requestId, ms },
+    "API ok",
+  );
 
   return body as T;
 }

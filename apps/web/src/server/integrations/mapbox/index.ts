@@ -1,5 +1,6 @@
 import "server-only";
 
+import { createModuleLogger } from "@/lib/logger";
 import type { PlaceDto } from "@/lib/types";
 import { env, hasMapbox } from "@/lib/env";
 import { PLACES } from "@/server/integrations/mocks/data";
@@ -7,6 +8,7 @@ import { openMeteoSearchPlaces } from "@/server/integrations/geocoding/openmeteo
 import { nominatimReverse } from "@/server/integrations/geocoding/nominatim";
 import { filterBlockedPlaces, isBlockedPlace } from "@/lib/geo-block";
 
+const log = createModuleLogger("server.integrations.mapbox");
 const reverseCache = new Map<string, { expiresAt: number; value: PlaceDto }>();
 const REVERSE_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -61,7 +63,7 @@ export async function searchPlaces(
       const filtered = filterBlockedPlaces(results).slice(0, limit);
       if (filtered.length > 0) return filtered;
     } catch (error) {
-      console.warn("[geocode] Mapbox precise search failed", error);
+      log.warn({ err: error }, "[geocode] Mapbox precise search failed");
     }
   }
 
@@ -73,7 +75,7 @@ export async function searchPlaces(
       .map((p) => ({ ...p, kind: "place" as const }));
     if (filtered.length > 0) return filtered;
   } catch (error) {
-    console.warn("[geocode] Open-Meteo search failed", error);
+    log.warn({ err: error }, "[geocode] Open-Meteo search failed");
   }
 
   if (hasMapbox()) {
@@ -85,7 +87,7 @@ export async function searchPlaces(
       });
       return filterBlockedPlaces(results).slice(0, limit);
     } catch (error) {
-      console.warn("[geocode] Mapbox search failed", error);
+      log.warn({ err: error }, "[geocode] Mapbox search failed");
     }
   }
 
@@ -186,7 +188,7 @@ export async function reverseGeocode(
         return remember(place);
       }
     } catch (error) {
-      console.warn("[geocode] Mapbox reverse failed", error);
+      log.warn({ err: error }, "[geocode] Mapbox reverse failed");
     }
   }
 
@@ -197,7 +199,7 @@ export async function reverseGeocode(
     }
     return remember(place);
   } catch (error) {
-    console.warn("[geocode] reverse failed, using nearest mock", error);
+    log.warn({ err: error }, "[geocode] reverse failed, using nearest mock");
     return remember(nearestMock(lat, lon, lang));
   }
 }
