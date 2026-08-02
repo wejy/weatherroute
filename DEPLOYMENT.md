@@ -1,4 +1,4 @@
-# Solviax — production deployment
+# Solviax.app — production deployment
 
 Guide for running the **web app + API** (`apps/web`) on a Linux VPS (e.g. UpCloud, Hetzner, DigitalOcean). The Expo app (`apps/mobile`) is built separately and talks to this API via `EXPO_PUBLIC_API_URL` — see **[EXPO_DEPLOYMENT.md](./EXPO_DEPLOYMENT.md)** for store builds, EAS, and mobile env/token rules.
 
@@ -52,9 +52,10 @@ Optional:
 
 | Software | Why |
 |---|---|
+| **unattended-upgrades** | Automatic security patches (+ optional reboot) — see [Automatic security updates](#automatic-security-updates) |
 | **fail2ban** | SSH brute-force hardening |
 
-External (not installed on the VPS): **Upstash Redis REST** — required for production rate limits (see [Upstash Redis](#upstash-redis-required)).
+External (not installed on the VPS): **Upstash Redis REST** — required for production rate limits (see [Upstash Redis](#upstash-redis-required)). **PgBouncer is not required** for the documented single-instance setup (see [PostgreSQL & pooling](#postgresql--pooling)).
 
 ### Install sketch (Ubuntu)
 
@@ -65,9 +66,13 @@ sudo apt-get install -y nodejs git build-essential python3
 
 # PM2 (global)
 sudo npm install -g pm2
+sudo pm2 install pm2-logrotate
 
 # Reverse proxy + TLS
 sudo apt-get install -y nginx certbot python3-certbot-nginx
+
+# Automatic security updates (see dedicated section below)
+sudo apt-get install -y unattended-upgrades apt-listchanges
 
 # Firewall
 sudo ufw allow OpenSSH
@@ -120,7 +125,7 @@ Without these, production **deny-alls** rate-limited routes (no in-memory fallba
 |---|---|
 | `AUTH_TRUST_HOST` | `true` **only** behind nginx / Cloudflare that you control |
 | `CORS_ALLOWED_ORIGINS` | `https://weather.example.com` (+ Expo origins only if needed; no localhost in prod) |
-| `EMAIL_FROM` | Verified Resend sender, e.g. `Solviax <noreply@example.com>` |
+| `EMAIL_FROM` | Verified Resend sender, e.g. `Solviax.app <noreply@example.com>` |
 | `CRON_ENABLED` | `true` in production (nightly weather cache warm) |
 
 ### Stripe billing (required for `/pro` checkout)
@@ -170,7 +175,7 @@ DATABASE_URL=postgresql://solviax:SECRET@db.example.com:5432/solviax?sslmode=req
 
 EMAIL_MODE=resend
 RESEND_API_KEY=re_xxxxxxxx
-EMAIL_FROM=Solviax <noreply@example.com>
+EMAIL_FROM=Solviax.app <noreply@example.com>
 
 CORS_ALLOWED_ORIGINS=https://weather.example.com
 
@@ -253,10 +258,27 @@ module.exports = {
       cwd: "/var/www/solviax",
       script: "npm",
       args: "run start -w @solviax/web",
+
+      // Cron runs inside this process — keep a single fork
       instances: 1,
       exec_mode: "fork",
+      watch: false,
+
       autorestart: true,
+      max_restarts: 20,
+      min_uptime: "10s",
+      exp_backoff_restart_delay: 200, // ms; backs off on crash loops
+      kill_timeout: 10_000, // allow Next.js to finish in-flight work
+      listen_timeout: 10_000,
       max_memory_restart: "1G",
+
+      // Timestamps in `pm2 logs`
+      time: true,
+      merge_logs: true,
+      out_file: "/var/log/solviax/out.log",
+      error_file: "/var/log/solviax/error.log",
+      log_date_format: "YYYY-MM-DD HH:mm:ss Z",
+
       env: {
         NODE_ENV: "production",
         PORT: "3000",
@@ -266,9 +288,26 @@ module.exports = {
 };
 ```
 
-`instances` must stay **1** while cron runs inside the Next.js process.
+Prepare log directory (once):
 
-Start and enable boot persistence:
+```bash
+sudo mkdir -p /var/log/solviax
+sudo chown "$USER":"$USER" /var/log/solviax
+```
+
+`instances` must stay **1** while cron runs inside the Next.js process. Do not use `exec_mode: "cluster"` unless you move cron out of the app.
+
+#### Log rotation
+
+```bash
+sudo pm2 install pm2-logrotate
+pm2 set pm2-logrotate:max_size 20M
+pm2 set pm2-logrotate:retain 14
+pm2 set pm2-logrotate:compress true
+pm2 set pm2-logrotate:workerInterval 3600
+```
+
+#### Start and survive reboots
 
 ```bash
 cd /var/www/solviax
@@ -276,8 +315,11 @@ pm2 start ecosystem.config.cjs
 pm2 status
 pm2 save
 pm2 startup
-# run the command PM2 prints (sudo env PATH=... pm2 startup systemd -u <user> --hp <home>)
+# run the command PM2 prints, e.g.:
+# sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u <user> --hp /home/<user>
 ```
+
+After any kernel reboot (manual or from unattended-upgrades), `pm2 resurrect` via the systemd unit restores the process dump from `pm2 save`. Verify once with `sudo reboot` on a staging box.
 
 Useful day-to-day commands:
 
@@ -285,10 +327,12 @@ Useful day-to-day commands:
 pm2 status
 pm2 logs solviax          # follow app + Pino stdout
 pm2 logs solviax --lines 200
+pm2 monit                 # CPU / memory
 pm2 restart solviax
-pm2 reload solviax        # graceful restart when possible
+pm2 reload solviax        # graceful when possible (fork mode ≈ restart)
 pm2 stop solviax
 pm2 delete solviax
+pm2 save                  # after config changes you want after reboot
 ```
 
 Smoke-test on the VPS:
@@ -296,6 +340,113 @@ Smoke-test on the VPS:
 ```bash
 curl -sI http://127.0.0.1:3000 | head
 ```
+
+---
+
+## Automatic security updates
+
+On Ubuntu, use **unattended-upgrades** so security patches land without waiting for a manual SSH session. Configure a controlled reboot window so kernel updates apply safely; PM2 + nginx come back via systemd.
+
+### 1. Install and enable
+
+```bash
+sudo apt-get install -y unattended-upgrades apt-listchanges
+sudo dpkg-reconfigure -plow unattended-upgrades
+# Answer Yes to “automatically download and install stable updates”
+```
+
+Confirm the timer/service:
+
+```bash
+systemctl status unattended-upgrades --no-pager
+cat /etc/apt/apt.conf.d/20auto-upgrades
+```
+
+Expected `20auto-upgrades`:
+
+```text
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+```
+
+### 2. Security-only + automatic reboot
+
+Edit `/etc/apt/apt.conf.d/50unattended-upgrades` (create overrides if your distro ships a different layout):
+
+```text
+// Only security pockets (default on Ubuntu is already security-focused)
+Unattended-Upgrade::Allowed-Origins {
+    "${distro_id}:${distro_codename}-security";
+    "${distro_id}ESMApps:${distro_codename}-apps-security";
+    "${distro_id}ESM:${distro_codename}-infra-security";
+};
+
+// Remove unused deps after upgrades
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+Unattended-Upgrade::Automatic-Reboot "true";
+// Local time — pick a quiet window (e.g. 04:00 Europe/Helsinki on the VPS TZ)
+Unattended-Upgrade::Automatic-Reboot-Time "04:00";
+Unattended-Upgrade::Automatic-Reboot-WithUsers "true";
+
+// Optional: email when something needs attention (needs mail setup)
+// Unattended-Upgrade::Mail "ops@example.com";
+```
+
+Set the server timezone so reboot time is predictable:
+
+```bash
+sudo timedatectl set-timezone Europe/Helsinki
+timedatectl
+```
+
+### 3. What happens after a reboot
+
+| Unit | Expected |
+|---|---|
+| **nginx** | `systemd` enables it by default → listens 80/443 |
+| **PM2** | `pm2 startup` systemd unit → restores `solviax` from last `pm2 save` |
+| **Postgres** | Managed DB: always on; self-hosted: `postgresql` systemd unit |
+
+After the first reboot, check:
+
+```bash
+sudo reboot
+# … wait …
+ssh you@vps
+systemctl is-active nginx
+pm2 status
+curl -sI https://weather.example.com | head
+```
+
+### 4. Optional dry-run
+
+```bash
+sudo unattended-upgrade --dry-run --debug 2>&1 | tail -40
+```
+
+Do **not** enable fully automatic upgrades of Node.js from NodeSource without testing — stick to Ubuntu **security** origins for the OS, and bump Node / app deps via your redeploy process.
+
+---
+
+## PostgreSQL & pooling
+
+**You do not need PgBouncer** for the recommended MVP topology (one PM2 process → managed Postgres).
+
+The app uses `postgres.js` with a small pool (`max: 10` in `apps/web/src/db/index.ts`). One Node process × ~10 connections is well within typical managed-plan limits (often 50–100+).
+
+| Situation | Recommendation |
+|---|---|
+| Single PM2 instance + managed Postgres | **No PgBouncer** — current pool is enough |
+| Managed DB with built-in pooler (Neon pooler, Supabase pooler, RDS Proxy) | Use the provider’s **pooled** connection string if they recommend it for serverless/short-lived clients; for a long-lived Node process the direct URL is usually fine |
+| Many app replicas / high connection count | Then add PgBouncer (transaction mode) or a managed pooler — and move cron out of the app first |
+| Self-hosted Postgres on the same VPS | Still skip PgBouncer until you scale; prefer managed DB instead |
+
+Tips:
+
+- Prefer `?sslmode=require` (or provider equivalent) on `DATABASE_URL`.
+- Do not expose Postgres `5432` on the public internet (`ufw` / security group).
+- If a managed plan warns about connection saturation, lower `max` in `db/index.ts` or upgrade the plan before introducing PgBouncer.
 
 ---
 
@@ -531,8 +682,8 @@ In [Stripe Dashboard](https://dashboard.stripe.com) (toggle **Live** mode):
 
 | Product | Price | Checkout mode |
 |---|---|---|
-| Solviax Pro — One-time | €1.00 EUR, one-time | `payment` |
-| Solviax Pro — Monthly | €2.80 EUR, recurring monthly | `subscription` |
+| Solviax.app Pro — One-time | €1.00 EUR, one-time | `payment` |
+| Solviax.app Pro — Monthly | €2.80 EUR, recurring monthly | `subscription` |
 
 Or from a machine with the **live** secret key:
 
@@ -634,6 +785,7 @@ pm2 save
 - [ ] Logs: `pm2 logs solviax` — no boot errors about `AUTH_SECRET` / `EMAIL_MODE` / `USE_MOCKS`
 - [ ] Cron: after boot, log line mentioning scheduled nightly weather warm when `CRON_ENABLED=true`
 - [ ] After reboot: `pm2 status` shows `solviax` online (`pm2 startup` + `pm2 save` done)
+- [ ] `unattended-upgrades` enabled; reboot window set; nginx + PM2 recover after test reboot
 - [ ] Stripe: `/pro` shows Buy / Subscribe (keys set); webhook endpoint healthy in Dashboard
 - [ ] Stripe: test One-time + Monthly checkout; `subscriptions.plan` updates after webhook
 - [ ] Stripe: Customer Portal opens from Settings → Manage billing
@@ -642,13 +794,14 @@ pm2 save
 
 ## Security notes (ops)
 
-- Prefer **managed Postgres**; do not expose Postgres port publicly.
+- Prefer **managed Postgres**; do not expose Postgres port publicly. **PgBouncer not required** for one PM2 instance.
 - Keep `AUTH_TRUST_HOST=true` only behind **nginx** (or Cloudflare + nginx) that you control.
 - Set `CORS_ALLOWED_ORIGINS` to your real origins (no `*`, no leftover localhost in prod).
 - **Upstash Redis REST is required in production** — without it, rate-limited routes deny all traffic.
 - nginx must set `X-Forwarded-For` / `X-Real-IP` from `$remote_addr` (or Cloudflare `real_ip`) so clients cannot spoof IPs used for quotas.
 - Anon cookie rotation is mitigated with IP discover caps + per-IP session mint limits.
 - Keep `server_tokens off`, TLS 1.2+, HSTS, and HTTP→HTTPS redirect on nginx.
+- Enable **unattended-upgrades** (security pocket) + a quiet automatic reboot window; verify PM2 survives reboot.
 - `npm audit` CI gates **critical** issues; review Dependabot PRs for Next/Expo transitive CVEs.
 
 ---

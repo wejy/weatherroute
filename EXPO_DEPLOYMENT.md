@@ -1,4 +1,4 @@
-# Solviax — Expo mobile release guide
+# Solviax.app — Expo mobile release guide
 
 How to ship **`apps/mobile`** (Expo SDK 57) to TestFlight / Play Store, and what to mind for API URLs, tokens, and store compliance.
 
@@ -22,7 +22,7 @@ Official Expo references (SDK 57):
 ## Architecture
 
 ```text
-Phone / tablet (Solviax)
+Phone / tablet (Solviax.app)
    │  HTTPS
    │  headers: X-Solviax-Anon, X-Solviax-Device,
    │           X-Solviax-Session (after login)
@@ -165,7 +165,7 @@ Prefer storing `EXPO_PUBLIC_API_URL` as an **EAS environment variable** (project
 
 ### Monorepo note
 
-Solviax is an **npm workspaces** repo. EAS must install from the **repository root** so `@solviax/i18n` resolves. After `eas build:configure`, confirm EAS detects the monorepo (Expo docs: [Monorepos](https://docs.expo.dev/guides/monorepos/)). Typical pattern:
+Solviax.app is an **npm workspaces** repo. EAS must install from the **repository root** so `@solviax/i18n` resolves. After `eas build:configure`, confirm EAS detects the monorepo (Expo docs: [Monorepos](https://docs.expo.dev/guides/monorepos/)). Typical pattern:
 
 - Run `eas` from `apps/mobile`
 - Set `"workingDirectories"` / Expo dashboard monorepo settings if prompted
@@ -175,7 +175,7 @@ Solviax is an **npm workspaces** repo. EAS must install from the **repository ro
 
 | Field | Current value | Action before store |
 |---|---|---|
-| `expo.name` | Solviax | OK or rebrand |
+| `expo.name` | Solviax.app | OK or rebrand |
 | `expo.slug` | solviax | Must match Expo project |
 | `expo.version` | `0.1.0` | Bump for each store release |
 | `ios.bundleIdentifier` | `com.solviax.app` | Unique; cannot change casually after first release |

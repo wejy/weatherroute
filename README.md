@@ -1,4 +1,4 @@
-# Solviax
+# Solviax.app
 
 Map-based weather trip planner — **npm workspaces monorepo**.
 

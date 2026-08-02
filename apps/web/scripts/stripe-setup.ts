@@ -2,7 +2,7 @@ import "./load-env";
 import Stripe from "stripe";
 
 /**
- * Creates Solviax One-time (€1) and Monthly (€2.80) products/prices in Stripe.
+ * Creates Solviax.app One-time (€1) and Monthly (€2.80) products/prices in Stripe.
  * Prints env vars to paste into apps/web/.env.local
  *
  * Usage:
@@ -19,7 +19,7 @@ async function main() {
   const stripe = new Stripe(key);
 
   const oneTimeProduct = await stripe.products.create({
-    name: "Solviax Pro — One-time",
+    name: "Solviax.app Pro — One-time",
     description: "Pro features + up to 2 saved routes",
     metadata: { plan: "one_time" },
   });
@@ -31,7 +31,7 @@ async function main() {
   });
 
   const monthlyProduct = await stripe.products.create({
-    name: "Solviax Pro — Monthly",
+    name: "Solviax.app Pro — Monthly",
     description: "Pro features + unlimited saved routes",
     metadata: { plan: "monthly" },
   });

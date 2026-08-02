@@ -43,7 +43,7 @@ export async function nominatimReverse(
     headers: {
       Accept: "application/json",
       "Accept-Language": lang === "fi" ? "fi,en" : "en",
-      "User-Agent": "Solviax/1.0 (https://github.com/solviax; demo)",
+      "User-Agent": "Solviax.app/1.0 (https://github.com/solviax; demo)",
     },
     next: { revalidate: 86400 },
   });

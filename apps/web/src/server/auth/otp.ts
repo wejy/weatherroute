@@ -30,8 +30,8 @@ function codesMatch(stored: string, candidate: string): boolean {
 }
 
 async function sendOtpEmail(email: string, code: string): Promise<void> {
-  const subject = "Your Solviax sign-in code";
-  const body = `Your Solviax code is ${code}. It expires in 10 minutes.`;
+  const subject = "Your Solviax.app sign-in code";
+  const body = `Your Solviax.app code is ${code}. It expires in 10 minutes.`;
 
   if (env.emailMode === "resend" && env.resendApiKey) {
     const res = await fetch("https://api.resend.com/emails", {

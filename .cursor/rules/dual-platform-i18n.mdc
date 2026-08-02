@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Dual-platform + bilingual strings
 
-Solviax is a monorepo: `apps/web` (Next.js), `apps/mobile` (Expo), shared copy in `packages/i18n`.
+Solviax.app is a monorepo: `apps/web` (Next.js), `apps/mobile` (Expo), shared copy in `packages/i18n`.
 
 ## Required on every product change
 

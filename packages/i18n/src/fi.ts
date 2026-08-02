@@ -2,12 +2,12 @@ import type { Dictionary } from "./en";
 
 const fi = {
   meta: {
-    titleDefault: "Solviax — Löydä täydellinen sää",
-    titleTemplate: "%s · Solviax",
+    titleDefault: "Solviax.app — Löydä täydellinen sää",
+    titleTemplate: "%s · Solviax.app",
     description:
       "Löydä kohteita parhaalla säällä seuraavaa reissuasi varten. Karttapohjainen matkasuunnittelu Open-Meteo-ennusteilla.",
   },
-  brand: "Solviax",
+  brand: "Solviax.app",
   nav: {
     discover: "Löydä",
     map: "Kartta",
@@ -43,7 +43,7 @@ const fi = {
     headlineBreak: "minne tahansa menetkin.",
     subhead:
       "Ilmastomallimme löytävät parhaat kohteet viikonlopun tai lomasi viettoon.",
-    tagline: "Solviax - Suunnittele matkasi sään mukaan.",
+    tagline: "Solviax.app - Suunnittele matkasi sään mukaan.",
     taglineLink: "Lue lisää.",
     bestWeather: "Paras sää",
     waitingLocation: "Odotetaan sijaintia tulosten lataamiseksi…",
@@ -252,8 +252,8 @@ const fi = {
     viewDestination: "Kohteen tiedot",
     shareRoute: "Jaa reitti",
     shareGoogleMaps: "Jaa Google Mapsiin",
-    shareTitle: "Solviax-reitti",
-    shareText: "{from} → {to} ({mode}) Solviaxissa",
+    shareTitle: "Solviax.app-reitti",
+    shareText: "{from} → {to} ({mode}) Solviax.appissa",
     shareTextWithDeparture:
       "{from} → {to} ({mode}). Paras lähtö noin {time}.",
     sharing: "Jaetaan…",
@@ -276,7 +276,7 @@ const fi = {
   },
   login: {
     title: "Kirjaudu",
-    welcome: "Tervetuloa Solviaxiin",
+    welcome: "Tervetuloa Solviax.appiin",
     signedIn: "Olet kirjautunut sisään",
     demoSession: "Kirjautunut: {name}",
     demoHint:
@@ -314,7 +314,7 @@ const fi = {
     tierPro: "Tilaus: Pro",
     discoverTitle: "Löydä-tulokset",
     discoverHint:
-      "Kuinka monta kohdetta näytetään Solviaxin rankingin jälkeen. Isompi määrä hakee enemmän säätietoja ja voi olla hieman hitaampi.",
+      "Kuinka monta kohdetta näytetään Solviax.appin rankingin jälkeen. Isompi määrä hakee enemmän säätietoja ja voi olla hieman hitaampi.",
     discoverLabel: "Näytettävät kohteet",
     discoverOption: "{count} kohdetta",
     discoverOptionPro: "{count} (Pro)",
@@ -347,24 +347,24 @@ const fi = {
     planMonthly: "Tilaus: Jatkuva Pro",
   },
   about: {
-    title: "Tietoa Solviaxista",
+    title: "Tietoa Solviax.appista",
     eyebrow: "Suunnittele matkasi sään mukaan",
     headline: "Löydä paras sää seuraavaa reissuasi varten",
     lead:
-      "Solviax auttaa löytämään, missä on poutaisempi sää — ja suunnittelemaan reitin sään perusteella. Solviaxissa voit vertailla eri kohteiden sääolosuhteita, erilaisia reittivaihtoehtoja sekä lopulta jakaa reitin lähimpiesi kesken.",
-    purposeTitle: "Miten Solviax toimii",
+      "Solviax.app auttaa löytämään, missä on poutaisempi sää — ja suunnittelemaan reitin sään perusteella. Solviax.appissa voit vertailla eri kohteiden sääolosuhteita, erilaisia reittivaihtoehtoja sekä lopulta jakaa reitin lähimpiesi kesken.",
+    purposeTitle: "Miten Solviax.app toimii",
     purposeBody:
       "Rankkaamme lähialueen kohteet sääennusteen mukaan valitsemillesi päiville, jotta arvailet vähemmän ja nautit selkeämmästä säästä enemmän.",
-    whyTitle: "Miksi Solviax",
+    whyTitle: "Miksi Solviax.app",
     whyBody:
-      "Solviax syntyi omasta tarpeesta. Suomen epävakainen sää sai minut epäröimään. Missä olisi paras sää seuraavana viikonloppuna? Tähän en löytänyt täysin sopivaa ratkaisua. Tässä siis Sol-via-x — aurinkoista tietä pitkin.",
+      "Solviax.app syntyi omasta tarpeesta. Suomen epävakainen sää sai minut epäröimään. Missä olisi paras sää seuraavana viikonloppuna? Tähän en löytänyt täysin sopivaa ratkaisua. Tässä siis Sol-via-x — aurinkoista tietä pitkin.",
     featuresTitle: "Mitä voit tehdä",
     featuresLead:
       "Kaikki mitä tarvitset kysymyksestä ”missä sää näyttää hyvältä?” kysymykseen ”miten pääsen perille?”",
     features: {
       discover: {
         title: "Säähaku (Löydä)",
-        body: "Hae paikkoja lähialueeltasi ja anna Solviaxin nostaa parhaat olosuhteet esiin haluamillesi päiville.",
+        body: "Hae paikkoja lähialueeltasi ja anna Solviax.appin nostaa parhaat olosuhteet esiin haluamillesi päiville.",
       },
       map: {
         title: "Karttapohjainen haku",
@@ -392,7 +392,7 @@ const fi = {
       },
       bilingual: {
         title: "Suomi ja englanti",
-        body: "Solviax on kaksikielinen — vaihda kieltä milloin tahansa yläpalkista tai asetuksista.",
+        body: "Solviax.app on kaksikielinen — vaihda kieltä milloin tahansa yläpalkista tai asetuksista.",
       },
     },
     plansTitle: "Ilmainen vs Pro — lyhyesti",
@@ -511,7 +511,7 @@ const fi = {
     openWebToBuy: "Jatka verkkosivulla",
     manageOnWeb: "Hallitse verkkosivulla",
     storePurchaseNote:
-      "App Store- / Play-buildissa Pro ostetaan Solviaxin verkkosivulta samalla tilillä — avaa sitten sovellus uudelleen.",
+      "App Store- / Play-buildissa Pro ostetaan Solviax.appin verkkosivulta samalla tilillä — avaa sitten sovellus uudelleen.",
     currentPlan: "Tilauksesi: {plan}",
     checkoutSuccess: "Maksu onnistui — Pro on käytössä. Kiitos!",
     checkoutCancel: "Maksusta poistuttiin — veloitusta ei tehty.",
@@ -525,7 +525,7 @@ const fi = {
   paywall: {
     title: "Ilmaiset haut käytetty",
     titleFree: "Kuukauden haut käytetty",
-    body: "Kirjaudu sähköpostilla 50 hakuun kuukaudessa, tai jaa Solviax saadaksesi yhden lisähaun.",
+    body: "Kirjaudu sähköpostilla 50 hakuun kuukaudessa, tai jaa Solviax.app saadaksesi yhden lisähaun.",
     bodyFree:
       "Olet käyttänyt 50 hakua tältä kalenterikuukaudelta. Päivitä Prohon satoihin Löydä-hakuihin.",
     titleProMonthly: "Jatkuva-Pro:n kuukauden haut käytetty",
@@ -540,7 +540,7 @@ const fi = {
     signIn: "Kirjaudu sähköpostilla",
     shareForCredit: "Jaa ja saa +1 haku",
     sharing: "Valmistellaan jakoa…",
-    shareText: "Löydä parempi sää lähistöltä Solviaxilla",
+    shareText: "Löydä parempi sää lähistöltä Solviax.appilla",
     shareDone:
       "Kiitos jaosta — pyydä kaveria avaamaan linkki; lunastus antaa bonuksen (ei oma linkkisi).",
     linkCopied:
@@ -620,7 +620,7 @@ const fi = {
   },
   mobile: {
     apiMissing:
-      "Aseta EXPO_PUBLIC_API_URL Solviax-web-APIin (esim. http://LAN-IP:3000).",
+      "Aseta EXPO_PUBLIC_API_URL Solviax.app-web-APIin (esim. http://LAN-IP:3000).",
     pullToRefresh: "Vedä päivittääksesi",
     openWebHint:
       "Käynnistä web-sovellus (`npm run dev:web`), jotta mobiili saa live-sään.",
@@ -642,9 +642,9 @@ const fi = {
     isoDatePlaceholder: "VVVV-KK-PP",
   },
   mobileOpenApp: {
-    title: "Avataan Solviax…",
+    title: "Avataan Solviax.app…",
     body: "Jos sovellus ei aukea automaattisesti, napauta painiketta.",
-    open: "Avaa Solviax-sovellus",
+    open: "Avaa Solviax.app-sovellus",
     webFallback: "Jatka verkkosivulla",
   },
 } as const satisfies Dictionary;

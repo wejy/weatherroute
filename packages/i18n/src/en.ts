@@ -2,12 +2,12 @@ import type { WeatherCondition } from "./types";
 
 const en = {
   meta: {
-    titleDefault: "Solviax — Find perfect weather",
-    titleTemplate: "%s · Solviax",
+    titleDefault: "Solviax.app — Find perfect weather",
+    titleTemplate: "%s · Solviax.app",
     description:
       "Discover destinations with the best weather for your next escape. Map-based trip planning with Open-Meteo forecasts.",
   },
-  brand: "Solviax",
+  brand: "Solviax.app",
   nav: {
     discover: "Discover",
     map: "Map",
@@ -43,7 +43,7 @@ const en = {
     headlineBreak: "no matter where you go.",
     subhead:
       "Let our climate models discover the best destinations for your weekend escape.",
-    tagline: "Solviax - Plan your trip around the weather.",
+    tagline: "Solviax.app - Plan your trip around the weather.",
     taglineLink: "Read more.",
     bestWeather: "Best weather",
     waitingLocation: "Waiting for your location to load results…",
@@ -250,8 +250,8 @@ const en = {
     viewDestination: "View destination",
     shareRoute: "Share route",
     shareGoogleMaps: "Open in Google Maps",
-    shareTitle: "Solviax route",
-    shareText: "{from} → {to} ({mode}) on Solviax",
+    shareTitle: "Solviax.app route",
+    shareText: "{from} → {to} ({mode}) on Solviax.app",
     shareTextWithDeparture:
       "{from} → {to} ({mode}). Best departure around {time}.",
     sharing: "Sharing…",
@@ -273,7 +273,7 @@ const en = {
   },
   login: {
     title: "Sign in",
-    welcome: "Welcome to Solviax",
+    welcome: "Welcome to Solviax.app",
     signedIn: "You're signed in",
     demoSession: "Signed in as {name}",
     demoHint:
@@ -343,23 +343,23 @@ const en = {
     planMonthly: "Plan: Monthly Pro",
   },
   about: {
-    title: "About Solviax",
+    title: "About Solviax.app",
     eyebrow: "Weather-first trip planning",
     headline: "Find the best weather for your next trip",
     lead:
-      "Solviax helps you discover where the sky is kinder — then plan the route, compare options, and share the journey.",
-    purposeTitle: "How Solviax works",
+      "Solviax.app helps you discover where the sky is kinder — then plan the route, compare options, and share the journey.",
+    purposeTitle: "How Solviax.app works",
     purposeBody:
       "We rank nearby destinations by weather forecasts for your dates, so you spend less time guessing and more time enjoying clearer skies.",
-    whyTitle: "Why Solviax",
+    whyTitle: "Why Solviax.app",
     whyBody:
-      "Solviax grew out of a personal need. Finland’s unsettled weather made me hesitate. Where would the best weather be next weekend? I couldn’t find a tool that quite fit. So here is Sol-via-x — along a sunny path.",
+      "Solviax.app grew out of a personal need. Finland’s unsettled weather made me hesitate. Where would the best weather be next weekend? I couldn’t find a tool that quite fit. So here is Sol-via-x — along a sunny path.",
     featuresTitle: "What you can do",
     featuresLead: "Everything you need from “where the weather looks good?” to “how do I get there?”",
     features: {
       discover: {
         title: "Weather-smart discover",
-        body: "Search within a radius and let Solviax find the best conditions for your window.",
+        body: "Search within a radius and let Solviax.app find the best conditions for your window.",
       },
       map: {
         title: "Map-based search",
@@ -387,7 +387,7 @@ const en = {
       },
       bilingual: {
         title: "English & Finnish",
-        body: "Solviax is bilingual — switch language anytime in the header or settings.",
+        body: "Solviax.app is bilingual — switch language anytime in the header or settings.",
       },
     },
     plansTitle: "Free vs Pro — short version",
@@ -507,7 +507,7 @@ const en = {
     openWebToBuy: "Continue on the website",
     manageOnWeb: "Manage on the website",
     storePurchaseNote:
-      "In the App Store / Play Store build, Pro is purchased on the Solviax website with the same account — then open the app again.",
+      "In the App Store / Play Store build, Pro is purchased on the Solviax.app website with the same account — then open the app again.",
     currentPlan: "Your plan: {plan}",
     checkoutSuccess: "Payment successful — Pro is active. Thanks!",
     checkoutCancel: "Checkout canceled — no charge was made.",
@@ -521,7 +521,7 @@ const en = {
   paywall: {
     title: "You’ve used your free searches",
     titleFree: "Monthly discovers used up",
-    body: "Sign in with email for 50 discovers per month, or share Solviax for one extra search.",
+    body: "Sign in with email for 50 discovers per month, or share Solviax.app for one extra search.",
     bodyFree:
       "You’ve used your 50 discovers this calendar month. Upgrade to Pro for hundreds of discover searches.",
     titleProMonthly: "Monthly Pro discovers used up",
@@ -536,7 +536,7 @@ const en = {
     signIn: "Sign in with email",
     shareForCredit: "Share for +1 search",
     sharing: "Preparing share…",
-    shareText: "Find better weather nearby with Solviax",
+    shareText: "Find better weather nearby with Solviax.app",
     shareDone: "Thanks for sharing — ask a friend to open your link so you both get credit when they redeem.",
     linkCopied: "Share link copied. Send it to a friend — redeeming it grants +1 search (not your own link).",
     shareError: "Couldn’t create a share link. Try again.",
@@ -613,7 +613,7 @@ const en = {
   },
   mobile: {
     apiMissing:
-      "Set EXPO_PUBLIC_API_URL to your Solviax web API (e.g. http://YOUR_LAN_IP:3000).",
+      "Set EXPO_PUBLIC_API_URL to your Solviax.app web API (e.g. http://YOUR_LAN_IP:3000).",
     pullToRefresh: "Pull to refresh",
     openWebHint: "Start the web app (`npm run dev:web`) so mobile can load live weather.",
     retry: "Retry",
@@ -634,9 +634,9 @@ const en = {
     isoDatePlaceholder: "YYYY-MM-DD",
   },
   mobileOpenApp: {
-    title: "Opening Solviax…",
+    title: "Opening Solviax.app…",
     body: "If the app does not open automatically, tap the button below.",
-    open: "Open Solviax app",
+    open: "Open Solviax.app",
     webFallback: "Continue on the website",
   },
 } as const;

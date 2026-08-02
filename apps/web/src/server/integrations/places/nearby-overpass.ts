@@ -93,7 +93,7 @@ async function postOverpass(
     headers: {
       "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8",
       Accept: "application/json",
-      "User-Agent": "Solviax/1.0 (weather trip planner)",
+      "User-Agent": "Solviax.app/1.0 (weather trip planner)",
     },
     body: `data=${encodeURIComponent(query)}`,
     signal,

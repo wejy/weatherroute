@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Solviax",
+    "name": "Solviax.app",
     "slug": "solviax",
     "version": "0.1.0",
     "orientation": "portrait",
@@ -11,7 +11,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.solviax.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Solviax uses your location to find nearby destinations with better weather. / Solviax käyttää sijaintiasi löytääkseen lähistöltä kohteita paremman sään perusteella."
+        "NSLocationWhenInUseUsageDescription": "Solviax.app uses your location to find nearby destinations with better weather. / Solviax.app käyttää sijaintiasi löytääkseen lähistöltä kohteita paremman sään perusteella."
       }
     },
     "android": {
@@ -46,7 +46,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow Solviax to use your location to find nearby destinations with better weather. / Salli Solviaxin käyttää sijaintiasi, jotta se löytää lähistöltä kohteita paremman sään perusteella."
+          "locationWhenInUsePermission": "Allow Solviax.app to use your location to find nearby destinations with better weather. / Salli Solviax.appin käyttää sijaintiasi, jotta se löytää lähistöltä kohteita paremman sään perusteella."
         }
       ],
       "expo-localization",

@@ -1,6 +1,6 @@
 # @solviax/i18n
 
-Shared English + Finnish copy for Solviax web and Expo.
+Shared English + Finnish copy for Solviax.app web and Expo.
 
 ## Rules
 

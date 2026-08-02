@@ -1,4 +1,4 @@
-# Solviax — paid (Pro) features
+# Solviax.app — paid (Pro) features
 
 Billing uses **Stripe Checkout** + webhooks. Pro is stored in `subscriptions`
 (`status` + `plan`). Seed a Pro user locally with `npm run db:seed:pro -w @solviax/web`
