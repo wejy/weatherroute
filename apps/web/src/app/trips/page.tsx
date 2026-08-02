@@ -166,7 +166,7 @@ export default async function TripsPage({
                     ? "bg-primary text-on-primary"
                     : "border border-outline-variant/40 bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container"
                 }`}
-                aria-current={active ? "page" : undefined}
+                aria-current={active ? "true" : undefined}
               >
                 <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
                   {f.icon}

@@ -79,29 +79,31 @@ export function MapFloatingFilters({
     };
   }, [open, isDesktop]);
 
-  if (!open) {
-    return (
-      <div className={cn("pointer-events-auto", className)}>
-        <button
-          ref={toggleRef}
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-expanded={false}
-          aria-controls={panelId}
-          className="flex min-h-11 items-center gap-2 rounded-full border border-outline-variant/25 bg-surface/95 px-4 py-2.5 text-sm font-semibold text-on-surface shadow-[0px_10px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:bg-surface motion-reduce:transform-none"
-        >
-          <span className="material-symbols-outlined text-primary" aria-hidden="true">
-            tune
-          </span>
-          {t("map.filterWeather")}
-        </button>
-      </div>
-    );
-  }
-
   return (
     <>
-      {!isDesktop ? (
+      {!open ? (
+        <div className={cn("pointer-events-auto", className)}>
+          <button
+            ref={toggleRef}
+            type="button"
+            onClick={() => setOpen(true)}
+            aria-expanded={false}
+            aria-controls={panelId}
+            aria-haspopup="dialog"
+            className="flex min-h-11 items-center gap-2 rounded-full border border-outline-variant/25 bg-surface/95 px-4 py-2.5 text-sm font-semibold text-on-surface shadow-[0px_10px_30px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all hover:-translate-y-0.5 hover:bg-surface motion-reduce:transform-none"
+          >
+            <span
+              className="material-symbols-outlined text-primary"
+              aria-hidden="true"
+            >
+              tune
+            </span>
+            {t("map.filterWeather")}
+          </button>
+        </div>
+      ) : null}
+
+      {!isDesktop && open ? (
         <button
           type="button"
           className="pointer-events-auto fixed inset-0 z-30 bg-inverse-surface/45 backdrop-blur-[2px] lg:hidden"
@@ -110,18 +112,20 @@ export function MapFloatingFilters({
         />
       ) : null}
 
+      {/* Panel stays mounted (hidden when closed) so aria-controls never breaks. */}
       <div
         id={panelId}
-        role="dialog"
-        aria-modal={!isDesktop}
+        role={open ? "dialog" : undefined}
+        aria-modal={open && !isDesktop ? true : undefined}
         aria-label={t("map.filterWeather")}
+        hidden={!open}
+        inert={!open ? true : undefined}
         className={cn(
           "pointer-events-auto z-40 flex flex-col overflow-hidden border border-outline-variant/25 bg-surface/98 shadow-[0px_10px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl",
-          // Mobile: bottom sheet above the tab bar
           "fixed inset-x-0 bottom-[4.75rem] max-h-[min(68vh,28rem)] w-full rounded-t-2xl border-b-0",
-          // Desktop: floating card in the map chrome
           "lg:relative lg:inset-auto lg:bottom-auto lg:max-h-[min(78vh,40rem)] lg:w-[min(100%,22.5rem)] lg:rounded-2xl lg:border-b lg:shadow-[0px_10px_30px_rgba(0,0,0,0.12)]",
-          className,
+          !open && "hidden",
+          open && className,
         )}
       >
         <div className="flex shrink-0 flex-col border-b border-outline-variant/20">
@@ -133,7 +137,10 @@ export function MapFloatingFilters({
           </div>
           <div className="flex items-center justify-between gap-3 px-4 py-3">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="material-symbols-outlined text-primary" aria-hidden="true">
+              <span
+                className="material-symbols-outlined text-primary"
+                aria-hidden="true"
+              >
                 tune
               </span>
               <h2 className="truncate text-sm font-semibold text-on-surface">
@@ -147,7 +154,10 @@ export function MapFloatingFilters({
               aria-label={t("map.hideFilters")}
               title={t("map.hideFilters")}
             >
-              <span className="material-symbols-outlined text-xl" aria-hidden="true">
+              <span
+                className="material-symbols-outlined text-xl"
+                aria-hidden="true"
+              >
                 close
               </span>
             </button>

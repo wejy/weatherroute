@@ -237,27 +237,19 @@ export default async function SettingsPage({
               {t("settings.themeComingSoon")}
             </p>
             <div
-              role="radiogroup"
-              aria-label={t("settings.themeLabel")}
               className="flex gap-2"
+              aria-label={t("settings.themeLabel")}
             >
-              <button
-                type="button"
-                role="radio"
-                aria-checked="true"
-                disabled
+              <div
+                aria-current="true"
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-primary bg-primary/5 px-3 py-3 text-sm font-semibold text-primary opacity-90"
               >
                 <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
                   light_mode
                 </span>
                 {t("settings.themeLight")}
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked="false"
-                disabled
+              </div>
+              <div
                 className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-outline-variant/40 px-3 py-3 text-sm font-semibold text-on-surface-variant opacity-50"
                 title={t("settings.themeComingSoon")}
               >
@@ -265,7 +257,7 @@ export default async function SettingsPage({
                   dark_mode
                 </span>
                 {t("settings.themeDark")}
-              </button>
+              </div>
             </div>
           </div>
         </section>

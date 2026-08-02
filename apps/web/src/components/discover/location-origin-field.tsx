@@ -26,6 +26,8 @@ export function LocationOriginField({
   onPlaceSelect,
   onGeolocated,
   autoDetect = true,
+  labelledBy,
+  inputId = "origin-location-input",
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -33,6 +35,8 @@ export function LocationOriginField({
   /** Fired when coarse region or precise GPS succeeds. */
   onGeolocated?: (place: PlaceDto, meta: GeoDetectMeta) => void;
   autoDetect?: boolean;
+  labelledBy?: string;
+  inputId?: string;
 }) {
   const { t } = useI18n();
   const detectedOnce = useRef(false);
@@ -154,7 +158,7 @@ export function LocationOriginField({
         </button>
         <div className="min-w-0 flex-1">
           <PlaceAutocomplete
-            id="origin-location-input"
+            id={inputId}
             value={value}
             onChange={(next) => {
               onChange(next);
@@ -176,7 +180,8 @@ export function LocationOriginField({
                   ? t("location.detecting")
                   : t("location.placeholder")
             }
-            ariaLabel={t("location.placeholder")}
+            ariaLabelledBy={labelledBy}
+            ariaLabel={labelledBy ? undefined : t("location.placeholder")}
           />
         </div>
       </div>

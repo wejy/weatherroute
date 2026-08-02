@@ -535,9 +535,9 @@ export function buildSuitability(
 
   if (current.visibilityKm >= 8 && current.precipitationProbability < 40) {
     badges.push({
-      id: "drive",
+      id: "photo",
       tone: "info",
-      icon: "directions_car",
+      icon: "photo_camera",
       title: tr("suitability.photoTitle"),
       description: tr("suitability.photoDesc"),
     });

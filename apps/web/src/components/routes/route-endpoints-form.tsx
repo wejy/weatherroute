@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useTransition } from "react";
+import { useId, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import type { PlaceDto, TravelMode } from "@/lib/types";
 import { DEFAULT_TRAVEL_MODE, isTravelMode } from "@/lib/types";
@@ -61,6 +61,9 @@ export function RouteEndpointsForm({
 }) {
   const { t, locale } = useI18n();
   const router = useRouter();
+  const whenLabelId = useId();
+  const fromLabelId = useId();
+  const toLabelId = useId();
   const [pending, startTransition] = useTransition();
   const [fromText, setFromText] = useState(initialFrom);
   const [toText, setToText] = useState(initialTo);
@@ -207,11 +210,18 @@ export function RouteEndpointsForm({
       className="space-y-4 rounded-xl border border-outline-variant/20 bg-surface-container-low p-4"
     >
       <div>
-        <p className="mb-1.5 text-sm font-medium tracking-wide text-on-surface-variant uppercase">
+        <p
+          id={whenLabelId}
+          className="mb-1.5 text-sm font-medium tracking-wide text-on-surface-variant uppercase"
+        >
           {t("search.whenGoing")}
         </p>
         <div className="rounded-lg border border-outline-variant/30 bg-surface px-3 py-2">
-          <DateWhenField value={when} onChange={onWhenChange} />
+          <DateWhenField
+            value={when}
+            labelledBy={whenLabelId}
+            onChange={onWhenChange}
+          />
         </div>
       </div>
 
@@ -224,6 +234,7 @@ export function RouteEndpointsForm({
 
       <div>
         <label
+          id={fromLabelId}
           htmlFor="route-from"
           className="mb-1 block text-sm font-medium tracking-wide text-on-surface-variant uppercase"
         >
@@ -238,7 +249,7 @@ export function RouteEndpointsForm({
               void resolveSelectedPlace(place).then(setFrom);
             }}
             placeholder={t("routes.fromPlaceholder")}
-            ariaLabel={t("routes.from")}
+            ariaLabelledBy={fromLabelId}
             proximity={from ? { lat: from.lat, lon: from.lon } : null}
             inputClassName="text-base"
           />
@@ -248,6 +259,7 @@ export function RouteEndpointsForm({
       <div>
         <div className="mb-1 flex items-baseline justify-between gap-2">
           <label
+            id={toLabelId}
             htmlFor="route-to"
             className="text-sm font-medium tracking-wide text-on-surface-variant uppercase"
           >
@@ -274,7 +286,7 @@ export function RouteEndpointsForm({
               void resolveSelectedPlace(place).then(setTo);
             }}
             placeholder={t("routes.toPlaceholder")}
-            ariaLabel={t("routes.to")}
+            ariaLabelledBy={toLabelId}
             proximity={from ? { lat: from.lat, lon: from.lon } : null}
             inputClassName="text-base"
           />

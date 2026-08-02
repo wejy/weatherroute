@@ -27,6 +27,7 @@ export function PlaceAutocomplete({
   onPlaceSelect,
   placeholder,
   ariaLabel,
+  ariaLabelledBy,
   proximity,
   inputClassName,
   id,
@@ -36,6 +37,8 @@ export function PlaceAutocomplete({
   onPlaceSelect: (place: PlaceDto | null) => void;
   placeholder?: string;
   ariaLabel?: string;
+  /** Prefer over aria-label when a visible <label> exists. */
+  ariaLabelledBy?: string;
   proximity?: { lat: number; lon: number } | null;
   inputClassName?: string;
   id?: string;
@@ -50,6 +53,8 @@ export function PlaceAutocomplete({
   const [results, setResults] = useState<PlaceDto[]>([]);
   const [searching, setSearching] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+
+  const listVisible = open && results.length > 0;
 
   const runSearch = useCallback(
     async (q: string) => {
@@ -137,7 +142,7 @@ export function PlaceAutocomplete({
       return;
     }
 
-    if (!open || results.length === 0) return;
+    if (!listVisible) return;
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -157,12 +162,16 @@ export function PlaceAutocomplete({
         <input
           id={id}
           role="combobox"
-          aria-expanded={open}
+          aria-expanded={listVisible}
           aria-controls={listId}
+          aria-haspopup="listbox"
           aria-autocomplete="list"
-          aria-label={ariaLabel ?? placeholder ?? t("location.placeholder")}
+          aria-labelledby={ariaLabelledBy}
+          aria-label={ariaLabelledBy ? undefined : (ariaLabel ?? placeholder ?? t("location.placeholder"))}
           aria-activedescendant={
-            activeIndex >= 0 ? `${listId}-opt-${activeIndex}` : undefined
+            listVisible && activeIndex >= 0
+              ? `${listId}-opt-${activeIndex}`
+              : undefined
           }
           className={cn(
             "w-full truncate border-none bg-transparent p-0 text-xl font-semibold text-on-surface placeholder:text-on-surface-variant focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
@@ -195,43 +204,46 @@ export function PlaceAutocomplete({
         )}
       </div>
 
-      {open && results.length > 0 && (
-        <ul
-          id={listId}
-          role="listbox"
-          className="absolute top-full left-0 z-50 mt-2 max-h-72 w-[min(100vw-2rem,24rem)] overflow-auto rounded-xl border border-outline-variant/30 bg-surface-container-lowest py-1 text-left shadow-[0px_10px_30px_rgba(0,0,0,0.12)]"
-        >
-          {results.map((place, i) => (
-            <li key={place.id} role="option" aria-selected={i === activeIndex}>
-              <button
-                type="button"
-                id={`${listId}-opt-${i}`}
-                className={cn(
-                  "flex w-full items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface-container-low",
-                  i === activeIndex && "bg-surface-container-low",
-                )}
-                onMouseDown={(e) => e.preventDefault()}
-                onClick={() => selectPlace(place)}
-              >
-                <span
-                  className="material-symbols-outlined mt-0.5 text-secondary"
-                  aria-hidden="true"
-                >
-                  {kindIcon(place.kind)}
-                </span>
-                <span>
-                  <span className="block font-semibold text-on-surface">
-                    {place.name}
-                  </span>
-                  <span className="block text-sm text-on-surface-variant">
-                    {place.placeName}
-                  </span>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {/* Keep listbox in the DOM so aria-controls is never a broken reference (WAVE). */}
+      <ul
+        id={listId}
+        role="listbox"
+        hidden={!listVisible}
+        className={cn(
+          "absolute top-full left-0 z-50 mt-2 max-h-72 w-[min(100vw-2rem,24rem)] overflow-auto rounded-xl border border-outline-variant/30 bg-surface-container-lowest py-1 text-left shadow-[0px_10px_30px_rgba(0,0,0,0.12)]",
+          !listVisible && "hidden",
+        )}
+      >
+        {results.map((place, i) => (
+          <li
+            key={place.id}
+            id={`${listId}-opt-${i}`}
+            role="option"
+            aria-selected={i === activeIndex}
+            className={cn(
+              "flex w-full cursor-pointer items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface-container-low",
+              i === activeIndex && "bg-surface-container-low",
+            )}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => selectPlace(place)}
+          >
+            <span
+              className="material-symbols-outlined mt-0.5 text-secondary"
+              aria-hidden="true"
+            >
+              {kindIcon(place.kind)}
+            </span>
+            <span>
+              <span className="block font-semibold text-on-surface">
+                {place.name}
+              </span>
+              <span className="block text-sm text-on-surface-variant">
+                {place.placeName}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

@@ -36,6 +36,13 @@
       "when": 1785742000000,
       "tag": "0004_same_country_only",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785743000000,
+      "tag": "0005_performance_indexes",
+      "breakpoints": true
     }
   ]
 }

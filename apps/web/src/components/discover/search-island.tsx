@@ -383,7 +383,11 @@ export function DiscoverSearch({
           !stack && "rounded-t-2xl lg:rounded-l-2xl lg:rounded-tr-none",
         )}
       >
-        <label id={originLabelId} className={labelClass}>
+        <label
+          htmlFor="origin-location-input"
+          id={originLabelId}
+          className={labelClass}
+        >
           {t("search.whereFrom")}
         </label>
         <LocationOriginField
@@ -395,6 +399,8 @@ export function DiscoverSearch({
           onPlaceSelect={onPlaceSelect}
           onGeolocated={onGeolocated}
           autoDetect={shouldAutoDetect}
+          labelledBy={originLabelId}
+          inputId="origin-location-input"
         />
         {error && (
           <p className="mt-1 text-left text-xs text-error" role="alert">
@@ -404,11 +410,12 @@ export function DiscoverSearch({
       </div>
 
       <div className={fieldClass}>
-        <label id={whenLabelId} className={labelClass}>
+        <span id={whenLabelId} className={labelClass}>
           {t("search.whenGoing")}
-        </label>
+        </span>
         <DateWhenField
           value={when}
+          labelledBy={whenLabelId}
           onChange={(next) => {
             setWhen(next);
             if (place) navigateWith(place, true, { when: next });
