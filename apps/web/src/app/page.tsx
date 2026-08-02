@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import Link from "next/link";
 import { discoverQuerySchema } from "@/lib/validation/schemas";
 import { discoverDestinations } from "@/server/services/weather-service";
 import { TopNav, BottomNav } from "@/components/layout/top-nav";
@@ -117,6 +118,15 @@ export default async function HomePage({
               </h1>
               <p className="mx-auto max-w-2xl text-lg text-on-surface-variant">
                 {t("home.subhead")}
+              </p>
+              <p className="mx-auto mt-3 max-w-2xl text-base text-on-surface-variant md:text-lg">
+                {t("home.tagline")}{" "}
+                <Link
+                  href="/about"
+                  className="font-medium text-primary underline-offset-2 hover:underline"
+                >
+                  {t("home.taglineLink")}
+                </Link>
               </p>
               {gate.quota && !gate.paywalled ? (
                 <div className="mt-4">

@@ -43,6 +43,8 @@ const en = {
     headlineBreak: "no matter where you go.",
     subhead:
       "Let our climate models discover the best destinations for your weekend escape.",
+    tagline: "Solviax - Plan your trip around the weather.",
+    taglineLink: "Read more.",
     bestWeather: "Best weather",
     waitingLocation: "Waiting for your location to load results…",
     withinOf: "within {radius} of {place}",

@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { Link, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/lib/i18n";
 import { apiGet, getApiBaseUrl, ApiError, type PublicQuota } from "@/lib/api";
@@ -320,6 +321,12 @@ export default function DiscoverScreen() {
         {t("home.headlineBreak")}
       </Text>
       <Text style={styles.subhead}>{t("home.subhead")}</Text>
+      <Text style={styles.tagline}>
+        {t("home.tagline")}{" "}
+        <Link href={"/(tabs)/about" as Href}>
+          <Text style={styles.taglineLink}>{t("home.taglineLink")}</Text>
+        </Link>
+      </Text>
 
       {!apiReady && (
         <View style={styles.banner} accessibilityRole="alert">
@@ -772,6 +779,18 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
     lineHeight: 22,
     marginBottom: 4,
+  },
+  tagline: {
+    fontSize: 15,
+    color: colors.onSurfaceVariant,
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  taglineLink: {
+    fontSize: 15,
+    color: colors.primary,
+    fontWeight: "600",
+    textDecorationLine: "underline",
   },
   banner: {
     backgroundColor: "rgba(186, 26, 26, 0.08)",

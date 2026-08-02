@@ -43,6 +43,8 @@ const fi = {
     headlineBreak: "minne tahansa menetkin.",
     subhead:
       "Ilmastomallimme löytävät parhaat kohteet viikonlopun tai lomasi viettoon.",
+    tagline: "Solviax - Suunnittele matkasi sään mukaan.",
+    taglineLink: "Lue lisää.",
     bestWeather: "Paras sää",
     waitingLocation: "Odotetaan sijaintia tulosten lataamiseksi…",
     withinOf: "{radius} säteellä paikasta {place}",
@@ -259,7 +261,7 @@ const fi = {
     subtitle: "Sään mukaan optimoidut reissut · kirjautunut: {name}",
     discoverMore: "Löydä lisää",
     empty:
-      "Ei tallennettuja matkoja vielä. Löydä aurinkoinen kohde ja tallenna se.",
+      "Ei tallennettuja matkoja vielä. Löydä aurinkoinen tai muu kiinnostava kohde ja tallenna se.",
     emptyFiltered: "Ei tallennettuja matkoja tällä kulkuvälineellä vielä.",
     continueDemo: "Jatka demokäyttäjänä",
     openRoute: "Avaa reitti",
@@ -351,7 +353,7 @@ const fi = {
       "Rankkaamme lähialueen kohteet sääennusteen mukaan valitsemillesi päiville, jotta arvailet vähemmän ja nautit selkeämmästä säästä enemmän.",
     whyTitle: "Miksi Solviax",
     whyBody:
-      "Solviax syntyi omasta tarpeesta. Suomen epävakainen sää sai minut epäröimään. Missä olisi paras sää seuraavana viikonloppuna? Tähän en löytänyt täysin sopivaa ratkaisua. Tässä siis Sol-via-x aurinkoista tietä pitkin.",
+      "Solviax syntyi omasta tarpeesta. Suomen epävakainen sää sai minut epäröimään. Missä olisi paras sää seuraavana viikonloppuna? Tähän en löytänyt täysin sopivaa ratkaisua. Tässä siis Sol-via-x — aurinkoista tietä pitkin.",
     featuresTitle: "Mitä voit tehdä",
     featuresLead:
       "Kaikki mitä tarvitset kysymyksestä ”missä sää näyttää hyvältä?” kysymykseen ”miten pääsen perille?”",

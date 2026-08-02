@@ -79,13 +79,45 @@ export default async function AboutPage() {
           </p>
         </section>
 
-        <section className="relative mt-6 rounded-3xl border border-outline-variant/25 bg-surface-container-lowest p-6 shadow-[0px_8px_24px_rgba(0,0,0,0.04)] md:p-8">
-          <h2 className="text-lg font-semibold text-on-surface md:text-xl">
-            {t("about.whyTitle")}
-          </h2>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-on-surface-variant md:text-base">
-            {t("about.whyBody")}
-          </p>
+        <section className="relative mt-6 overflow-hidden rounded-3xl border border-outline-variant/25 bg-surface-container-lowest p-6 shadow-[0px_8px_24px_rgba(0,0,0,0.04)] md:p-8">
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 right-2 h-44 w-44 -translate-y-1/2 rounded-full bg-accent/25 blur-2xl sm:right-4 sm:h-52 sm:w-52 md:h-56 md:w-56"
+          />
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 200 200"
+            className="pointer-events-none absolute top-1/2 right-2 h-36 w-36 -translate-y-1/2 text-accent opacity-[0.28] sm:right-4 sm:h-40 sm:w-40 md:h-44 md:w-44"
+          >
+            <circle cx="100" cy="100" r="42" fill="currentColor" />
+            {Array.from({ length: 8 }, (_, i) => {
+              const angle = ((i * 45 + 22.5) * Math.PI) / 180;
+              const x1 = 100 + Math.cos(angle) * 56;
+              const y1 = 100 + Math.sin(angle) * 56;
+              const x2 = 100 + Math.cos(angle) * 88;
+              const y2 = 100 + Math.sin(angle) * 88;
+              return (
+                <line
+                  key={i}
+                  x1={x1}
+                  y1={y1}
+                  x2={x2}
+                  y2={y2}
+                  stroke="currentColor"
+                  strokeWidth="14"
+                  strokeLinecap="round"
+                />
+              );
+            })}
+          </svg>
+          <div className="relative">
+            <h2 className="text-lg font-semibold text-on-surface md:text-xl">
+              {t("about.whyTitle")}
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-on-surface-variant md:text-base">
+              {t("about.whyBody")}
+            </p>
+          </div>
         </section>
 
         <section className="relative mt-12">

@@ -33,6 +33,19 @@ export default function AboutScreen() {
       </View>
 
       <View style={styles.whyCard}>
+        <View style={styles.whySunGlow} pointerEvents="none" />
+        <View style={styles.whySun} pointerEvents="none">
+          {Array.from({ length: 8 }, (_, i) => (
+            <View
+              key={i}
+              style={[
+                styles.whySunRay,
+                { transform: [{ rotate: `${i * 45 + 22.5}deg` }] },
+              ]}
+            />
+          ))}
+          <View style={styles.whySunCore} />
+        </View>
         <Text style={styles.section}>{t("about.whyTitle")}</Text>
         <Text style={styles.body}>{t("about.whyBody")}</Text>
       </View>
@@ -135,6 +148,45 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     gap: 8,
+    overflow: "hidden",
+    position: "relative",
+  },
+  whySun: {
+    position: "absolute",
+    top: "50%",
+    right: 8,
+    width: 140,
+    height: 140,
+    marginTop: -70,
+    alignItems: "center",
+    justifyContent: "center",
+    opacity: 0.28,
+  },
+  whySunGlow: {
+    position: "absolute",
+    top: "50%",
+    right: 0,
+    width: 180,
+    height: 180,
+    marginTop: -90,
+    borderRadius: 90,
+    backgroundColor: colors.accent,
+    opacity: 0.2,
+  },
+  whySunCore: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.accent,
+  },
+  whySunRay: {
+    position: "absolute",
+    left: 64,
+    top: 0,
+    width: 12,
+    height: 140,
+    borderRadius: 6,
+    backgroundColor: colors.accent,
   },
   section: {
     marginTop: 12,
