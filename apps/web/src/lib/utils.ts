@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { createTranslator, getDictionary } from "@weathertrip/i18n";
+import { createTranslator, getDictionary } from "@solviax/i18n";
 import {
   DEFAULT_TRAVEL_MODE,
   type TravelMode,

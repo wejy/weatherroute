@@ -1,5 +1,5 @@
 import { Platform } from "react-native";
-import type { Locale } from "@weathertrip/i18n";
+import type { Locale } from "@solviax/i18n";
 import { getDeviceId } from "@/lib/device-id";
 import { getAnonCookieId } from "@/lib/anon";
 import { getSessionToken } from "@/lib/session-store";
@@ -85,13 +85,13 @@ async function buildHeaders(
   // Prefer custom headers over `Cookie` — RN/Expo often strips or mishandles Cookie.
   const headers: Record<string, string> = {
     Accept: "application/json",
-    "X-WeatherTrip-Device": deviceId,
-    "X-WeatherTrip-Anon": anonId,
+    "X-Solviax-Device": deviceId,
+    "X-Solviax-Anon": anonId,
     ...extra,
   };
 
   if (sessionToken) {
-    headers["X-WeatherTrip-Session"] = sessionToken;
+    headers["X-Solviax-Session"] = sessionToken;
   }
 
   return headers;
@@ -135,7 +135,7 @@ async function request<T>(
   );
   const requestId = newRequestId();
   headers["X-Request-Id"] = requestId;
-  headers["X-WeatherTrip-Request-Id"] = requestId;
+  headers["X-Solviax-Request-Id"] = requestId;
 
   const startedAt = Date.now();
   log.debug(

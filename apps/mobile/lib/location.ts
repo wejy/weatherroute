@@ -2,7 +2,7 @@ import { Platform } from "react-native";
 import * as Location from "expo-location";
 import { apiGet } from "@/lib/api";
 import type { PlaceDto } from "@/lib/types";
-import type { Locale } from "@weathertrip/i18n";
+import type { Locale } from "@solviax/i18n";
 import { createModuleLogger } from "@/lib/logger";
 
 const log = createModuleLogger("location");

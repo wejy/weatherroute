@@ -24,10 +24,12 @@ const DESKTOP_MQ = "(min-width: 1024px)";
 export function MapFloatingFilters({
   defaults,
   weatherGoal,
+  tier = "anon",
   className,
 }: {
   defaults: Defaults;
   weatherGoal: string;
+  tier?: "anon" | "free" | "pro";
   className?: string;
 }) {
   const { t } = useI18n();
@@ -155,6 +157,7 @@ export function MapFloatingFilters({
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4">
           <DiscoverSearch
             defaults={defaults}
+            tier={tier}
             basePath="/map"
             hash=""
             variant="stack"

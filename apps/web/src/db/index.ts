@@ -10,8 +10,8 @@ export { schema };
 type Db = ReturnType<typeof drizzle<typeof schema>>;
 
 const globalForDb = globalThis as unknown as {
-  weathertripSql?: ReturnType<typeof postgres>;
-  weathertripDb?: Db;
+  solviaxSql?: ReturnType<typeof postgres>;
+  solviaxDb?: Db;
 };
 
 function createClient(): Db | null {
@@ -20,7 +20,7 @@ function createClient(): Db | null {
   if (!url) return null;
 
   const sql =
-    globalForDb.weathertripSql ??
+    globalForDb.solviaxSql ??
     postgres(url, {
       max: 10,
       idle_timeout: 20,
@@ -28,15 +28,15 @@ function createClient(): Db | null {
     });
 
   if (process.env.NODE_ENV !== "production") {
-    globalForDb.weathertripSql = sql;
+    globalForDb.solviaxSql = sql;
   }
 
   const db =
-    globalForDb.weathertripDb ??
+    globalForDb.solviaxDb ??
     drizzle(sql, { schema });
 
   if (process.env.NODE_ENV !== "production") {
-    globalForDb.weathertripDb = db;
+    globalForDb.solviaxDb = db;
   }
 
   return db;
@@ -45,10 +45,10 @@ function createClient(): Db | null {
 /** Drizzle client when DATABASE_URL is set and USE_MOCKS is false; otherwise null. */
 export function getDb(): Db | null {
   if (!hasDatabase()) return null;
-  if (!globalForDb.weathertripDb) {
+  if (!globalForDb.solviaxDb) {
     return createClient();
   }
-  return globalForDb.weathertripDb;
+  return globalForDb.solviaxDb;
 }
 
 export function assertDatabaseConfigured(): Db {

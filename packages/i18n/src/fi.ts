@@ -2,12 +2,12 @@ import type { Dictionary } from "./en";
 
 const fi = {
   meta: {
-    titleDefault: "WeatherTrip — Löydä täydellinen sää",
-    titleTemplate: "%s · WeatherTrip",
+    titleDefault: "Solviax — Löydä täydellinen sää",
+    titleTemplate: "%s · Solviax",
     description:
       "Löydä kohteita parhaalla säällä seuraavaa reissuasi varten. Karttapohjainen matkasuunnittelu Open-Meteo-ennusteilla.",
   },
-  brand: "WeatherTrip",
+  brand: "Solviax",
   nav: {
     discover: "Löydä",
     map: "Kartta",
@@ -53,23 +53,26 @@ const fi = {
   search: {
     whereFrom: "Mistä lähdet?",
     whenGoing: "Milloin lähdet?",
-    howFar: "Kuinka kauas? (ympyrän säde)",
+    howFar: "Etäisyys? (Säde)",
     weatherGoal: "Säätavoite",
     search: "Hae kohteita",
     searching: "Haetaan…",
     chooseOrigin: "Valitse ensin lähtöpaikka.",
     placeNotFound: "Paikkaa ei löytynyt. Valitse ehdotuksista.",
     distances: {
-      near: "Lähelle · 30 km",
-      semi: "Puoliväli · 60 km",
-      surroundings: "Lähiympäristö · 120 km",
-      neighborhood: "Naapurusto · 200 km",
-      region: "Alue · 300 km",
+      near: "Lähialue · 30 km",
+      semi: "Lähiympäristö · 60 km",
+      surroundings: "Paikallisalue · 120 km",
+      neighborhood: "Alueellinen · 200 km",
+      region: "Valtakunnallinen · 300 km",
       continent: "Manner · 1 000 km",
       custom: "Oma säde",
     },
     customRadius: "Säde",
     customRadiusHint: "0–2 000 km",
+    distanceProOption: "{label} (Pro)",
+    distanceProHint:
+      "Valtakunnallinen, Manner ja Oma säde kuuluvat Pro-tilaukseen.",
     goals: {
       best: "Paras sää",
       sun: "Eniten aurinkoa",
@@ -235,8 +238,8 @@ const fi = {
     viewDestination: "Kohteen tiedot",
     shareRoute: "Jaa reitti",
     shareGoogleMaps: "Jaa Google Mapsiin",
-    shareTitle: "WeatherTrip-reitti",
-    shareText: "{from} → {to} ({mode}) WeatherTripissä",
+    shareTitle: "Solviax-reitti",
+    shareText: "{from} → {to} ({mode}) Solviaxissa",
     shareTextWithDeparture:
       "{from} → {to} ({mode}). Paras lähtö noin {time}.",
     sharing: "Jaetaan…",
@@ -259,7 +262,7 @@ const fi = {
   },
   login: {
     title: "Kirjaudu",
-    welcome: "Tervetuloa WeatherTripiin",
+    welcome: "Tervetuloa Solviaxiin",
     signedIn: "Olet kirjautunut sisään",
     demoSession: "Kirjautunut: {name}",
     demoHint:
@@ -318,19 +321,19 @@ const fi = {
     themeComingSoon: "Tumma tila tulee pian — toistaiseksi käytössä on vaalea.",
     subscriptionTitle: "Tilaus",
     subscriptionBody:
-      "Avaa enemmän discover-tuloksia, aikaisin lähtöaika ja tulevia Pro-ominaisuuksia maksullisella tilauksella.",
+      "Avaa laajemmat hakusäteet (Valtakunnallinen, Manner, Oma säde), enemmän Löydä-tuloksia, aikaisin lähtöaika ja tulevat Pro-ominaisuudet.",
     subscriptionCta: "Katso tilaukset",
     subscriptionSoon: "Laskutus ei ole vielä käytössä — tulossa pian.",
   },
   paywall: {
     title: "Ilmaiset haut käytetty",
-    body: "Kirjaudu sähköpostilla rajattomiin hakuihin, tai jaa WeatherTrip saadaksesi yhden lisähaun.",
+    body: "Kirjaudu sähköpostilla rajattomiin hakuihin, tai jaa Solviax saadaksesi yhden lisähaun.",
     quotaUsed: "Käytetty {used}/{limit} ilmaista hakua",
     remaining: "{remaining}/{limit} ilmaista hakua jäljellä",
     signIn: "Kirjaudu sähköpostilla",
     shareForCredit: "Jaa ja saa +1 haku",
     sharing: "Valmistellaan jakoa…",
-    shareText: "Löydä parempi sää lähistöltä WeatherTripillä",
+    shareText: "Löydä parempi sää lähistöltä Solviaxilla",
     shareDone:
       "Kiitos jaosta — pyydä kaveria avaamaan linkki; lunastus antaa bonuksen (ei oma linkkisi).",
     linkCopied:
@@ -391,7 +394,7 @@ const fi = {
   },
   mobile: {
     apiMissing:
-      "Aseta EXPO_PUBLIC_API_URL WeatherTrip-web-APIin (esim. http://LAN-IP:3000).",
+      "Aseta EXPO_PUBLIC_API_URL Solviax-web-APIin (esim. http://LAN-IP:3000).",
     pullToRefresh: "Vedä päivittääksesi",
     openWebHint:
       "Käynnistä web-sovellus (`npm run dev:web`), jotta mobiili saa live-sään.",

@@ -8,7 +8,7 @@ import {
   getDictionary,
   translateCondition,
   translateUv,
-} from "@weathertrip/i18n";
+} from "@solviax/i18n";
 import {
   readWeatherCache,
   writeWeatherCache,

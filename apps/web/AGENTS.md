@@ -1,6 +1,6 @@
-# WeatherTrip (apps/web)
+# Solviax (apps/web)
 
-Part of the WeatherTrip monorepo. Follow root `/AGENTS.md` and `.cursor/rules/dual-platform-i18n.mdc`:
+Part of the Solviax monorepo. Follow root `/AGENTS.md` and `.cursor/rules/dual-platform-i18n.mdc`:
 
 - Update **EN + FI** in `packages/i18n` together.
 - Mirror user-facing changes in **`apps/mobile`** when applicable.

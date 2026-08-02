@@ -68,7 +68,7 @@ async function download(url: string, dest: string): Promise<void> {
   }
   console.log(`Downloading ${url}…`);
   const res = await fetch(url, {
-    headers: { "User-Agent": "WeatherTrip-seed/0.1" },
+    headers: { "User-Agent": "Solviax-seed/0.1" },
   });
   if (!res.ok || !res.body) {
     throw new Error(`Download failed ${res.status} ${url}`);

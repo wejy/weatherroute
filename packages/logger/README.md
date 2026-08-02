@@ -1,13 +1,13 @@
-# `@weathertrip/logger`
+# `@solviax/logger`
 
-Shared [Pino](https://getpino.io/) logger for WeatherTrip **web** (Next.js server) and **mobile** (Expo).
+Shared [Pino](https://getpino.io/) logger for Solviax **web** (Next.js server) and **mobile** (Expo).
 
 ## Usage
 
 ```ts
-import { createLogger } from "@weathertrip/logger";
+import { createLogger } from "@solviax/logger";
 
-const log = createLogger({ name: "weathertrip-web" });
+const log = createLogger({ name: "solviax-web" });
 log.info({ route: "/api/discover" }, "request ok");
 log.warn({ err }, "fallback");
 log.error({ err }, "failed");

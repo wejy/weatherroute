@@ -18,7 +18,7 @@ function RootNavigator() {
         platform: Platform.OS,
         apiBase: getApiBaseUrl() || null,
       },
-      "WeatherTrip mobile started",
+      "Solviax mobile started",
     );
   }, []);
 

@@ -48,7 +48,7 @@ async function resolveClientKey(explicit?: string): Promise<string | null> {
   if (explicit?.trim()) return explicit.trim();
   try {
     const h = await headers();
-    const device = h.get("x-weathertrip-device")?.trim();
+    const device = h.get("x-solviax-device")?.trim();
     if (device) return `device:${device}`;
   } catch {
     // headers() unavailable outside request scope
@@ -70,7 +70,7 @@ async function ensureAnonSession(): Promise<{
   if (!cookieId) {
     try {
       const h = await headers();
-      cookieId = h.get("x-weathertrip-anon")?.trim() || undefined;
+      cookieId = h.get("x-solviax-anon")?.trim() || undefined;
     } catch {
       // ignore
     }

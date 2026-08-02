@@ -1,10 +1,10 @@
 import "server-only";
 
-import { createLogger, type Logger } from "@weathertrip/logger";
+import { createLogger, type Logger } from "@solviax/logger";
 
 /** Root server logger for Next.js (Node runtime). */
 export const logger: Logger = createLogger({
-  name: "weathertrip-web",
+  name: "solviax-web",
   browser: false,
 });
 

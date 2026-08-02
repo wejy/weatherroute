@@ -12,8 +12,9 @@ import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { getApiBaseUrl } from "@/lib/api";
 import {
-  fetchCurrentUser,
+  fetchSession,
   signOutRemote,
+  type DiscoverTier,
   type SessionUser,
 } from "@/lib/session";
 import { colors } from "@/constants/Colors";
@@ -22,14 +23,16 @@ export default function SettingsScreen() {
   const { t } = useI18n();
   const api = getApiBaseUrl();
   const [user, setUser] = useState<SessionUser | null>(null);
+  const [tier, setTier] = useState<DiscoverTier>("anon");
   const [loadingUser, setLoadingUser] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
 
   const refreshUser = useCallback(async () => {
     setLoadingUser(true);
     try {
-      const next = await fetchCurrentUser();
-      setUser(next);
+      const next = await fetchSession();
+      setUser(next.user);
+      setTier(next.tier);
     } finally {
       setLoadingUser(false);
     }
@@ -67,7 +70,9 @@ export default function SettingsScreen() {
           <>
             <Text style={styles.cardTitle}>{user.displayName}</Text>
             <Text style={styles.cardBody}>{user.email}</Text>
-            <Text style={styles.tier}>{t("settings.tierFree")}</Text>
+            <Text style={styles.tier}>
+              {tier === "pro" ? t("settings.tierPro") : t("settings.tierFree")}
+            </Text>
             <Pressable
               onPress={() => void onSignOut()}
               disabled={signingOut}

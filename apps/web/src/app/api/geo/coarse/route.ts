@@ -43,7 +43,7 @@ async function lookupIpCountry(ip: string | null): Promise<{
   try {
     const url = new URL(`https://ipapi.co/${encodeURIComponent(ip)}/json/`);
     const res = await fetch(url.toString(), {
-      headers: { Accept: "application/json", "User-Agent": "WeatherTrip/0.1" },
+      headers: { Accept: "application/json", "User-Agent": "Solviax/0.1" },
       signal: AbortSignal.timeout(3500),
       next: { revalidate: 86400 },
     });

@@ -2,12 +2,12 @@ import type { WeatherCondition } from "./types";
 
 const en = {
   meta: {
-    titleDefault: "WeatherTrip — Find perfect weather",
-    titleTemplate: "%s · WeatherTrip",
+    titleDefault: "Solviax — Find perfect weather",
+    titleTemplate: "%s · Solviax",
     description:
       "Discover destinations with the best weather for your next escape. Map-based trip planning with Open-Meteo forecasts.",
   },
-  brand: "WeatherTrip",
+  brand: "Solviax",
   nav: {
     discover: "Discover",
     map: "Map",
@@ -52,23 +52,26 @@ const en = {
   search: {
     whereFrom: "Where are you starting from?",
     whenGoing: "When are you going?",
-    howFar: "How far? (circle radius)",
+    howFar: "Distance? (Radius)",
     weatherGoal: "Weather goal",
     search: "Search Destinations",
     searching: "Searching…",
     chooseOrigin: "Choose a starting point first.",
     placeNotFound: "Couldn’t find that place. Pick one from the suggestions.",
     distances: {
-      near: "Near · 30 km",
-      semi: "Semi · 60 km",
-      surroundings: "Surroundings · 120 km",
-      neighborhood: "Neighborhood · 200 km",
-      region: "Region · 300 km",
+      near: "Local Area · 30 km",
+      semi: "Nearby Surroundings · 60 km",
+      surroundings: "Regional Area · 120 km",
+      neighborhood: "Wider Region · 200 km",
+      region: "National Level · 300 km",
       continent: "Continent · 1,000 km",
       custom: "Custom radius",
     },
     customRadius: "Radius",
     customRadiusHint: "0–2,000 km",
+    distanceProOption: "{label} (Pro)",
+    distanceProHint:
+      "National Level, Continent, and Custom radius are Pro features.",
     goals: {
       best: "Best weather",
       sun: "Most sunny",
@@ -233,8 +236,8 @@ const en = {
     viewDestination: "View destination",
     shareRoute: "Share route",
     shareGoogleMaps: "Open in Google Maps",
-    shareTitle: "WeatherTrip route",
-    shareText: "{from} → {to} ({mode}) on WeatherTrip",
+    shareTitle: "Solviax route",
+    shareText: "{from} → {to} ({mode}) on Solviax",
     shareTextWithDeparture:
       "{from} → {to} ({mode}). Best departure around {time}.",
     sharing: "Sharing…",
@@ -256,7 +259,7 @@ const en = {
   },
   login: {
     title: "Sign in",
-    welcome: "Welcome to WeatherTrip",
+    welcome: "Welcome to Solviax",
     signedIn: "You're signed in",
     demoSession: "Signed in as {name}",
     demoHint:
@@ -314,19 +317,19 @@ const en = {
     themeComingSoon: "Dark mode is coming soon — light mode is used for now.",
     subscriptionTitle: "Subscription",
     subscriptionBody:
-      "Unlock more discover results, earliest departure preferences, and future Pro features with a paid plan.",
+      "Unlock wider search radii (National Level, Continent, Custom), more discover results, earliest departure preferences, and future Pro features.",
     subscriptionCta: "View plans",
     subscriptionSoon: "Billing is not available yet — coming soon.",
   },
   paywall: {
     title: "You’ve used your free searches",
-    body: "Sign in with email for unlimited discovers, or share WeatherTrip for one extra search.",
+    body: "Sign in with email for unlimited discovers, or share Solviax for one extra search.",
     quotaUsed: "Used {used} of {limit} free searches",
     remaining: "{remaining} of {limit} free searches left",
     signIn: "Sign in with email",
     shareForCredit: "Share for +1 search",
     sharing: "Preparing share…",
-    shareText: "Find better weather nearby with WeatherTrip",
+    shareText: "Find better weather nearby with Solviax",
     shareDone: "Thanks for sharing — ask a friend to open your link so you both get credit when they redeem.",
     linkCopied: "Share link copied. Send it to a friend — redeeming it grants +1 search (not your own link).",
     shareError: "Couldn’t create a share link. Try again.",
@@ -385,7 +388,7 @@ const en = {
   },
   mobile: {
     apiMissing:
-      "Set EXPO_PUBLIC_API_URL to your WeatherTrip web API (e.g. http://YOUR_LAN_IP:3000).",
+      "Set EXPO_PUBLIC_API_URL to your Solviax web API (e.g. http://YOUR_LAN_IP:3000).",
     pullToRefresh: "Pull to refresh",
     openWebHint: "Start the web app (`npm run dev:web`) so mobile can load live weather.",
     retry: "Retry",

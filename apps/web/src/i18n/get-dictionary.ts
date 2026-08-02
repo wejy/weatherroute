@@ -1,4 +1,4 @@
-import { resolveLocaleFromAcceptLanguage } from "@weathertrip/i18n";
+import { resolveLocaleFromAcceptLanguage } from "@solviax/i18n";
 import {
   defaultLocale,
   isLocale,

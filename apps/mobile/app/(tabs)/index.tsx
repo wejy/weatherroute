@@ -24,8 +24,11 @@ import {
   CUSTOM_RADIUS_MAX_KM,
   CUSTOM_RADIUS_MIN_KM,
   DISTANCE_PRESET_KEYS,
+  FREE_MAX_DISTANCE_KEY,
+  isProDistance,
   resolveRadiusKm,
 } from "@/lib/distance";
+import { fetchSession, type DiscoverTier } from "@/lib/session";
 import {
   clampDateKey,
   isDateKey,
@@ -66,14 +69,20 @@ export default function DiscoverScreen() {
   const [dateWindow, setDateWindow] = useState<DateWindow>(() =>
     resolveDateWindow({ preset: "weekend", locale }),
   );
-  const [distance, setDistance] = useState<DistanceOption>("region");
+  const [distance, setDistance] = useState<DistanceOption>(FREE_MAX_DISTANCE_KEY);
   const [customRadiusKm, setCustomRadiusKm] = useState(CUSTOM_RADIUS_DEFAULT_KM);
   const [result, setResult] = useState<DiscoverResultDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paywalled, setPaywalled] = useState(false);
   const [quota, setQuota] = useState<PublicQuota | null>(null);
+  const [tier, setTier] = useState<DiscoverTier>("anon");
   const apiReady = Boolean(getApiBaseUrl());
+  const isPro = tier === "pro";
+
+  useEffect(() => {
+    void fetchSession().then((s) => setTier(s.tier));
+  }, []);
 
   useEffect(() => {
     setDateWindow((prev) =>
@@ -174,14 +183,18 @@ export default function DiscoverScreen() {
     ) => {
       setSelectedPlace(place);
       setOriginQuery(place.placeName);
-      if (opts?.distance) setDistance(opts.distance);
+      let nextDistance = opts?.distance;
+      if (nextDistance && !isPro && isProDistance(nextDistance)) {
+        nextDistance = FREE_MAX_DISTANCE_KEY;
+      }
+      if (nextDistance) setDistance(nextDistance);
       if (opts?.andSearch !== false) {
         await runDiscover(place, goal, {
-          distance: opts?.distance,
+          distance: nextDistance,
         });
       }
     },
-    [goal, runDiscover],
+    [goal, isPro, runDiscover],
   );
 
   const locateCoarse = useCallback(async () => {
@@ -528,26 +541,46 @@ export default function DiscoverScreen() {
         >
           {distanceOptions.map((key) => {
             const active = distance === key;
+            const locked = !isPro && isProDistance(key);
             return (
               <Pressable
                 key={key}
+                disabled={locked}
                 onPress={() => {
+                  if (locked) return;
                   setDistance(key);
                   if (selectedPlace) {
                     void runDiscover(selectedPlace, goal, { distance: key });
                   }
                 }}
-                style={[styles.chip, active && styles.chipActive]}
+                style={[
+                  styles.chip,
+                  active && styles.chipActive,
+                  locked && styles.chipLocked,
+                ]}
               >
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>
-                  {t(`search.distances.${key}`)}
+                <Text
+                  style={[
+                    styles.chipText,
+                    active && styles.chipTextActive,
+                    locked && styles.chipTextLocked,
+                  ]}
+                >
+                  {locked
+                    ? t("search.distanceProOption", {
+                        label: t(`search.distances.${key}`),
+                      })
+                    : t(`search.distances.${key}`)}
                 </Text>
               </Pressable>
             );
           })}
         </ScrollView>
+        {!isPro ? (
+          <Text style={styles.hint}>{t("search.distanceProHint")}</Text>
+        ) : null}
 
-        {distance === "custom" && (
+        {distance === "custom" && isPro && (
           <View style={styles.customRadius}>
             <Text style={styles.customRadiusLabel}>
               {t("search.customRadius")} · {customRadiusKm} km
@@ -826,8 +859,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     borderColor: colors.accent,
   },
+  chipLocked: {
+    opacity: 0.55,
+  },
   chipText: { fontWeight: "600", color: colors.onSurface, fontSize: 13 },
   chipTextActive: { color: colors.onAccent },
+  chipTextLocked: { color: colors.onSurfaceVariant },
   dateRangeHint: {
     fontSize: 13,
     fontWeight: "600",
@@ -869,7 +906,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.onSurface,
   },
-  hint: { fontSize: 12, color: colors.onSurfaceVariant },
+  hint: { fontSize: 10, lineHeight: 14, color: colors.outline },
   searchBtn: {
     marginTop: 8,
     minHeight: 54,

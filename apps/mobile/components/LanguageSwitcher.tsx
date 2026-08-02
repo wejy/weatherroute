@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useI18n } from "@/lib/i18n";
 import { colors } from "@/constants/Colors";
-import type { Locale } from "@weathertrip/i18n";
+import type { Locale } from "@solviax/i18n";
 
 export function LanguageSwitcher() {
   const { locale, setLocale, t } = useI18n();

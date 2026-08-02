@@ -60,7 +60,7 @@ export const discoverQuerySchema = z.object({
       "custom",
     ])
     .optional()
-    .default("region"),
+    .default("neighborhood"),
   radiusKm: z.coerce.number().min(0).max(2000).optional(),
   weatherGoal: z
     .enum(["best", "sun", "dry", "mild", "rain", "warm", "calm", "cloudy"])

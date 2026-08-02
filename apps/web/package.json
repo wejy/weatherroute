@@ -1,5 +1,5 @@
 {
-  "name": "@weathertrip/web",
+  "name": "@solviax/web",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -21,8 +21,8 @@
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
-    "@weathertrip/i18n": "*",
-    "@weathertrip/logger": "*",
+    "@solviax/i18n": "*",
+    "@solviax/logger": "*",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.27.0",

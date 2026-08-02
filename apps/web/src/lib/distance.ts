@@ -17,6 +17,53 @@ export const CUSTOM_RADIUS_MIN_KM = 0;
 export const CUSTOM_RADIUS_MAX_KM = 2000;
 export const CUSTOM_RADIUS_DEFAULT_KM = 300;
 
+/** Free/anon max preset — Region / Continent / Custom require Pro. */
+export const FREE_MAX_DISTANCE_KEY = "neighborhood" as const satisfies DistanceKey;
+export const FREE_MAX_RADIUS_KM = DISTANCE_RADIUS_KM[FREE_MAX_DISTANCE_KEY];
+
+export const PRO_DISTANCE_KEYS = [
+  "region",
+  "continent",
+  "custom",
+] as const;
+
+export type ProDistanceKey = (typeof PRO_DISTANCE_KEYS)[number];
+
+export function isProDistance(distance: string | undefined | null): boolean {
+  return (
+    distance === "region" ||
+    distance === "continent" ||
+    distance === "custom"
+  );
+}
+
+/**
+ * Clamp discover distance for the caller's subscription tier.
+ * Non-pro cannot use region / continent / custom (server + UI).
+ */
+export function clampDistanceForTier(
+  distance: string | undefined | null,
+  radiusKm: number | null | undefined,
+  tier: "anon" | "free" | "pro",
+): { distance: string; radiusKm?: number; clamped: boolean } {
+  const requested = distance || FREE_MAX_DISTANCE_KEY;
+  if (tier === "pro") {
+    return {
+      distance: requested,
+      radiusKm: radiusKm ?? undefined,
+      clamped: false,
+    };
+  }
+  if (isProDistance(requested)) {
+    return { distance: FREE_MAX_DISTANCE_KEY, clamped: true };
+  }
+  return {
+    distance: requested,
+    radiusKm: radiusKm ?? undefined,
+    clamped: false,
+  };
+}
+
 export function resolveRadiusKm(
   distance: string | undefined,
   radiusKm?: number | null,
@@ -31,7 +78,7 @@ export function resolveRadiusKm(
   if (distance && distance in DISTANCE_RADIUS_KM) {
     return DISTANCE_RADIUS_KM[distance as DistanceKey];
   }
-  return DISTANCE_RADIUS_KM.region;
+  return DISTANCE_RADIUS_KM[FREE_MAX_DISTANCE_KEY];
 }
 
 /** Anon / not signed in */

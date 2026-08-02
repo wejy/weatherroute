@@ -152,7 +152,7 @@ export function MapboxWeatherMap({
         const isOrigin = marker.id.startsWith("origin-");
         const el = document.createElement("button");
         el.type = "button";
-        el.className = "weathertrip-map-marker";
+        el.className = "solviax-map-marker";
         el.setAttribute(
           "aria-label",
           isOrigin

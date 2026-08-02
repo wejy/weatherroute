@@ -1,7 +1,7 @@
 import "server-only";
 
 import { NextRequest, NextResponse } from "next/server";
-import type { Logger } from "@weathertrip/logger";
+import type { Logger } from "@solviax/logger";
 import { createModuleLogger } from "@/lib/logger";
 import { getClientIp } from "@/lib/client-ip";
 
@@ -52,14 +52,14 @@ export async function withApiLog(
 ): Promise<Response> {
   const requestId =
     request.headers.get("x-request-id")?.trim() ||
-    request.headers.get("x-weathertrip-request-id")?.trim() ||
+    request.headers.get("x-solviax-request-id")?.trim() ||
     newRequestId();
   const method = request.method;
   const path = resolvePath(request);
   const ip = getClientIp(request);
   const startedAt = Date.now();
   const hasSession = Boolean(
-    request.headers.get("x-weathertrip-session")?.trim(),
+    request.headers.get("x-solviax-session")?.trim(),
   );
   const log = baseLog.child({
     requestId,

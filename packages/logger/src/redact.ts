@@ -20,6 +20,6 @@ export const REDACT_PATHS = [
   "req.headers.cookie",
   "headers.authorization",
   "headers.cookie",
-  "headers[\"x-weathertrip-session\"]",
+  "headers[\"x-solviax-session\"]",
   "err.config.headers.Authorization",
 ] as const;

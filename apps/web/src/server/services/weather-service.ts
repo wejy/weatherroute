@@ -38,7 +38,7 @@ import {
   resolveDiscoverLimits,
   weatherLimitForRadius,
 } from "@/server/dal/discover-limits";
-import { resolveRadiusKm } from "@/lib/distance";
+import { resolveRadiusKm, clampDistanceForTier } from "@/lib/distance";
 import { formatTravelDuration } from "@/lib/utils";
 
 function scoreWeather(
@@ -229,7 +229,7 @@ function emptyDiscoverResult(
     endDate: query.endDate,
     locale,
   });
-  const distance = (query.distance ?? "region") as DistanceRange;
+  const distance = (query.distance ?? "neighborhood") as DistanceRange;
   const radiusKm = resolveRadiusKm(distance, query.radiusKm);
 
   return {
@@ -263,8 +263,14 @@ export async function discoverDestinations(
     return emptyDiscoverResult(query, locale);
   }
 
-  const distance = (query.distance ?? "region") as DistanceRange;
-  const radiusKm = resolveRadiusKm(distance, query.radiusKm);
+  const limits = await resolveDiscoverLimits();
+  const clamped = clampDistanceForTier(
+    query.distance,
+    query.radiusKm,
+    limits.tier,
+  );
+  const distance = clamped.distance as DistanceRange;
+  const radiusKm = resolveRadiusKm(distance, clamped.radiusKm);
   const goal = query.weatherGoal ?? "best";
   const travelMode = (query.mode ?? DEFAULT_TRAVEL_MODE) as TravelMode;
 
@@ -275,7 +281,6 @@ export async function discoverDestinations(
     locale,
   });
 
-  const limits = await resolveDiscoverLimits();
   const weatherLimit = weatherLimitForRadius(radiusKm, limits.weather);
 
   const candidates = await placesWithinRadius(origin, radiusKm, {

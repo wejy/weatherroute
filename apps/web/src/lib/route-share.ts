@@ -57,7 +57,7 @@ export function googleMapsDirectionsUrl(opts: {
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
-/** Absolute WeatherTrip `/routes` link with planning context. */
+/** Absolute Solviax `/routes` link with planning context. */
 export function weatherTripRouteSharePath(opts: {
   from: string;
   to: string;

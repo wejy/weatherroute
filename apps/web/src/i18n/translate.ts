@@ -3,4 +3,4 @@ export {
   translateCondition,
   translateUv,
   type Translator,
-} from "@weathertrip/i18n";
+} from "@solviax/i18n";

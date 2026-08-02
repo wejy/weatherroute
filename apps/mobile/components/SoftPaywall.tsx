@@ -41,7 +41,7 @@ export function SoftPaywall({
         { action: "create" },
       );
       if (!data.token) throw new Error("share_failed");
-      const base = getApiBaseUrl() || "https://weathertrip.app";
+      const base = getApiBaseUrl() || "https://solviax.app";
       const url = `${base}/?share=${data.token}`;
       await Share.share({
         message: `${t("paywall.shareText")}\n${url}`,

@@ -23,6 +23,8 @@ import {
   CUSTOM_RADIUS_MIN_KM,
   DISTANCE_PRESET_KEYS,
   DISTANCE_RADIUS_KM,
+  FREE_MAX_DISTANCE_KEY,
+  isProDistance,
   resolveRadiusKm,
   type DistanceKey,
 } from "@/lib/distance";
@@ -47,6 +49,8 @@ export function DiscoverSearch({
   autoDetect,
   /** Hide the weather-goal dropdown when chips are shown separately. */
   showGoalField = true,
+  /** Subscription tier — locks Region / Continent / Custom for non-pro. */
+  tier = "anon",
 }: {
   defaults?: {
     origin?: string;
@@ -65,8 +69,10 @@ export function DiscoverSearch({
   variant?: "island" | "stack";
   autoDetect?: boolean;
   showGoalField?: boolean;
+  tier?: "anon" | "free" | "pro";
 }) {
   const { t, locale } = useI18n();
+  const isPro = tier === "pro";
   const router = useRouter();
   const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
@@ -94,6 +100,11 @@ export function DiscoverSearch({
     [defaults?.datePreset, defaults?.startDate, defaults?.endDate, locale],
   );
 
+  const initialDistance =
+    !isPro && isProDistance(defaults?.distance)
+      ? FREE_MAX_DISTANCE_KEY
+      : (defaults?.distance ?? FREE_MAX_DISTANCE_KEY);
+
   const [origin, setOrigin] = useState(defaults?.origin ?? "");
   const [place, setPlace] = useState<PlaceDto | null>(
     hasCoords
@@ -107,7 +118,7 @@ export function DiscoverSearch({
       : null,
   );
   const [when, setWhen] = useState<DateWindow>(initialWindow);
-  const [distance, setDistance] = useState(defaults?.distance ?? "region");
+  const [distance, setDistance] = useState(initialDistance);
   const [customRadiusKm, setCustomRadiusKm] = useState(
     defaults?.radiusKm ?? CUSTOM_RADIUS_DEFAULT_KM,
   );
@@ -129,8 +140,13 @@ export function DiscoverSearch({
   }, [defaults?.mode]);
 
   useEffect(() => {
-    if (defaults?.distance) setDistance(defaults.distance);
-  }, [defaults?.distance]);
+    if (!defaults?.distance) return;
+    setDistance(
+      !isPro && isProDistance(defaults.distance)
+        ? FREE_MAX_DISTANCE_KEY
+        : defaults.distance,
+    );
+  }, [defaults?.distance, isPro]);
 
   useEffect(() => {
     if (defaults?.radiusKm != null) setCustomRadiusKm(defaults.radiusKm);
@@ -232,8 +248,11 @@ export function DiscoverSearch({
       geoSynced.current = true;
       setPlace(detected);
       setOrigin(detected.placeName);
-      const distanceOverride =
+      let distanceOverride: string | undefined =
         meta.mode === "coarse" ? meta.suggestedDistance : undefined;
+      if (distanceOverride && !isPro && isProDistance(distanceOverride)) {
+        distanceOverride = FREE_MAX_DISTANCE_KEY;
+      }
       if (distanceOverride) setDistance(distanceOverride);
       navigateWith(
         detected,
@@ -241,7 +260,7 @@ export function DiscoverSearch({
         distanceOverride ? { distance: distanceOverride } : undefined,
       );
     },
-    [hasCoords, navigateWith],
+    [hasCoords, isPro, navigateWith],
   );
 
   function onPlaceSelect(next: PlaceDto | null) {
@@ -291,6 +310,7 @@ export function DiscoverSearch({
   }
 
   function onDistanceChange(next: string) {
+    if (!isPro && isProDistance(next)) return;
     setDistance(next);
     if (next !== "custom" && next in DISTANCE_RADIUS_KM) {
       setCustomRadiusKm(DISTANCE_RADIUS_KM[next as DistanceKey]);
@@ -353,7 +373,7 @@ export function DiscoverSearch({
       className={cn(
         stack
           ? "flex w-full flex-col gap-3"
-          : "relative z-40 flex w-full max-w-5xl flex-col rounded-[2rem] border border-outline-variant/20 bg-surface-container-lowest p-2 shadow-[0px_10px_30px_rgba(0,0,0,0.08)] md:p-4 lg:flex-row lg:flex-wrap",
+          : "relative z-40 flex w-full max-w-5xl flex-col overflow-visible rounded-[2rem] border border-outline-variant/20 bg-surface-container-lowest p-2 shadow-[0px_10px_30px_rgba(0,0,0,0.08)] md:p-4 lg:flex-row lg:flex-wrap lg:pr-10",
       )}
     >
       <div
@@ -404,7 +424,14 @@ export function DiscoverSearch({
         />
       </div>
 
-      <div className={fieldClass}>
+      <div
+        className={cn(
+          fieldClass,
+          !stack &&
+            !showGoalField &&
+            "rounded-b-2xl lg:rounded-r-2xl lg:rounded-bl-none lg:border-r-0",
+        )}
+      >
         <label htmlFor={distanceId} className={labelClass}>
           {t("search.howFar")}
         </label>
@@ -421,13 +448,31 @@ export function DiscoverSearch({
             value={distance}
             onChange={(e) => onDistanceChange(e.target.value)}
           >
-            {DISTANCE_OPTIONS.map((key) => (
-              <option key={key} value={key}>
-                {t(`search.distances.${key}`)}
-              </option>
-            ))}
+            {DISTANCE_OPTIONS.map((key) => {
+              const locked = !isPro && isProDistance(key);
+              return (
+                <option key={key} value={key} disabled={locked}>
+                  {locked
+                    ? t("search.distanceProOption", {
+                        label: t(`search.distances.${key}`),
+                      })
+                    : t(`search.distances.${key}`)}
+                </option>
+              );
+            })}
           </select>
         </div>
+        {!isPro ? (
+          <p className="mt-1 text-left text-[10px] leading-snug text-outline">
+            {t("search.distanceProHint")}{" "}
+            <a
+              href="/settings"
+              className="font-semibold text-primary/80 underline-offset-2 hover:underline"
+            >
+              {t("settings.subscriptionCta")}
+            </a>
+          </p>
+        ) : null}
         {distance === "custom" && (
           <div className="mt-3 space-y-1.5 text-left">
             <div className="flex items-center justify-between gap-2 text-xs font-medium text-on-surface-variant">
@@ -468,13 +513,13 @@ export function DiscoverSearch({
               className="h-2 w-full cursor-pointer appearance-none rounded-full bg-surface-container accent-primary"
               aria-label={t("search.customRadius")}
             />
-            <p className="text-[11px] text-on-surface-variant">
+            <p className="text-[10px] leading-snug text-outline">
               {t("search.customRadiusHint")}
             </p>
           </div>
         )}
         {distance !== "custom" && (
-          <p className="mt-1 text-left text-xs text-on-surface-variant">
+          <p className="mt-1 text-left text-[10px] leading-snug text-outline">
             {effectiveRadiusKm.toLocaleString(
               locale === "fi" ? "fi-FI" : "en-GB",
             )}{" "}
@@ -488,7 +533,7 @@ export function DiscoverSearch({
           className={cn(
             fieldClass,
             !stack &&
-              "cursor-pointer rounded-b-2xl lg:rounded-r-2xl lg:rounded-bl-none",
+              "cursor-pointer rounded-b-2xl lg:rounded-r-2xl lg:rounded-bl-none lg:border-r-0",
           )}
         >
           <label htmlFor={goalId} className={labelClass}>
@@ -521,7 +566,7 @@ export function DiscoverSearch({
         className={cn(
           stack
             ? "pt-1"
-            : "mt-2 flex w-full justify-center p-2 md:p-3 lg:absolute lg:top-1/2 lg:-right-4 lg:mt-0 lg:w-auto lg:-translate-y-1/2 lg:pl-0",
+            : "mt-2 flex w-full justify-center p-2 md:p-3 lg:absolute lg:top-1/2 lg:right-0 lg:z-50 lg:mt-0 lg:w-auto lg:-translate-y-1/2 lg:translate-x-[55%] lg:pl-0",
         )}
       >
         <button

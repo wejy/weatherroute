@@ -1,5 +1,5 @@
 ---
-name: WeatherTripPlanner
+name: Solviax
 colors:
   surface: '#fcf8ff'
   surface-dim: '#dcd8e5'

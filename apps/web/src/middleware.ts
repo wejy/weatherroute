@@ -37,7 +37,7 @@ function corsHeaders(origin: string | null): Record<string, string> | null {
     "Access-Control-Allow-Origin": origin,
     "Access-Control-Allow-Methods": "GET,POST,DELETE,OPTIONS",
     "Access-Control-Allow-Headers":
-      "Content-Type, Authorization, X-WeatherTrip-Device, X-WeatherTrip-Session, X-WeatherTrip-Anon, X-Request-Id, X-WeatherTrip-Request-Id, Cookie",
+      "Content-Type, Authorization, X-Solviax-Device, X-Solviax-Session, X-Solviax-Anon, X-Request-Id, X-Solviax-Request-Id, Cookie",
     "Access-Control-Allow-Credentials": "true",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",

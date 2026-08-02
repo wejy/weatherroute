@@ -51,7 +51,7 @@ function resolveLevel(explicit?: string): string {
  * - Browser / Expo: `browser.asObject` → structured console output (no Node streams).
  */
 export function createLogger(opts: CreateLoggerOptions = {}): Logger {
-  const name = opts.name ?? "weathertrip";
+  const name = opts.name ?? "solviax";
   const level = resolveLevel(opts.level);
   const useBrowser = opts.browser ?? isBrowserLike();
 

@@ -1,8 +1,8 @@
-import { createLogger, type Logger } from "@weathertrip/logger";
+import { createLogger, type Logger } from "@solviax/logger";
 
 /** Root Expo logger (Pino browser / RN console destination). */
 export const logger: Logger = createLogger({
-  name: "weathertrip-mobile",
+  name: "solviax-mobile",
   browser: true,
 });
 

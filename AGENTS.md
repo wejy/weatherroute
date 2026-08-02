@@ -1,4 +1,4 @@
-# WeatherTrip monorepo
+# Solviax monorepo
 
 npm workspaces: `apps/web` (Next.js), `apps/mobile` (Expo), `packages/i18n` (shared EN/FI), `packages/logger` (Pino).
 

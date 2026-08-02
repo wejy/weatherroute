@@ -15,7 +15,7 @@ Expo app (`apps/mobile`, SDK 57) talks to web `/api/*`.
 
 - [x] Travel mode (`driving` / `cycling`) + route screen (API + chips)
 - [x] Anon quota / soft paywall (HTTP 402) + share create/redeem
-- [x] Auth OTP session via SecureStore (`X-WeatherTrip-Session` + `/api/auth/verify-otp`)
+- [x] Auth OTP session via SecureStore (`X-Solviax-Session` + `/api/auth/verify-otp`)
 - [x] Map tab = nearby list from last Discover (+ destination Wikipedia already done)
 - [ ] Full Mapbox GL map on mobile (optional later)
 - [ ] Route polyline / save-trip parity
@@ -37,7 +37,7 @@ Logic: [`discover-limits.ts`](apps/web/src/server/dal/discover-limits.ts). Pro s
 
 ## Ops
 
-Deployment runbook: **[DEPLOYMENT.md](./DEPLOYMENT.md)** (nginx *or* Caddy, env, systemd, migrate).
+Deployment runbook: **[DEPLOYMENT.md](./DEPLOYMENT.md)** (nginx *or* Caddy, env, PM2, migrate).
 
 - [ ] Provision VPS (e.g. UpCloud) + Managed Postgres + TLS (Caddy or nginx+certbot)
 - [ ] Set production env (`AUTH_SECRET`, Resend, Mapbox, CORS, Upstash) per DEPLOYMENT.md

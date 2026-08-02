@@ -137,7 +137,7 @@ export const env = {
   useMockWeather: flag(process.env.USE_MOCK_WEATHER, false),
   cronEnabled: flag(process.env.CRON_ENABLED, isProduction),
   emailMode: resolveEmailMode(),
-  emailFrom: process.env.EMAIL_FROM || "WeatherTrip <noreply@localhost>",
+  emailFrom: process.env.EMAIL_FROM || "Solviax <noreply@localhost>",
   resendApiKey: process.env.RESEND_API_KEY || "",
   authSecret: getAuthSecret(),
   anonDiscoverLimit: Number(process.env.ANON_DISCOVER_LIMIT || 3),

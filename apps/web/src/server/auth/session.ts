@@ -10,7 +10,7 @@ import { decodeAuthSessionToken } from "@/server/auth/mobile-session";
 
 const log = createModuleLogger("server.auth.session");
 const DEMO_COOKIE = "wt_session";
-const MOBILE_SESSION_HEADER = "x-weathertrip-session";
+const MOBILE_SESSION_HEADER = "x-solviax-session";
 
 function toUserDto(user: {
   id: string;

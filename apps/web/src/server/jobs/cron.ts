@@ -10,7 +10,7 @@ import { fetchWeatherBatch } from "@/server/integrations/weather";
 
 const log = createModuleLogger("server.jobs.cron");
 const globalCron = globalThis as unknown as {
-  weathertripCronStarted?: boolean;
+  solviaxCronStarted?: boolean;
 };
 
 /**
@@ -51,8 +51,8 @@ export function startCronJobs(): void {
     log.info("[cron] CRON_ENABLED=false — jobs not scheduled");
     return;
   }
-  if (globalCron.weathertripCronStarted) return;
-  globalCron.weathertripCronStarted = true;
+  if (globalCron.solviaxCronStarted) return;
+  globalCron.solviaxCronStarted = true;
 
   // 02:00 UTC daily
   cron.schedule("0 2 * * *", () => {

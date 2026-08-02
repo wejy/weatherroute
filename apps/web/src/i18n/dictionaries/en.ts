@@ -1,1 +1,1 @@
-export { default, type Dictionary } from "@weathertrip/i18n/en";
+export { default, type Dictionary } from "@solviax/i18n/en";

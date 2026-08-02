@@ -15,7 +15,7 @@ export type WikipediaSummary = {
 type WikiLang = "en" | "fi";
 
 const UA =
-  "WeatherTrip/0.1 (demo weather travel app; local-dev; https://github.com/weathertrip)";
+  "Solviax/0.1 (demo weather travel app; local-dev; https://github.com/solviax)";
 
 const cache = new Map<
   string,

@@ -1,21 +1,21 @@
 {
   "expo": {
-    "name": "WeatherTrip",
-    "slug": "weathertrip",
+    "name": "Solviax",
+    "slug": "solviax",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "weathertrip",
+    "scheme": "solviax",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.weathertrip.app",
+      "bundleIdentifier": "com.solviax.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "WeatherTrip uses your location to find nearby destinations with better weather. / WeatherTrip käyttää sijaintiasi löytääkseen lähistöltä kohteita paremman sään perusteella."
+        "NSLocationWhenInUseUsageDescription": "Solviax uses your location to find nearby destinations with better weather. / Solviax käyttää sijaintiasi löytääkseen lähistöltä kohteita paremman sään perusteella."
       }
     },
     "android": {
-      "package": "com.weathertrip.app",
+      "package": "com.solviax.app",
       "adaptiveIcon": {
         "backgroundColor": "#3525CD",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -46,7 +46,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Allow WeatherTrip to use your location to find nearby destinations with better weather. / Salli WeatherTripin käyttää sijaintiasi, jotta se löytää lähistöltä kohteita paremman sään perusteella."
+          "locationWhenInUsePermission": "Allow Solviax to use your location to find nearby destinations with better weather. / Salli Solviaxin käyttää sijaintiasi, jotta se löytää lähistöltä kohteita paremman sään perusteella."
         }
       ],
       "expo-localization",

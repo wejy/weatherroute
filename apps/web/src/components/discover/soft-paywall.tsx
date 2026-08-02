@@ -44,7 +44,7 @@ export function SoftPaywall({
       const url = `${window.location.origin}/?share=${data.token}`;
       if (navigator.share) {
         await navigator.share({
-          title: "WeatherTrip",
+          title: t("brand"),
           text: t("paywall.shareText"),
           url,
         });

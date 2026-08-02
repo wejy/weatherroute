@@ -9,15 +9,17 @@ import { createTranslator } from "@/i18n/translate";
 function NavLinks({
   active,
   links,
+  brand,
 }: {
   active?: string;
   links: Array<{ href: string; label: string }>;
+  brand: string;
 }) {
   return (
     <nav
       data-testid="top-nav-links"
       className="hidden items-center gap-8 md:flex"
-      aria-label="WeatherTrip"
+      aria-label={brand}
     >
       {links.map((link) => {
         const preserve =
@@ -84,7 +86,7 @@ export async function TopNav({ active }: { active?: string }) {
       </Suspense>
 
       <Suspense fallback={null}>
-        <NavLinks active={active} links={links} />
+        <NavLinks active={active} links={links} brand={t("brand")} />
       </Suspense>
 
       <div className="flex items-center gap-3">

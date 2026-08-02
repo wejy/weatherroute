@@ -1,13 +1,13 @@
 "use client";
 
-import { createLogger, type Logger } from "@weathertrip/logger";
+import { createLogger, type Logger } from "@solviax/logger";
 
 /**
  * Browser / Client Component logger (Pino browser destination).
  * Prefer server `lib/logger` for API routes and Server Components.
  */
 export const clientLogger: Logger = createLogger({
-  name: "weathertrip-web-client",
+  name: "solviax-web-client",
   browser: true,
 });
 

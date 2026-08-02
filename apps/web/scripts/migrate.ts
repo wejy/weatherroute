@@ -7,7 +7,7 @@ import { resolve } from "node:path";
 async function main() {
   const url = process.env.DATABASE_URL;
   if (!url) {
-    console.error("DATABASE_URL is required. Example: postgresql://weathertrip:weathertrip@localhost:5432/weathertrip");
+    console.error("DATABASE_URL is required. Example: postgresql://solviax:solviax@localhost:5432/solviax");
     process.exit(1);
   }
 

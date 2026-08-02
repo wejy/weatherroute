@@ -13,14 +13,32 @@ export type SessionUser = {
   displayName: string;
 };
 
-export async function fetchCurrentUser(): Promise<SessionUser | null> {
+export type DiscoverTier = "anon" | "free" | "pro";
+
+export type SessionSnapshot = {
+  user: SessionUser | null;
+  tier: DiscoverTier;
+};
+
+export async function fetchSession(): Promise<SessionSnapshot> {
   try {
-    const data = await apiGet<{ user: SessionUser | null }>("/api/auth/me");
-    return data.user;
+    const data = await apiGet<{
+      user: SessionUser | null;
+      tier?: DiscoverTier;
+    }>("/api/auth/me");
+    return {
+      user: data.user,
+      tier: data.tier ?? (data.user ? "free" : "anon"),
+    };
   } catch (err) {
-    log.warn({ err }, "fetchCurrentUser failed");
-    return null;
+    log.warn({ err }, "fetchSession failed");
+    return { user: null, tier: "anon" };
   }
+}
+
+export async function fetchCurrentUser(): Promise<SessionUser | null> {
+  const { user } = await fetchSession();
+  return user;
 }
 
 export async function requestOtp(email: string): Promise<void> {

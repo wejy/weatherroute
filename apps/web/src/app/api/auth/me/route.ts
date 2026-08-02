@@ -1,13 +1,18 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser, signOut } from "@/server/auth/session";
 import { authSessionCookieName } from "@/server/auth/mobile-session";
+import { resolveUserTier } from "@/server/dal/user-prefs";
 import { withApiLog } from "@/lib/api-log";
 
 export async function GET(request: Request) {
   return withApiLog(request, "auth.me", async ({ log }) => {
     const user = await getCurrentUser();
-    log.info({ signedIn: Boolean(user), userId: user?.id ?? null }, "me");
-    return NextResponse.json({ user });
+    const tier = await resolveUserTier(user?.id ?? null);
+    log.info(
+      { signedIn: Boolean(user), userId: user?.id ?? null, tier },
+      "me",
+    );
+    return NextResponse.json({ user, tier });
   });
 }
 

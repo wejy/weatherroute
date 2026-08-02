@@ -1,8 +1,8 @@
-# WeatherTrip — production deployment
+# Solviax — production deployment
 
 Guide for running the **web app + API** (`apps/web`) on a Linux VPS (e.g. UpCloud, Hetzner, DigitalOcean). The Expo app (`apps/mobile`) is built separately and talks to this API via `EXPO_PUBLIC_API_URL` — see **[EXPO_DEPLOYMENT.md](./EXPO_DEPLOYMENT.md)** for store builds, EAS, and mobile env/token rules.
 
-There is **no** first-class Docker production image yet — deploy as a Node.js process behind a reverse proxy. Local Postgres is only for development (`docker compose`).
+There is **no** first-class Docker production image yet — deploy as a Node.js process managed by **PM2**, behind a reverse proxy. Local Postgres is only for development (`docker compose`).
 
 ---
 
@@ -18,7 +18,7 @@ Internet
          │
          ▼
 ┌──────────────────┐
-│  Next.js (node)  │  `npm run start` — UI + /api/* + Auth.js + cron
+│  PM2 → Next.js   │  `next start` — UI + /api/* + Auth.js + cron
 └────────┬─────────┘
          │
          ├──────────► PostgreSQL (managed or self-hosted)
@@ -28,7 +28,7 @@ Internet
          └──────────► Open-Meteo (weather, no API key)
 ```
 
-**Single Node process** is enough for MVP. Cron jobs (`CRON_ENABLED`) run inside the Next.js process via `instrumentation.ts` — do not run multiple app replicas unless you accept duplicate cron or move jobs out.
+**Single Node process** is enough for MVP (`instances: 1` in PM2). Cron jobs (`CRON_ENABLED`) run inside the Next.js process via `instrumentation.ts` — do not run multiple app replicas unless you accept duplicate cron or move jobs out.
 
 ---
 
@@ -41,6 +41,7 @@ Internet
 | **Node.js 20+** (22 LTS recommended) | Next.js runtime |
 | **npm** | Comes with Node |
 | **git** | Deploy from repo |
+| **PM2** | Process manager, auto-restart, boot start, logs |
 | **PostgreSQL 16** | App DB — *or* use a managed DB and skip local install |
 | **nginx** *or* **Caddy** | Reverse proxy + TLS |
 | **certbot** | Only if using nginx (Let’s Encrypt). Caddy handles TLS itself |
@@ -51,7 +52,6 @@ Optional:
 
 | Software | Why |
 |---|---|
-| **pm2** or **systemd** | Process manager / auto-restart |
 | **fail2ban** | SSH brute-force hardening |
 
 ### Install sketch (Ubuntu)
@@ -60,6 +60,9 @@ Optional:
 # Node 22 via NodeSource (or use nvm / fnm)
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 sudo apt-get install -y nodejs git build-essential python3
+
+# PM2 (global)
+sudo npm install -g pm2
 
 # Reverse proxy — pick ONE
 sudo apt-get install -y nginx certbot python3-certbot-nginx
@@ -79,14 +82,20 @@ Managed Postgres (UpCloud / Neon / RDS / etc.) is preferred over installing Post
 
 ## Environment variables
 
-Put these in a file the process manager loads (e.g. `/var/www/weathertrip/apps/web/.env.production` or systemd `EnvironmentFile=`). **Never** commit secrets.
+Put secrets in `apps/web/.env.production` on the server. Next.js loads that file automatically when `NODE_ENV=production`. **Never** commit secrets.
+
+Restrict permissions after editing:
+
+```bash
+chmod 600 /var/www/solviax/apps/web/.env.production
+```
 
 ### Required in production
 
 | Variable | Example / notes |
 |---|---|
-| `NODE_ENV` | `production` (set by `next start`) |
-| `DATABASE_URL` | `postgresql://USER:PASS@HOST:5432/weathertrip?sslmode=require` |
+| `NODE_ENV` | `production` (set by `next start` / PM2) |
+| `DATABASE_URL` | `postgresql://USER:PASS@HOST:5432/solviax?sslmode=require` |
 | `AUTH_SECRET` | Random ≥ **32** chars (`openssl rand -base64 48`) |
 | `AUTH_URL` | `https://weather.example.com` (canonical public URL) |
 | `NEXT_PUBLIC_APP_URL` | Same as `AUTH_URL` |
@@ -104,7 +113,7 @@ Put these in a file the process manager loads (e.g. `/var/www/weathertrip/apps/w
 | `CORS_ALLOWED_ORIGINS` | `https://weather.example.com` (+ Expo LAN origins only if needed) |
 | `UPSTASH_REDIS_REST_URL` | Multi-instance / durable rate limits |
 | `UPSTASH_REDIS_REST_TOKEN` | Pair with URL above |
-| `EMAIL_FROM` | Verified Resend sender, e.g. `WeatherTrip <noreply@example.com>` |
+| `EMAIL_FROM` | Verified Resend sender, e.g. `Solviax <noreply@example.com>` |
 | `CRON_ENABLED` | `true` in production (nightly weather cache warm) |
 
 ### Optional / defaults
@@ -116,7 +125,7 @@ Put these in a file the process manager loads (e.g. `/var/www/weathertrip/apps/w
 | `ANON_IP_DISCOVER_LIMIT` | `10` | Cookie-less / device IP daily limit |
 | `USE_MOCK_WEATHER` | `false` | Keep `false` in prod |
 | `PORT` | `3000` | Must match reverse proxy upstream |
-| `LOG_LEVEL` | `info` (prod) / `debug` (dev) | Pino via `@weathertrip/logger` — JSON stdout in production |
+| `LOG_LEVEL` | `info` (prod) / `debug` (dev) | Pino via `@solviax/logger` — JSON stdout in production |
 | `LOG_PRETTY` | pretty on in dev | Set `0` to force JSON locally |
 
 ### Example production env file
@@ -133,11 +142,11 @@ AUTH_TRUST_HOST=true
 USE_MOCKS=false
 USE_MOCK_WEATHER=false
 
-DATABASE_URL=postgresql://weathertrip:SECRET@db.example.com:5432/weathertrip?sslmode=require
+DATABASE_URL=postgresql://solviax:SECRET@db.example.com:5432/solviax?sslmode=require
 
 EMAIL_MODE=resend
 RESEND_API_KEY=re_xxxxxxxx
-EMAIL_FROM=WeatherTrip <noreply@example.com>
+EMAIL_FROM=Solviax <noreply@example.com>
 
 CORS_ALLOWED_ORIGINS=https://weather.example.com
 
@@ -168,8 +177,8 @@ openssl rand -base64 48   # AUTH_SECRET
 sudo mkdir -p /var/www
 sudo chown "$USER":"$USER" /var/www
 cd /var/www
-git clone <YOUR_REPO_URL> weathertrip
-cd weathertrip
+git clone <YOUR_REPO_URL> solviax
+cd solviax
 npm install
 ```
 
@@ -178,71 +187,85 @@ npm install
 ```bash
 cp apps/web/.env.example apps/web/.env.production
 # edit apps/web/.env.production with production values
+chmod 600 apps/web/.env.production
 ```
-
-Ensure the start command loads that file (see systemd example below), or export vars in the shell / process manager.
 
 ### 3. Database migrate (+ optional seed)
 
 ```bash
-# From repo root — loads DATABASE_URL from env
-export $(grep -v '^#' apps/web/.env.production | xargs)   # or use dotenv tooling
-npm run db:migrate -w @weathertrip/web
+# From repo root — load DATABASE_URL for migrate/seed scripts
+set -a
+source apps/web/.env.production
+set +a
+
+npm run db:migrate -w @solviax/web
 
 # Optional: seed places (demo / denser Geonames)
-npm run db:seed -w @weathertrip/web
-# npm run db:seed:geonames -w @weathertrip/web
+npm run db:seed -w @solviax/web
+# npm run db:seed:geonames -w @solviax/web
 ```
 
-### 4. Build and run
+### 4. Build
 
 ```bash
-cd /var/www/weathertrip
-npm run build -w @weathertrip/web
-npm run start -w @weathertrip/web
-# listens on 0.0.0.0:3000 by default with `next start`
+cd /var/www/solviax
+npm run build -w @solviax/web
 ```
 
-Smoke-test locally on the VPS:
+### 5. Process manager (PM2)
+
+Create `/var/www/solviax/ecosystem.config.cjs` (or keep it in the repo if you prefer):
+
+```js
+module.exports = {
+  apps: [
+    {
+      name: "solviax",
+      cwd: "/var/www/solviax",
+      script: "npm",
+      args: "run start -w @solviax/web",
+      instances: 1,
+      exec_mode: "fork",
+      autorestart: true,
+      max_memory_restart: "1G",
+      env: {
+        NODE_ENV: "production",
+        PORT: "3000",
+      },
+    },
+  ],
+};
+```
+
+`instances` must stay **1** while cron runs inside the Next.js process.
+
+Start and enable boot persistence:
+
+```bash
+cd /var/www/solviax
+pm2 start ecosystem.config.cjs
+pm2 status
+pm2 save
+pm2 startup
+# run the command PM2 prints (sudo env PATH=... pm2 startup systemd -u <user> --hp <home>)
+```
+
+Useful day-to-day commands:
+
+```bash
+pm2 status
+pm2 logs solviax          # follow app + Pino stdout
+pm2 logs solviax --lines 200
+pm2 restart solviax
+pm2 reload solviax        # graceful restart when possible
+pm2 stop solviax
+pm2 delete solviax
+```
+
+Smoke-test on the VPS:
 
 ```bash
 curl -sI http://127.0.0.1:3000 | head
-```
-
-### 5. Process manager (systemd)
-
-`/etc/systemd/system/weathertrip.service`:
-
-```ini
-[Unit]
-Description=WeatherTrip Next.js
-After=network.target
-
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=/var/www/weathertrip
-EnvironmentFile=/var/www/weathertrip/apps/web/.env.production
-Environment=NODE_ENV=production
-ExecStart=/usr/bin/npm run start -w @weathertrip/web
-Restart=on-failure
-RestartSec=5
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable --now weathertrip
-sudo systemctl status weathertrip
-```
-
-Restrict file permissions on the env file:
-
-```bash
-sudo chown www-data:www-data /var/www/weathertrip/apps/web/.env.production
-sudo chmod 600 /var/www/weathertrip/apps/web/.env.production
 ```
 
 ---
@@ -253,7 +276,7 @@ Point DNS `A`/`AAAA` for `weather.example.com` at the VPS before issuing certifi
 
 ### Option A — nginx + Let’s Encrypt
 
-`/etc/nginx/sites-available/weathertrip`:
+`/etc/nginx/sites-available/solviax`:
 
 ```nginx
 server {
@@ -286,7 +309,7 @@ server {
 ```
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/weathertrip /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/solviax /etc/nginx/sites-enabled/
 sudo nginx -t
 sudo systemctl reload nginx
 sudo certbot --nginx -d weather.example.com
@@ -341,12 +364,21 @@ Full mobile release process (EAS, stores, token rules): **[EXPO_DEPLOYMENT.md](.
 ## Updates (redeploy)
 
 ```bash
-cd /var/www/weathertrip
+cd /var/www/solviax
 git pull
 npm install
-npm run db:migrate -w @weathertrip/web
-npm run build -w @weathertrip/web
-sudo systemctl restart weathertrip
+set -a && source apps/web/.env.production && set +a
+npm run db:migrate -w @solviax/web
+npm run build -w @solviax/web
+pm2 restart solviax
+pm2 status
+```
+
+If you changed `ecosystem.config.cjs`:
+
+```bash
+pm2 reload ecosystem.config.cjs
+pm2 save
 ```
 
 ---
@@ -359,8 +391,9 @@ sudo systemctl restart weathertrip
 - [ ] Login OTP: email arrives via Resend (not console)
 - [ ] Anon discover hits soft paywall after limit
 - [ ] `curl -I https://weather.example.com` shows security headers (CSP / HSTS from middleware)
-- [ ] Logs: `journalctl -u weathertrip -f` — no boot errors about `AUTH_SECRET` / `EMAIL_MODE` / `USE_MOCKS`
+- [ ] Logs: `pm2 logs solviax` — no boot errors about `AUTH_SECRET` / `EMAIL_MODE` / `USE_MOCKS`
 - [ ] Cron: after boot, log line mentioning scheduled nightly weather warm when `CRON_ENABLED=true`
+- [ ] After reboot: `pm2 status` shows `solviax` online (`pm2 startup` + `pm2 save` done)
 
 ---
 
@@ -379,7 +412,7 @@ sudo systemctl restart weathertrip
 
 | Item | Status |
 |---|---|
-| Production Dockerfile / Compose stack | Not shipped — VPS + systemd is the documented path |
+| Production Dockerfile / Compose stack | Not shipped — VPS + **PM2** is the documented path |
 | Blue/green / zero-downtime multi-instance | Out of scope; cron assumes one instance |
 | Mobile store release (EAS) | Separate from this guide |
 | CDN / object storage for images | App uses Mapbox / remote URLs today |

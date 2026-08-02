@@ -19,7 +19,7 @@ import {
   type Dictionary,
   type Locale,
   type Translator,
-} from "@weathertrip/i18n";
+} from "@solviax/i18n";
 import { colors } from "@/constants/Colors";
 
 const STORAGE_KEY = "wt_locale";

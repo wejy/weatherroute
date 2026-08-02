@@ -1,1 +1,1 @@
-export { default } from "@weathertrip/i18n/fi";
+export { default } from "@solviax/i18n/fi";

@@ -127,7 +127,7 @@ function weatherMarkerEl(
 ): HTMLButtonElement {
   const el = document.createElement("button");
   el.type = "button";
-  el.className = "weathertrip-route-marker";
+  el.className = "solviax-route-marker";
   const hasWarning = wp.advisories.some((a) => a.tone === "warning");
   const hasCaution = wp.advisories.length > 0;
   const severe = isSevereMapAlert(wp.condition, wp.advisories);

@@ -1,4 +1,4 @@
-# WeatherTrip — Expo mobile release guide
+# Solviax — Expo mobile release guide
 
 How to ship **`apps/mobile`** (Expo SDK 57) to TestFlight / Play Store, and what to mind for API URLs, tokens, and store compliance.
 
@@ -22,10 +22,10 @@ Official Expo references (SDK 57):
 ## Architecture
 
 ```text
-Phone / tablet (WeatherTrip)
+Phone / tablet (Solviax)
    │  HTTPS
-   │  headers: X-WeatherTrip-Anon, X-WeatherTrip-Device,
-   │           X-WeatherTrip-Session (after login)
+   │  headers: X-Solviax-Anon, X-Solviax-Device,
+   │           X-Solviax-Session (after login)
    ▼
 https://weather.example.com   ← apps/web (Next.js)
    │
@@ -86,7 +86,7 @@ Ensure production web has at least:
 | Variable | Why mobile needs it |
 |---|---|
 | `NEXT_PUBLIC_APP_URL` / `AUTH_URL` | Canonical links, Auth.js |
-| `AUTH_SECRET` | Session JWT for `X-WeatherTrip-Session` |
+| `AUTH_SECRET` | Session JWT for `X-Solviax-Session` |
 | `EMAIL_MODE=resend` + `RESEND_*` | Mobile login OTP |
 | `MAPBOX_ACCESS_TOKEN` | Search / reverse / routes via API |
 | `DATABASE_URL` | Users, quota, share codes |
@@ -95,9 +95,9 @@ Ensure production web has at least:
 
 Mobile sends:
 
-- `X-WeatherTrip-Anon` — freemium quota cookie substitute  
-- `X-WeatherTrip-Device` — device id  
-- `X-WeatherTrip-Session` — Auth.js-compatible JWT after OTP (SecureStore on device)
+- `X-Solviax-Anon` — freemium quota cookie substitute  
+- `X-Solviax-Device` — device id  
+- `X-Solviax-Session` — Auth.js-compatible JWT after OTP (SecureStore on device)
 
 ---
 
@@ -165,7 +165,7 @@ Prefer storing `EXPO_PUBLIC_API_URL` as an **EAS environment variable** (project
 
 ### Monorepo note
 
-WeatherTrip is an **npm workspaces** repo. EAS must install from the **repository root** so `@weathertrip/i18n` resolves. After `eas build:configure`, confirm EAS detects the monorepo (Expo docs: [Monorepos](https://docs.expo.dev/guides/monorepos/)). Typical pattern:
+Solviax is an **npm workspaces** repo. EAS must install from the **repository root** so `@solviax/i18n` resolves. After `eas build:configure`, confirm EAS detects the monorepo (Expo docs: [Monorepos](https://docs.expo.dev/guides/monorepos/)). Typical pattern:
 
 - Run `eas` from `apps/mobile`
 - Set `"workingDirectories"` / Expo dashboard monorepo settings if prompted
@@ -175,11 +175,11 @@ WeatherTrip is an **npm workspaces** repo. EAS must install from the **repositor
 
 | Field | Current value | Action before store |
 |---|---|---|
-| `expo.name` | WeatherTrip | OK or rebrand |
-| `expo.slug` | weathertrip | Must match Expo project |
+| `expo.name` | Solviax | OK or rebrand |
+| `expo.slug` | solviax | Must match Expo project |
 | `expo.version` | `0.1.0` | Bump for each store release |
-| `ios.bundleIdentifier` | `com.weathertrip.app` | Unique; cannot change casually after first release |
-| `android.package` | `com.weathertrip.app` | Same |
+| `ios.bundleIdentifier` | `com.solviax.app` | Unique; cannot change casually after first release |
+| `android.package` | `com.solviax.app` | Same |
 | Location permission strings | EN + FI in `app.json` | Align with store privacy answers |
 
 Bump **`version`** (user-facing) and Android **`versionCode`** / iOS **build number** (EAS `autoIncrement` helps).
@@ -197,7 +197,7 @@ eas build --profile preview --platform android
 eas build --profile preview --platform ios
 ```
 
-Install via Expo dashboard QR / link. Confirm the app hits **production** (or staging) API: open Settings and check the API URL line, or watch server logs for `/api/discover` with `X-WeatherTrip-*` headers.
+Install via Expo dashboard QR / link. Confirm the app hits **production** (or staging) API: open Settings and check the API URL line, or watch server logs for `/api/discover` with `X-Solviax-*` headers.
 
 ### Store binaries
 
@@ -217,7 +217,7 @@ First iOS build will walk through Apple credentials (distribution cert, provisio
 
 ### Android (Google Play)
 
-1. Create the app in Play Console (`com.weathertrip.app`).
+1. Create the app in Play Console (`com.solviax.app`).
 2. Complete store listing, content rating, Data safety (location, approximate/precise).
 3. Upload a signing key — EAS can generate / manage Play App Signing.
 4. Submit:
@@ -231,7 +231,7 @@ Start with `track: "internal"` or `"alpha"`, then promote to production in Play 
 
 ### iOS (App Store / TestFlight)
 
-1. Create the app in App Store Connect (bundle id `com.weathertrip.app`).
+1. Create the app in App Store Connect (bundle id `com.solviax.app`).
 2. Privacy Nutrition Labels — location used for nearby destinations / origin.
 3. Submit:
 
@@ -306,7 +306,7 @@ eas build --platform all --profile production --auto-submit
 | Login works on web, not mobile | Mobile must call `/api/auth/*` with session header support (already implemented) — confirm API deploy includes those routes |
 | Search/reverse empty | Server `MAPBOX_ACCESS_TOKEN` or Nominatim blocked on VPS |
 | Store rejects location permission | Privacy form / purpose string mismatch |
-| Monorepo build can’t resolve `@weathertrip/i18n` | EAS working directory / install from repo root |
+| Monorepo build can’t resolve `@solviax/i18n` | EAS working directory / install from repo root |
 
 ---
 

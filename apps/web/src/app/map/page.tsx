@@ -18,6 +18,7 @@ import {
   gateDiscoverAccess,
   isActiveDiscoverQuery,
 } from "@/server/dal/discover-gate";
+import { resolveDiscoverLimits } from "@/server/dal/discover-limits";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +50,7 @@ export default async function MapPage({
       path: "/map",
     },
   });
+  const { tier } = await resolveDiscoverLimits();
 
   const result = gate.paywalled
     ? await discoverDestinations(
@@ -73,15 +75,15 @@ export default async function MapPage({
     datePreset: parsed.datePreset,
     startDate: parsed.startDate,
     endDate: parsed.endDate,
-    distance: parsed.distance,
-    radiusKm: parsed.radiusKm,
+    distance: result.distance,
+    radiusKm: result.radiusKm,
     weatherGoal: parsed.weatherGoal,
     mode: parsed.mode,
   };
   const filterDefaults = {
     origin: flat.origin ?? parsed.origin,
-    distance: parsed.distance,
-    radiusKm: parsed.radiusKm,
+    distance: result.distance,
+    radiusKm: result.radiusKm,
     weatherGoal: parsed.weatherGoal,
     lat: parsed.lat,
     lon: parsed.lon,
@@ -199,6 +201,7 @@ export default async function MapPage({
             <MapFloatingFilters
               defaults={filterDefaults}
               weatherGoal={parsed.weatherGoal}
+              tier={tier}
             />
           </Suspense>
           <div className="pointer-events-auto max-w-[45%] shrink-0 lg:max-w-none">

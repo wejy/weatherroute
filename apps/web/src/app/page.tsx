@@ -21,6 +21,7 @@ import {
   gateDiscoverAccess,
   isActiveDiscoverQuery,
 } from "@/server/dal/discover-gate";
+import { resolveDiscoverLimits } from "@/server/dal/discover-limits";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +43,7 @@ export default async function HomePage({
     consume: active,
     meta: { origin: parsed.origin, weatherGoal: parsed.weatherGoal, path: "/" },
   });
+  const { tier } = await resolveDiscoverLimits();
 
   const result = gate.paywalled
     ? await discoverDestinations(
@@ -106,7 +108,7 @@ export default async function HomePage({
         </div>
 
         <div className="relative z-20 mx-auto w-full max-w-[1280px] px-margin-mobile md:px-margin-desktop">
-          <section className="relative z-40 mt-8 mb-12 flex flex-col items-center text-center md:mt-12 md:mb-16">
+          <section className="relative z-40 mt-8 mb-12 flex flex-col items-center overflow-visible text-center md:mt-12 md:mb-16">
             <div className="mb-8 inline-block max-w-4xl rounded-[2rem] border border-outline-variant/30 bg-surface/95 p-8 shadow-lg backdrop-blur-xl">
               <h1 className="mb-4 text-4xl leading-tight font-bold tracking-tight text-on-surface md:text-5xl md:leading-[56px]">
                 {t("home.headline")}
@@ -126,10 +128,11 @@ export default async function HomePage({
             </div>
 
             <DiscoverSearch
+              tier={tier}
               defaults={{
                 origin: flat.origin ?? parsed.origin,
-                distance: parsed.distance,
-                radiusKm: parsed.radiusKm,
+                distance: result.distance,
+                radiusKm: result.radiusKm,
                 weatherGoal: parsed.weatherGoal,
                 lat: parsed.lat,
                 lon: parsed.lon,

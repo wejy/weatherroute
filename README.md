@@ -1,13 +1,13 @@
-# WeatherTrip
+# Solviax
 
 Map-based weather trip planner — **npm workspaces monorepo**.
 
 | Package | Path | Role |
 |---|---|---|
-| `@weathertrip/web` | `apps/web` | Next.js App Router web app + API |
-| `@weathertrip/mobile` | `apps/mobile` | Expo (React Native) mobile app |
-| `@weathertrip/i18n` | `packages/i18n` | Shared EN + FI dictionaries |
-| `@weathertrip/logger` | `packages/logger` | Shared Pino logger (web server + Expo) |
+| `@solviax/web` | `apps/web` | Next.js App Router web app + API |
+| `@solviax/mobile` | `apps/mobile` | Expo (React Native) mobile app |
+| `@solviax/i18n` | `packages/i18n` | Shared EN + FI dictionaries |
+| `@solviax/logger` | `packages/logger` | Shared Pino logger (web server + Expo) |
 
 ## Quick start
 
@@ -15,6 +15,11 @@ Map-based weather trip planner — **npm workspaces monorepo**.
 npm install
 cp apps/web/.env.example apps/web/.env.local
 cp apps/mobile/.env.example apps/mobile/.env
+
+# Postgres + schema + demo places (see Local database below)
+npm run db:up
+npm run db:migrate
+npm run db:seed
 
 # Terminal 1 — API + web UI
 npm run dev:web
@@ -25,7 +30,76 @@ npm run dev:mobile
 
 Web: [http://localhost:3000](http://localhost:3000).
 
+Confirm `DATABASE_URL` in `apps/web/.env.local` matches Docker defaults:
+
+`postgresql://solviax:solviax@localhost:5433/solviax`
+
 For a physical phone, set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to your machine’s LAN IP (e.g. `http://192.168.1.10:3000`).
+
+## Local database
+
+Docker Compose runs Postgres 16 on host port **5433** (user / password / db: `solviax`). Commands below are from the **repo root**.
+
+### Bring the DB up to date (typical after clone or `git pull`)
+
+1. Start (or restart) Postgres.
+2. Apply pending Drizzle migrations.
+3. Seed places (safe to re-run; upserts city index data).
+
+```bash
+npm run db:up
+npm run db:migrate
+npm run db:seed
+```
+
+Optional denser place catalog (Geonames download; slower):
+
+```bash
+npm run db:seed:geonames
+```
+
+Optional Pro demo user(s) only (also included in `db:seed`):
+
+```bash
+npm run db:seed:pro -w @solviax/web
+```
+
+Then start the app: `npm run dev:web`.
+
+### Command reference
+
+| Command | What it does |
+|---|---|
+| `npm run db:up` | `docker compose up -d` — start Postgres |
+| `npm run db:down` | Stop containers (keeps the `solviax_pgdata` volume) |
+| `npm run db:migrate` | Apply SQL migrations from `apps/web/drizzle/` |
+| `npm run db:seed` | Seed places (+ Pro demo users from city index / seed script) |
+| `npm run db:seed:geonames` | Import denser Geonames places (optional) |
+| `npm run db:generate` | After schema edits in `apps/web/src/db/schema*` — generate a new migration |
+| `npm run db:studio` | Open Drizzle Studio against `DATABASE_URL` |
+
+### Schema changes (you edited Drizzle schema)
+
+```bash
+npm run db:generate   # creates a new migration under apps/web/drizzle/
+npm run db:migrate    # apply it locally
+```
+
+Commit both the schema change and the generated migration files.
+
+### Fresh local DB (wipe volume)
+
+Needed after renaming DB credentials (e.g. WeatherTrip → Solviax) or if the volume is corrupt:
+
+```bash
+npm run db:down
+docker volume rm solviax_pgdata   # name from docker-compose.yml
+npm run db:up
+npm run db:migrate
+npm run db:seed
+```
+
+Production migrate/seed notes: [DEPLOYMENT.md](./DEPLOYMENT.md).
 
 ### Expo Go on Android (especially WSL2)
 
@@ -80,7 +154,7 @@ See [AGENTS.md](./AGENTS.md) and `.cursor/rules/dual-platform-i18n.mdc`:
 
 ## Production
 
-Full VPS guide (Node, Postgres, nginx/Caddy, env vars, systemd, Resend, Mapbox, Upstash): **[DEPLOYMENT.md](./DEPLOYMENT.md)**.
+Full VPS guide (Node, Postgres, nginx/Caddy, env vars, PM2, Resend, Mapbox, Upstash): **[DEPLOYMENT.md](./DEPLOYMENT.md)**.
 
 Expo / Play Store / TestFlight (EAS Build, `EXPO_PUBLIC_API_URL`, what not to put in the app): **[EXPO_DEPLOYMENT.md](./EXPO_DEPLOYMENT.md)**.
 
@@ -99,7 +173,7 @@ Quick env checklist before `NODE_ENV=production`:
 | `DATABASE_URL` | Postgres connection string |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` / `MAPBOX_ACCESS_TOKEN` | Mapbox `pk.` (+ optional `sk.` server-side) |
 
-Template: `apps/web/.env.example`. Product backlog: [TODO.md](./TODO.md).
+Template: `apps/web/.env.example`. Product backlog: [TODO.md](./TODO.md). Paid / Pro entitlements: [PAID_FEATURES.md](./PAID_FEATURES.md).
 
 ## Design
 

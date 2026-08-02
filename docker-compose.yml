@@ -2,21 +2,21 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: weathertrip-postgres
+    container_name: solviax-postgres
     restart: unless-stopped
     ports:
       - "5433:5432"
     environment:
-      POSTGRES_USER: weathertrip
-      POSTGRES_PASSWORD: weathertrip
-      POSTGRES_DB: weathertrip
+      POSTGRES_USER: solviax
+      POSTGRES_PASSWORD: solviax
+      POSTGRES_DB: solviax
     volumes:
-      - weathertrip_pgdata:/var/lib/postgresql/data
+      - solviax_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U weathertrip -d weathertrip"]
+      test: ["CMD-SHELL", "pg_isready -U solviax -d solviax"]
       interval: 5s
       timeout: 5s
       retries: 10
 
 volumes:
-  weathertrip_pgdata:
+  solviax_pgdata:
