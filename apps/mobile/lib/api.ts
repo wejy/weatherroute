@@ -49,6 +49,7 @@ export type PublicQuota = {
   remaining: number;
   allowed: boolean;
   kind?: "anon" | "free" | "pro_monthly" | "pro_one_time";
+  blockReason?: "session" | "ip";
 };
 
 export class ApiError extends Error {

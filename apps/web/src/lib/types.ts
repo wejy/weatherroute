@@ -115,7 +115,10 @@ export interface PeriodWeatherDto {
   tempMaxC: number;
   condition: WeatherCondition;
   conditionLabel: string;
+  /** Average of daily max precip % over the travel window. */
   rainProbability: number;
+  /** Highest daily max precip % in the travel window (peak day risk). */
+  peakRainProbability: number;
   /** Total expected precipitation over the window (mm), when available. */
   precipitationMm?: number;
   sunshineScore: number;
@@ -126,6 +129,8 @@ export interface WeatherDto {
   place: PlaceDto;
   provider: "open-meteo" | "yr.no" | "mock";
   fetchedAt: string;
+  /** IANA timezone from the forecast provider (e.g. Pacific/Honolulu). */
+  timezone?: string;
   current: CurrentWeatherDto;
   daily: DailyForecastDto[];
   /** Next ~48h when the provider supplies it (used for route dryness). */
@@ -282,6 +287,17 @@ export interface RouteDto {
   waypoints: RouteWaypointDto[];
   /** Road geometry as [lon, lat] pairs from Mapbox Directions (when available). */
   geometry?: [number, number][];
+  /**
+   * `routed` = Mapbox network path.
+   * `unreachable` = Directions returned NoRoute/NoSegment (no road/ferry for this mode).
+   * Omitted when Mapbox was unavailable / errored (legacy soft fallback).
+   */
+  routingStatus?: "routed" | "unreachable";
+  /**
+   * Peak daily max rain % at the destination over the selected travel window
+   * (same metric destinations use for window risk / advisories).
+   */
+  windowPeakRainProbability?: number;
   /** How this route was chosen. */
   prefer?: RoutePrefer;
   /** How many Mapbox alternatives were compared (incl. primary). */

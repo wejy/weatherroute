@@ -178,7 +178,11 @@ export default async function RoutesPage({
                   <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
                     straighten
                   </span>
-                  {formatDistanceKm(route.distanceKm, locale)}
+                  {route.routingStatus === "unreachable"
+                    ? t("routes.straightLineDistance", {
+                        distance: formatDistanceKm(route.distanceKm, locale),
+                      })
+                    : formatDistanceKm(route.distanceKm, locale)}
                 </span>
                 <span className="h-1 w-1 rounded-full bg-outline-variant" />
                 <span className="flex items-center gap-1">
@@ -189,6 +193,28 @@ export default async function RoutesPage({
                 </span>
               </div>
             </div>
+
+            {route.routingStatus === "unreachable" ? (
+              <div
+                className="rounded-xl border border-amber-500/35 bg-amber-400/10 p-4 text-left"
+                role="status"
+              >
+                <h2 className="flex items-center gap-2 text-sm font-semibold text-on-surface">
+                  <span
+                    className="material-symbols-outlined text-[20px] text-amber-700"
+                    aria-hidden="true"
+                  >
+                    warning
+                  </span>
+                  {t("routes.unreachableTitle")}
+                </h2>
+                <p className="mt-2 text-sm text-on-surface-variant">
+                  {mode === "cycling"
+                    ? t("routes.unreachableBodyCycling")
+                    : t("routes.unreachableBodyDriving")}
+                </p>
+              </div>
+            ) : null}
 
             <Suspense fallback={null}>
               <RouteEndpointsForm
@@ -412,6 +438,13 @@ export default async function RoutesPage({
                 <p className="mt-1 text-base text-on-surface-variant">
                   {route.departureHint}
                 </p>
+                {route.windowPeakRainProbability != null ? (
+                  <p className="mt-2 text-sm font-medium text-on-surface">
+                    {t("routes.windowPeakRain", {
+                      pct: route.windowPeakRainProbability,
+                    })}
+                  </p>
+                ) : null}
               </div>
             </div>
 
@@ -534,11 +567,17 @@ export default async function RoutesPage({
                   <div className="mt-2 rounded-lg bg-surface-container p-3">
                     <div className="mb-1 flex items-center justify-between">
                       <span className="text-sm font-medium text-on-surface-variant">
-                        {t("routes.rainProbability")}
+                        {wp.role === "destination"
+                          ? t("routes.arrivalRain", {
+                              pct: wp.rainProbability,
+                            })
+                          : t("routes.rainProbability")}
                       </span>
-                      <span className="text-[13px] font-semibold tracking-wider text-on-surface">
-                        {wp.rainProbability}%
-                      </span>
+                      {wp.role !== "destination" ? (
+                        <span className="text-[13px] font-semibold tracking-wider text-on-surface">
+                          {wp.rainProbability}%
+                        </span>
+                      ) : null}
                     </div>
                     <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-variant">
                       <div
@@ -556,6 +595,14 @@ export default async function RoutesPage({
                         style={{ width: `${wp.rainProbability}%` }}
                       />
                     </div>
+                    {wp.role === "destination" &&
+                    route.windowPeakRainProbability != null ? (
+                      <p className="mt-1.5 text-[13px] font-medium text-on-surface">
+                        {t("routes.windowPeakRain", {
+                          pct: route.windowPeakRainProbability,
+                        })}
+                      </p>
+                    ) : null}
                     <p className="mt-1.5 text-[13px] text-on-surface-variant">
                       {t("routes.rainAmount")}:{" "}
                       <span className="font-semibold text-on-surface">
@@ -609,10 +656,12 @@ export default async function RoutesPage({
             geometry={route.geometry}
             alternatives={route.alternatives}
             mapboxToken={mapboxToken}
+            routingStatus={route.routingStatus}
             className="absolute inset-0 h-full w-full"
           />
 
-          <div className="pointer-events-none absolute top-6 right-6 z-10 rounded-xl border border-outline-variant/20 bg-surface/95 p-4 shadow-[0px_10px_30px_rgba(0,0,0,0.08)] backdrop-blur-md">
+          {route.routingStatus !== "unreachable" ? (
+          <div className="pointer-events-none absolute top-2.5 right-14 z-10 rounded-xl border border-outline-variant/20 bg-surface/95 p-4 shadow-[0px_10px_30px_rgba(0,0,0,0.08)] backdrop-blur-md">
             <h2 className="mb-2 text-sm font-medium tracking-wider text-on-surface-variant uppercase">
               {t("routes.conditions")}
             </h2>
@@ -643,6 +692,7 @@ export default async function RoutesPage({
               </li>
             </ul>
           </div>
+          ) : null}
         </section>
       </main>
 

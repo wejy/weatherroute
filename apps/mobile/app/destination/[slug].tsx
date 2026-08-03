@@ -151,6 +151,7 @@ export default function DestinationScreen() {
             </View>
 
             <Text style={styles.section}>{t("destination.forecast")}</Text>
+            <Text style={styles.hint}>{t("destination.precipPeakNote")}</Text>
             {weather.daily.slice(0, 7).map((day) => (
               <View key={day.date} style={styles.dayRow}>
                 <Text style={styles.dayLabel}>{day.dayLabel}</Text>
@@ -167,6 +168,31 @@ export default function DestinationScreen() {
                 </Text>
               </View>
             ))}
+
+            {weather.hourly && weather.hourly.length > 0 ? (
+              <>
+                <Text style={styles.section}>
+                  {t("destination.precipHourly")}
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.hourlyRow}
+                >
+                  {weather.hourly.slice(0, 24).map((h) => {
+                    const hour = h.time.match(/T(\d{2})/)?.[1] ?? "--";
+                    return (
+                      <View key={h.time} style={styles.hourCard}>
+                        <Text style={styles.hourLabel}>{hour}:00</Text>
+                        <Text style={styles.hourRain}>
+                          {h.precipitationProbability}%
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </ScrollView>
+              </>
+            ) : null}
 
             <Text style={styles.section}>
               {t("destination.wikipediaTitle", { place: placeName })}
@@ -232,6 +258,34 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.onSurfaceVariant,
     textTransform: "uppercase",
+  },
+  hint: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.onSurfaceVariant,
+    marginTop: -4,
+  },
+  hourlyRow: { gap: 8, paddingVertical: 4 },
+  hourCard: {
+    width: 64,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceLowest,
+    paddingVertical: 10,
+    paddingHorizontal: 6,
+    alignItems: "center",
+    gap: 4,
+  },
+  hourLabel: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: colors.onSurfaceVariant,
+  },
+  hourRain: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: colors.secondary,
   },
   hero: {
     backgroundColor: colors.surfaceLowest,

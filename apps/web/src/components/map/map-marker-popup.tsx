@@ -100,6 +100,7 @@ export function MapMarkerPopup({
   const advisories = buildWeatherAdvisories(
     {
       rainProbability: marker.rainProbability ?? 0,
+      precipitationMm: marker.precipitationMm,
       condition: marker.condition,
       temperatureC: marker.tempMaxC ?? marker.temperatureC,
     },

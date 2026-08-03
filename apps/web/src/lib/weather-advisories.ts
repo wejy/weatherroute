@@ -8,12 +8,59 @@ export type AdvisoryInput = {
   condition: WeatherCondition;
   temperatureC?: number;
   windSpeedKmh?: number;
+  /**
+   * Expected precipitation amount (mm) for the same period as rainProbability
+   * (typically daily sum, or hourly amount for an ETA slot).
+   */
+  precipitationMm?: number | null;
   /** Place / day label for wet-day style copy (optional). */
   placeLabel?: string;
 };
 
+/** Daily (or period) rain intensity from expected mm. */
+export type RainIntensity = "light" | "moderate" | "heavy";
+
+/**
+ * Classify expected rainfall amount. Brief tropical showers often have high
+ * probability but only 1–2 mm — that is light, not “heavy rain”.
+ */
+export function rainIntensityFromMm(
+  mm: number | null | undefined,
+): RainIntensity | null {
+  if (mm == null || !Number.isFinite(mm)) return null;
+  if (mm < 2.5) return "light";
+  if (mm < 10) return "moderate";
+  return "heavy";
+}
+
 function isThunderLike(condition: WeatherCondition): boolean {
   return condition === "storm" || condition === "hail";
+}
+
+function rainDesc(
+  t: Tr,
+  pct: number,
+  mm: number | null | undefined,
+  placeLabel?: string,
+): string {
+  const hasMm = mm != null && Number.isFinite(mm);
+  if (placeLabel && hasMm) {
+    return t("advisory.rainDescPlaceMm", {
+      pct,
+      place: placeLabel,
+      mm: Math.round(mm * 10) / 10,
+    });
+  }
+  if (hasMm) {
+    return t("advisory.rainDescMm", {
+      pct,
+      mm: Math.round(mm * 10) / 10,
+    });
+  }
+  if (placeLabel) {
+    return t("advisory.rainDescPlace", { pct, place: placeLabel });
+  }
+  return t("advisory.rainDesc", { pct });
 }
 
 /**
@@ -30,6 +77,7 @@ export function buildWeatherAdvisories(
     condition,
     temperatureC,
     windSpeedKmh,
+    precipitationMm,
     placeLabel,
   } = input;
 
@@ -91,50 +139,55 @@ export function buildWeatherAdvisories(
     });
   }
 
-  if (rainProbability >= 50 && !isThunderLike(condition) && condition !== "freezing_rain") {
-    out.push({
-      id: "rain",
-      tone: "warning",
-      icon: "umbrella",
-      title: t("advisory.rainTitle"),
-      description: placeLabel
-        ? t("advisory.rainDescPlace", {
-            pct: rainProbability,
-            place: placeLabel,
-          })
-        : t("advisory.rainDesc", { pct: rainProbability }),
-    });
-  } else if (
-    rainProbability >= 30 &&
-    !isThunderLike(condition) &&
-    condition !== "rainy" &&
-    condition !== "freezing_rain"
-  ) {
-    out.push({
-      id: "rain-moderate",
-      tone: "caution",
-      icon: "water_drop",
-      title: t("advisory.rainCautionTitle"),
-      description: placeLabel
-        ? t("advisory.rainDescPlace", {
-            pct: rainProbability,
-            place: placeLabel,
-          })
-        : t("advisory.rainDesc", { pct: rainProbability }),
-    });
-  } else if (condition === "rainy" && rainProbability < 50) {
-    out.push({
-      id: "rain-condition",
-      tone: "caution",
-      icon: "water_drop",
-      title: t("advisory.rainCautionTitle"),
-      description: placeLabel
-        ? t("advisory.rainDescPlace", {
-            pct: Math.max(rainProbability, 30),
-            place: placeLabel,
-          })
-        : t("advisory.rainDesc", { pct: Math.max(rainProbability, 30) }),
-    });
+  const intensity = rainIntensityFromMm(precipitationMm);
+  const skipGenericRain =
+    isThunderLike(condition) || condition === "freezing_rain";
+
+  if (!skipGenericRain && rainProbability >= 30) {
+    // “Heavy rain” only when expected amount supports it (or storm already handled).
+    const isHeavy =
+      intensity === "heavy" ||
+      (intensity == null && condition === "rainy" && rainProbability >= 80);
+
+    if (isHeavy && rainProbability >= 50) {
+      out.push({
+        id: "rain",
+        tone: "warning",
+        icon: "umbrella",
+        title: t("advisory.rainTitle"),
+        description: rainDesc(t, rainProbability, precipitationMm, placeLabel),
+      });
+    } else if (intensity === "moderate" && rainProbability >= 50) {
+      out.push({
+        id: "rain-moderate",
+        tone: "caution",
+        icon: "water_drop",
+        title: t("advisory.rainModerateTitle"),
+        description: rainDesc(t, rainProbability, precipitationMm, placeLabel),
+      });
+    } else if (rainProbability >= 50 || condition === "rainy") {
+      // High chance of light amount, or rainy condition with low/unknown mm.
+      out.push({
+        id: "rain-light",
+        tone: "caution",
+        icon: "water_drop",
+        title: t("advisory.rainCautionTitle"),
+        description: rainDesc(
+          t,
+          Math.max(rainProbability, condition === "rainy" ? 30 : rainProbability),
+          precipitationMm,
+          placeLabel,
+        ),
+      });
+    } else {
+      out.push({
+        id: "rain-moderate",
+        tone: "caution",
+        icon: "water_drop",
+        title: t("advisory.rainCautionTitle"),
+        description: rainDesc(t, rainProbability, precipitationMm, placeLabel),
+      });
+    }
   }
 
   /**

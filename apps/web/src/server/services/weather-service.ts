@@ -30,7 +30,7 @@ import {
   findPlace,
 } from "@/server/integrations/mocks/data";
 import { placeholderImageFor } from "@/server/integrations/places/candidates";
-import { buildWeatherAdvisories } from "@/lib/weather-advisories";
+import { buildWeatherAdvisories, rainIntensityFromMm } from "@/lib/weather-advisories";
 import { weatherTone } from "@/lib/weather-tone";
 import { placesWithinRadius } from "@/server/dal/places";
 import { enrichDestinationImages, resolveDestinationImageUrl } from "@/server/services/place-images";
@@ -105,7 +105,7 @@ function sunshineFromDay(day: DailyForecastDto): number {
   );
 }
 
-function pickDaysForWindow(
+export function pickDaysForWindow(
   daily: DailyForecastDto[],
   startDate: string,
   endDate: string,
@@ -127,6 +127,49 @@ function pickDaysForWindow(
   return days;
 }
 
+/** Peak + average rain risk for a travel window (shared by destinations + routes). */
+export function windowRainRisk(
+  daily: DailyForecastDto[],
+  startDate: string,
+  endDate: string,
+): {
+  days: DailyForecastDto[];
+  avgRainProbability: number;
+  peakRainProbability: number;
+  peakDay: DailyForecastDto | null;
+  severeDay: DailyForecastDto | null;
+} {
+  const days = pickDaysForWindow(daily, startDate, endDate);
+  if (days.length === 0) {
+    return {
+      days,
+      avgRainProbability: 0,
+      peakRainProbability: 0,
+      peakDay: null,
+      severeDay: null,
+    };
+  }
+  const peakDay = [...days].sort(
+    (a, b) => b.precipitationProbability - a.precipitationProbability,
+  )[0]!;
+  const severeDay =
+    days.find(
+      (d) =>
+        d.condition === "hail" ||
+        d.condition === "storm" ||
+        d.condition === "freezing_rain",
+    ) ?? null;
+  return {
+    days,
+    avgRainProbability: Math.round(
+      days.reduce((s, d) => s + d.precipitationProbability, 0) / days.length,
+    ),
+    peakRainProbability: peakDay.precipitationProbability,
+    peakDay,
+    severeDay,
+  };
+}
+
 export function summarizePeriod(
   weather: WeatherDto,
   window: {
@@ -137,11 +180,12 @@ export function summarizePeriod(
     preset?: string;
   },
 ): PeriodWeatherDto {
-  const days = pickDaysForWindow(
+  const risk = windowRainRisk(
     weather.daily,
     window.startDate,
     window.endDate,
   );
+  const days = risk.days;
 
   if (days.length === 0) {
     return {
@@ -156,14 +200,12 @@ export function summarizePeriod(
       condition: weather.current.condition,
       conditionLabel: weather.current.conditionLabel,
       rainProbability: weather.current.precipitationProbability,
+      peakRainProbability: weather.current.precipitationProbability,
       sunshineScore: 50,
       cloudCover: weather.current.cloudCover,
     };
   }
 
-  const rainProbability = Math.round(
-    days.reduce((s, d) => s + d.precipitationProbability, 0) / days.length,
-  );
   const precipValues = days
     .map((d) => d.precipitationMm)
     .filter((v): v is number => v != null && Number.isFinite(v));
@@ -196,7 +238,8 @@ export function summarizePeriod(
     tempMaxC: Math.round(tempMaxC),
     condition: representative.condition,
     conditionLabel: representative.conditionLabel,
-    rainProbability,
+    rainProbability: risk.avgRainProbability,
+    peakRainProbability: risk.peakRainProbability,
     precipitationMm,
     sunshineScore,
     cloudCover,
@@ -492,9 +535,14 @@ export function buildSuitability(
   weather: WeatherDto,
   t?: (key: string, vars?: Record<string, string | number>) => string,
   locale: DateLocale = "en",
+  window?: { startDate: string; endDate: string } | null,
 ): SuitabilityBadgeDto[] {
   const badges: SuitabilityBadgeDto[] = [];
-  const { current, daily } = weather;
+  const { current } = weather;
+  const windowDays = window
+    ? pickDaysForWindow(weather.daily, window.startDate, window.endDate)
+    : weather.daily;
+  const daily = windowDays.length > 0 ? windowDays : weather.daily;
   const tr =
     t ??
     ((key: string, vars?: Record<string, string | number>) => {
@@ -627,18 +675,32 @@ export function buildSuitability(
   const wetDay = daily.find((d) => d.precipitationProbability >= 50);
   if (wetDay) {
     const day = weekdayShort(wetDay.date, locale);
+    const mm = wetDay.precipitationMm;
+    const intensity = rainIntensityFromMm(mm);
+    const wetDesc =
+      intensity === "heavy" && mm != null
+        ? tr("suitability.wetDescHeavy", {
+            pct: wetDay.precipitationProbability,
+            mm: Math.round(mm * 10) / 10,
+          })
+        : mm != null
+          ? tr("suitability.wetDescMm", {
+              pct: wetDay.precipitationProbability,
+              mm: Math.round(mm * 10) / 10,
+            })
+          : tr("suitability.wetDesc", {
+              pct: wetDay.precipitationProbability,
+            });
     badges.push({
       id: "umbrella",
-      tone: "warning",
+      tone: intensity === "heavy" ? "warning" : "info",
       icon: "umbrella",
       title: `${tr("suitability.wetTitle")} · ${day}`,
-      description: tr("suitability.wetDesc", {
-        pct: wetDay.precipitationProbability,
-      }),
+      description: wetDesc,
     });
   }
 
-  // Forecast-derived advisories (storm / snow / fog / wind / heat / cold).
+  // Forecast-derived advisories — scoped to the travel window when provided.
   const worstDaily = [...daily].sort(
     (a, b) => b.precipitationProbability - a.precipitationProbability,
   )[0];
@@ -660,6 +722,7 @@ export function buildSuitability(
       current.precipitationProbability,
       worstDaily?.precipitationProbability ?? 0,
     ),
+    precipitationMm: worstDaily?.precipitationMm,
     condition: currentSevere
       ? current.condition
       : (severeFromWindow?.condition ??
@@ -672,6 +735,7 @@ export function buildSuitability(
     // Avoid duplicating the wet-day umbrella badge for generic rain.
     if (a.id === "rain" && wetDay) continue;
     if (a.id === "rain-moderate" && wetDay) continue;
+    if (a.id === "rain-light" && wetDay) continue;
     if (a.id === "rain-condition" && wetDay) continue;
     badges.push({
       id: a.id,

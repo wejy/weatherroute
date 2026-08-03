@@ -17,6 +17,7 @@ import { USAGE_TYPES } from "@/server/dal/usage-types";
 interface OpenMeteoResponse {
   latitude: number;
   longitude: number;
+  timezone?: string;
   current?: {
     temperature_2m: number;
     apparent_temperature: number;
@@ -127,6 +128,7 @@ function toWeatherDto(
     },
     provider: "open-meteo",
     fetchedAt: new Date().toISOString(),
+    timezone: data.timezone,
     current: {
       temperatureC: current.temperature_2m,
       feelsLikeC: current.apparent_temperature,

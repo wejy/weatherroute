@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
 import {
   Area,
   AreaChart,
@@ -14,8 +14,9 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { DailyForecastDto } from "@/lib/types";
+import type { DailyForecastDto, HourlyForecastDto } from "@/lib/types";
 import { formatTemp } from "@/lib/utils";
+import { formatDateKeyForLocale } from "@/lib/dates";
 import {
   TEMP_SCALE_MAX_C,
   TEMP_SCALE_MIN_C,
@@ -28,7 +29,15 @@ import { translateCondition } from "@/i18n/translate";
 import type { Dictionary } from "@/i18n/dictionaries/en";
 import type { Translator } from "@/i18n/translate";
 
-type ChartDay = DailyForecastDto & { inPeriod: boolean };
+type ChartDay = DailyForecastDto & { inPeriod: boolean; selected: boolean };
+
+type HourlyPoint = {
+  time: string;
+  hourLabel: string;
+  precipitationProbability: number;
+  cloudCover: number;
+  precipitationMm?: number;
+};
 
 const COLORS = {
   secondary: "#006591",
@@ -44,22 +53,29 @@ function ChartTooltipShell({
   payload,
   label,
   tripWindowLabel,
+  dateLocale,
   children,
 }: {
   active?: boolean;
   payload?: Array<{ payload: ChartDay }>;
   label?: string;
   tripWindowLabel: string;
+  dateLocale: "en" | "fi";
   children: (day: ChartDay) => ReactNode;
 }) {
   if (!active || !payload?.length) return null;
   const day = payload[0]?.payload;
   if (!day) return null;
 
+  const datePart = day.date
+    ? formatDateKeyForLocale(day.date, dateLocale)
+    : label;
+
   return (
     <div className="rounded-xl border border-outline-variant/20 bg-surface/95 px-3.5 py-2.5 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] backdrop-blur-md">
       <p className="mb-1 text-xs font-medium tracking-wide text-on-surface-variant uppercase">
-        {label}
+        {day.dayLabel}
+        {datePart ? ` ${datePart}` : ""}
         {day.inPeriod ? ` · ${tripWindowLabel}` : ""}
       </p>
       {children(day)}
@@ -70,6 +86,7 @@ function ChartTooltipShell({
 function TemperatureTooltip({
   dict,
   tripWindowLabel,
+  dateLocale,
   ...props
 }: {
   active?: boolean;
@@ -77,9 +94,14 @@ function TemperatureTooltip({
   label?: string;
   dict: Dictionary;
   tripWindowLabel: string;
+  dateLocale: "en" | "fi";
 }) {
   return (
-    <ChartTooltipShell {...props} tripWindowLabel={tripWindowLabel}>
+    <ChartTooltipShell
+      {...props}
+      tripWindowLabel={tripWindowLabel}
+      dateLocale={dateLocale}
+    >
       {(day) => (
         <p className="text-sm font-semibold text-on-surface">
           <span style={{ color: temperatureColor(day.tempMaxC) }}>
@@ -101,6 +123,7 @@ function TemperatureTooltip({
 function PrecipTooltip({
   t,
   tripWindowLabel,
+  dateLocale,
   showMm,
   ...props
 }: {
@@ -109,13 +132,19 @@ function PrecipTooltip({
   label?: string;
   t: Translator;
   tripWindowLabel: string;
+  dateLocale: "en" | "fi";
   showMm: boolean;
 }) {
   return (
-    <ChartTooltipShell {...props} tripWindowLabel={tripWindowLabel}>
+    <ChartTooltipShell
+      {...props}
+      tripWindowLabel={tripWindowLabel}
+      dateLocale={dateLocale}
+    >
       {(day) => (
         <div className="space-y-0.5 text-sm">
           <p className="font-semibold text-on-surface">
+            {t("destination.precip")}:{" "}
             {t("destination.rainPct", { pct: day.precipitationProbability })}
           </p>
           {showMm && day.precipitationMm != null && (
@@ -175,24 +204,119 @@ function TempDot({
   );
 }
 
+function hourLabelFromTime(time: string): string {
+  const m = time.match(/T(\d{2})/);
+  return m ? `${m[1]}:00` : time.slice(11, 16) || time;
+}
+
+function hourlyForDate(
+  hourly: HourlyForecastDto[] | undefined,
+  date: string,
+): HourlyPoint[] {
+  if (!hourly?.length) return [];
+  return hourly
+    .filter((h) => h.time.startsWith(date))
+    .map((h) => ({
+      time: h.time,
+      hourLabel: hourLabelFromTime(h.time),
+      precipitationProbability: h.precipitationProbability,
+      cloudCover: h.cloudCover,
+      precipitationMm: h.precipitationMm,
+    }));
+}
+
+function defaultSelectedDate(
+  days: DailyForecastDto[],
+  periodStart: string,
+  periodEnd: string,
+  hourly: HourlyForecastDto[] | undefined,
+): string {
+  const covered = new Set(
+    (hourly ?? []).map((h) => h.time.slice(0, 10)).filter(Boolean),
+  );
+  const inPeriod = days.filter(
+    (d) => d.date >= periodStart && d.date <= periodEnd,
+  );
+  const pick =
+    inPeriod.find((d) => covered.has(d.date)) ??
+    days.find((d) => covered.has(d.date)) ??
+    inPeriod[0] ??
+    days[0];
+  return pick?.date ?? "";
+}
+
+function HourlyPrecipTooltip({
+  t,
+  ...props
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: HourlyPoint }>;
+  label?: string;
+  t: Translator;
+}) {
+  if (!props.active || !props.payload?.length) return null;
+  const hour = props.payload[0]?.payload;
+  if (!hour) return null;
+  return (
+    <div className="rounded-xl border border-outline-variant/20 bg-surface/95 px-3.5 py-2.5 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] backdrop-blur-md">
+      <p className="mb-1 text-xs font-medium tracking-wide text-on-surface-variant uppercase">
+        {hour.hourLabel}
+      </p>
+      <div className="space-y-0.5 text-sm">
+        <p className="font-semibold text-on-surface">
+          {t("destination.rainPct", { pct: hour.precipitationProbability })}
+        </p>
+        {hour.precipitationMm != null && (
+          <p className="font-semibold text-secondary">
+            {t("destination.rainMm", { mm: hour.precipitationMm })}
+          </p>
+        )}
+        <p className="text-on-surface-variant">
+          {t("destination.cloudsPct", { pct: hour.cloudCover })}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function ForecastCharts({
   days,
   periodStart,
   periodEnd,
   provider,
+  hourly,
 }: {
   days: DailyForecastDto[];
   periodStart: string;
   periodEnd: string;
   provider: string;
+  hourly?: HourlyForecastDto[];
 }) {
-  const { t, dict } = useI18n();
+  const { t, dict, locale } = useI18n();
+  const dateLocale = locale === "fi" ? "fi" : "en";
   const gid = useId().replace(/:/g, "");
   const tripWindowLabel = t("destination.tripWindow");
+
+  const [selectedDate, setSelectedDate] = useState(() =>
+    defaultSelectedDate(days, periodStart, periodEnd, hourly),
+  );
+
+  useEffect(() => {
+    setSelectedDate(defaultSelectedDate(days, periodStart, periodEnd, hourly));
+  }, [days, periodStart, periodEnd, hourly]);
+
   const data: ChartDay[] = days.map((day) => ({
     ...day,
     inPeriod: day.date >= periodStart && day.date <= periodEnd,
+    selected: day.date === selectedDate,
   }));
+
+  const hourlyPoints = useMemo(
+    () => hourlyForDate(hourly, selectedDate),
+    [hourly, selectedDate],
+  );
+  const selectedDay = days.find((d) => d.date === selectedDate);
+  const hasHourly = (hourly?.length ?? 0) > 0;
 
   const hasPrecipMm = data.some(
     (d) => d.precipitationMm != null && !Number.isNaN(d.precipitationMm),
@@ -211,6 +335,7 @@ export function ForecastCharts({
   const maxStrokeId = `tempMaxStroke-${gid}`;
   const maxFillId = `tempMaxFill-${gid}`;
   const minStrokeId = `tempMinStroke-${gid}`;
+  const hourlyFillId = `hourlyPrecipFill-${gid}`;
 
   return (
     <div className="space-y-8">
@@ -245,13 +370,7 @@ export function ForecastCharts({
               margin={{ top: 12, right: 8, left: -12, bottom: 0 }}
             >
               <defs>
-                <linearGradient
-                  id={maxStrokeId}
-                  x1="0"
-                  y1="0"
-                  x2="1"
-                  y2="0"
-                >
+                <linearGradient id={maxStrokeId} x1="0" y1="0" x2="1" y2="0">
                   {maxStops.map((s) => (
                     <stop
                       key={`max-s-${s.offset}`}
@@ -270,13 +389,7 @@ export function ForecastCharts({
                     />
                   ))}
                 </linearGradient>
-                <linearGradient
-                  id={minStrokeId}
-                  x1="0"
-                  y1="0"
-                  x2="1"
-                  y2="0"
-                >
+                <linearGradient id={minStrokeId} x1="0" y1="0" x2="1" y2="0">
                   {minStops.map((s) => (
                     <stop
                       key={`min-s-${s.offset}`}
@@ -315,6 +428,7 @@ export function ForecastCharts({
                   <TemperatureTooltip
                     dict={dict}
                     tripWindowLabel={tripWindowLabel}
+                    dateLocale={dateLocale}
                   />
                 }
                 cursor={{
@@ -361,7 +475,7 @@ export function ForecastCharts({
       </section>
 
       <section className="rounded-xl border border-surface-variant bg-surface-container-lowest p-6 shadow-[0px_4px_20px_rgba(0,0,0,0.05)]">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-semibold text-on-surface">
             {t("destination.chartsPrecip")}
           </h2>
@@ -382,6 +496,11 @@ export function ForecastCharts({
             )}
           </div>
         </div>
+        {hasHourly ? (
+          <p className="mb-4 text-sm text-on-surface-variant">
+            {t("destination.precipHint")}
+          </p>
+        ) : null}
 
         <div className="h-[280px] w-full">
           <ResponsiveContainer width="100%" height="100%">
@@ -395,6 +514,13 @@ export function ForecastCharts({
               }}
               barGap={4}
               barCategoryGap="22%"
+              onClick={(state) => {
+                const date = (
+                  state as { activePayload?: Array<{ payload?: ChartDay }> }
+                )?.activePayload?.[0]?.payload?.date;
+                if (typeof date === "string") setSelectedDate(date);
+              }}
+              style={{ cursor: hasHourly ? "pointer" : undefined }}
             >
               <defs>
                 <linearGradient id={`precipFill-${gid}`} x1="0" y1="0" x2="0" y2="1">
@@ -452,6 +578,7 @@ export function ForecastCharts({
                   <PrecipTooltip
                     t={t}
                     tripWindowLabel={tripWindowLabel}
+                    dateLocale={dateLocale}
                     showMm={hasPrecipMm}
                   />
                 }
@@ -471,7 +598,9 @@ export function ForecastCharts({
                   <Cell
                     key={`cloud-${day.date}`}
                     fill={COLORS.surfaceVariant}
-                    fillOpacity={day.inPeriod ? 0.95 : 0.35}
+                    fillOpacity={day.selected ? 1 : day.inPeriod ? 0.95 : 0.35}
+                    stroke={day.selected ? COLORS.secondary : "transparent"}
+                    strokeWidth={day.selected ? 2 : 0}
                   />
                 ))}
               </Bar>
@@ -489,11 +618,13 @@ export function ForecastCharts({
                   <Cell
                     key={`precip-${day.date}`}
                     fill={
-                      day.inPeriod
+                      day.inPeriod || day.selected
                         ? `url(#precipFill-${gid})`
                         : COLORS.secondaryBright
                     }
-                    fillOpacity={day.inPeriod ? 1 : 0.3}
+                    fillOpacity={day.selected ? 1 : day.inPeriod ? 1 : 0.3}
+                    stroke={day.selected ? COLORS.onSurface : "transparent"}
+                    strokeWidth={day.selected ? 2 : 0}
                   />
                 ))}
               </Bar>
@@ -525,11 +656,106 @@ export function ForecastCharts({
           </ResponsiveContainer>
         </div>
 
+        {hasHourly ? (
+          <div className="mt-6 border-t border-outline-variant/20 pt-5">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-base font-semibold text-on-surface">
+                {t("destination.hourlyForDay", {
+                  day: selectedDay
+                    ? `${selectedDay.dayLabel} ${formatDateKeyForLocale(selectedDay.date, dateLocale)}`
+                    : formatDateKeyForLocale(selectedDate, dateLocale),
+                })}
+              </h3>
+              <span className="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
+                <span className="h-0.5 w-4 rounded-full bg-secondary" />
+                {t("destination.precipHourly")}
+              </span>
+            </div>
+            {hourlyPoints.length > 0 ? (
+              <div className="h-[200px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={hourlyPoints}
+                    margin={{ top: 8, right: 8, left: -12, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient
+                        id={hourlyFillId}
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor={COLORS.secondaryBright}
+                          stopOpacity={0.45}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor={COLORS.secondary}
+                          stopOpacity={0.05}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      stroke={COLORS.grid}
+                      vertical={false}
+                      strokeDasharray="4 8"
+                    />
+                    <XAxis
+                      dataKey="hourLabel"
+                      interval="preserveStartEnd"
+                      minTickGap={28}
+                      tick={{
+                        fill: COLORS.onSurfaceVariant,
+                        fontSize: 11,
+                        fontWeight: 600,
+                      }}
+                      axisLine={false}
+                      tickLine={false}
+                      dy={6}
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      tick={{ fill: COLORS.onSurfaceVariant, fontSize: 12 }}
+                      axisLine={false}
+                      tickLine={false}
+                      tickFormatter={(v: number) => `${v}%`}
+                      width={40}
+                    />
+                    <Tooltip content={<HourlyPrecipTooltip t={t} />} />
+                    <Area
+                      type="monotone"
+                      dataKey="precipitationProbability"
+                      stroke={COLORS.secondary}
+                      strokeWidth={2.5}
+                      fill={`url(#${hourlyFillId})`}
+                      animationDuration={700}
+                      animationEasing="ease-out"
+                      activeDot={{
+                        r: 5,
+                        strokeWidth: 2,
+                        stroke: "#fff",
+                        fill: COLORS.secondary,
+                      }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="text-sm text-on-surface-variant">
+                {t("destination.hourlyEmpty")}
+              </p>
+            )}
+          </div>
+        ) : null}
+
         <p className="mt-3 text-xs text-on-surface-variant">
           {t("destination.source", {
             provider,
-            start: periodStart,
-            end: periodEnd,
+            start: formatDateKeyForLocale(periodStart, dateLocale),
+            end: formatDateKeyForLocale(periodEnd, dateLocale),
           })}
         </p>
       </section>

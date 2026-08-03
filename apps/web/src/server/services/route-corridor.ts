@@ -182,7 +182,10 @@ export function findBestDeparture(
     endDate?: string | null;
   },
 ): CorridorScore {
-  const timeZone = opts?.timeZone ?? "Europe/Helsinki";
+  const timeZone =
+    opts?.timeZone ??
+    samples[0]?.weather?.timezone ??
+    "UTC";
   const earliestHour =
     opts?.earliestHour != null &&
     Number.isInteger(opts.earliestHour) &&

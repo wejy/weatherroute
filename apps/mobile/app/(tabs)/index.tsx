@@ -80,12 +80,35 @@ export default function DiscoverScreen() {
   const [paywalled, setPaywalled] = useState(false);
   const [quota, setQuota] = useState<PublicQuota | null>(null);
   const [tier, setTier] = useState<DiscoverTier>("anon");
+  const [filtersDirty, setFiltersDirty] = useState(false);
+  const [showPendingBanner, setShowPendingBanner] = useState(false);
   const apiReady = Boolean(getApiBaseUrl());
   const isPro = tier === "pro";
 
   useEffect(() => {
     void fetchSession().then((s) => setTier(s.tier));
   }, []);
+
+  // Delay sticky “update results” notice; reset while the user is still editing.
+  useEffect(() => {
+    const ready = filtersDirty && Boolean(selectedPlace || originQuery.trim());
+    if (!ready) {
+      setShowPendingBanner(false);
+      return;
+    }
+    setShowPendingBanner(false);
+    const id = setTimeout(() => setShowPendingBanner(true), 7000);
+    return () => clearTimeout(id);
+  }, [
+    filtersDirty,
+    selectedPlace,
+    originQuery,
+    distance,
+    customRadiusKm,
+    dateWindow.preset,
+    dateWindow.startDate,
+    dateWindow.endDate,
+  ]);
 
   useEffect(() => {
     void loadLastDiscoverCached().then((cached) => {
@@ -153,6 +176,7 @@ export default function DiscoverScreen() {
         setResult(data);
         setQuota(null);
         setShowingCached(false);
+        setFiltersDirty(false);
         void saveLastDiscover(data);
         log.info(
           {
@@ -284,7 +308,7 @@ export default function DiscoverScreen() {
     setCoarseHint(false);
     setSelectedPlace(place);
     setOriginQuery(place.placeName);
-    void runDiscover(place, goal);
+    setFiltersDirty(true);
   }
 
   function onSearch() {
@@ -306,7 +330,9 @@ export default function DiscoverScreen() {
             setError(t("search.placeNotFound"));
             return;
           }
-          selectPlace(first);
+          setSelectedPlace(first);
+          setOriginQuery(first.placeName);
+          void runDiscover(first, goal);
         } catch {
           setError(t("search.placeNotFound"));
         }
@@ -368,10 +394,12 @@ export default function DiscoverScreen() {
           onChange={(v) => {
             setOriginQuery(v);
             setCoarseHint(false);
+            setFiltersDirty(true);
           }}
           onPlaceSelect={(place) => {
             if (!place) {
               setSelectedPlace(null);
+              setFiltersDirty(true);
               return;
             }
             selectPlace(place);
@@ -432,10 +460,8 @@ export default function DiscoverScreen() {
                     locale,
                   });
                   setDateWindow(next);
-                  if (selectedPlace && preset !== "custom") {
-                    void runDiscover(selectedPlace, goal, {
-                      dateWindow: next,
-                    });
+                  if (preset !== "custom") {
+                    setFiltersDirty(true);
                   }
                 }}
                 style={[styles.chip, active && styles.chipActive]}
@@ -492,11 +518,7 @@ export default function DiscoverScreen() {
                     locale,
                   });
                   setDateWindow(next);
-                  if (selectedPlace) {
-                    void runDiscover(selectedPlace, goal, {
-                      dateWindow: next,
-                    });
-                  }
+                  setFiltersDirty(true);
                 }}
                 placeholder={t("mobile.isoDatePlaceholder")}
                 placeholderTextColor={colors.outline}
@@ -550,11 +572,7 @@ export default function DiscoverScreen() {
                     locale,
                   });
                   setDateWindow(next);
-                  if (selectedPlace) {
-                    void runDiscover(selectedPlace, goal, {
-                      dateWindow: next,
-                    });
-                  }
+                  setFiltersDirty(true);
                 }}
                 placeholder={t("mobile.isoDatePlaceholder")}
                 placeholderTextColor={colors.outline}
@@ -583,9 +601,7 @@ export default function DiscoverScreen() {
                 onPress={() => {
                   if (locked) return;
                   setDistance(key);
-                  if (selectedPlace) {
-                    void runDiscover(selectedPlace, goal, { distance: key });
-                  }
+                  setFiltersDirty(true);
                 }}
                 style={[
                   styles.chip,
@@ -631,14 +647,10 @@ export default function DiscoverScreen() {
                   Math.max(CUSTOM_RADIUS_MIN_KM, n),
                 );
                 setCustomRadiusKm(clamped);
+                setFiltersDirty(true);
               }}
               onEndEditing={() => {
-                if (selectedPlace) {
-                  void runDiscover(selectedPlace, goal, {
-                    distance: "custom",
-                    radiusKm: customRadiusKm,
-                  });
-                }
+                setFiltersDirty(true);
               }}
               style={styles.radiusInput}
               accessibilityLabel={t("search.customRadius")}
@@ -656,6 +668,7 @@ export default function DiscoverScreen() {
                 key={g}
                 onPress={() => {
                   setGoal(g);
+                  // Goal chips apply immediately (and use current pending distance/dates).
                   if (selectedPlace) void runDiscover(selectedPlace, g);
                 }}
                 accessibilityState={{ selected: active }}
@@ -677,6 +690,7 @@ export default function DiscoverScreen() {
           style={[
             styles.searchBtn,
             (loading || locating || !apiReady) && styles.disabled,
+            filtersDirty && styles.searchBtnDirty,
           ]}
         >
           {loading ? (
@@ -684,11 +698,28 @@ export default function DiscoverScreen() {
           ) : (
             <>
               <FontAwesome name="search" size={16} color={colors.onAccent} />
-              <Text style={styles.searchBtnText}>{t("search.search")}</Text>
+              <Text style={styles.searchBtnText}>
+                {filtersDirty ? t("search.updateResults") : t("search.search")}
+              </Text>
             </>
           )}
         </Pressable>
       </View>
+
+      {showPendingBanner ? (
+        <View style={styles.pendingBanner} accessibilityRole="text">
+          <Text style={styles.pendingText}>{t("search.pendingUpdate")}</Text>
+          <Pressable
+            onPress={onSearch}
+            disabled={loading || !apiReady}
+            style={styles.pendingBtn}
+          >
+            <Text style={styles.pendingBtnText}>
+              {loading ? t("search.searching") : t("search.updateResults")}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {coarseHint && !error && (
         <Text style={styles.status}>{t("location.coarseHint")}</Text>
@@ -972,9 +1003,41 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
   },
+  searchBtnDirty: {
+    borderWidth: 2,
+    borderColor: colors.primary,
+  },
   searchBtnText: {
     color: colors.onAccent,
     fontSize: 16,
+    fontWeight: "700",
+  },
+  pendingBanner: {
+    marginTop: 12,
+    marginBottom: 4,
+    padding: 14,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.primary + "40",
+    backgroundColor: colors.surfaceContainerLowest,
+    gap: 10,
+  },
+  pendingText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.onSurface,
+    lineHeight: 20,
+  },
+  pendingBtn: {
+    alignSelf: "flex-start",
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  pendingBtnText: {
+    color: colors.onPrimary,
+    fontSize: 14,
     fontWeight: "700",
   },
   disabled: { opacity: 0.55 },

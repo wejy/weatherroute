@@ -196,7 +196,7 @@ export default async function MapPage({
         />
 
         {/* Map chrome: filters + origin (one instance for mobile + desktop) */}
-        <div className="pointer-events-none absolute inset-x-0 top-14 z-20 flex items-start justify-between gap-2 px-3 pt-3 lg:top-0 lg:right-4 lg:left-[25rem] lg:pt-4">
+        <div className="pointer-events-none absolute inset-x-0 top-14 z-20 flex items-start justify-between gap-2 px-3 pt-3 lg:top-0 lg:right-14 lg:left-[25rem] lg:pt-2.5">
           <Suspense fallback={null}>
             <MapFloatingFilters
               defaults={filterDefaults}

@@ -22,12 +22,15 @@ function MockRouteMap({
   to,
   waypoints,
   className,
+  routingStatus,
 }: {
   from: PlaceDto;
   to: PlaceDto;
   waypoints: RouteWaypointDto[];
   className?: string;
+  routingStatus?: "routed" | "unreachable";
 }) {
+  const unreachable = routingStatus === "unreachable";
   return (
     <div
       className={cn(
@@ -58,13 +61,15 @@ function MockRouteMap({
             </linearGradient>
           </defs>
           <circle cx="150" cy="350" r="6" fill="#14b863" />
-          <path
-            d="M150,350 Q130,250 100,200 T50,50"
-            fill="none"
-            stroke="url(#route-gradient)"
-            strokeWidth="4"
-            strokeLinecap="round"
-          />
+          {!unreachable ? (
+            <path
+              d="M150,350 Q130,250 100,200 T50,50"
+              fill="none"
+              stroke="url(#route-gradient)"
+              strokeWidth="4"
+              strokeLinecap="round"
+            />
+          ) : null}
           <circle cx="50" cy="50" r="6" fill="#38bdf8" />
         </svg>
       </div>
@@ -105,6 +110,7 @@ export function RouteMap({
   alternatives,
   mapboxToken,
   className,
+  routingStatus,
 }: {
   from: PlaceDto;
   to: PlaceDto;
@@ -113,6 +119,7 @@ export function RouteMap({
   alternatives?: RouteAlternativeDto[];
   mapboxToken?: string;
   className?: string;
+  routingStatus?: "routed" | "unreachable";
 }) {
   const token = mapboxToken?.trim() || "";
   if (token.startsWith("pk.")) {
@@ -125,6 +132,7 @@ export function RouteMap({
         alternatives={alternatives}
         token={token}
         className={className}
+        routingStatus={routingStatus}
       />
     );
   }
@@ -135,6 +143,7 @@ export function RouteMap({
       to={to}
       waypoints={waypoints}
       className={className}
+      routingStatus={routingStatus}
     />
   );
 }

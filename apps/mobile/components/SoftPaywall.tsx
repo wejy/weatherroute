@@ -28,6 +28,7 @@ export function SoftPaywall({
   const isFreeTier = quota?.kind === "free";
   const isProMonthlyCap = quota?.kind === "pro_monthly";
   const isProOneTimeCap = quota?.kind === "pro_one_time";
+  const isNetworkCap = quota?.blockReason === "ip";
   const [shareBusy, setShareBusy] = useState(false);
   const [redeemToken, setRedeemToken] = useState("");
   const [redeemBusy, setRedeemBusy] = useState(false);
@@ -93,26 +94,30 @@ export function SoftPaywall({
         style={styles.icon}
       />
       <Text style={styles.title}>
-        {isFreeTier
-          ? t("paywall.titleFree")
-          : isProMonthlyCap
-            ? t("paywall.titleProMonthly")
-            : isProOneTimeCap
-              ? t("paywall.titleProOneTime")
-              : t("paywall.title")}
+        {isNetworkCap
+          ? t("paywall.titleNetwork")
+          : isFreeTier
+            ? t("paywall.titleFree")
+            : isProMonthlyCap
+              ? t("paywall.titleProMonthly")
+              : isProOneTimeCap
+                ? t("paywall.titleProOneTime")
+                : t("paywall.title")}
       </Text>
       <Text style={styles.body}>
-        {isFreeTier
-          ? t("paywall.bodyFree")
-          : isProMonthlyCap
-            ? t("paywall.bodyProMonthly")
-            : isProOneTimeCap
-              ? t("paywall.bodyProOneTime")
-              : t("paywall.body")}
+        {isNetworkCap
+          ? t("paywall.bodyNetwork")
+          : isFreeTier
+            ? t("paywall.bodyFree")
+            : isProMonthlyCap
+              ? t("paywall.bodyProMonthly")
+              : isProOneTimeCap
+                ? t("paywall.bodyProOneTime")
+                : t("paywall.body")}
       </Text>
       {quota ? (
         <Text style={styles.quota}>
-          {t("paywall.quotaUsed", {
+          {t(isNetworkCap ? "paywall.quotaUsedNetwork" : "paywall.quotaUsed", {
             used: String(quota.searchesUsed),
             limit: String(quota.limit),
           })}

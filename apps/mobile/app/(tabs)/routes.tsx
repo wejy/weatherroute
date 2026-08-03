@@ -479,6 +479,19 @@ export default function RoutesScreen() {
 
       {route && (
         <View style={styles.results}>
+          {route.routingStatus === "unreachable" ? (
+            <View style={styles.unreachable} accessibilityRole="summary">
+              <Text style={styles.unreachableTitle}>
+                {t("routes.unreachableTitle")}
+              </Text>
+              <Text style={styles.unreachableBody}>
+                {mode === "cycling"
+                  ? t("routes.unreachableBodyCycling")
+                  : t("routes.unreachableBodyDriving")}
+              </Text>
+            </View>
+          ) : null}
+
           <View style={styles.summary}>
             <View style={styles.dryBadge}>
               <Text style={styles.dryValue}>{route.dryTripGuarantee}</Text>
@@ -487,7 +500,13 @@ export default function RoutesScreen() {
             <View style={styles.summaryBody}>
               <Text style={styles.summaryTitle}>{route.title}</Text>
               <Text style={styles.summaryMeta}>
-                {route.durationLabel} · {formatDistanceKm(route.distanceKm, locale)}
+                {route.routingStatus === "unreachable"
+                  ? t("routes.straightLineDistance", {
+                      distance: formatDistanceKm(route.distanceKm, locale),
+                    })
+                  : formatDistanceKm(route.distanceKm, locale)}
+                {" · "}
+                {route.durationLabel}
               </Text>
               <Text style={styles.summaryLabel}>{t("routes.dryTrip")}</Text>
             </View>
@@ -498,6 +517,13 @@ export default function RoutesScreen() {
             <Text style={styles.cardValue}>{route.bestDeparture}</Text>
             {route.departureHint ? (
               <Text style={styles.cardHint}>{route.departureHint}</Text>
+            ) : null}
+            {route.windowPeakRainProbability != null ? (
+              <Text style={styles.cardHint}>
+                {t("routes.windowPeakRain", {
+                  pct: route.windowPeakRainProbability,
+                })}
+              </Text>
             ) : null}
           </View>
 
@@ -563,7 +589,15 @@ export default function RoutesScreen() {
                 <Text style={styles.waypointMeta}>
                   {Math.round(wp.temperatureC)}°C ·{" "}
                   {translateCondition(wp.condition)} ·{" "}
-                  {t("routes.rainProbability")} {wp.rainProbability}%
+                  {wp.role === "destination"
+                    ? t("routes.arrivalRain", { pct: wp.rainProbability })
+                    : `${t("routes.rainProbability")} ${wp.rainProbability}%`}
+                  {wp.role === "destination" &&
+                  route.windowPeakRainProbability != null
+                    ? ` · ${t("routes.windowPeakRain", {
+                        pct: route.windowPeakRainProbability,
+                      })}`
+                    : ""}
                   {wp.precipitationMm != null
                     ? ` · ${t("routes.rainAmountValue", { mm: wp.precipitationMm })}`
                     : ""}
@@ -735,6 +769,24 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.55 },
   error: { color: colors.error, fontWeight: "600" },
   results: { gap: 12 },
+  unreachable: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "rgba(217, 119, 6, 0.35)",
+    backgroundColor: "rgba(251, 191, 36, 0.12)",
+    padding: 14,
+    gap: 6,
+  },
+  unreachableTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.onSurface,
+  },
+  unreachableBody: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.onSurfaceVariant,
+  },
   summary: {
     flexDirection: "row",
     gap: 14,

@@ -64,6 +64,9 @@ const fi = {
     weatherGoal: "Säätavoite",
     search: "Hae kohteita",
     searching: "Haetaan…",
+    updateResults: "Päivitä tulokset",
+    pendingUpdate:
+      "Suodattimia muutettu — päivitä haku nähdäksesi uudet kohteet (käyttää Discover-haun).",
     chooseOrigin: "Valitse ensin lähtöpaikka.",
     placeNotFound: "Paikkaa ei löytynyt. Valitse ehdotuksista.",
     distances: {
@@ -137,12 +140,21 @@ const fi = {
     feelsLike: "Tuntuu {temp} °C",
     nowPrefix: "Nyt:",
     sunScore: "aurinkopisteet {score}",
+    peakRain: "huippusaderiski {pct} %",
+    avgRain: "keskim. {pct} %",
     chartsTemp: "Ennuste · Lämpötila",
     chartsPrecip: "Ennuste · Sade ja pilvisyys",
     high: "Ylin",
     low: "Alin",
     tempScale: "−40…+50 °C",
-    precip: "Todennäk.",
+    precip: "Huippu todennäköisyys",
+    precipHourly: "Tuntikohtainen",
+    precipPeakNote:
+      "Päivän sade-% on päivän korkein riski — se vaihtelee usein tunneittain.",
+    precipHint:
+      "Päiväpalkit näyttävät päivän korkeimman saderiskin — napauta päivää nähdäksesi vaihtelun tunneittain.",
+    hourlyForDay: "Tunnittain · {day}",
+    hourlyEmpty: "Tuntiennustetta ei ole vielä tälle päivälle.",
     precipMm: "Sade mm",
     clouds: "Pilvet",
     rainPct: "Sade {pct} %",
@@ -233,6 +245,19 @@ const fi = {
     alternativeAvgRain: "Keskim. sateen todennäköisyys {pct} %",
     minutesLonger: "+{m} min nopeimpaan verrattuna",
     sameDuration: "Kesto lähellä nopeinta vaihtoehtoa",
+    unreachableTitle: "Navigoitavaa reittiä ei löytynyt",
+    unreachableBodyDriving:
+      "Näiden paikkojen välillä ei löytynyt tie- tai lauttayhteyttä autolla. Kartalla näkyvät vain päätepisteet säätä varten — tämä ei todennäköisesti ole ajettava reitti.",
+    unreachableBodyCycling:
+      "Näiden paikkojen välillä ei löytynyt pyörä- tai lauttayhteyttä. Kartalla näkyvät vain päätepisteet säätä varten — tämä ei todennäköisesti ole pyöräiltävä reitti.",
+    durationUnavailable: "Matka-aikaa ei saatavilla",
+    straightLineDistance: "Lintuperspektiivi {distance}",
+    windowPeakRain: "Kohteen huippusaderiski {pct} % (valitut päivät)",
+    arrivalRain: "Saapumisella (paras lähtö): {pct} %",
+    unreachableDepartureHint:
+      "Sää päätepisteissä noin {time}. {mode}-reittiä ei ole, joten käytävää ei voida ajoittaa.",
+    modeDriving: "auto",
+    modeCycling: "pyörä",
     departureHintWeatherRoute:
       "Lähde noin {time} tällä reitillä {from} → {to} ({extra}). Suurin saderiski lähellä: {place} ({rain} %).",
     pickBoth: "Valitse sekä lähtö että kohde ehdotuksista.",
@@ -634,9 +659,12 @@ const fi = {
   paywall: {
     title: "Ilmaiset haut käytetty",
     titleFree: "Kuukauden haut käytetty",
+    titleNetwork: "Verkon päiväraja täynnä",
     body: "Kirjaudu sähköpostilla 50 hakuun kuukaudessa, tai jaa Solviax.app saadaksesi yhden lisähaun.",
     bodyFree:
       "Olet käyttänyt 50 hakua tältä kalenterikuukaudelta. Päivitä Prohon satoihin Löydä-hakuihin.",
+    bodyNetwork:
+      "Tästä verkosta on tehty jo päivän maksimimäärä anonyymejä hakuja. Kirjaudu sisään jatkaaksesi (50 hakua / kk) tai yritä huomenna uudelleen.",
     titleProMonthly: "Jatkuva-Pro:n kuukauden haut käytetty",
     bodyProMonthly:
       "Olet käyttänyt tämän kuukauden Pro-hakuvarauksen. Kiintiö nollautuu seuraavan kalenterikuukauden alussa.",
@@ -645,6 +673,7 @@ const fi = {
       "Olet käyttänyt tämän 90 päivän Pro-jakson Löydä-hakuvarauksen. Tilaa Jatkuva jatkuviin hakuihin, tai osta Kerta uudelleen jakson päätyttyä.",
     upgradePro: "Katso Pro-tilaukset",
     quotaUsed: "Käytetty {used}/{limit} ilmaista hakua",
+    quotaUsedNetwork: "Käytetty {used}/{limit} hakua tältä verkolta tänään",
     remaining: "{remaining}/{limit} ilmaista hakua jäljellä",
     signIn: "Kirjaudu sähköpostilla",
     shareForCredit: "Jaa ja saa +1 haku",
@@ -690,9 +719,11 @@ const fi = {
     cycleTitle: "Hyvä pyöräilyyn",
     cycleDesc: "Kuivat tiet, maltillinen tuuli ja mukava lämpötila.",
     swimTitle: "Uintikeli",
-    swimDesc: "Tarpeeksi lämmintä dippiin, jos vettä on lähellä.",
+    swimDesc: "Tarpeeksi lämmintä pulahdukseen, jos vettä on lähellä.",
     wetTitle: "Ota sadetakki mukaan",
-    wetDesc: "{pct} % riski rankkasateelle.",
+    wetDesc: "{pct} % sateen riski.",
+    wetDescMm: "{pct} % sateen riski · noin {mm} mm odotettavissa.",
+    wetDescHeavy: "{pct} % riski rankkasateelle · noin {mm} mm odotettavissa.",
   },
   advisory: {
     stormTitle: "Ukkonen",
@@ -716,9 +747,13 @@ const fi = {
     fogDesc: "Heikentynyt näkyvyys — aja varovasti.",
     fogDescPlace: "Sumua todennäköisesti lähellä: {place}.",
     rainTitle: "Rankkasade todennäköinen",
+    rainModerateTitle: "Sade todennäköinen",
     rainCautionTitle: "Sadekuuroja mahdollisia",
     rainDesc: "{pct} % sateen todennäköisyys.",
+    rainDescMm: "{pct} % sateen todennäköisyys · noin {mm} mm odotettavissa.",
     rainDescPlace: "{pct} % sateen todennäköisyys lähellä: {place}.",
+    rainDescPlaceMm:
+      "{pct} % sateen todennäköisyys lähellä: {place} · noin {mm} mm.",
     windTitle: "Kova tuuli",
     windCautionTitle: "Tuulista",
     windDesc: "Tuuli noin {speed} km/h.",

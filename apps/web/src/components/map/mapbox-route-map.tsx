@@ -24,7 +24,9 @@ function lineCoordinates(
   to: PlaceDto,
   waypoints: RouteWaypointDto[],
   geometry?: [number, number][],
+  opts?: { drawRouteLine?: boolean },
 ): [number, number][] {
+  if (opts?.drawRouteLine === false) return [];
   if (geometry && geometry.length >= 2) return geometry;
   if (waypoints.length >= 2) {
     return waypoints.map((w) => [w.lon, w.lat]);
@@ -179,6 +181,7 @@ export function MapboxRouteMap({
   alternatives,
   token,
   className,
+  routingStatus,
 }: {
   from: PlaceDto;
   to: PlaceDto;
@@ -187,6 +190,8 @@ export function MapboxRouteMap({
   alternatives?: RouteAlternativeDto[];
   token: string;
   className?: string;
+  /** When unreachable, do not draw a fake straight-line “route”. */
+  routingStatus?: "routed" | "unreachable";
 }) {
   const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -197,9 +202,12 @@ export function MapboxRouteMap({
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
 
-  const geometryKey = geometry?.length
-    ? `${geometry.length}:${geometry[0]?.join(",")}:${geometry[geometry.length - 1]?.join(",")}`
-    : "straight";
+  const drawRouteLine = routingStatus !== "unreachable";
+  const geometryKey = !drawRouteLine
+    ? "unreachable"
+    : geometry?.length
+      ? `${geometry.length}:${geometry[0]?.join(",")}:${geometry[geometry.length - 1]?.join(",")}`
+      : "straight";
   const altKey = (alternatives ?? [])
     .map((a) => `${a.index}:${a.selected}:${a.geometry.length}`)
     .join("|");
@@ -213,7 +221,9 @@ export function MapboxRouteMap({
     mapboxgl.accessToken = token;
     setSelectedIdx(null);
 
-    const coords = lineCoordinates(from, to, waypointsRef.current, geometry);
+    const coords = lineCoordinates(from, to, waypointsRef.current, geometry, {
+      drawRouteLine,
+    });
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
@@ -232,7 +242,7 @@ export function MapboxRouteMap({
     map.on("load", () => {
       map.addSource("route-alts", {
         type: "geojson",
-        data: alternativesGeoJSON(alternatives),
+        data: alternativesGeoJSON(drawRouteLine ? alternatives : undefined),
       });
       map.addLayer({
         id: "route-alts-casing",
@@ -267,7 +277,10 @@ export function MapboxRouteMap({
 
       map.addSource("route-segments", {
         type: "geojson",
-        data: coloredSegmentsGeoJSON(coords, waypointsRef.current),
+        data:
+          coords.length >= 2
+            ? coloredSegmentsGeoJSON(coords, waypointsRef.current)
+            : { type: "FeatureCollection", features: [] },
       });
       map.addLayer({
         id: "route-line-casing",
@@ -299,9 +312,16 @@ export function MapboxRouteMap({
       });
 
       const bounds = new mapboxgl.LngLatBounds();
+      bounds.extend([from.lon, from.lat]);
+      bounds.extend([to.lon, to.lat]);
       for (const c of coords) bounds.extend(c);
-      for (const a of alternatives ?? []) {
-        for (const c of a.geometry) bounds.extend(c);
+      for (const wp of waypointsRef.current) {
+        bounds.extend([wp.lon, wp.lat]);
+      }
+      if (drawRouteLine) {
+        for (const a of alternatives ?? []) {
+          for (const c of a.geometry) bounds.extend(c);
+        }
       }
       map.fitBounds(bounds, { padding: 72, maxZoom: 10, duration: 0 });
     });
@@ -325,6 +345,7 @@ export function MapboxRouteMap({
     to.lon,
     geometryKey,
     altKey,
+    drawRouteLine,
   ]);
 
   // Sync weather markers + segment colors when waypoints / selection change.
@@ -353,20 +374,28 @@ export function MapboxRouteMap({
         | mapboxgl.GeoJSONSource
         | undefined;
       if (src) {
-        const coords = lineCoordinates(from, to, waypoints, geometry);
-        src.setData(coloredSegmentsGeoJSON(coords, waypoints));
+        const coords = lineCoordinates(from, to, waypoints, geometry, {
+          drawRouteLine,
+        });
+        src.setData(
+          coords.length >= 2
+            ? coloredSegmentsGeoJSON(coords, waypoints)
+            : { type: "FeatureCollection", features: [] },
+        );
       }
       const altSrc = map.getSource("route-alts") as
         | mapboxgl.GeoJSONSource
         | undefined;
       if (altSrc) {
-        altSrc.setData(alternativesGeoJSON(alternatives));
+        altSrc.setData(
+          alternativesGeoJSON(drawRouteLine ? alternatives : undefined),
+        );
       }
     };
 
     if (map.isStyleLoaded()) sync();
     else map.once("load", sync);
-  }, [waypoints, selectedIdx, from, to, geometry, alternatives]);
+  }, [waypoints, selectedIdx, from, to, geometry, alternatives, drawRouteLine]);
 
   useEffect(() => {
     const map = mapRef.current;

@@ -63,14 +63,20 @@ export function LocationOriginField({
       };
       if (!data.place?.lat || !data.place?.lon) throw new Error("no place");
 
-      onChange(data.place.placeName);
-      onPlaceSelect(data.place);
+      // Parent owns commit via onGeolocated (sets origin + URL navigate).
+      // Avoid onChange/onPlaceSelect here — they would mark filters dirty / geoSynced
+      // and skip or undo the auto-search.
+      if (onGeolocated) {
+        onGeolocated(data.place, {
+          mode: "coarse",
+          suggestedDistance: data.suggestedDistance,
+          region: data.region,
+        });
+      } else {
+        onChange(data.place.placeName);
+        onPlaceSelect(data.place);
+      }
       setProximity({ lat: data.place.lat, lon: data.place.lon });
-      onGeolocated?.(data.place, {
-        mode: "coarse",
-        suggestedDistance: data.suggestedDistance,
-        region: data.region,
-      });
       setCoarseActive(true);
       setStatus("ready");
     } catch {
@@ -98,10 +104,13 @@ export function LocationOriginField({
           );
           if (!res.ok) throw new Error("reverse failed");
           const data = (await res.json()) as { place: PlaceDto };
-          onChange(data.place.placeName);
-          onPlaceSelect(data.place);
+          if (onGeolocated) {
+            onGeolocated(data.place, { mode: "precise" });
+          } else {
+            onChange(data.place.placeName);
+            onPlaceSelect(data.place);
+          }
           setProximity({ lat: data.place.lat, lon: data.place.lon });
-          onGeolocated?.(data.place, { mode: "precise" });
           setStatus("ready");
         } catch {
           setStatus("error");

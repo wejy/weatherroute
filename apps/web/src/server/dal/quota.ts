@@ -50,6 +50,11 @@ export type QuotaStatus = {
   allowed: boolean;
   /** free | anon | pro_monthly | pro_one_time — helps clients label the meter */
   kind?: "anon" | "free" | "pro_monthly" | "pro_one_time";
+  /**
+   * Why anon discover is blocked. `ip` = shared network day-cap (cookie may still
+   * show unused credits — UI must not imply the session meter is exhausted).
+   */
+  blockReason?: "session" | "ip";
 };
 
 /** Client-safe quota (no session identifiers). */
@@ -193,18 +198,50 @@ async function consumeIpQuota(clientKey: string): Promise<{
 }
 
 /** Layer IP cap on top of cookie quota (stops cookie rotation abuse). */
-async function ipLayerAllowsDiscover(): Promise<boolean> {
+async function peekIpLayer(): Promise<{
+  ok: boolean;
+  quota: QuotaStatus | null;
+}> {
   const ipKey = await resolveIpKey();
-  if (!ipKey) return true;
+  if (!ipKey) return { ok: true, quota: null };
   const status = await getIpQuotaStatus(ipKey);
-  return status.allowed;
+  return { ok: status.allowed, quota: status };
 }
 
-async function consumeIpLayer(): Promise<boolean> {
+async function consumeIpLayer(): Promise<{
+  ok: boolean;
+  quota: QuotaStatus | null;
+}> {
   const ipKey = await resolveIpKey();
-  if (!ipKey) return true;
+  if (!ipKey) return { ok: true, quota: null };
   const consumed = await consumeIpQuota(ipKey);
-  return consumed.ok;
+  return { ok: consumed.ok, quota: consumed.quota };
+}
+
+/** Public meter when the network day-cap is the binding constraint. */
+function ipBlockedQuota(
+  ipQuota: QuotaStatus | null,
+  cookieId?: string,
+): QuotaStatus {
+  if (ipQuota) {
+    return {
+      ...ipQuota,
+      cookieId,
+      remaining: 0,
+      allowed: false,
+      blockReason: "ip",
+    };
+  }
+  return {
+    cookieId,
+    searchesUsed: env.anonIpDiscoverLimit,
+    bonusCredits: 0,
+    limit: env.anonIpDiscoverLimit,
+    remaining: 0,
+    allowed: false,
+    kind: "anon",
+    blockReason: "ip",
+  };
 }
 
 export async function getAnonQuota(
@@ -214,14 +251,29 @@ export async function getAnonQuota(
   if (session) {
     const limit = env.anonDiscoverLimit + session.bonusCredits;
     const remaining = Math.max(0, limit - session.searchesUsed);
-    const ipOk = await ipLayerAllowsDiscover();
+    const ip = await peekIpLayer();
+    if (remaining <= 0) {
+      return {
+        cookieId: session.cookieId,
+        searchesUsed: session.searchesUsed,
+        bonusCredits: session.bonusCredits,
+        limit,
+        remaining: 0,
+        allowed: false,
+        kind: "anon",
+        blockReason: "session",
+      };
+    }
+    if (!ip.ok) {
+      return ipBlockedQuota(ip.quota, session.cookieId);
+    }
     return {
       cookieId: session.cookieId,
       searchesUsed: session.searchesUsed,
       bonusCredits: session.bonusCredits,
       limit,
-      remaining: ipOk ? remaining : 0,
-      allowed: remaining > 0 && ipOk,
+      remaining,
+      allowed: true,
       kind: "anon",
     };
   }
@@ -543,7 +595,11 @@ export async function consumeDiscoverQuota(
     }
     const consumed = await consumeIpQuota(key);
     if (!consumed.ok) {
-      return { ok: false, reason: "paywall", quota: consumed.quota };
+      return {
+        ok: false,
+        reason: "paywall",
+        quota: { ...consumed.quota, blockReason: "ip" },
+      };
     }
     return { ok: true, quota: consumed.quota };
   }
@@ -561,24 +617,18 @@ export async function consumeDiscoverQuota(
         remaining: 0,
         allowed: false,
         kind: "anon",
+        blockReason: "session",
       },
     };
   }
 
   // IP layer before spending cookie credit
-  if (!(await ipLayerAllowsDiscover())) {
+  const ipPeek = await peekIpLayer();
+  if (!ipPeek.ok) {
     return {
       ok: false,
       reason: "paywall",
-      quota: {
-        cookieId: session.cookieId,
-        searchesUsed: session.searchesUsed,
-        bonusCredits: session.bonusCredits,
-        limit,
-        remaining: 0,
-        allowed: false,
-        kind: "anon",
-      },
+      quota: ipBlockedQuota(ipPeek.quota, session.cookieId),
     };
   }
 
@@ -615,19 +665,12 @@ export async function consumeDiscoverQuota(
     }
   }
 
-  if (!(await consumeIpLayer())) {
+  const ipConsume = await consumeIpLayer();
+  if (!ipConsume.ok) {
     return {
       ok: false,
       reason: "paywall",
-      quota: {
-        cookieId: session.cookieId,
-        searchesUsed: session.searchesUsed,
-        bonusCredits: session.bonusCredits,
-        limit,
-        remaining: 0,
-        allowed: false,
-        kind: "anon",
-      },
+      quota: ipBlockedQuota(ipConsume.quota, session.cookieId),
     };
   }
 

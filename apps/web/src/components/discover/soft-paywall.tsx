@@ -11,6 +11,7 @@ type QuotaView = {
   searchesUsed: number;
   bonusCredits: number;
   kind?: "anon" | "free" | "pro_monthly" | "pro_one_time";
+  blockReason?: "session" | "ip";
 };
 
 export function SoftPaywall({
@@ -26,6 +27,7 @@ export function SoftPaywall({
   const isProMonthlyCap = quota?.kind === "pro_monthly";
   const isProOneTimeCap = quota?.kind === "pro_one_time";
   const isProFairUseCap = isProMonthlyCap || isProOneTimeCap;
+  const isNetworkCap = quota?.blockReason === "ip";
   const [shareBusy, setShareBusy] = useState(false);
   const [redeemToken, setRedeemToken] = useState(initialShareToken ?? "");
   const [redeemBusy, setRedeemBusy] = useState(false);
@@ -104,26 +106,30 @@ export function SoftPaywall({
         id="paywall-title"
         className="text-2xl font-bold tracking-tight text-on-surface"
       >
-        {isFreeTier
-          ? t("paywall.titleFree")
-          : isProMonthlyCap
-            ? t("paywall.titleProMonthly")
-            : isProOneTimeCap
-              ? t("paywall.titleProOneTime")
-              : t("paywall.title")}
+        {isNetworkCap
+          ? t("paywall.titleNetwork")
+          : isFreeTier
+            ? t("paywall.titleFree")
+            : isProMonthlyCap
+              ? t("paywall.titleProMonthly")
+              : isProOneTimeCap
+                ? t("paywall.titleProOneTime")
+                : t("paywall.title")}
       </h2>
       <p className="mt-3 text-on-surface-variant">
-        {isFreeTier
-          ? t("paywall.bodyFree")
-          : isProMonthlyCap
-            ? t("paywall.bodyProMonthly")
-            : isProOneTimeCap
-              ? t("paywall.bodyProOneTime")
-              : t("paywall.body")}
+        {isNetworkCap
+          ? t("paywall.bodyNetwork")
+          : isFreeTier
+            ? t("paywall.bodyFree")
+            : isProMonthlyCap
+              ? t("paywall.bodyProMonthly")
+              : isProOneTimeCap
+                ? t("paywall.bodyProOneTime")
+                : t("paywall.body")}
       </p>
       {quota ? (
         <p className="mt-2 text-sm text-on-surface-variant">
-          {t("paywall.quotaUsed", {
+          {t(isNetworkCap ? "paywall.quotaUsedNetwork" : "paywall.quotaUsed", {
             used: String(quota.searchesUsed),
             limit: String(quota.limit),
           })}

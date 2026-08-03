@@ -35,6 +35,7 @@ import {
 } from "@/components/discover/location-origin-field";
 import { DateWhenField } from "@/components/discover/date-when-field";
 import { TravelModeSelector } from "@/components/travel/travel-mode-selector";
+import { DiscoverPendingUpdate } from "@/components/discover/discover-pending-update";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
@@ -77,6 +78,8 @@ export function DiscoverSearch({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [pending, startTransition] = useTransition();
+  /** Local filter edits that are not yet reflected in the URL / results. */
+  const [filtersDirty, setFiltersDirty] = useState(false);
   const geoSynced = useRef(false);
   const hasCoords =
     defaults?.lat != null &&
@@ -172,6 +175,39 @@ export function DiscoverSearch({
     }
   }, [defaults?.origin, defaults?.lat, defaults?.lon]);
 
+  useEffect(() => {
+    if (defaults?.datePreset || defaults?.startDate || defaults?.endDate) {
+      setWhen(
+        resolveDateWindow({
+          preset: (defaults?.datePreset as DatePreset) || "weekend",
+          startDate: defaults?.startDate,
+          endDate: defaults?.endDate,
+          locale,
+        }),
+      );
+    }
+  }, [
+    defaults?.datePreset,
+    defaults?.startDate,
+    defaults?.endDate,
+    locale,
+  ]);
+
+  // URL caught up after Search — clear pending notice (not on weatherGoal-only chip changes).
+  useEffect(() => {
+    setFiltersDirty(false);
+  }, [
+    defaults?.origin,
+    defaults?.lat,
+    defaults?.lon,
+    defaults?.distance,
+    defaults?.radiusKm,
+    defaults?.datePreset,
+    defaults?.startDate,
+    defaults?.endDate,
+    defaults?.mode,
+  ]);
+
   const effectiveRadiusKm = resolveRadiusKm(
     distance,
     distance === "custom" ? customRadiusKm : undefined,
@@ -235,6 +271,7 @@ export function DiscoverSearch({
       },
     ) => {
       const url = `${basePath}?${buildParams(resolved, overrides).toString()}${hash || ""}`;
+      setFiltersDirty(false);
       startTransition(() => {
         if (replace) router.replace(url);
         else router.push(url);
@@ -245,10 +282,15 @@ export function DiscoverSearch({
 
   const onGeolocated = useCallback(
     (detected: PlaceDto, meta: GeoDetectMeta) => {
-      if (hasCoords || geoSynced.current) return;
+      // Coarse auto-detect: only once, and never overwrite an existing URL origin.
+      // Precise (user tapped locate): always commit a new search.
+      if (meta.mode === "coarse" && (hasCoords || geoSynced.current)) {
+        return;
+      }
       geoSynced.current = true;
       setPlace(detected);
       setOrigin(detected.placeName);
+      setFiltersDirty(false);
       let distanceOverride: string | undefined =
         meta.mode === "coarse" ? meta.suggestedDistance : undefined;
       if (distanceOverride && !isPro && isProDistance(distanceOverride)) {
@@ -269,9 +311,11 @@ export function DiscoverSearch({
     setError(null);
     if (next) {
       setOrigin(next.placeName);
+      // Block a late auto-geo from overwriting a manual pick; Search commits URL.
       geoSynced.current = true;
-      // Commit to URL so filter chips + Map link keep the typed/selected origin.
-      navigateWith(next, true);
+      setFiltersDirty(true);
+    } else {
+      setFiltersDirty(true);
     }
   }
 
@@ -288,8 +332,7 @@ export function DiscoverSearch({
     return data.results[0] ?? null;
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function commitSearch(replace = false) {
     setError(null);
 
     if (!origin.trim() && !place) {
@@ -306,8 +349,13 @@ export function DiscoverSearch({
 
       setPlace(resolved);
       setOrigin(resolved.placeName);
-      navigateWith(resolved);
+      navigateWith(resolved, replace);
     });
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await commitSearch(false);
   }
 
   function onDistanceChange(next: string) {
@@ -316,24 +364,16 @@ export function DiscoverSearch({
     if (next !== "custom" && next in DISTANCE_RADIUS_KM) {
       setCustomRadiusKm(DISTANCE_RADIUS_KM[next as DistanceKey]);
     }
-    if (place) {
-      navigateWith(place, true, {
-        distance: next,
-        radiusKm:
-          next === "custom"
-            ? customRadiusKm
-            : DISTANCE_RADIUS_KM[next as DistanceKey],
-      });
-    }
+    setFiltersDirty(true);
   }
 
   function onGoalChange(next: string) {
     setWeatherGoal(next);
+    // Weather-goal chips/dropdown apply immediately (button-style).
     if (place) {
       navigateWith(place, true, { weatherGoal: next });
       return;
     }
-    // No place yet — still sync goal into the URL for chips / map link.
     const params = new URLSearchParams(searchParams.toString());
     params.set("weatherGoal", next);
     startTransition(() => {
@@ -345,15 +385,7 @@ export function DiscoverSearch({
 
   function onTravelModeChange(next: TravelMode) {
     setTravelMode(next);
-    if (place) {
-      navigateWith(place, true, { mode: next });
-      return;
-    }
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("mode", next);
-    startTransition(() => {
-      router.replace(`${basePath}?${params.toString()}${hash || ""}`);
-    });
+    setFiltersDirty(true);
   }
 
   const fieldClass = stack
@@ -369,6 +401,7 @@ export function DiscoverSearch({
     : "w-full cursor-pointer appearance-none border-none bg-transparent p-0 pr-4 text-xl font-semibold text-on-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
   return (
+    <>
     <form
       onSubmit={onSubmit}
       className={cn(
@@ -395,6 +428,7 @@ export function DiscoverSearch({
           onChange={(v) => {
             setOrigin(v);
             setError(null);
+            setFiltersDirty(true);
           }}
           onPlaceSelect={onPlaceSelect}
           onGeolocated={onGeolocated}
@@ -418,7 +452,7 @@ export function DiscoverSearch({
           labelledBy={whenLabelId}
           onChange={(next) => {
             setWhen(next);
-            if (place) navigateWith(place, true, { when: next });
+            setFiltersDirty(true);
           }}
         />
       </div>
@@ -498,22 +532,7 @@ export function DiscoverSearch({
               onChange={(e) => {
                 const value = Number(e.target.value);
                 setCustomRadiusKm(value);
-              }}
-              onMouseUp={() => {
-                if (place) {
-                  navigateWith(place, true, {
-                    distance: "custom",
-                    radiusKm: customRadiusKm,
-                  });
-                }
-              }}
-              onTouchEnd={() => {
-                if (place) {
-                  navigateWith(place, true, {
-                    distance: "custom",
-                    radiusKm: customRadiusKm,
-                  });
-                }
+                setFiltersDirty(true);
               }}
               className="h-2 w-full cursor-pointer appearance-none rounded-full bg-surface-container accent-primary"
               aria-label={t("search.customRadius")}
@@ -581,6 +600,8 @@ export function DiscoverSearch({
             stack
               ? "h-11 w-full rounded-xl text-sm font-semibold"
               : "h-14 w-full rounded-xl lg:h-16 lg:w-16 lg:rounded-full",
+            filtersDirty &&
+              "ring-2 ring-primary ring-offset-2 ring-offset-surface",
           )}
         >
           <span
@@ -595,10 +616,33 @@ export function DiscoverSearch({
               stack ? "text-base" : "text-xl lg:hidden",
             )}
           >
-            {pending ? t("search.searching") : t("search.search")}
+            {pending
+              ? t("search.searching")
+              : filtersDirty
+                ? t("search.updateResults")
+                : t("search.search")}
           </span>
         </button>
       </div>
     </form>
+    <DiscoverPendingUpdate
+      visible={filtersDirty && Boolean(place || origin.trim())}
+      activityKey={[
+        origin,
+        place?.lat,
+        place?.lon,
+        distance,
+        customRadiusKm,
+        when.preset,
+        when.startDate,
+        when.endDate,
+        travelMode,
+      ].join("|")}
+      pending={pending}
+      onUpdate={() => {
+        void commitSearch(false);
+      }}
+    />
+    </>
   );
 }

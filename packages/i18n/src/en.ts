@@ -63,6 +63,9 @@ const en = {
     weatherGoal: "Weather goal",
     search: "Search Destinations",
     searching: "Searching…",
+    updateResults: "Update results",
+    pendingUpdate:
+      "Filters changed — tap Update to refresh destinations (uses a discover search).",
     chooseOrigin: "Choose a starting point first.",
     placeNotFound: "Couldn’t find that place. Pick one from the suggestions.",
     distances: {
@@ -136,12 +139,21 @@ const en = {
     feelsLike: "Feels like {temp}C",
     nowPrefix: "Now:",
     sunScore: "sun score {score}",
+    peakRain: "peak rain risk {pct}%",
+    avgRain: "avg {pct}%",
     chartsTemp: "Forecast · Temperature",
     chartsPrecip: "Forecast · Precipitation & Cloud Cover",
     high: "High",
     low: "Low",
     tempScale: "−40…+50°C",
-    precip: "Chance",
+    precip: "Peak chance",
+    precipHourly: "Hourly chance",
+    precipPeakNote:
+      "Daily rain % is the day’s peak chance — it often varies a lot by hour.",
+    precipHint:
+      "Daily bars show the day’s peak rain chance — tap a day to see how it varies by hour.",
+    hourlyForDay: "Hourly · {day}",
+    hourlyEmpty: "Hourly forecast isn’t available for this day yet.",
     precipMm: "Rain mm",
     clouds: "Clouds",
     rainPct: "Rain {pct}%",
@@ -231,6 +243,19 @@ const en = {
     alternativeAvgRain: "Avg. rain chance {pct}%",
     minutesLonger: "+{m} min vs fastest",
     sameDuration: "Similar duration to the fastest option",
+    unreachableTitle: "No navigable route",
+    unreachableBodyDriving:
+      "No road or ferry connection was found for driving between these places. Only the endpoints are shown for weather — this is not a driveable route.",
+    unreachableBodyCycling:
+      "No path or ferry connection was found for cycling between these places. Only the endpoints are shown for weather — this is not a bikeable route.",
+    durationUnavailable: "Travel time unavailable",
+    straightLineDistance: "Straight-line {distance}",
+    windowPeakRain: "Destination peak rain risk {pct}% (selected dates)",
+    arrivalRain: "At arrival (best departure): {pct}%",
+    unreachableDepartureHint:
+      "Weather at the endpoints around {time}. There is no {mode} route to time along the way.",
+    modeDriving: "driving",
+    modeCycling: "cycling",
     departureHintWeatherRoute:
       "Leave around {time} on this route from {from} to {to} ({extra}). Highest rain risk near {place} ({rain}%).",
     pickBoth: "Pick both start and destination from the suggestions.",
@@ -417,7 +442,7 @@ const en = {
       "We rank nearby destinations by weather forecasts for your dates, so you spend less time guessing and more time enjoying clearer skies.",
     whyTitle: "Why Solviax.app",
     whyBody:
-      "Solviax.app grew out of a personal need. Finland’s unsettled weather made me hesitate. Where would the best weather be next weekend? I couldn’t find a tool that quite fit. So here is Sol-via-x — along a sunny path.",
+      "Solviax.app grew out of a personal need. Finland’s unsettled weather made me hesitate. Where would the best weather be next weekend? I couldn’t find a tool that quite fit. So here is Sol-via-x — follow the sunny road.",
     highlightsTitle: "Why travelers like it",
     highlights: {
       horizon: {
@@ -631,9 +656,12 @@ const en = {
   paywall: {
     title: "You’ve used your free searches",
     titleFree: "Monthly discovers used up",
+    titleNetwork: "Network daily limit reached",
     body: "Sign in with email for 50 discovers per month, or share Solviax.app for one extra search.",
     bodyFree:
       "You’ve used your 50 discovers this calendar month. Upgrade to Pro for hundreds of discover searches.",
+    bodyNetwork:
+      "This network has used today’s anonymous discover allowance. Sign in for 50 searches per month, or try again tomorrow.",
     titleProMonthly: "Monthly Pro discovers used up",
     bodyProMonthly:
       "You’ve used this month’s Pro discover allowance. It resets at the start of next calendar month.",
@@ -642,6 +670,7 @@ const en = {
       "You’ve used the discover allowance for this 90-day Pro period. Subscribe to Monthly for ongoing searches, or buy One-time again after it ends.",
     upgradePro: "View Pro plans",
     quotaUsed: "Used {used} of {limit} free searches",
+    quotaUsedNetwork: "Used {used} of {limit} searches from this network today",
     remaining: "{remaining} of {limit} free searches left",
     signIn: "Sign in with email",
     shareForCredit: "Share for +1 search",
@@ -687,7 +716,9 @@ const en = {
     swimTitle: "Swimming weather",
     swimDesc: "Warm enough for a dip if you find water nearby.",
     wetTitle: "Pack a raincoat",
-    wetDesc: "{pct}% chance of heavy showers.",
+    wetDesc: "{pct}% chance of rain.",
+    wetDescMm: "{pct}% chance of rain · about {mm} mm expected.",
+    wetDescHeavy: "{pct}% chance of heavy rain · about {mm} mm expected.",
   },
   advisory: {
     stormTitle: "Thunderstorm risk",
@@ -710,9 +741,13 @@ const en = {
     fogDesc: "Reduced visibility — drive carefully.",
     fogDescPlace: "Fog likely near {place}.",
     rainTitle: "Heavy rain likely",
+    rainModerateTitle: "Rain likely",
     rainCautionTitle: "Showers possible",
     rainDesc: "{pct}% chance of rain.",
+    rainDescMm: "{pct}% chance of rain · about {mm} mm expected.",
     rainDescPlace: "{pct}% chance of rain near {place}.",
+    rainDescPlaceMm:
+      "{pct}% chance of rain near {place} · about {mm} mm expected.",
     windTitle: "Strong wind",
     windCautionTitle: "Windy",
     windDesc: "Wind around {speed} km/h.",

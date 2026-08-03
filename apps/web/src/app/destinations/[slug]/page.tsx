@@ -112,7 +112,6 @@ export default async function DestinationPage({
   });
   const dict = getDictionary(locale);
   const t = createTranslator(dict);
-  const badges = buildSuitability(weather, t, locale);
 
   const window = resolveDateWindow({
     preset: datePreset,
@@ -120,7 +119,12 @@ export default async function DestinationPage({
     endDate: endDate || startDate,
     locale,
   });
+  const badges = buildSuitability(weather, t, locale, {
+    startDate: window.startDate,
+    endDate: window.endDate,
+  });
   const period = summarizePeriod(weather, window);
+  // Charts keep a longer horizon from “today”; trip window is only highlighted.
   const chartDays = weather.daily.slice(0, 10);
   const countryLabel =
     dest.country === "Suomi" || dest.country === "Finland"
@@ -223,8 +227,13 @@ export default async function DestinationPage({
                 </p>
                 <p className="text-on-surface-variant">
                   {translateCondition(dict, period.condition)} ·{" "}
-                  {t("home.rain", { pct: period.rainProbability })} ·{" "}
-                  {t("destination.sunScore", { score: period.sunshineScore })}
+                  {t("destination.peakRain", {
+                    pct: period.peakRainProbability,
+                  })}
+                  {period.peakRainProbability !== period.rainProbability
+                    ? ` · ${t("destination.avgRain", { pct: period.rainProbability })}`
+                    : ""}{" "}
+                  · {t("destination.sunScore", { score: period.sunshineScore })}
                 </p>
               </div>
             </div>
@@ -239,6 +248,7 @@ export default async function DestinationPage({
               periodStart={period.startDate}
               periodEnd={period.endDate}
               provider={weather.provider}
+              hourly={weather.hourly}
             />
 
             <section className="grid grid-cols-2 gap-4 md:grid-cols-4">

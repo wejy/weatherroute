@@ -41,6 +41,7 @@ export interface PeriodWeatherDto {
   condition: WeatherCondition;
   conditionLabel: string;
   rainProbability: number;
+  peakRainProbability?: number;
   precipitationMm?: number;
   sunshineScore: number;
   cloudCover: number;
@@ -149,6 +150,8 @@ export interface RouteDto {
   weatherRouteSelected?: boolean;
   minutesVsFastest?: number | null;
   alternatives?: RouteAlternativeDto[];
+  routingStatus?: "routed" | "unreachable";
+  windowPeakRainProbability?: number;
 }
 
 export interface WeatherDto {
@@ -173,6 +176,15 @@ export interface WeatherDto {
     dayLabel: string;
     tempMaxC: number;
     tempMinC: number;
+    precipitationProbability: number;
+    precipitationMm?: number;
+    cloudCover: number;
+    condition: WeatherCondition;
+    conditionLabel: string;
+  }>;
+  hourly?: Array<{
+    time: string;
+    temperatureC: number;
     precipitationProbability: number;
     precipitationMm?: number;
     cloudCover: number;

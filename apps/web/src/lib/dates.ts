@@ -59,6 +59,22 @@ export function parseDateKey(key: string): Date {
   return new Date(y!, m! - 1, day!);
 }
 
+/** `YYYY-MM-DD` → locale display date (FI: dd.mm.yyyy, EN: YYYY-MM-DD). */
+export function formatDateKeyForLocale(
+  key: string,
+  locale: DateLocale = "en",
+): string {
+  if (locale !== "fi") return key;
+  const m = key.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return key;
+  return `${m[3]}.${m[2]}.${m[1]}`;
+}
+
+/** @deprecated Prefer formatDateKeyForLocale */
+export function formatDateKeyDmY(key: string): string {
+  return formatDateKeyForLocale(key, "fi");
+}
+
 /** Locale-aware weekday abbreviation from a Date or YYYY-MM-DD key. */
 export function weekdayShort(
   date: Date | string,

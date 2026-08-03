@@ -39,6 +39,7 @@ import {
   buildWeatherAdvisories,
   toneFromAdvisories,
 } from "@/lib/weather-advisories";
+import { windowRainRisk } from "@/server/services/weather-service";
 import { CITY_INDEX } from "@/server/integrations/places/city-index";
 
 const log = createModuleLogger("server.services.location-service");
@@ -334,12 +335,24 @@ export async function getRouteWeather(
   );
 
   let candidates: MapboxRoute[] = [];
+  let directionsCode = "";
   try {
     // Always request alternatives so we can compare / overlay on the map.
-    candidates = await getMapboxRoutes(from, to, mode, { alternatives: true });
+    const result = await getMapboxRoutes(from, to, mode, { alternatives: true });
+    candidates = result.routes;
+    directionsCode = result.code;
   } catch (error) {
     log.warn({ err: error }, `[route] Mapbox directions (${mode}) failed`);
   }
+
+  const isUnreachable =
+    candidates.length === 0 &&
+    (directionsCode === "NoRoute" || directionsCode === "NoSegment");
+  const routingStatus = isUnreachable
+    ? ("unreachable" as const)
+    : candidates.length > 0
+      ? ("routed" as const)
+      : undefined;
 
   let routed: MapboxRoute | null = candidates[0] ?? null;
   const alternativesCompared = candidates.length;
@@ -403,6 +416,7 @@ export async function getRouteWeather(
         earliestHour: opts?.earliestDepartureHour ?? null,
         startDate: dateWindow.startDate,
         endDate: dateWindow.endDate,
+        timeZone: samples[0]?.weather?.timezone,
       });
       let rainSum = 0;
       for (const sample of samples) {
@@ -464,15 +478,26 @@ export async function getRouteWeather(
   }
 
   const distanceKm = routed?.distanceKm ?? haversineKm(from, to);
-  const durationSeconds =
-    routed?.durationSeconds ?? fallbackDurationSeconds(distanceKm, mode);
+  const durationSeconds = isUnreachable
+    ? 0
+    : (routed?.durationSeconds ?? fallbackDurationSeconds(distanceKm, mode));
   // One rounded minute value for both the label and waypoint ETAs.
   const durationMinutes = durationMinutesFromSeconds(durationSeconds);
   const durationHours = durationMinutes / 60;
-  const durationLabel = formatDurationLabel(durationMinutes, t);
+  const durationLabel = isUnreachable
+    ? t("routes.durationUnavailable")
+    : formatDurationLabel(durationMinutes, t);
 
-  const fractions = sampleFractions(durationHours, distanceKm);
-  const points = pointsAlongRoute(from, to, routed?.geometry, fractions);
+  // Unreachable: endpoints only — no interpolated midpoints that look like a corridor.
+  const fractions = isUnreachable
+    ? [0, 1]
+    : sampleFractions(durationHours, distanceKm);
+  const points = pointsAlongRoute(
+    from,
+    to,
+    isUnreachable ? undefined : routed?.geometry,
+    fractions,
+  );
 
   const reservedNames = new Set(
     [from.name, to.name].map((n) => n.toLowerCase().trim()).filter(Boolean),
@@ -523,8 +548,21 @@ export async function getRouteWeather(
     earliestHour: opts?.earliestDepartureHour ?? null,
     startDate: dateWindow.startDate,
     endDate: dateWindow.endDate,
+    timeZone: samples[0]?.weather?.timezone,
   });
   const clock = formatClock(best.departureTime, locale);
+
+  const destinationSample =
+    samples.find((s) => s.role === "destination") ?? samples[samples.length - 1];
+  const destWindowRisk = destinationSample?.weather
+    ? windowRainRisk(
+        destinationSample.weather.daily,
+        dateWindow.startDate,
+        dateWindow.endDate,
+      )
+    : null;
+  const windowPeakRainProbability =
+    destWindowRisk?.peakRainProbability ?? undefined;
 
   // Show every corridor sample on the map / timeline (2–5 by trip length).
   const waypoints = samples.map((sample) => {
@@ -541,9 +579,10 @@ export async function getRouteWeather(
           ? t("routes.roleDestination")
           : t("routes.roleMidpoint");
 
-    const advisories = buildWeatherAdvisories(
+    const etaAdvisories = buildWeatherAdvisories(
       {
         rainProbability: slot.precipitationProbability,
+        precipitationMm: slot.precipitationMm,
         condition: slot.condition,
         temperatureC: slot.temperatureC,
         windSpeedKmh: sample.weather?.current.windSpeedKmh,
@@ -551,9 +590,45 @@ export async function getRouteWeather(
       },
       t,
     );
+
+    // Destination: also surface travel-window peak risk (same as destinations page).
+    let advisories = etaAdvisories;
+    if (sample.role === "destination" && destWindowRisk && sample.weather) {
+      const windowAdvisories = buildWeatherAdvisories(
+        {
+          rainProbability: Math.max(
+            destWindowRisk.peakRainProbability,
+            slot.precipitationProbability,
+          ),
+          precipitationMm:
+            destWindowRisk.peakDay?.precipitationMm ?? slot.precipitationMm,
+          condition:
+            destWindowRisk.severeDay?.condition ??
+            destWindowRisk.peakDay?.condition ??
+            slot.condition,
+          temperatureC: slot.temperatureC,
+          windSpeedKmh: sample.weather.current.windSpeedKmh,
+          placeLabel: sample.name,
+        },
+        t,
+      );
+      const byId = new Map(etaAdvisories.map((a) => [a.id, a]));
+      for (const a of windowAdvisories) {
+        if (!byId.has(a.id) || a.tone === "warning") byId.set(a.id, a);
+      }
+      advisories = [...byId.values()];
+    }
+
     const tone = toneFromAdvisories(
-      slot.precipitationProbability,
-      slot.condition,
+      Math.max(
+        slot.precipitationProbability,
+        sample.role === "destination"
+          ? (destWindowRisk?.peakRainProbability ?? 0)
+          : 0,
+      ),
+      advisories.some((a) => a.id === "storm" || a.id === "hail")
+        ? (destWindowRisk?.severeDay?.condition ?? slot.condition)
+        : slot.condition,
       advisories,
     );
 
@@ -577,8 +652,15 @@ export async function getRouteWeather(
     };
   });
 
-  const departureHint =
-    minutesVsFastest != null && minutesVsFastest > 0
+  const departureHint = isUnreachable
+    ? t("routes.unreachableDepartureHint", {
+        time: clock,
+        mode:
+          mode === "cycling"
+            ? t("routes.modeCycling")
+            : t("routes.modeDriving"),
+      })
+    : minutesVsFastest != null && minutesVsFastest > 0
       ? t("routes.departureHintWeatherRoute", {
           time: clock,
           from: from.name,
@@ -606,12 +688,17 @@ export async function getRouteWeather(
     dryTripGuarantee: best.dryness,
     bestDeparture: clock,
     departureHint,
-    geometry: routed?.geometry,
+    geometry: isUnreachable ? undefined : routed?.geometry,
+    routingStatus,
+    windowPeakRainProbability,
     waypoints,
     prefer: "fast",
-    alternativesCompared,
-    weatherRouteSelected,
-    minutesVsFastest,
-    alternatives: alternativeSummaries.length > 1 ? alternativeSummaries : undefined,
+    alternativesCompared: isUnreachable ? 0 : alternativesCompared,
+    weatherRouteSelected: isUnreachable ? false : weatherRouteSelected,
+    minutesVsFastest: isUnreachable ? null : minutesVsFastest,
+    alternatives:
+      !isUnreachable && alternativeSummaries.length > 1
+        ? alternativeSummaries
+        : undefined,
   };
 }
