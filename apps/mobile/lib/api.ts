@@ -68,6 +68,12 @@ export class ApiError extends Error {
     return b?.error === "PAYWALL" || this.status === 402;
   }
 
+  get isServiceUnavailable(): boolean {
+    if (this.status !== 503) return false;
+    const b = this.body as { error?: string } | null;
+    return b?.error === "SERVICE_UNAVAILABLE" || this.status === 503;
+  }
+
   get quota(): PublicQuota | null {
     const b = this.body as { quota?: PublicQuota | null } | null;
     return b?.quota ?? null;

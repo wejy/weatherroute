@@ -14,7 +14,7 @@ import { Link, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/lib/i18n";
 import { apiGet, getApiBaseUrl, ApiError, type PublicQuota } from "@/lib/api";
-import { saveLastDiscover } from "@/lib/discover-cache";
+import { saveLastDiscover, loadLastDiscoverCached } from "@/lib/discover-cache";
 import {
   detectCoarsePlace,
   detectCurrentPlace,
@@ -74,6 +74,7 @@ export default function DiscoverScreen() {
   const [distance, setDistance] = useState<DistanceOption>(FREE_MAX_DISTANCE_KEY);
   const [customRadiusKm, setCustomRadiusKm] = useState(CUSTOM_RADIUS_DEFAULT_KM);
   const [result, setResult] = useState<DiscoverResultDto | null>(null);
+  const [showingCached, setShowingCached] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paywalled, setPaywalled] = useState(false);
@@ -84,6 +85,18 @@ export default function DiscoverScreen() {
 
   useEffect(() => {
     void fetchSession().then((s) => setTier(s.tier));
+  }, []);
+
+  useEffect(() => {
+    void loadLastDiscoverCached().then((cached) => {
+      if (!cached?.result?.destinations?.length) return;
+      setResult((prev) => prev ?? cached.result);
+      // Restore last origin for convenience; don't show offline banner until a failed fetch
+      setSelectedPlace((prev) => prev ?? cached.result.origin ?? null);
+      if (cached.result.origin?.placeName) {
+        setOriginQuery((q) => q || cached.result.origin.placeName);
+      }
+    });
   }, []);
 
   useEffect(() => {
@@ -139,6 +152,7 @@ export default function DiscoverScreen() {
         });
         setResult(data);
         setQuota(null);
+        setShowingCached(false);
         void saveLastDiscover(data);
         log.info(
           {
@@ -156,17 +170,29 @@ export default function DiscoverScreen() {
           setPaywalled(true);
           setQuota(e.quota);
           setResult(null);
+          setShowingCached(false);
           setError(null);
         } else {
           log.warn({ err: e, origin: place.name }, "discover failed");
-          const message =
-            e instanceof Error && e.message === "MISSING_API_URL"
-              ? t("mobile.apiMissing")
-              : e instanceof Error && e.message === "NETWORK"
-                ? t("mobile.networkError")
-                : t("mobile.errorGeneric");
-          setError(message);
-          setResult(null);
+          const isOffline =
+            (e instanceof Error && e.message === "NETWORK") ||
+            (e instanceof ApiError && e.isServiceUnavailable);
+          const cached = isOffline ? await loadLastDiscoverCached() : null;
+          if (cached?.result?.destinations?.length) {
+            setResult(cached.result);
+            setShowingCached(true);
+            setError(t("mobile.offlineCachedBanner"));
+          } else {
+            setResult(null);
+            setShowingCached(false);
+            const message =
+              e instanceof Error && e.message === "MISSING_API_URL"
+                ? t("mobile.apiMissing")
+                : isOffline
+                  ? t("mobile.offlineNoCache")
+                  : t("mobile.errorGeneric");
+            setError(message);
+          }
         }
       } finally {
         setLoading(false);
@@ -669,7 +695,10 @@ export default function DiscoverScreen() {
       )}
 
       {error && (
-        <Text style={styles.error} accessibilityRole="alert">
+        <Text
+          style={showingCached ? styles.offlineBanner : styles.error}
+          accessibilityRole="alert"
+        >
           {error}
         </Text>
       )}
@@ -950,6 +979,16 @@ const styles = StyleSheet.create({
   },
   disabled: { opacity: 0.55 },
   error: { color: colors.error, fontWeight: "600" },
+  offlineBanner: {
+    color: colors.onSurface,
+    backgroundColor: "rgba(234, 179, 8, 0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(234, 179, 8, 0.45)",
+    borderRadius: 12,
+    padding: 12,
+    fontWeight: "600",
+    overflow: "hidden",
+  },
   status: { color: colors.onSurfaceVariant },
   results: { marginTop: 8, gap: 14 },
   resultsHeader: {

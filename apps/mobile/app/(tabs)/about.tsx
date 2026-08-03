@@ -3,8 +3,12 @@ import { Link, type Href } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { colors } from "@/constants/Colors";
 
+const HIGHLIGHTS = ["horizon", "ranking", "corridor", "trust"] as const;
+
 const FEATURES = [
+  "horizon",
   "discover",
+  "goals",
   "map",
   "dryTrip",
   "routes",
@@ -12,6 +16,8 @@ const FEATURES = [
   "share",
   "wikipedia",
   "bilingual",
+  "fast",
+  "secure",
 ] as const;
 
 const FREE_KEYS = ["discovers", "results", "mapRoutes"] as const;
@@ -26,6 +32,16 @@ export default function AboutScreen() {
       <Text style={styles.brand}>{t("brand")}</Text>
       <Text style={styles.headline}>{t("about.headline")}</Text>
       <Text style={styles.lead}>{t("about.lead")}</Text>
+
+      <Text style={styles.section}>{t("about.highlightsTitle")}</Text>
+      {HIGHLIGHTS.map((key) => (
+        <View key={key} style={styles.highlightCard}>
+          <Text style={styles.featureTitle}>
+            {t(`about.highlights.${key}.title`)}
+          </Text>
+          <Text style={styles.body}>{t(`about.highlights.${key}.body`)}</Text>
+        </View>
+      ))}
 
       <View style={styles.purposeCard}>
         <Text style={styles.section}>{t("about.purposeTitle")}</Text>
@@ -198,6 +214,14 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 16,
     backgroundColor: colors.surfaceLowest,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 6,
+  },
+  highlightCard: {
+    padding: 14,
+    borderRadius: 16,
+    backgroundColor: colors.surfaceContainer,
     borderWidth: 1,
     borderColor: colors.border,
     gap: 6,

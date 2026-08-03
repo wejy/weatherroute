@@ -12,7 +12,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Link, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/lib/i18n";
-import { apiGet, getApiBaseUrl } from "@/lib/api";
+import { apiGet, getApiBaseUrl, ApiError } from "@/lib/api";
 import { formatDistanceKm } from "@/lib/distance";
 import {
   EARLIEST_DEPARTURE_HOURS,
@@ -150,7 +150,9 @@ export default function RoutesScreen() {
         const message =
           e instanceof Error && e.message === "NETWORK"
             ? t("mobile.networkError")
-            : t("mobile.errorGeneric");
+            : e instanceof ApiError && e.isServiceUnavailable
+              ? t("mobile.serviceUnavailable")
+              : t("mobile.errorGeneric");
         setError(message);
         setRoute(null);
       } finally {

@@ -351,28 +351,55 @@ const fi = {
     eyebrow: "Suunnittele matkasi sään mukaan",
     headline: "Löydä paras sää seuraavaa reissuasi varten",
     lead:
-      "Solviax.app auttaa löytämään, missä on poutaisempi sää — ja suunnittelemaan reitin sään perusteella. Solviax.appissa voit vertailla eri kohteiden sääolosuhteita, erilaisia reittivaihtoehtoja sekä lopulta jakaa reitin lähimpiesi kesken.",
+      "Solviax.app auttaa löytämään, missä on poutaisempi sää — ja suunnittelemaan reitin sään perusteella. Ennusteet ulottuvat jopa 16 päivään, joten voit lukita viikonlopun tai pidemmän reissun hyvissä ajoin.",
     purposeTitle: "Miten Solviax.app toimii",
     purposeBody:
       "Rankkaamme lähialueen kohteet sääennusteen mukaan valitsemillesi päiville, jotta arvailet vähemmän ja nautit selkeämmästä säästä enemmän.",
     whyTitle: "Miksi Solviax.app",
     whyBody:
       "Solviax.app syntyi omasta tarpeesta. Suomen epävakainen sää sai minut epäröimään. Missä olisi paras sää seuraavana viikonloppuna? Tähän en löytänyt täysin sopivaa ratkaisua. Tässä siis Sol-via-x — aurinkoista tietä pitkin.",
+    highlightsTitle: "Miksi matkustajat pitävät siitä",
+    highlights: {
+      horizon: {
+        title: "Jopa 16 päivän päähän",
+        body: "Valitse tänään, huomenna, viikonloppu tai oma aikaväli — ennusteet yltävät jopa 16 päivään, jotta suunnittelu onnistuu ajoissa.",
+      },
+      ranking: {
+        title: "Sään mukaan rankatut kohteet",
+        body: "Kerro mitä etsit — aurinkoa, kuivaa tietä, leutoa säätä — ja nostamme esiin päiviisi sopivat paikat, ei vain lähintä kaupunkia.",
+      },
+      corridor: {
+        title: "Sää reitin varrella",
+        body: "Näet kuivuuden ja olosuhteet ajon tai pyöräilyn varrella, sekä fiksun lähtöajan ehdotuksen Prolla.",
+      },
+      trust: {
+        title: "Nopea ja yksityinen kirjautuminen",
+        body: "Sähköpostin kertakoodi (ei salasanaa). Tallennetut reitit pysyvät tililläsi; maksut hoitaa Stripe.",
+      },
+    },
     featuresTitle: "Mitä voit tehdä",
     featuresLead:
-      "Kaikki mitä tarvitset kysymyksestä ”missä sää näyttää hyvältä?” kysymykseen ”miten pääsen perille?”",
+      "Kaikki mitä tarvitset kysymyksestä ”missä sää näyttää hyvältä?” kysymykseen ”miten pääsen perille?” — plus nopeus ja luottamus mukana.",
     features: {
+      horizon: {
+        title: "Suunnittele jopa 16 päivän päähän",
+        body: "Käytä valmiita päiviä tai omaa aikaväliä. Monipäiväiset ennusteet kattavat sekä keskiviikon että seuraavan viikonlopun.",
+      },
       discover: {
         title: "Säähaku (Löydä)",
         body: "Hae paikkoja lähialueeltasi ja anna Solviax.appin nostaa parhaat olosuhteet esiin haluamillesi päiville.",
+      },
+      goals: {
+        title: "Tavoitteet jotka sopivat reissuun",
+        body: "Optimoi auringolle, kuivalle säälle, leudolle lämpötilalle ja muille — sekä sopivuusvinkit ulkoiluun.",
       },
       map: {
         title: "Karttapohjainen haku",
         body: "Selaa tuloksia vuorovaikutteisella kartalla — lämpötilat, sateen todennäköisyys ja paikanetäisyys yhdellä silmäyksellä.",
       },
       dryTrip: {
-        title: "Kuivan matkan takuu",
-        body: "Reiteillä näet, kuinka todennäköisesti tiesi pysyy kuivana valituilla lähdöillä.",
+        title: "Kuivan matkan näkymä",
+        body: "Reiteillä näet, kuinka todennäköisesti tiesi pysyy kuivana valitulla lähdöllä.",
       },
       routes: {
         title: "Reittivertailut",
@@ -394,6 +421,14 @@ const fi = {
         title: "Suomi ja englanti",
         body: "Solviax.app on kaksikielinen — vaihda kieltä milloin tahansa yläpalkista tai asetuksista.",
       },
+      fast: {
+        title: "Rakennettu nopeisiin hakuihin",
+        body: "Säätuloksia välimuistetaan ja haetaan erissä, joten Löydä ja reittitarkistukset pysyvät napakkina ensimmäisen haun jälkeen.",
+      },
+      secure: {
+        title: "Tietoturva mukana suunnittelussa",
+        body: "Salasanaton sähköposti-kirjautuminen, HTTPS tuotannossa, tilikohtaiset reitit ja Stripe Checkout maksuille — korttinumeroita emme säilytä.",
+      },
     },
     plansTitle: "Ilmainen vs Pro — lyhyesti",
     plansLead:
@@ -414,6 +449,16 @@ const fi = {
     plansCta: "Vertaa tilauksia ja tilaa",
     plansHint: "Täysi hinnasto ja maksutavat ovat tilaussivulla.",
     ctaDiscover: "Löydä paikkasi auringossa",
+  },
+  errors: {
+    genericTitle: "Jokin meni pieleen",
+    genericBody:
+      "Sivun latauksessa tapahtui odottamaton virhe. Voit yrittää uudelleen tai palata alkuun.",
+    unavailableTitle: "Palvelu tilapäisesti poissa käytöstä",
+    unavailableBody:
+      "Solviax.app ei juuri nyt tavoita palvelimiaan. Häiriö on yleensä lyhyt — yritä hetken kuluttua uudelleen.",
+    retry: "Yritä uudelleen",
+    home: "Takaisin Löydä-sivulle",
   },
   pro: {
     title: "Tilaukset ja hinnat",
@@ -627,6 +672,12 @@ const fi = {
     retry: "Yritä uudelleen",
     loading: "Ladataan…",
     errorGeneric: "Jokin meni pieleen. Tarkista yhteys ja API-osoite.",
+    serviceUnavailable:
+      "Solviax.app on tilapäisesti poissa käytöstä. Yritä hetken kuluttua uudelleen.",
+    offlineCachedBanner:
+      "Olet offline-tilassa tai verkko on heikko. Näytetään viimeisin Löydä-tulos (voi olla vanhentunut).",
+    offlineNoCache:
+      "Olet offline-tilassa tai verkko on heikko. Yhdistä verkkoon ja yritä Löydä-hakua uudelleen.",
     networkError:
       "Web-APIa ei tavoiteta. Varmista, että puhelin on samassa Wi‑Fissä ja EXPO_PUBLIC_API_URL osoittaa koneesi LAN-IP-osoitteeseen.",
     mapNearbyHint:

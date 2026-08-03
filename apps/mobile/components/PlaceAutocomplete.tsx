@@ -101,6 +101,8 @@ export function PlaceAutocomplete({
           setSearchError(t("mobile.apiMissing"));
         } else if (err instanceof Error && err.message === "NETWORK") {
           setSearchError(t("mobile.networkError"));
+        } else if (err instanceof ApiError && err.isServiceUnavailable) {
+          setSearchError(t("mobile.serviceUnavailable"));
         } else if (err instanceof ApiError) {
           setSearchError(t("mobile.errorGeneric"));
         } else {

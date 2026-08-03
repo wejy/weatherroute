@@ -4,6 +4,10 @@ import { NextRequest, NextResponse } from "next/server";
 import type { Logger } from "@solviax/logger";
 import { createModuleLogger } from "@/lib/logger";
 import { getClientIp } from "@/lib/client-ip";
+import {
+  isDatabaseUnavailableError,
+  SERVICE_UNAVAILABLE_CODE,
+} from "@/lib/db-errors";
 
 const baseLog = createModuleLogger("api");
 
@@ -100,6 +104,17 @@ export async function withApiLog(
     return attachRequestId(res, requestId);
   } catch (err) {
     const ms = Date.now() - startedAt;
+    if (isDatabaseUnavailableError(err)) {
+      log.error({ err, ms, kind: "db_unavailable" }, "database unavailable");
+      return NextResponse.json(
+        {
+          error: SERVICE_UNAVAILABLE_CODE,
+          message: "Service temporarily unavailable. Please try again shortly.",
+          requestId,
+        },
+        { status: 503, headers: { "X-Request-Id": requestId } },
+      );
+    }
     log.error({ err, ms }, "request unhandled error");
     return NextResponse.json(
       { error: "Internal server error", requestId },

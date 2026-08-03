@@ -5,8 +5,17 @@ import { createTranslator } from "@/i18n/translate";
 
 export const dynamic = "force-dynamic";
 
+const HIGHLIGHTS = [
+  { key: "horizon", icon: "calendar_month" },
+  { key: "ranking", icon: "trending_up" },
+  { key: "corridor", icon: "rainy" },
+  { key: "trust", icon: "verified_user" },
+] as const;
+
 const FEATURES = [
+  { key: "horizon", icon: "event_available" },
   { key: "discover", icon: "travel_explore" },
+  { key: "goals", icon: "flag" },
   { key: "map", icon: "map" },
   { key: "dryTrip", icon: "water_drop" },
   { key: "routes", icon: "alt_route" },
@@ -14,6 +23,8 @@ const FEATURES = [
   { key: "share", icon: "share_location" },
   { key: "wikipedia", icon: "menu_book" },
   { key: "bilingual", icon: "translate" },
+  { key: "fast", icon: "bolt" },
+  { key: "secure", icon: "lock" },
 ] as const;
 
 const FREE_KEYS = ["discovers", "results", "mapRoutes"] as const;
@@ -69,6 +80,38 @@ export default async function AboutPage() {
             {t("about.lead")}
           </p>
         </header>
+
+        <section className="relative mt-10" aria-labelledby="about-highlights">
+          <h2
+            id="about-highlights"
+            className="text-lg font-semibold text-on-surface md:text-xl"
+          >
+            {t("about.highlightsTitle")}
+          </h2>
+          <ul className="mt-5 grid gap-3 sm:grid-cols-2">
+            {HIGHLIGHTS.map((item) => (
+              <li
+                key={item.key}
+                className="flex gap-3 rounded-2xl border border-outline-variant/25 bg-surface-container-lowest p-4"
+              >
+                <span
+                  className="material-symbols-outlined mt-0.5 shrink-0 text-2xl text-primary"
+                  aria-hidden="true"
+                >
+                  {item.icon}
+                </span>
+                <div>
+                  <h3 className="text-sm font-bold text-on-surface md:text-base">
+                    {t(`about.highlights.${item.key}.title`)}
+                  </h3>
+                  <p className="mt-1 text-sm leading-relaxed text-on-surface-variant">
+                    {t(`about.highlights.${item.key}.body`)}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
 
         <section className="relative mt-10 rounded-3xl border border-outline-variant/25 bg-gradient-to-br from-surface-container-lowest via-surface-container-low to-primary/5 p-6 shadow-[0px_10px_30px_rgba(0,0,0,0.06)] md:p-8">
           <h2 className="text-lg font-semibold text-on-surface md:text-xl">

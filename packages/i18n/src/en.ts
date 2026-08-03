@@ -347,27 +347,55 @@ const en = {
     eyebrow: "Weather-first trip planning",
     headline: "Find the best weather for your next trip",
     lead:
-      "Solviax.app helps you discover where the sky is kinder — then plan the route, compare options, and share the journey.",
+      "Solviax.app helps you discover where the sky is kinder — then plan the route, compare options, and share the journey. Forecasts cover up to 16 days, so you can lock in a weekend or a longer escape before you leave.",
     purposeTitle: "How Solviax.app works",
     purposeBody:
       "We rank nearby destinations by weather forecasts for your dates, so you spend less time guessing and more time enjoying clearer skies.",
     whyTitle: "Why Solviax.app",
     whyBody:
       "Solviax.app grew out of a personal need. Finland’s unsettled weather made me hesitate. Where would the best weather be next weekend? I couldn’t find a tool that quite fit. So here is Sol-via-x — along a sunny path.",
+    highlightsTitle: "Why travelers like it",
+    highlights: {
+      horizon: {
+        title: "Up to 16 days ahead",
+        body: "Pick today, tomorrow, the weekend, or a custom window — forecasts stretch up to 16 days so you can plan with confidence.",
+      },
+      ranking: {
+        title: "Weather-ranked destinations",
+        body: "Tell us what you want — sun, dry roads, mild air — and we surface places that match your window, not just the closest town.",
+      },
+      corridor: {
+        title: "Weather along the route",
+        body: "See dryness and conditions along the drive or ride, plus smart departure timing when you’re on Pro.",
+      },
+      trust: {
+        title: "Fast, private sign-in",
+        body: "Email one-time codes (no password). Saved routes stay on your account; payments go through Stripe.",
+      },
+    },
     featuresTitle: "What you can do",
-    featuresLead: "Everything you need from “where the weather looks good?” to “how do I get there?”",
+    featuresLead:
+      "Everything you need from “where the weather looks good?” to “how do I get there?” — plus speed and trust built in.",
     features: {
+      horizon: {
+        title: "Plan up to 16 days out",
+        body: "Use presets or a custom date range. We pull multi-day forecasts so midweek and next-weekend trips are both in scope.",
+      },
       discover: {
         title: "Weather-smart discover",
         body: "Search within a radius and let Solviax.app find the best conditions for your window.",
+      },
+      goals: {
+        title: "Goals that match the trip",
+        body: "Optimize for sun, dry weather, mild temperatures, and more — plus suitability cues for outdoor plans.",
       },
       map: {
         title: "Map-based search",
         body: "Explore results on an interactive map — see temperatures, risk of rain, and distance at a glance.",
       },
       dryTrip: {
-        title: "Dry trip guarantee",
-        body: "On routes, see how likely the road along your trip stays dry.",
+        title: "Dry trip insight",
+        body: "On routes, see how likely the road along your trip stays dry for your departure.",
       },
       routes: {
         title: "Route comparison",
@@ -389,6 +417,14 @@ const en = {
         title: "English & Finnish",
         body: "Solviax.app is bilingual — switch language anytime in the header or settings.",
       },
+      fast: {
+        title: "Built for snappy searches",
+        body: "Weather results are cached and fetched in batches, so Discover and route checks stay responsive after the first hit.",
+      },
+      secure: {
+        title: "Security-minded by design",
+        body: "Passwordless email sign-in, HTTPS in production, account-scoped saved routes, and Stripe Checkout for payments — we don’t store card numbers.",
+      },
     },
     plansTitle: "Free vs Pro — short version",
     plansLead:
@@ -409,6 +445,16 @@ const en = {
     plansCta: "Compare plans & subscribe",
     plansHint: "Full price table and checkout live on the plans page.",
     ctaDiscover: "Start discovering",
+  },
+  errors: {
+    genericTitle: "Something went wrong",
+    genericBody:
+      "We hit an unexpected problem loading this page. You can try again or return home.",
+    unavailableTitle: "Service temporarily unavailable",
+    unavailableBody:
+      "Solviax.app can’t reach its servers right now. This is usually brief — please try again in a moment.",
+    retry: "Try again",
+    home: "Back to Discover",
   },
   pro: {
     title: "Plans & pricing",
@@ -619,6 +665,12 @@ const en = {
     retry: "Retry",
     loading: "Loading…",
     errorGeneric: "Something went wrong. Check your connection and API URL.",
+    serviceUnavailable:
+      "Solviax.app is temporarily unavailable. Please try again in a moment.",
+    offlineCachedBanner:
+      "You’re offline or the network is weak. Showing your last Discover results (may be outdated).",
+    offlineNoCache:
+      "You’re offline or the network is weak. Connect and try Discover again.",
     networkError:
       "Couldn’t reach the web API. Confirm the phone is on the same Wi‑Fi and EXPO_PUBLIC_API_URL points to your computer’s LAN IP.",
     mapNearbyHint:
