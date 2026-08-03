@@ -4,6 +4,9 @@ import { rateLimit } from "@/lib/rate-limit";
 import { getRouteWeather } from "@/server/services/location-service";
 import { resolveRouteEarliestHour } from "@/server/dal/user-prefs";
 import { withApiLog } from "@/lib/api-log";
+import { getCurrentUser } from "@/server/auth/session";
+import { recordUsageEvent } from "@/server/dal/usage";
+import { USAGE_TYPES } from "@/server/dal/usage-types";
 
 export async function GET(request: NextRequest) {
   return withApiLog(request, "routes", async ({ log, ip }) => {
@@ -39,6 +42,15 @@ export async function GET(request: NextRequest) {
       endDate: parsed.data.endDate,
       locale: parsed.data.lang,
       earliestDepartureHour: departure.effectiveHour,
+    });
+    const user = await getCurrentUser();
+    recordUsageEvent({
+      type: USAGE_TYPES.route,
+      userId: user?.id ?? null,
+      meta: {
+        mode: parsed.data.mode,
+        waypoints: route.waypoints?.length ?? 0,
+      },
     });
     log.info(
       {

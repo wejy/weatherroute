@@ -35,11 +35,16 @@ async function main() {
           email,
           name: seed.name,
           emailVerified: new Date(),
+          role: "admin",
         })
         .returning({ id: users.id });
       userId = created?.id;
       console.log(`Created user ${email}`);
     } else {
+      await db
+        .update(users)
+        .set({ role: "admin" })
+        .where(eq(users.id, userId));
       console.log(`User ${email} already exists (${userId})`);
     }
 

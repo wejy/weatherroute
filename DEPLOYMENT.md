@@ -141,6 +141,10 @@ Without these, the Pro page shows plans but checkout stays disabled.
 
 See **[Stripe (production)](#stripe-production)** below for Dashboard steps. Product details: [PAID_FEATURES.md](./PAID_FEATURES.md).
 
+### Admin cost estimates (optional)
+
+`/admin` estimates ops + API spend and paying revenue using `ADMIN_COST_*` / `ADMIN_PRICE_*` / `ADMIN_STRIPE_*` (EUR). Defaults are documented in `apps/web/.env.example`. Admins are granted only via DB (`users.role = 'admin'`), never via API.
+
 ### Optional / defaults
 
 | Variable | Default | Notes |

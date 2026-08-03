@@ -160,6 +160,11 @@ export const env = {
   proOneTimeDiscoverLimit: Number(
     process.env.PRO_ONE_TIME_DISCOVER_LIMIT || 400,
   ),
+  /** Admin dashboard fixed monthly costs (EUR) — see ADMIN_COST_* */
+  adminCostServerEur: Number(process.env.ADMIN_COST_SERVER_EUR || 15),
+  adminCostDatabaseEur: Number(process.env.ADMIN_COST_DATABASE_EUR || 10),
+  adminCostUpstashEur: Number(process.env.ADMIN_COST_UPSTASH_EUR || 0),
+  adminCostOtherEur: Number(process.env.ADMIN_COST_OTHER_EUR || 5),
   mapboxToken: getMapboxServerToken(),
   mapboxPublicToken: getMapboxPublicToken(),
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || "",

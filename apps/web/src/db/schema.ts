@@ -24,6 +24,8 @@ export const users = pgTable("users", {
   image: text("image"),
   /** Pro preference: limit discover candidates to origin country. */
   sameCountryOnly: boolean("same_country_only").notNull().default(false),
+  /** `user` | `admin` — admin only via DB/migration, never self-service. */
+  role: text("role").notNull().default("user"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -163,6 +165,7 @@ export const usageEvents = pgTable(
       t.type,
       t.createdAt,
     ),
+    index("usage_events_type_created_idx").on(t.type, t.createdAt),
   ],
 );
 

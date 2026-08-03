@@ -1,6 +1,8 @@
 import "server-only";
 
 import { createModuleLogger } from "@/lib/logger";
+import { recordUsageEvent } from "@/server/dal/usage";
+import { USAGE_TYPES } from "@/server/dal/usage-types";
 
 const log = createModuleLogger("server.integrations.wikipedia");
 export type WikipediaSummary = {
@@ -193,6 +195,10 @@ export async function fetchWikipediaPlaceSummary(input: {
     if (!value && lang !== "en") {
       value = await resolveForLang("en", name, input.lat, input.lon);
     }
+    recordUsageEvent({
+      type: USAGE_TYPES.extWikipedia,
+      meta: { lang },
+    });
   } catch (error) {
     log.warn({ err: error }, "[wikipedia] fetch failed");
     value = null;

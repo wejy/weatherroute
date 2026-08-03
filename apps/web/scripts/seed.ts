@@ -29,6 +29,7 @@ async function seedProUsers(
           email,
           name: seed.name,
           emailVerified: new Date(),
+          role: "admin",
         })
         .returning({ id: users.id });
       userId = created?.id;
@@ -39,6 +40,7 @@ async function seedProUsers(
         .set({
           name: existing?.name || seed.name,
           emailVerified: existing?.emailVerified ?? new Date(),
+          role: "admin",
         })
         .where(eq(users.id, userId));
       console.log(`User ${email} already exists (${userId})`);

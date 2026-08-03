@@ -3,6 +3,7 @@ import "server-only";
 import { getCurrentUser } from "@/server/auth/session";
 import { resolveUserTier } from "@/server/dal/user-prefs";
 import { getBillingEntitlement } from "@/server/dal/subscriptions";
+import { isAdminUser } from "@/server/dal/roles";
 import {
   consumeDiscoverQuota,
   consumeFreeUserDiscover,
@@ -22,6 +23,7 @@ export type DiscoverGate =
 
 /**
  * Gate discover usage:
+ * - admin: unlimited (ops; no quota consume)
  * - anon: cookie + IP
  * - free: 50 / UTC month
  * - Pro monthly: 200 / UTC month (fair-use)
@@ -34,6 +36,9 @@ export async function gateDiscoverAccess(opts: {
 }): Promise<DiscoverGate> {
   const user = await getCurrentUser();
   if (user) {
+    if (await isAdminUser(user.id)) {
+      return { ok: true, paywalled: false, quota: null };
+    }
     const tier = await resolveUserTier(user.id);
     if (tier === "pro") {
       const billing = await getBillingEntitlement(user.id);

@@ -11,6 +11,8 @@ import {
 } from "@/server/integrations/mocks/data";
 import type { WeatherProvider } from "./types";
 import { weekdayShort } from "@/lib/dates";
+import { recordUsageEvent } from "@/server/dal/usage";
+import { USAGE_TYPES } from "@/server/dal/usage-types";
 
 interface OpenMeteoResponse {
   latitude: number;
@@ -174,6 +176,10 @@ export const openMeteoProvider: WeatherProvider = {
     if (!res.ok) {
       throw new Error(`Open-Meteo error: ${res.status}`);
     }
+    recordUsageEvent({
+      type: USAGE_TYPES.extOpenMeteo,
+      meta: { locations: 1 },
+    });
 
     const data = (await res.json()) as OpenMeteoResponse;
     return toWeatherDto(data, name);
@@ -208,6 +214,10 @@ export async function openMeteoForecastBatch(
   if (!res.ok) {
     throw new Error(`Open-Meteo batch error: ${res.status}`);
   }
+  recordUsageEvent({
+    type: USAGE_TYPES.extOpenMeteo,
+    meta: { locations: places.length },
+  });
 
   const raw = (await res.json()) as OpenMeteoResponse | OpenMeteoResponse[];
   const rows = Array.isArray(raw) ? raw : [raw];

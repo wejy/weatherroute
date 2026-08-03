@@ -11,6 +11,9 @@ Tiers resolved in `resolveUserTier()` / `getBillingEntitlement()`:
 | `anon` | Not signed in |
 | `free` | Signed in, no active paid plan |
 | `pro` | Signed in + `status` ∈ `active` \| `trial` \| `past_due` **and** `plan` ∈ `one_time` \| `monthly` |
+| `pro` (admin) | `users.role = admin` → **monthly-equivalent Pro** without Stripe (unlimited saves, no discover quota). Set only via DB/migration — no self-service API. |
+
+Admin dashboard (web only): `/admin` + `GET /api/admin/stats` — usage, paying counts, and EUR cost/revenue **estimates** from `ADMIN_COST_*` / `ADMIN_PRICE_*` env (see `.env.example`).
 
 ---
 
@@ -107,7 +110,8 @@ Anonymous users have a **cookie + IP discover quota**. Sign-in (free) → **50 d
 | Marketing / buy UI | `/pro` (web + mobile) |
 | Distance helpers + Pro keys | `apps/web/src/lib/distance.ts`, `apps/mobile/lib/distance.ts` |
 | Tier resolution | `apps/web/src/server/dal/user-prefs.ts` |
-| Session + billing API | `GET /api/auth/me` → `{ user, tier, plan, canSaveTrip, … }` |
+| Session + billing API | `GET /api/auth/me` → `{ user, tier, plan, role, canSaveTrip, … }` |
 | Subscriptions schema | `apps/web/src/db/schema.ts` → `subscriptions` |
+| Admin role + stats | `users.role`, `apps/web/src/server/dal/roles.ts`, `/admin` |
 
 Update this file when adding or changing paid entitlements.

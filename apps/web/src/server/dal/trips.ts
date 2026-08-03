@@ -13,6 +13,9 @@ import {
   maxSavedTripsForPlan,
   subscriptionGrantsPro,
 } from "@/server/billing/plans";
+import { isAdminUser } from "@/server/dal/roles";
+import { recordUsageEvent } from "@/server/dal/usage";
+import { USAGE_TYPES } from "@/server/dal/usage-types";
 
 /** In-memory store when DATABASE_URL / mocks path. */
 const tripStore = new Map<string, TripDto[]>([
@@ -130,19 +133,11 @@ export async function createTrip(
     durationLabel: input.durationLabel ?? null,
   };
 
+  const admin = await isAdminUser(userId);
+
   /** Serialize saves per user (closes check-then-insert TOCTOU). */
   const row = await db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${userId}))`);
-
-    const [sub] = await tx
-      .select({
-        status: subscriptions.status,
-        plan: subscriptions.plan,
-        oneTimePaidAt: subscriptions.oneTimePaidAt,
-      })
-      .from(subscriptions)
-      .where(eq(subscriptions.userId, userId))
-      .limit(1);
 
     const [countRow] = await tx
       .select({ count: sql<number>`count(*)::int` })
@@ -150,20 +145,32 @@ export async function createTrip(
       .where(eq(trips.userId, userId));
     const savedTripCount = Number(countRow?.count ?? 0);
 
-    const plan = sub?.plan ?? "none";
-    const status = sub?.status ?? "free";
-    const oneTimePaidAt = sub?.oneTimePaidAt ?? null;
-    const pro = subscriptionGrantsPro({ status, plan, oneTimePaidAt });
-    const maxSaved = maxSavedTripsForPlan(plan, status, oneTimePaidAt);
-    const canSave =
-      maxSaved === null ? pro : Boolean(pro && savedTripCount < maxSaved);
+    if (!admin) {
+      const [sub] = await tx
+        .select({
+          status: subscriptions.status,
+          plan: subscriptions.plan,
+          oneTimePaidAt: subscriptions.oneTimePaidAt,
+        })
+        .from(subscriptions)
+        .where(eq(subscriptions.userId, userId))
+        .limit(1);
 
-    if (!canSave) {
-      throw new TripSaveLimitError(
-        "Saved route limit reached for your plan",
-        maxSaved,
-        savedTripCount,
-      );
+      const plan = sub?.plan ?? "none";
+      const status = sub?.status ?? "free";
+      const oneTimePaidAt = sub?.oneTimePaidAt ?? null;
+      const pro = subscriptionGrantsPro({ status, plan, oneTimePaidAt });
+      const maxSaved = maxSavedTripsForPlan(plan, status, oneTimePaidAt);
+      const canSave =
+        maxSaved === null ? pro : Boolean(pro && savedTripCount < maxSaved);
+
+      if (!canSave) {
+        throw new TripSaveLimitError(
+          "Saved route limit reached for your plan",
+          maxSaved,
+          savedTripCount,
+        );
+      }
     }
 
     const [inserted] = await tx.insert(trips).values(values).returning();
@@ -171,6 +178,11 @@ export async function createTrip(
   });
 
   if (!row) throw new Error("Failed to create trip");
+  recordUsageEvent({
+    type: USAGE_TYPES.routeSave,
+    userId,
+    meta: { tripId: row.id },
+  });
   return rowToDto(row);
 }
 

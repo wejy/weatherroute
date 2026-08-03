@@ -13,6 +13,7 @@ import {
   type CheckoutPlan,
 } from "@/server/billing/plans";
 import type { DiscoverTier } from "@/server/dal/discover-limits";
+import { isAdminUser } from "@/server/dal/roles";
 
 export type SubscriptionRow = {
   status: string;
@@ -98,8 +99,26 @@ export async function getBillingEntitlement(
 ): Promise<BillingEntitlement> {
   if (!userId) return emptyEntitlement("anon");
 
-  const row = await getSubscriptionRow(userId);
   const savedTripCount = await countTripsForUser(userId);
+
+  if (await isAdminUser(userId)) {
+    return {
+      tier: "pro",
+      plan: "monthly",
+      status: "active",
+      maxSavedTrips: null,
+      savedTripCount,
+      canSaveTrip: true,
+      stripeCustomerId: null,
+      hasMonthlySubscription: false,
+      oneTimePurchased: false,
+      oneTimeActive: false,
+      oneTimePaidAt: null,
+      oneTimeExpiresAt: null,
+    };
+  }
+
+  const row = await getSubscriptionRow(userId);
 
   if (!row) {
     return {

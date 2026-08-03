@@ -6,6 +6,7 @@ import {
   resolveUserTier,
 } from "@/server/dal/user-prefs";
 import { getBillingEntitlement } from "@/server/dal/subscriptions";
+import { getUserRole } from "@/server/dal/roles";
 import { withApiLog } from "@/lib/api-log";
 
 export async function GET(request: Request) {
@@ -29,6 +30,7 @@ export async function GET(request: Request) {
       user,
       tier,
       plan: billing.plan,
+      role: user ? await getUserRole(user.id) : "user",
       maxSavedTrips: billing.maxSavedTrips,
       savedTripCount: billing.savedTripCount,
       canSaveTrip: billing.canSaveTrip,

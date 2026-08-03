@@ -23,6 +23,7 @@ import {
 } from "@/lib/distance";
 import { getBillingEntitlement } from "@/server/dal/subscriptions";
 import { isStripeBillingConfigured } from "@/server/billing/plans";
+import { getUserRole } from "@/server/dal/roles";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,7 @@ export default async function SettingsPage({
   const sameCountryPrefs = await getEffectiveSameCountryOnly();
   const billing = await getBillingEntitlement(user?.id ?? null);
   const stripeReady = isStripeBillingConfigured();
+  const isAdmin = user ? (await getUserRole(user.id)) === "admin" : false;
   const raw = await searchParams;
   const saved = raw.saved === "1";
   const billingFlash =
@@ -107,6 +109,16 @@ export default async function SettingsPage({
                   <p className="mt-1 text-xs text-on-surface-variant">
                     {planLabel}
                   </p>
+                  {isAdmin ? (
+                    <p className="mt-3">
+                      <Link
+                        href="/admin"
+                        className="text-sm font-semibold text-primary underline-offset-2 hover:underline"
+                      >
+                        {t("settings.adminLink")}
+                      </Link>
+                    </p>
+                  ) : null}
                 </div>
                 <form action={settingsSignOutAction}>
                   <button

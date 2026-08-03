@@ -7,6 +7,8 @@ import { PLACES } from "@/server/integrations/mocks/data";
 import { openMeteoSearchPlaces } from "@/server/integrations/geocoding/openmeteo";
 import { nominatimReverse } from "@/server/integrations/geocoding/nominatim";
 import { filterBlockedPlaces, isBlockedPlace } from "@/lib/geo-block";
+import { recordUsageEvent } from "@/server/dal/usage";
+import { USAGE_TYPES } from "@/server/dal/usage-types";
 
 const log = createModuleLogger("server.integrations.mapbox");
 const reverseCache = new Map<string, { expiresAt: number; value: PlaceDto }>();
@@ -120,6 +122,10 @@ async function mapboxSearch(
 
   const res = await fetch(url.toString(), { next: { revalidate: 3600 } });
   if (!res.ok) throw new Error(`Mapbox geocode ${res.status}`);
+  recordUsageEvent({
+    type: USAGE_TYPES.extMapboxGeocode,
+    meta: { path: "forward" },
+  });
 
   const data = (await res.json()) as {
     features: Array<{
@@ -220,6 +226,10 @@ async function mapboxReverse(
 
   const res = await fetch(url.toString(), { next: { revalidate: 86400 } });
   if (!res.ok) throw new Error(`Mapbox reverse ${res.status}`);
+  recordUsageEvent({
+    type: USAGE_TYPES.extMapboxGeocode,
+    meta: { path: "reverse" },
+  });
 
   const data = (await res.json()) as {
     features?: Array<{
@@ -325,6 +335,10 @@ export async function getMapboxRoutes(
   if (!res.ok) {
     throw new Error(`Mapbox directions ${res.status}`);
   }
+  recordUsageEvent({
+    type: USAGE_TYPES.extMapboxDirections,
+    meta: { profile },
+  });
 
   const data = (await res.json()) as {
     code?: string;

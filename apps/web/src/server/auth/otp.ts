@@ -8,6 +8,8 @@ import { env } from "@/lib/env";
 import { rateLimit } from "@/lib/rate-limit";
 import { getDb } from "@/db";
 import { emailOtps, users } from "@/db/schema";
+import { recordUsageEvent } from "@/server/dal/usage";
+import { USAGE_TYPES } from "@/server/dal/usage-types";
 
 const log = createModuleLogger("server.auth.otp");
 const OTP_SEND_PER_EMAIL = 3;
@@ -189,6 +191,11 @@ export async function verifyEmailOtp(
       .update(users)
       .set({ emailVerified: new Date() })
       .where(eq(users.id, existing.id));
+    recordUsageEvent({
+      type: USAGE_TYPES.login,
+      userId: existing.id,
+      meta: { newUser: false },
+    });
     return {
       userId: existing.id,
       email: existing.email,
@@ -206,5 +213,10 @@ export async function verifyEmailOtp(
     .returning();
 
   if (!created) throw new Error("Failed to create user");
+  recordUsageEvent({
+    type: USAGE_TYPES.login,
+    userId: created.id,
+    meta: { newUser: true },
+  });
   return { userId: created.id, email: created.email, name: created.name };
 }

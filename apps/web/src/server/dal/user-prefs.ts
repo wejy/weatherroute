@@ -9,6 +9,7 @@ import {
 } from "@/server/dal/subscriptions";
 import { subscriptionGrantsPro } from "@/server/billing/plans";
 import type { DiscoverTier } from "@/server/dal/discover-limits";
+import { isAdminUser } from "@/server/dal/roles";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
 import { parseEarliestHourParam } from "@/lib/departure";
@@ -21,6 +22,10 @@ export async function resolveUserTier(
   userId: string | null,
 ): Promise<DiscoverTier> {
   if (!userId) return "anon";
+
+  if (await isAdminUser(userId)) {
+    return "pro";
+  }
 
   const row = await getSubscriptionRow(userId);
   if (row && subscriptionGrantsPro(row)) {
