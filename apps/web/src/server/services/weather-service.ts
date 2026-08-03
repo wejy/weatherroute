@@ -693,7 +693,7 @@ export function buildSuitability(
             });
     badges.push({
       id: "umbrella",
-      tone: intensity === "heavy" ? "warning" : "info",
+      tone: "warning",
       icon: "umbrella",
       title: `${tr("suitability.wetTitle")} · ${day}`,
       description: wetDesc,
