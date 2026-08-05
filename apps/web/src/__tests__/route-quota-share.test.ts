@@ -26,29 +26,31 @@ describe("maps directions URLs", () => {
       destination,
       mode: "driving",
     });
-    expect(url).toContain("https://maps.apple.com/?");
-    expect(url).toContain("saddr=60.17%2C24.94");
-    expect(url).toContain("daddr=61.5%2C23.79");
-    expect(url).toContain("dirflg=d");
+    expect(url).toContain("https://maps.apple.com/directions?");
+    expect(url).toContain("source=60.17%2C24.94");
+    expect(url).toContain("destination=61.5%2C23.79");
+    expect(url).toContain("mode=driving");
   });
 
-  it("uses dirflg=w for cycling on Apple Maps", () => {
+  it("uses walking mode for cycling on Apple Maps", () => {
     const url = appleMapsDirectionsUrl({
       origin,
       destination,
       mode: "cycling",
     });
-    expect(url).toContain("dirflg=w");
+    expect(url).toContain("mode=walking");
   });
 
-  it("chains midpoints into Apple daddr", () => {
+  it("adds midpoints as repeated waypoint params", () => {
     const url = appleMapsDirectionsUrl({
       origin,
       destination,
       waypoints: [{ lat: 60.5, lon: 24.5 }],
       mode: "driving",
     });
-    expect(decodeURIComponent(url)).toContain("60.5,24.5+to:61.5,23.79");
+    expect(url).toContain("waypoint=60.5%2C24.5");
+    expect(url).toContain("destination=61.5%2C23.79");
+    expect(url).not.toContain("+to:");
   });
 });
 

@@ -49,15 +49,21 @@ export function googleMapsDirectionsUrl(opts: {
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
+/**
+ * Apple Maps directions (unified Maps URL).
+ * Multi-stop via repeated `waypoint` — legacy `daddr=…+to:…` only opens the first stop.
+ * @see https://developer.apple.com/documentation/mapkit/unified-map-urls
+ */
 export function appleMapsDirectionsUrl(opts: {
   origin: PlaceRef;
   destination: PlaceRef;
   waypoints?: LatLon[];
   mode?: TravelMode | string | null;
 }): string {
-  const params = new URLSearchParams();
-  params.set("saddr", placeParam(opts.origin));
-  params.set("dirflg", opts.mode === "cycling" ? "w" : "d");
+  const url = new URL("https://maps.apple.com/directions");
+  url.searchParams.set("source", placeParam(opts.origin));
+  url.searchParams.set("destination", placeParam(opts.destination));
+  url.searchParams.set("mode", opts.mode === "cycling" ? "walking" : "driving");
 
   if (isLatLon(opts.origin) && isLatLon(opts.destination)) {
     const origin = opts.origin;
@@ -69,16 +75,24 @@ export function appleMapsDirectionsUrl(opts: {
         !(w.lat === origin.lat && w.lon === origin.lon) &&
         !(w.lat === destination.lat && w.lon === destination.lon),
     );
-    const stops = [
-      ...mids.map((w) => `${w.lat},${w.lon}`),
-      `${destination.lat},${destination.lon}`,
-    ];
-    params.set("daddr", stops.join("+to:"));
-  } else {
-    params.set("daddr", placeParam(opts.destination));
+    const capped = subsampleLatLon(mids, 8);
+    for (const w of capped) {
+      url.searchParams.append("waypoint", `${w.lat},${w.lon}`);
+    }
   }
 
-  return `https://maps.apple.com/?${params.toString()}`;
+  return url.toString();
+}
+
+function subsampleLatLon(points: LatLon[], max: number): LatLon[] {
+  if (points.length <= max) return points;
+  if (max <= 1) return points.slice(0, max);
+  const out: LatLon[] = [];
+  for (let i = 0; i < max; i++) {
+    const idx = Math.round((i * (points.length - 1)) / (max - 1));
+    out.push(points[idx]!);
+  }
+  return out;
 }
 
 export function weatherTripRouteShareUrl(opts: {
