@@ -52,19 +52,81 @@ function parseCoord(raw: string | undefined): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
+/** Empty `/routes` demo corridor — Oulu → Helsinki. */
+const DEFAULT_FROM = "Oulu, Finland";
+const DEFAULT_TO = "Helsinki, Finland";
+const DEFAULT_FROM_LAT = 65.0121;
+const DEFAULT_FROM_LON = 25.4651;
+const DEFAULT_TO_LAT = 60.1699;
+const DEFAULT_TO_LON = 24.9384;
+
+function looksLikeHelsinki(name: string): boolean {
+  return /helsinki/i.test(name);
+}
+
+function looksLikeOulu(name: string): boolean {
+  return /oulu/i.test(name);
+}
+
 export default async function RoutesPage({
   searchParams,
 }: {
   searchParams: SearchParams;
 }) {
   const raw = await searchParams;
-  const from =
-    first(raw.from)?.trim() || first(raw.origin)?.trim() || "Helsinki";
-  const to = first(raw.to)?.trim() || "Tampere";
-  const fromLat = parseCoord(first(raw.fromLat)) ?? parseCoord(first(raw.lat));
-  const fromLon = parseCoord(first(raw.fromLon)) ?? parseCoord(first(raw.lon));
-  const toLat = parseCoord(first(raw.toLat));
-  const toLon = parseCoord(first(raw.toLon));
+  const fromRaw = first(raw.from)?.trim() || first(raw.origin)?.trim() || "";
+  const toRaw = first(raw.to)?.trim() || "";
+
+  let from = fromRaw || DEFAULT_FROM;
+  let to = toRaw || DEFAULT_TO;
+  // Avoid Helsinki→Helsinki when only origin was carried from Discover.
+  if (!toRaw && fromRaw && looksLikeHelsinki(fromRaw)) {
+    to = DEFAULT_FROM;
+  } else if (!fromRaw && toRaw && looksLikeOulu(toRaw)) {
+    from = DEFAULT_TO;
+  }
+
+  const fromNeedsDefaultCoords = !fromRaw;
+  const toNeedsDefaultCoords = !toRaw;
+
+  const fromLat =
+    parseCoord(first(raw.fromLat)) ??
+    parseCoord(first(raw.lat)) ??
+    (fromNeedsDefaultCoords
+      ? looksLikeOulu(from)
+        ? DEFAULT_FROM_LAT
+        : looksLikeHelsinki(from)
+          ? DEFAULT_TO_LAT
+          : undefined
+      : undefined);
+  const fromLon =
+    parseCoord(first(raw.fromLon)) ??
+    parseCoord(first(raw.lon)) ??
+    (fromNeedsDefaultCoords
+      ? looksLikeOulu(from)
+        ? DEFAULT_FROM_LON
+        : looksLikeHelsinki(from)
+          ? DEFAULT_TO_LON
+          : undefined
+      : undefined);
+  const toLat =
+    parseCoord(first(raw.toLat)) ??
+    (toNeedsDefaultCoords
+      ? looksLikeHelsinki(to)
+        ? DEFAULT_TO_LAT
+        : looksLikeOulu(to)
+          ? DEFAULT_FROM_LAT
+          : undefined
+      : undefined);
+  const toLon =
+    parseCoord(first(raw.toLon)) ??
+    (toNeedsDefaultCoords
+      ? looksLikeHelsinki(to)
+        ? DEFAULT_TO_LON
+        : looksLikeOulu(to)
+          ? DEFAULT_FROM_LON
+          : undefined
+      : undefined);
   const fromId = first(raw.fromId)?.trim();
   const toId = first(raw.toId)?.trim();
   const modeRaw = first(raw.mode);
@@ -198,6 +260,7 @@ export default async function RoutesPage({
     mode,
     locale,
     altIndex,
+    prefer: "weather",
     departureStartHour: departure.startHour,
     departureEndHour: departure.endHour,
     datePreset: dateWindow.preset,

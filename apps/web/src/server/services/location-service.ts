@@ -15,7 +15,7 @@ import type {
   TravelMode,
 } from "@/lib/types";
 import { DEFAULT_TRAVEL_MODE } from "@/lib/types";
-import { MOCK_ROUTE, findPlace, haversineKm } from "@/server/integrations/mocks/data";
+import { haversineKm } from "@/server/integrations/mocks/data";
 import { TRAVEL_SPEED_KMH } from "@/lib/utils";
 import { fetchWeatherBatch } from "@/server/integrations/weather";
 import type { DateLocale } from "@/lib/dates";
@@ -136,14 +136,6 @@ async function resolveEndpoint(
     } catch {
       // fall through
     }
-    const fromMock = findPlace(placeId) ?? findPlace(query);
-    if (fromMock) {
-      return {
-        ...fromMock,
-        lat: coords?.lat ?? fromMock.lat,
-        lon: coords?.lon ?? fromMock.lon,
-      };
-    }
   }
 
   if (
@@ -167,9 +159,7 @@ async function resolveEndpoint(
       };
     }
 
-    const named =
-      findPlace(query) ??
-      (await searchPlaces(query, { limit: 1, mode: "precise" }))[0];
+    const named = (await searchPlaces(query, { limit: 1, mode: "precise" }))[0];
     if (
       named &&
       Math.abs(named.lat - coords.lat) < 0.08 &&
@@ -198,10 +188,10 @@ async function resolveEndpoint(
     };
   }
 
-  const searched =
-    findPlace(query) ??
-    (await searchPlaces(query, { limit: 1, mode: "precise" }))[0] ??
-    MOCK_ROUTE.from;
+  const searched = (await searchPlaces(query, { limit: 1, mode: "precise" }))[0];
+  if (!searched) {
+    throw new Error(`Could not resolve place: ${query}`);
+  }
 
   if (isLinkableDestinationId(searched.id)) return searched;
 
@@ -292,7 +282,7 @@ export async function getRouteWeather(
 ): Promise<RouteDto> {
   const mode = opts?.mode ?? DEFAULT_TRAVEL_MODE;
   const locale = opts?.locale ?? "en";
-  const prefer: RoutePrefer = "fast";
+  const prefer: RoutePrefer = opts?.prefer === "fast" ? "fast" : "weather";
   const manualAlt =
     opts?.altIndex != null &&
     Number.isInteger(opts.altIndex) &&
@@ -300,8 +290,8 @@ export async function getRouteWeather(
       ? opts.altIndex
       : null;
   const t = createTranslator(getDictionary(locale));
-  // Default selection is the fastest Mapbox alternative; `altIndex` lets the
-  // user pick another corridor from the comparison cards.
+  // Default: driest Mapbox alternative (`prefer=weather`). User can pick
+  // another corridor via `altIndex` (comparison cards) or `prefer=fast`.
 
   const datePresetRaw = opts?.datePreset;
   const datePreset =
@@ -443,6 +433,12 @@ export async function getRouteWeather(
     const fastest = [...scored].sort(
       (a, b) => a.durationMinutes - b.durationMinutes,
     )[0]!;
+    const driest = [...scored].sort(
+      (a, b) =>
+        b.dryness - a.dryness ||
+        a.avgRainProbability - b.avgRainProbability ||
+        a.durationMinutes - b.durationMinutes,
+    )[0]!;
 
     const manual = scored.find((s) => s.route.alternativeIndex === manualAlt);
     if (manual) {
@@ -453,6 +449,14 @@ export async function getRouteWeather(
           : 0;
       weatherRouteSelected =
         manual.route.alternativeIndex !== fastest.route.alternativeIndex;
+    } else if (prefer === "weather") {
+      routed = driest.route;
+      minutesVsFastest =
+        driest.durationMinutes > fastest.durationMinutes
+          ? driest.durationMinutes - fastest.durationMinutes
+          : 0;
+      weatherRouteSelected =
+        driest.route.alternativeIndex !== fastest.route.alternativeIndex;
     } else {
       routed = fastest.route;
       weatherRouteSelected = false;
@@ -460,12 +464,6 @@ export async function getRouteWeather(
     }
 
     const selectedIndex = routed?.alternativeIndex ?? 0;
-    const driest = [...scored].sort(
-      (a, b) =>
-        b.dryness - a.dryness ||
-        a.avgRainProbability - b.avgRainProbability ||
-        a.durationMinutes - b.durationMinutes,
-    )[0]!;
     alternativeSummaries = scored.map((s) => ({
       index: s.route.alternativeIndex,
       distanceKm: s.route.distanceKm,
@@ -696,7 +694,7 @@ export async function getRouteWeather(
     routingStatus,
     windowPeakRainProbability,
     waypoints,
-    prefer: "fast",
+    prefer,
     alternativesCompared: isUnreachable ? 0 : alternativesCompared,
     weatherRouteSelected: isUnreachable ? false : weatherRouteSelected,
     minutesVsFastest: isUnreachable ? null : minutesVsFastest,

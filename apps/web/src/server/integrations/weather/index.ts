@@ -113,9 +113,9 @@ export async function fetchWeather(input: {
   } else {
     try {
       result = await withFallback(openMeteoProvider, yrProvider, input);
-    } catch {
-      result = await mockWeatherProvider.getForecast(input);
-      provider = "mock";
+    } catch (error) {
+      log.error({ err: error }, "[weather] all providers failed");
+      throw new Error("Weather unavailable");
     }
   }
 
@@ -198,14 +198,9 @@ export async function fetchWeatherBatch(
           const w = await withFallback(openMeteoProvider, yrProvider, m);
           remember(w, "open-meteo");
           results[m.index] = forLocale(w, locale);
-        } catch {
-          try {
-            const w = await mockWeatherProvider.getForecast(m);
-            remember(w, "mock");
-            results[m.index] = forLocale(w, locale);
-          } catch {
-            results[m.index] = null;
-          }
+        } catch (err) {
+          log.warn({ err, lat: m.lat, lon: m.lon }, "[weather] place failed");
+          results[m.index] = null;
         }
       }),
     );

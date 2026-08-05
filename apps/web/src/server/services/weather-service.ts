@@ -27,7 +27,6 @@ import { fetchWeather, fetchWeatherBatch } from "@/server/integrations/weather";
 import { reverseGeocode, searchPlaces } from "@/server/integrations/mapbox";
 import {
   DESTINATION_CATALOG,
-  findPlace,
 } from "@/server/integrations/mocks/data";
 import { placeholderImageFor } from "@/server/integrations/places/candidates";
 import { buildWeatherAdvisories, rainIntensityFromMm } from "@/lib/weather-advisories";
@@ -263,9 +262,6 @@ async function resolveOrigin(query: DiscoverQuery): Promise<PlaceDto | null> {
 
   const originText = query.origin?.trim();
   if (!originText) return null;
-
-  const known = findPlace(originText);
-  if (known) return known;
 
   const matches = await searchPlaces(originText, 1);
   return matches[0] ?? null;
@@ -596,7 +592,43 @@ export function buildSuitability(
       return s;
     });
 
-  if (current.precipitationProbability < 20 && current.windSpeedKmh < 20) {
+  /** Positive cues use the trip window (daily), not “now”. */
+  const avgRain =
+    daily.length > 0
+      ? daily.reduce((s, d) => s + d.precipitationProbability, 0) / daily.length
+      : current.precipitationProbability;
+  const avgCloud =
+    daily.length > 0
+      ? daily.reduce((s, d) => s + d.cloudCover, 0) / daily.length
+      : current.cloudCover;
+  const avgTemp =
+    daily.length > 0
+      ? daily.reduce((s, d) => s + (d.tempMaxC + d.tempMinC) / 2, 0) /
+        daily.length
+      : current.temperatureC;
+  const avgTempMax =
+    daily.length > 0
+      ? daily.reduce((s, d) => s + d.tempMaxC, 0) / daily.length
+      : current.temperatureC;
+  const severeSky = daily.some(
+    (d) =>
+      d.condition === "storm" ||
+      d.condition === "hail" ||
+      d.condition === "freezing_rain",
+  );
+  const snowOrFog = daily.some(
+    (d) => d.condition === "snow" || d.condition === "fog",
+  );
+  // Wind is only in “current”; use it when the window includes today.
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const windowIncludesToday =
+    !window ||
+    (window.startDate <= todayKey && window.endDate >= todayKey);
+  // Wind is only in “current”; for future windows use a neutral mid value
+  // so today’s gusts don’t decide weekend BBQ/cycle cues.
+  const windKmh = windowIncludesToday ? current.windSpeedKmh : 12;
+
+  if (!severeSky && avgRain < 20 && windKmh < 20 && avgCloud < 55) {
     badges.push({
       id: "bbq",
       tone: "success",
@@ -606,7 +638,7 @@ export function buildSuitability(
     });
   }
 
-  if (current.visibilityKm >= 8 && current.precipitationProbability < 40) {
+  if (avgCloud < 50 && avgRain < 40) {
     badges.push({
       id: "photo",
       tone: "info",
@@ -616,18 +648,13 @@ export function buildSuitability(
     });
   }
 
-  const severeSky =
-    current.condition === "storm" ||
-    current.condition === "hail" ||
-    current.condition === "freezing_rain";
-
   // Steady breeze, mild, mostly dry — kite-friendly without needing a coast.
   if (
     !severeSky &&
-    current.windSpeedKmh >= 15 &&
-    current.windSpeedKmh <= 35 &&
-    current.precipitationProbability < 25 &&
-    current.temperatureC >= 8
+    windKmh >= 15 &&
+    windKmh <= 35 &&
+    avgRain < 25 &&
+    avgTemp >= 8
   ) {
     badges.push({
       id: "kite",
@@ -641,12 +668,11 @@ export function buildSuitability(
   // Dry, mild, not too windy — good cycling / short outing.
   if (
     !severeSky &&
-    current.condition !== "snow" &&
-    current.condition !== "fog" &&
-    current.precipitationProbability < 20 &&
-    current.windSpeedKmh < 25 &&
-    current.temperatureC >= 8 &&
-    current.temperatureC <= 28
+    !snowOrFog &&
+    avgRain < 20 &&
+    windKmh < 25 &&
+    avgTemp >= 8 &&
+    avgTemp <= 28
   ) {
     badges.push({
       id: "cycle",
@@ -658,11 +684,7 @@ export function buildSuitability(
   }
 
   // Warm enough for a dip (lake/sea) — no coastal metadata required.
-  if (
-    !severeSky &&
-    current.temperatureC >= 20 &&
-    current.precipitationProbability < 30
-  ) {
+  if (!severeSky && avgTempMax >= 20 && avgRain < 30) {
     badges.push({
       id: "swim",
       tone: "success",
@@ -711,25 +733,18 @@ export function buildSuitability(
         d.condition === "storm" ||
         d.condition === "freezing_rain",
     ) ?? null;
-  const currentSevere =
-    current.condition === "storm" ||
-    current.condition === "hail" ||
-    current.condition === "freezing_rain" ||
-    current.condition === "snow" ||
-    current.condition === "fog";
   const advisorySource = {
     rainProbability: Math.max(
-      current.precipitationProbability,
+      avgRain,
       worstDaily?.precipitationProbability ?? 0,
     ),
     precipitationMm: worstDaily?.precipitationMm,
-    condition: currentSevere
-      ? current.condition
-      : (severeFromWindow?.condition ??
-        worstDaily?.condition ??
-        current.condition),
-    temperatureC: current.temperatureC,
-    windSpeedKmh: current.windSpeedKmh,
+    condition:
+      severeFromWindow?.condition ??
+      worstDaily?.condition ??
+      current.condition,
+    temperatureC: avgTemp,
+    windSpeedKmh: windKmh,
   };
   for (const a of buildWeatherAdvisories(advisorySource, tr)) {
     // Avoid duplicating the wet-day umbrella badge for generic rain.

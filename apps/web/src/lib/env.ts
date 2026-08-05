@@ -31,6 +31,16 @@ function resolveUseMocks(): boolean {
   return flag(process.env.USE_MOCKS, defaultUseMocks);
 }
 
+function resolveUseMockWeather(): boolean {
+  const enabled = flag(process.env.USE_MOCK_WEATHER, false);
+  if (isProduction && enabled) {
+    throw new Error(
+      "USE_MOCK_WEATHER=true is not allowed in production. Set USE_MOCK_WEATHER=false.",
+    );
+  }
+  return enabled;
+}
+
 function resolveEmailMode(): string {
   const mode = (process.env.EMAIL_MODE || "console").toLowerCase();
   if (isProduction && mode === "console") {
@@ -151,7 +161,7 @@ export function isCorsOriginAllowed(origin: string): boolean {
 export const env = {
   appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3004",
   useMocks: resolveUseMocks(),
-  useMockWeather: flag(process.env.USE_MOCK_WEATHER, false),
+  useMockWeather: resolveUseMockWeather(),
   cronEnabled: flag(process.env.CRON_ENABLED, isProduction),
   emailMode: resolveEmailMode(),
   emailFrom: process.env.EMAIL_FROM || "Solviax.app <noreply@localhost>",

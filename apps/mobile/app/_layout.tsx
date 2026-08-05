@@ -40,6 +40,10 @@ function RootNavigator() {
             presentation: "card",
           }}
         />
+        <Stack.Screen
+          name="trips"
+          options={{ title: t("trips.title"), presentation: "card" }}
+        />
         <Stack.Screen name="login" options={{ presentation: "modal" }} />
         <Stack.Screen name="pro" options={{ presentation: "card" }} />
       </Stack>

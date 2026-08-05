@@ -14,7 +14,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Link, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/lib/i18n";
-import { apiGet, getApiBaseUrl, ApiError, type PublicQuota } from "@/lib/api";
+import { apiGet, apiPost, getApiBaseUrl, ApiError, type PublicQuota } from "@/lib/api";
 import { formatDistanceKm } from "@/lib/distance";
 import {
   DEPARTURE_HOURS,
@@ -27,6 +27,7 @@ import {
   weatherTripRouteShareUrl,
 } from "@/lib/route-share";
 import { SoftPaywall } from "@/components/SoftPaywall";
+import { RoutePolylinePreview } from "@/components/RoutePolylinePreview";
 import {
   clampDateKey,
   isDateKey,
@@ -82,6 +83,8 @@ export default function RoutesScreen() {
   );
   const [departureEndHour, setDepartureEndHour] = useState<number | null>(null);
   const [tier, setTier] = useState<DiscoverTier>("anon");
+  const [canSaveTrip, setCanSaveTrip] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
   const [route, setRoute] = useState<RouteDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,9 +92,15 @@ export default function RoutesScreen() {
   const [quota, setQuota] = useState<PublicQuota | null>(null);
   const [shareBusy, setShareBusy] = useState(false);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    void fetchSession().then((s) => setTier(s.tier));
+    void fetchSession().then((s) => {
+      setTier(s.tier);
+      setCanSaveTrip(s.canSaveTrip);
+      setSignedIn(Boolean(s.user));
+    });
   }, []);
 
   useEffect(() => {
@@ -158,6 +167,7 @@ export default function RoutesScreen() {
           toLat: toPlace.lat,
           toLon: toPlace.lon,
           mode: nextMode,
+          prefer: "weather",
           datePreset: nextWindow.preset,
           startDate: nextWindow.startDate,
           endDate: nextWindow.endDate,
@@ -638,6 +648,77 @@ export default function RoutesScreen() {
             </View>
           </View>
 
+          <RoutePolylinePreview
+            geometry={route.geometry}
+            alternatives={route.alternatives}
+          />
+
+          {!signedIn ? (
+            <Link href={"/login" as Href} style={styles.saveSecondary}>
+              <Text style={styles.saveSecondaryText}>
+                {t("routes.saveRouteSignIn")}
+              </Text>
+            </Link>
+          ) : canSaveTrip ? (
+            <Pressable
+              onPress={() => {
+                void (async () => {
+                  setSaveBusy(true);
+                  setSaveMessage(null);
+                  try {
+                    await apiPost("/api/trips", {
+                      title: `${route.from.name} → ${route.to.name}`,
+                      originName: route.from.placeName,
+                      destinationName: route.to.placeName,
+                      destinationLat: route.to.lat,
+                      destinationLon: route.to.lon,
+                      originLat: route.from.lat,
+                      originLon: route.from.lon,
+                      weatherGoal: "best",
+                      travelMode: mode,
+                      datePreset: dateWindow.preset,
+                      startDate: dateWindow.startDate,
+                      endDate: dateWindow.endDate,
+                      distanceKm: route.distanceKm,
+                      durationLabel: route.durationLabel,
+                    });
+                    setSaveMessage(t("routes.saveRouteDone"));
+                  } catch (e) {
+                    if (e instanceof ApiError && e.status === 402) {
+                      setSaveMessage(t("routes.saveRouteLimit"));
+                    } else {
+                      setSaveMessage(t("routes.saveRouteError"));
+                    }
+                  } finally {
+                    setSaveBusy(false);
+                  }
+                })();
+              }}
+              disabled={saveBusy}
+              style={[styles.savePrimary, saveBusy && styles.disabled]}
+            >
+              {saveBusy ? (
+                <ActivityIndicator color={colors.onPrimary} />
+              ) : (
+                <>
+                  <FontAwesome name="bookmark" size={14} color={colors.onPrimary} />
+                  <Text style={styles.savePrimaryText}>
+                    {t("routes.saveRoute")}
+                  </Text>
+                </>
+              )}
+            </Pressable>
+          ) : (
+            <Link href={"/pro" as Href} style={styles.saveSecondary}>
+              <Text style={styles.saveSecondaryText}>
+                {t("routes.saveRouteUpgrade")}
+              </Text>
+            </Link>
+          )}
+          {saveMessage ? (
+            <Text style={styles.saveMsg}>{saveMessage}</Text>
+          ) : null}
+
           <View style={styles.shareRow}>
             <Pressable
               onPress={() => {
@@ -1084,6 +1165,40 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.onSurfaceVariant,
     textTransform: "uppercase",
+  },
+  savePrimary: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  savePrimaryText: {
+    color: colors.onPrimary,
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  saveSecondary: {
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  saveSecondaryText: {
+    color: colors.onSurfaceVariant,
+    fontWeight: "600",
+    fontSize: 14,
+    textAlign: "center",
+  },
+  saveMsg: {
+    fontSize: 13,
+    color: colors.onSurfaceVariant,
+    textAlign: "center",
   },
   card: {
     backgroundColor: colors.surfaceLowest,

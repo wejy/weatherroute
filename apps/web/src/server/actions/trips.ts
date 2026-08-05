@@ -102,7 +102,7 @@ export async function saveTripAction(formData: FormData) {
 
   const parsed = saveTripInputSchema.safeParse({
     title: String(formData.get("title") || "Saved trip"),
-    originName: String(formData.get("originName") || "Helsinki"),
+    originName: String(formData.get("originName") || "").trim() || "Origin",
     destinationName: String(formData.get("destinationName") || ""),
     destinationLat,
     destinationLon,

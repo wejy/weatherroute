@@ -131,6 +131,7 @@ export interface RouteAlternativeDto {
   selected: boolean;
   isFastest: boolean;
   isDriest: boolean;
+  geometry: [number, number][];
 }
 
 export interface RouteDto {
@@ -145,6 +146,8 @@ export interface RouteDto {
   bestDeparture: string;
   departureHint: string;
   waypoints: RouteWaypointDto[];
+  /** Road geometry as [lon, lat] pairs when Mapbox routed. */
+  geometry?: [number, number][];
   prefer?: RoutePrefer;
   alternativesCompared?: number;
   weatherRouteSelected?: boolean;
@@ -152,6 +155,14 @@ export interface RouteDto {
   alternatives?: RouteAlternativeDto[];
   routingStatus?: "routed" | "unreachable";
   windowPeakRainProbability?: number;
+}
+
+export interface SuitabilityBadgeDto {
+  id: string;
+  tone: "success" | "info" | "warning";
+  icon: string;
+  title: string;
+  description: string;
 }
 
 export interface WeatherDto {
@@ -191,4 +202,24 @@ export interface WeatherDto {
     condition: WeatherCondition;
     conditionLabel: string;
   }>;
+  suitability?: SuitabilityBadgeDto[];
+}
+
+export interface TripDto {
+  id: string;
+  title: string;
+  originName: string;
+  destinationName: string;
+  destinationLat: number;
+  destinationLon: number;
+  originLat?: number | null;
+  originLon?: number | null;
+  weatherGoal?: string | null;
+  travelMode?: TravelMode | string | null;
+  datePreset?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  distanceKm?: number | null;
+  durationLabel?: string | null;
+  createdAt: string;
 }

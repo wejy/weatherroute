@@ -201,13 +201,14 @@ const fi = {
     modeLabel: "Kulkuväline",
     driving: "Auto",
     cycling: "Pyörä",
+    /** Hidden in UI until Digitransit/OTP — keep keys for future. */
     transit: "Julkiset",
     transitSoon: "Julkiset tulossa myöhemmin",
   },
   routes: {
-    dryTrip: "Kuivan matkan takuu",
+    dryTrip: "Kuivuusarvio",
     dryTripDesc:
-      "Todennäköisyys, että tie pysyy kuivana tämän matkan aikana.",
+      "Arvio siitä, kuinka kuiva reitin kostein kohta näyttää tälle lähdölle (100 − huippusade %). Ei takuu.",
     bestDeparture: "Paras lähtöaika",
     departureHint:
       "Lähde noin klo {time}, jotta matka {from}–{to} on kuivin. Suurin saderiski lähellä: {place} ({rain} %).",
@@ -275,6 +276,8 @@ const fi = {
     saveRouteSignIn: "Kirjaudu tallentaaksesi reitin",
     saveRouteUpgrade: "Päivitä Prohon tallentaaksesi reittejä",
     saveRouteLimit: "Reittiraja täynnä — päivitä Jatkuvaan tai Vuoteen, tai poista tallennettu reitti",
+    saveRouteDone: "Reitti tallennettu",
+    saveRouteError: "Reitin tallennus epäonnistui",
     durationMinutes: "{m} min",
     durationHours: "{h} h",
     durationHoursMinutes: "{h} h {m} min",

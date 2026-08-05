@@ -25,12 +25,16 @@ type WikipediaSummary = {
 };
 
 export default function DestinationScreen() {
-  const { slug, lat, lon, name } = useLocalSearchParams<{
-    slug: string;
-    lat?: string;
-    lon?: string;
-    name?: string;
-  }>();
+  const { slug, lat, lon, name, startDate, endDate, datePreset } =
+    useLocalSearchParams<{
+      slug: string;
+      lat?: string;
+      lon?: string;
+      name?: string;
+      startDate?: string;
+      endDate?: string;
+      datePreset?: string;
+    }>();
   const { t, translateCondition, translateUv, locale } = useI18n();
   const [weather, setWeather] = useState<WeatherDto | null>(null);
   const [wikipedia, setWikipedia] = useState<WikipediaSummary | null>(null);
@@ -76,6 +80,17 @@ export default function DestinationScreen() {
         lon,
         name: placeName,
         lang: locale,
+        datePreset:
+          datePreset === "today" ||
+          datePreset === "tomorrow" ||
+          datePreset === "weekend" ||
+          datePreset === "custom"
+            ? datePreset
+            : startDate
+              ? "custom"
+              : "weekend",
+        startDate: startDate || undefined,
+        endDate: endDate || startDate || undefined,
       });
       setWeather(data);
     } catch {
@@ -84,7 +99,7 @@ export default function DestinationScreen() {
     } finally {
       setLoading(false);
     }
-  }, [lat, lon, locale, placeName, t]);
+  }, [lat, lon, locale, placeName, t, startDate, endDate, datePreset]);
 
   useEffect(() => {
     void load();
@@ -149,6 +164,30 @@ export default function DestinationScreen() {
                 value={`${weather.current.uvIndex} · ${translateUv(weather.current.uvIndex)}`}
               />
             </View>
+
+            {weather.suitability && weather.suitability.length > 0 ? (
+              <>
+                <Text style={styles.section}>
+                  {t("destination.tripSuitability")}
+                </Text>
+                {weather.suitability.map((badge) => (
+                  <View
+                    key={badge.id}
+                    style={[
+                      styles.badge,
+                      badge.tone === "warning"
+                        ? styles.badgeWarn
+                        : badge.tone === "success"
+                          ? styles.badgeOk
+                          : styles.badgeInfo,
+                    ]}
+                  >
+                    <Text style={styles.badgeTitle}>{badge.title}</Text>
+                    <Text style={styles.badgeDesc}>{badge.description}</Text>
+                  </View>
+                ))}
+              </>
+            ) : null}
 
             <Text style={styles.section}>{t("destination.forecast")}</Text>
             <Text style={styles.hint}>{t("destination.precipPeakNote")}</Text>
@@ -316,6 +355,34 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "700",
     color: colors.onSurface,
+  },
+  badge: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 12,
+    gap: 4,
+  },
+  badgeOk: {
+    borderColor: "rgba(20, 184, 99, 0.35)",
+    backgroundColor: "rgba(20, 184, 99, 0.08)",
+  },
+  badgeInfo: {
+    borderColor: "rgba(0, 101, 145, 0.3)",
+    backgroundColor: "rgba(0, 101, 145, 0.06)",
+  },
+  badgeWarn: {
+    borderColor: "rgba(186, 26, 26, 0.35)",
+    backgroundColor: "rgba(186, 26, 26, 0.08)",
+  },
+  badgeTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.onSurface,
+  },
+  badgeDesc: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.onSurfaceVariant,
   },
   dayRow: {
     flexDirection: "row",

@@ -199,13 +199,14 @@ const en = {
     modeLabel: "Travel mode",
     driving: "Car",
     cycling: "Bike",
+    /** Hidden in UI until Digitransit/OTP — keep keys for future. */
     transit: "Transit",
     transitSoon: "Transit coming later",
   },
   routes: {
-    dryTrip: "Dry Trip Guarantee",
+    dryTrip: "Dryness score",
     dryTripDesc:
-      "Chance the wettest point on your corridor stays dry for this departure.",
+      "How dry the wettest point on your corridor looks for this departure (100 − peak rain %). Not a guarantee.",
     bestDeparture: "Best Departure Time",
     departureHint:
       "Leave around {time} for the driest drive from {from} to {to}. Highest rain risk near {place} ({rain}%).",
@@ -273,6 +274,8 @@ const en = {
     saveRouteSignIn: "Sign in to save this route",
     saveRouteUpgrade: "Upgrade to Pro to save routes",
     saveRouteLimit: "Route save limit reached — upgrade to Monthly or Yearly, or delete a saved route",
+    saveRouteDone: "Route saved",
+    saveRouteError: "Could not save route",
     durationMinutes: "{m} min",
     durationHours: "{h} h",
     durationHoursMinutes: "{h} h {m} min",

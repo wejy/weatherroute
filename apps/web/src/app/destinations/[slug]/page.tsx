@@ -27,8 +27,6 @@ import { getDestinationWikipediaSummary } from "@/server/services/destination-wi
 
 export const dynamic = "force-dynamic";
 
-const HELSINKI = { lat: 60.1699, lon: 24.9384 };
-
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -70,17 +68,15 @@ export default async function DestinationPage({
   const datePreset =
     parseDatePreset(first(raw.datePreset)) ??
     (startDate ? "custom" : "weekend");
-  const originName = first(raw.origin) || first(raw.from) || "Helsinki";
+  const originName = first(raw.origin) || first(raw.from) || "";
   const originLatRaw = first(raw.lat) ?? first(raw.fromLat);
   const originLonRaw = first(raw.lon) ?? first(raw.fromLon);
   const parsedOriginLat = originLatRaw != null ? Number(originLatRaw) : NaN;
   const parsedOriginLon = originLonRaw != null ? Number(originLonRaw) : NaN;
-  const originLat = Number.isFinite(parsedOriginLat)
-    ? parsedOriginLat
-    : HELSINKI.lat;
-  const originLon = Number.isFinite(parsedOriginLon)
-    ? parsedOriginLon
-    : HELSINKI.lon;
+  const hasOriginCoords =
+    Number.isFinite(parsedOriginLat) && Number.isFinite(parsedOriginLon);
+  const originLat = hasOriginCoords ? parsedOriginLat : null;
+  const originLon = hasOriginCoords ? parsedOriginLon : null;
   const modeRaw = first(raw.mode);
   const mode =
     modeRaw === "cycling" || modeRaw === "driving" ? modeRaw : "driving";
@@ -88,12 +84,15 @@ export default async function DestinationPage({
   const dest = await getDestinationBySlug(slug);
   if (!dest) notFound();
 
-  const distanceKm = Math.round(
-    haversineKm(
-      { lat: originLat, lon: originLon },
-      { lat: dest.lat, lon: dest.lon },
-    ),
-  );
+  const distanceKm =
+    hasOriginCoords && originLat != null && originLon != null
+      ? Math.round(
+          haversineKm(
+            { lat: originLat, lon: originLon },
+            { lat: dest.lat, lon: dest.lon },
+          ),
+        )
+      : 0;
 
   const locale = await getLocale();
   const wikiLang = locale === "fi" ? "fi" : "en";
@@ -354,49 +353,59 @@ export default async function DestinationPage({
             </section>
 
             <section className="flex flex-col gap-4">
-              <form action={saveTripAction}>
-                <input
-                  type="hidden"
-                  name="title"
-                  value={`Trip to ${dest.name}`}
-                />
-                <input type="hidden" name="originName" value={originName} />
-                <input
-                  type="hidden"
-                  name="destinationName"
-                  value={dest.placeName}
-                />
-                <input type="hidden" name="destinationLat" value={dest.lat} />
-                <input type="hidden" name="destinationLon" value={dest.lon} />
-                <input type="hidden" name="originLat" value={originLat} />
-                <input type="hidden" name="originLon" value={originLon} />
-                <input type="hidden" name="weatherGoal" value="best" />
-                <input type="hidden" name="travelMode" value={mode} />
-                <input type="hidden" name="datePreset" value={datePreset} />
-                {window.startDate ? (
+              {originName ? (
+                <form action={saveTripAction}>
                   <input
                     type="hidden"
-                    name="startDate"
-                    value={window.startDate}
+                    name="title"
+                    value={`Trip to ${dest.name}`}
                   />
-                ) : null}
-                {window.endDate ? (
-                  <input type="hidden" name="endDate" value={window.endDate} />
-                ) : null}
-                <input type="hidden" name="distanceKm" value={distanceKm} />
-                <button
-                  type="submit"
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-on-primary shadow-sm transition-colors hover:bg-primary-container"
-                >
-                  <span className="material-symbols-outlined text-[18px]">
-                    bookmark
-                  </span>
-                  {t("destination.saveDestination")}
-                </button>
-              </form>
+                  <input type="hidden" name="originName" value={originName} />
+                  <input
+                    type="hidden"
+                    name="destinationName"
+                    value={dest.placeName}
+                  />
+                  <input type="hidden" name="destinationLat" value={dest.lat} />
+                  <input type="hidden" name="destinationLon" value={dest.lon} />
+                  {originLat != null ? (
+                    <input type="hidden" name="originLat" value={originLat} />
+                  ) : null}
+                  {originLon != null ? (
+                    <input type="hidden" name="originLon" value={originLon} />
+                  ) : null}
+                  <input type="hidden" name="weatherGoal" value="best" />
+                  <input type="hidden" name="travelMode" value={mode} />
+                  <input type="hidden" name="datePreset" value={datePreset} />
+                  {window.startDate ? (
+                    <input
+                      type="hidden"
+                      name="startDate"
+                      value={window.startDate}
+                    />
+                  ) : null}
+                  {window.endDate ? (
+                    <input
+                      type="hidden"
+                      name="endDate"
+                      value={window.endDate}
+                    />
+                  ) : null}
+                  <input type="hidden" name="distanceKm" value={distanceKm} />
+                  <button
+                    type="submit"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-on-primary shadow-sm transition-colors hover:bg-primary-container"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      bookmark
+                    </span>
+                    {t("destination.saveDestination")}
+                  </button>
+                </form>
+              ) : null}
               <Link
                 href={routesHref({
-                  from: originName,
+                  from: originName || undefined,
                   to: dest.name,
                   datePreset,
                   startDate: window.startDate,
@@ -404,9 +413,9 @@ export default async function DestinationPage({
                   distance: first(raw.distance),
                   radiusKm: first(raw.radiusKm),
                   weatherGoal: first(raw.weatherGoal),
-                  origin: originName,
-                  lat: originLat,
-                  lon: originLon,
+                  origin: originName || undefined,
+                  lat: originLat ?? undefined,
+                  lon: originLon ?? undefined,
                   mode,
                 })}
                 className="flex w-full items-center justify-center gap-2 rounded-lg border border-secondary bg-transparent px-4 py-3 text-sm font-medium text-secondary transition-colors hover:bg-secondary-container/10"

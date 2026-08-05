@@ -5,6 +5,15 @@ export const weatherQuerySchema = z.object({
   lon: z.coerce.number().min(-180).max(180),
   name: z.string().optional(),
   lang: z.enum(["en", "fi"]).optional().default("en"),
+  datePreset: z.enum(["today", "tomorrow", "weekend", "custom"]).optional(),
+  startDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  endDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 export const searchQuerySchema = z.object({
@@ -79,7 +88,7 @@ const routeQueryObjectSchema = z
     toLat: z.coerce.number().min(-90).max(90).optional(),
     toLon: z.coerce.number().min(-180).max(180).optional(),
     mode: z.enum(["driving", "cycling"]).optional().default("driving"),
-    prefer: z.enum(["fast", "weather"]).optional().default("fast"),
+    prefer: z.enum(["fast", "weather"]).optional().default("weather"),
     alt: z.coerce.number().int().min(0).max(5).optional(),
     datePreset: z
       .enum(["today", "tomorrow", "weekend", "custom"])

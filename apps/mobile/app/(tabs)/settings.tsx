@@ -223,6 +223,13 @@ export default function SettingsScreen() {
         )}
       </View>
 
+      <Text style={styles.label}>{t("nav.trips")}</Text>
+      <View style={styles.card}>
+        <Link href={"/trips" as Href} style={styles.signInBtn}>
+          <Text style={styles.signInText}>{t("trips.title")}</Text>
+        </Link>
+      </View>
+
       <Text style={styles.label}>{t("nav.about")}</Text>
       <View style={styles.card}>
         <Text style={styles.cardBody}>{t("about.lead")}</Text>

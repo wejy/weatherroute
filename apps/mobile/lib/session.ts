@@ -24,6 +24,9 @@ export type SessionSnapshot = {
   sameCountryOnly: boolean;
   sameCountryOnlyEffective: boolean;
   canManageBilling: boolean;
+  canSaveTrip: boolean;
+  maxSavedTrips: number | null;
+  savedTripCount: number;
   proSince: string | null;
   currentPeriodEnd: string | null;
   oneTimePaidAt: string | null;
@@ -39,6 +42,9 @@ export async function fetchSession(): Promise<SessionSnapshot> {
       sameCountryOnly?: boolean;
       sameCountryOnlyEffective?: boolean;
       canManageBilling?: boolean;
+      canSaveTrip?: boolean;
+      maxSavedTrips?: number | null;
+      savedTripCount?: number;
       proSince?: string | null;
       currentPeriodEnd?: string | null;
       oneTimePaidAt?: string | null;
@@ -51,6 +57,9 @@ export async function fetchSession(): Promise<SessionSnapshot> {
       sameCountryOnly: Boolean(data.sameCountryOnly),
       sameCountryOnlyEffective: Boolean(data.sameCountryOnlyEffective),
       canManageBilling: Boolean(data.canManageBilling),
+      canSaveTrip: Boolean(data.canSaveTrip),
+      maxSavedTrips: data.maxSavedTrips ?? null,
+      savedTripCount: data.savedTripCount ?? 0,
       proSince: data.proSince ?? null,
       currentPeriodEnd: data.currentPeriodEnd ?? null,
       oneTimePaidAt: data.oneTimePaidAt ?? null,
@@ -65,6 +74,9 @@ export async function fetchSession(): Promise<SessionSnapshot> {
       sameCountryOnly: false,
       sameCountryOnlyEffective: false,
       canManageBilling: false,
+      canSaveTrip: false,
+      maxSavedTrips: null,
+      savedTripCount: 0,
       proSince: null,
       currentPeriodEnd: null,
       oneTimePaidAt: null,

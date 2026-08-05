@@ -2,12 +2,12 @@
 
 ## Public transit travel mode
 
-- [ ] Add `transit` travel mode (UI already reserved in i18n: `travel.transit`)
+- [ ] Add `transit` travel mode (UI **hidden** until Digitransit — i18n keys `travel.transit` / `travel.transitSoon` reserved)
 - [ ] Integrate Digitransit / OpenTripPlanner (or regional OTP) for itineraries
 - [ ] Mapbox does **not** support transit Directions profiles — needs a separate provider
 - [ ] Show legs (walk → bus/train → walk), duration, transfers; graceful “unavailable outside coverage”
 
-Related: car + bike already use Mapbox `driving` / `cycling` via `getMapboxRoute`.
+Related: car + bike already use Mapbox `driving` / `cycling` via `getMapboxRoute`. Only those modes are selectable in web + mobile.
 
 ## Mobile Expo parity (phase 2–3)
 
@@ -18,12 +18,12 @@ Expo app (`apps/mobile`, SDK 57) talks to web `/api/*`.
 - [x] Auth OTP session via SecureStore (`X-Solviax-Session` + `/api/auth/verify-otp`)
 - [x] Map tab = nearby list from last Discover (+ destination Wikipedia already done)
 - [ ] Full Mapbox GL map on mobile (optional later)
-- [ ] Route polyline / save-trip parity
+- [x] Route polyline preview + save-trip API parity (`/api/trips`)
 - [ ] Keep DTO/types in sync with `apps/web`
 
 ## Appearance
 
-- [ ] Dark mode (settings UI already has disabled Light/Dark toggle on `/settings`)
+- [ ] Dark mode — see plan `.cursor/plans/dark_mode_8f2a1c90.plan.md` (settings toggle still disabled)
 
 ## Discover result caps (tiered)
 
