@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   Area,
   AreaChart,
@@ -48,10 +48,27 @@ const COLORS = {
   grid: "rgba(70, 69, 85, 0.12)",
 };
 
+/** Unique X key must be the ISO date — weekday labels alone collide (two Fridays). */
+function axisDayTick(date: string, days: ChartDay[]): string {
+  const day = days.find((d) => d.date === date);
+  const dayNum = Number(date.slice(8, 10));
+  const monthNum = Number(date.slice(5, 7));
+  if (!day || !Number.isFinite(dayNum) || !Number.isFinite(monthNum)) {
+    return date;
+  }
+  return `${day.dayLabel} ${dayNum}.${monthNum}.`;
+}
+
+function chartDayFromTooltipPayload(
+  payload?: Array<{ payload?: ChartDay }>,
+): ChartDay | null {
+  if (!payload?.length) return null;
+  return payload[0]?.payload ?? null;
+}
+
 function ChartTooltipShell({
   active,
   payload,
-  label,
   tripWindowLabel,
   dateLocale,
   children,
@@ -63,13 +80,11 @@ function ChartTooltipShell({
   dateLocale: "en" | "fi";
   children: (day: ChartDay) => ReactNode;
 }) {
-  if (!active || !payload?.length) return null;
-  const day = payload[0]?.payload;
+  if (!active) return null;
+  const day = chartDayFromTooltipPayload(payload);
   if (!day) return null;
 
-  const datePart = day.date
-    ? formatDateKeyForLocale(day.date, dateLocale)
-    : label;
+  const datePart = formatDateKeyForLocale(day.date, dateLocale);
 
   return (
     <div className="rounded-xl border border-outline-variant/20 bg-surface/95 px-3.5 py-2.5 shadow-[0px_10px_30px_rgba(0,0,0,0.12)] backdrop-blur-md">
@@ -149,7 +164,9 @@ function PrecipTooltip({
           </p>
           {showMm && day.precipitationMm != null && (
             <p className="font-semibold text-secondary">
-              {t("destination.rainMm", { mm: day.precipitationMm })}
+              {t("destination.rainMm", {
+                mm: Math.round(day.precipitationMm * 10) / 10,
+              })}
             </p>
           )}
           <p className="text-on-surface-variant">
@@ -247,12 +264,14 @@ function defaultSelectedDate(
 
 function HourlyPrecipTooltip({
   t,
+  showMm,
   ...props
 }: {
   active?: boolean;
   payload?: Array<{ payload: HourlyPoint }>;
   label?: string;
   t: Translator;
+  showMm: boolean;
 }) {
   if (!props.active || !props.payload?.length) return null;
   const hour = props.payload[0]?.payload;
@@ -263,14 +282,17 @@ function HourlyPrecipTooltip({
         {hour.hourLabel}
       </p>
       <div className="space-y-0.5 text-sm">
+        {showMm && hour.precipitationMm != null ? (
+          <p className="font-semibold text-secondary">
+            {t("destination.precipMm")}:{" "}
+            {t("destination.rainMm", {
+              mm: Math.round(hour.precipitationMm * 10) / 10,
+            })}
+          </p>
+        ) : null}
         <p className="font-semibold text-on-surface">
           {t("destination.rainPct", { pct: hour.precipitationProbability })}
         </p>
-        {hour.precipitationMm != null && (
-          <p className="font-semibold text-secondary">
-            {t("destination.rainMm", { mm: hour.precipitationMm })}
-          </p>
-        )}
         <p className="text-on-surface-variant">
           {t("destination.cloudsPct", { pct: hour.cloudCover })}
         </p>
@@ -297,6 +319,7 @@ export function ForecastCharts({
   const gid = useId().replace(/:/g, "");
   const tripWindowLabel = t("destination.tripWindow");
 
+  const hourlySectionRef = useRef<HTMLDivElement>(null);
   const [selectedDate, setSelectedDate] = useState(() =>
     defaultSelectedDate(days, periodStart, periodEnd, hourly),
   );
@@ -304,6 +327,18 @@ export function ForecastCharts({
   useEffect(() => {
     setSelectedDate(defaultSelectedDate(days, periodStart, periodEnd, hourly));
   }, [days, periodStart, periodEnd, hourly]);
+
+  const selectDay = (date: string) => {
+    if (!date) return;
+    setSelectedDate(date);
+    // Defer scroll so hourly panel can render for the new day.
+    requestAnimationFrame(() => {
+      hourlySectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
+    });
+  };
 
   const data: ChartDay[] = days.map((day) => ({
     ...day,
@@ -325,6 +360,14 @@ export function ForecastCharts({
     ? Math.max(2, ...data.map((d) => d.precipitationMm ?? 0))
     : 0;
   const mmDomainMax = Math.ceil(maxMm * 1.15 * 2) / 2;
+
+  const hasHourlyMm = hourlyPoints.some(
+    (h) => h.precipitationMm != null && !Number.isNaN(h.precipitationMm),
+  );
+  const hourlyMaxMm = hasHourlyMm
+    ? Math.max(1, ...hourlyPoints.map((h) => h.precipitationMm ?? 0))
+    : 0;
+  const hourlyMmDomainMax = Math.ceil(hourlyMaxMm * 1.2 * 2) / 2;
 
   const temps = data.flatMap((d) => [d.tempMinC, d.tempMaxC]);
   const tempMin = Math.floor(Math.min(...temps) - 2);
@@ -405,7 +448,8 @@ export function ForecastCharts({
                 strokeDasharray="4 8"
               />
               <XAxis
-                dataKey="dayLabel"
+                dataKey="date"
+                tickFormatter={(date: string) => axisDayTick(date, data)}
                 tick={{
                   fill: COLORS.onSurfaceVariant,
                   fontSize: 12,
@@ -515,10 +559,20 @@ export function ForecastCharts({
               barGap={4}
               barCategoryGap="22%"
               onClick={(state) => {
-                const date = (
+                const fromPayload = (
                   state as { activePayload?: Array<{ payload?: ChartDay }> }
                 )?.activePayload?.[0]?.payload?.date;
-                if (typeof date === "string") setSelectedDate(date);
+                const fromLabel = (state as { activeLabel?: string })
+                  ?.activeLabel;
+                const date =
+                  typeof fromPayload === "string"
+                    ? fromPayload
+                    : typeof fromLabel === "string"
+                      ? fromLabel
+                      : null;
+                if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+                  selectDay(date);
+                }
               }}
               style={{ cursor: hasHourly ? "pointer" : undefined }}
             >
@@ -542,7 +596,8 @@ export function ForecastCharts({
                 strokeDasharray="4 8"
               />
               <XAxis
-                dataKey="dayLabel"
+                dataKey="date"
+                tickFormatter={(date: string) => axisDayTick(date, data)}
                 tick={{
                   fill: COLORS.onSurfaceVariant,
                   fontSize: 12,
@@ -601,6 +656,8 @@ export function ForecastCharts({
                     fillOpacity={day.selected ? 1 : day.inPeriod ? 0.95 : 0.35}
                     stroke={day.selected ? COLORS.secondary : "transparent"}
                     strokeWidth={day.selected ? 2 : 0}
+                    cursor="pointer"
+                    onClick={() => selectDay(day.date)}
                   />
                 ))}
               </Bar>
@@ -625,6 +682,8 @@ export function ForecastCharts({
                     fillOpacity={day.selected ? 1 : day.inPeriod ? 1 : 0.3}
                     stroke={day.selected ? COLORS.onSurface : "transparent"}
                     strokeWidth={day.selected ? 2 : 0}
+                    cursor="pointer"
+                    onClick={() => selectDay(day.date)}
                   />
                 ))}
               </Bar>
@@ -650,6 +709,12 @@ export function ForecastCharts({
                   animationDuration={1100}
                   animationEasing="ease-out"
                   connectNulls
+                  onClick={(point) => {
+                    const date = (
+                      point as { payload?: ChartDay } | undefined
+                    )?.payload?.date;
+                    if (typeof date === "string") selectDay(date);
+                  }}
                 />
               )}
             </ComposedChart>
@@ -657,7 +722,10 @@ export function ForecastCharts({
         </div>
 
         {hasHourly ? (
-          <div className="mt-6 border-t border-outline-variant/20 pt-5">
+          <div
+            ref={hourlySectionRef}
+            className="mt-6 border-t border-outline-variant/20 pt-5"
+          >
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
               <h3 className="text-base font-semibold text-on-surface">
                 {t("destination.hourlyForDay", {
@@ -666,17 +734,30 @@ export function ForecastCharts({
                     : formatDateKeyForLocale(selectedDate, dateLocale),
                 })}
               </h3>
-              <span className="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
-                <span className="h-0.5 w-4 rounded-full bg-secondary" />
-                {t("destination.precipHourly")}
-              </span>
+              <div className="flex flex-wrap gap-3">
+                {hasHourlyMm ? (
+                  <span className="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
+                    <span className="h-3 w-3 rounded-sm bg-secondary-container" />
+                    {t("destination.precipMm")}
+                  </span>
+                ) : null}
+                <span className="flex items-center gap-2 text-sm font-medium text-on-surface-variant">
+                  <span className="h-0.5 w-4 rounded-full bg-secondary" />
+                  {t("destination.precipHourly")}
+                </span>
+              </div>
             </div>
             {hourlyPoints.length > 0 ? (
-              <div className="h-[200px] w-full">
+              <div className="h-[220px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart
+                  <ComposedChart
                     data={hourlyPoints}
-                    margin={{ top: 8, right: 8, left: -12, bottom: 0 }}
+                    margin={{
+                      top: hasHourlyMm ? 20 : 8,
+                      right: hasHourlyMm ? 12 : 8,
+                      left: -8,
+                      bottom: 0,
+                    }}
                   >
                     <defs>
                       <linearGradient
@@ -717,6 +798,7 @@ export function ForecastCharts({
                       dy={6}
                     />
                     <YAxis
+                      yAxisId="pct"
                       domain={[0, 100]}
                       tick={{ fill: COLORS.onSurfaceVariant, fontSize: 12 }}
                       axisLine={false}
@@ -724,13 +806,46 @@ export function ForecastCharts({
                       tickFormatter={(v: number) => `${v}%`}
                       width={40}
                     />
-                    <Tooltip content={<HourlyPrecipTooltip t={t} />} />
+                    {hasHourlyMm ? (
+                      <YAxis
+                        yAxisId="mm"
+                        orientation="right"
+                        domain={[0, hourlyMmDomainMax]}
+                        tick={{
+                          fill: COLORS.secondary,
+                          fontSize: 11,
+                          fontWeight: 600,
+                        }}
+                        axisLine={false}
+                        tickLine={false}
+                        tickFormatter={(v: number) => `${v} mm`}
+                        width={48}
+                      />
+                    ) : null}
+                    <Tooltip
+                      content={
+                        <HourlyPrecipTooltip t={t} showMm={hasHourlyMm} />
+                      }
+                    />
+                    {hasHourlyMm ? (
+                      <Bar
+                        yAxisId="mm"
+                        dataKey="precipitationMm"
+                        fill={COLORS.secondaryBright}
+                        fillOpacity={0.85}
+                        radius={[3, 3, 0, 0]}
+                        maxBarSize={14}
+                      />
+                    ) : null}
                     <Area
+                      yAxisId="pct"
                       type="monotone"
                       dataKey="precipitationProbability"
                       stroke={COLORS.secondary}
                       strokeWidth={2.5}
-                      fill={`url(#${hourlyFillId})`}
+                      fill={
+                        hasHourlyMm ? "transparent" : `url(#${hourlyFillId})`
+                      }
                       animationDuration={700}
                       animationEasing="ease-out"
                       activeDot={{
@@ -740,7 +855,7 @@ export function ForecastCharts({
                         fill: COLORS.secondary,
                       }}
                     />
-                  </AreaChart>
+                  </ComposedChart>
                 </ResponsiveContainer>
               </div>
             ) : (

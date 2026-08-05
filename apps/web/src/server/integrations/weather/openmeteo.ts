@@ -51,8 +51,8 @@ function mapHourly(data: OpenMeteoResponse): HourlyForecastDto[] {
   const hourly = data.hourly;
   if (!hourly?.time?.length) return [];
 
-  // Keep ~7d for route date presets (today / tomorrow / weekend).
-  const limit = Math.min(hourly.time.length, 168);
+  // Align with daily chart horizon (Open-Meteo hourly up to 16d).
+  const limit = Math.min(hourly.time.length, 16 * 24);
   const out: HourlyForecastDto[] = [];
   for (let i = 0; i < limit; i++) {
     const code = hourly.weather_code[i] ?? 3;

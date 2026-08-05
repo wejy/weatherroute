@@ -148,12 +148,12 @@ const fi = {
     low: "Alin",
     tempScale: "−40…+50 °C",
     precip: "Huippu todennäköisyys",
-    precipHourly: "Tuntikohtainen",
+    precipHourly: "Todennäköisyys %",
     precipPeakNote:
       "Päivän sade-% on päivän korkein riski — se vaihtelee usein tunneittain.",
     precipHint:
-      "Päiväpalkit näyttävät päivän korkeimman saderiskin — napauta päivää nähdäksesi vaihtelun tunneittain.",
-    hourlyForDay: "Tunnittain · {day}",
+      "Siniset palkit = päivän huipputodennäköisyys. Viiva = arvioitu sade (mm). Napauta päivää nähdäksesi sade-ennusteen tunnittain alla.",
+    hourlyForDay: "Sade-ennuste tunnittain · {day}",
     hourlyEmpty: "Tuntiennustetta ei ole vielä tälle päivälle.",
     precipMm: "Sade mm",
     clouds: "Pilvet",

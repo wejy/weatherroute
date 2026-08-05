@@ -200,11 +200,26 @@ export default function DestinationScreen() {
                 <Text style={styles.dayTemp}>
                   {Math.round(day.tempMinC)}–{Math.round(day.tempMaxC)}°
                 </Text>
-                <Text style={styles.dayRain}>
-                  {t("destination.rainPct", {
-                    pct: day.precipitationProbability,
-                  })}
-                </Text>
+                <View style={styles.dayPrecip}>
+                  {day.precipitationMm != null ? (
+                    <Text style={styles.dayRain}>
+                      {t("destination.rainMm", {
+                        mm: Math.round(day.precipitationMm * 10) / 10,
+                      })}
+                    </Text>
+                  ) : null}
+                  <Text
+                    style={
+                      day.precipitationMm != null
+                        ? styles.dayChance
+                        : styles.dayRain
+                    }
+                  >
+                    {t("destination.rainPct", {
+                      pct: day.precipitationProbability,
+                    })}
+                  </Text>
+                </View>
               </View>
             ))}
 
@@ -223,7 +238,18 @@ export default function DestinationScreen() {
                     return (
                       <View key={h.time} style={styles.hourCard}>
                         <Text style={styles.hourLabel}>{hour}:00</Text>
-                        <Text style={styles.hourRain}>
+                        {h.precipitationMm != null ? (
+                          <Text style={styles.hourRain}>
+                            {Math.round(h.precipitationMm * 10) / 10} mm
+                          </Text>
+                        ) : null}
+                        <Text
+                          style={
+                            h.precipitationMm != null
+                              ? styles.hourChance
+                              : styles.hourRain
+                          }
+                        >
                           {h.precipitationProbability}%
                         </Text>
                       </View>
@@ -326,6 +352,11 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: colors.secondary,
   },
+  hourChance: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: colors.onSurfaceVariant,
+  },
   hero: {
     backgroundColor: colors.surfaceLowest,
     borderRadius: 16,
@@ -395,7 +426,17 @@ const styles = StyleSheet.create({
   dayLabel: { width: 72, fontWeight: "700", color: colors.onSurface },
   dayCond: { flex: 1, color: colors.onSurfaceVariant },
   dayTemp: { fontWeight: "700", color: colors.onSurface },
-  dayRain: { width: 72, textAlign: "right", color: colors.secondary },
+  dayPrecip: { minWidth: 72, alignItems: "flex-end", gap: 2 },
+  dayRain: {
+    fontWeight: "700",
+    color: colors.secondary,
+    textAlign: "right",
+  },
+  dayChance: {
+    fontSize: 11,
+    color: colors.onSurfaceVariant,
+    textAlign: "right",
+  },
   wikiCard: {
     backgroundColor: colors.surfaceLowest,
     borderRadius: 16,

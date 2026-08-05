@@ -147,12 +147,12 @@ const en = {
     low: "Low",
     tempScale: "−40…+50°C",
     precip: "Peak chance",
-    precipHourly: "Hourly chance",
+    precipHourly: "Chance %",
     precipPeakNote:
       "Daily rain % is the day’s peak chance — it often varies a lot by hour.",
     precipHint:
-      "Daily bars show the day’s peak rain chance — tap a day to see how it varies by hour.",
-    hourlyForDay: "Hourly · {day}",
+      "Blue bars = peak rain chance that day. The line = expected rain (mm). Tap a day for the hourly rain forecast below.",
+    hourlyForDay: "Hourly rain forecast · {day}",
     hourlyEmpty: "Hourly forecast isn’t available for this day yet.",
     precipMm: "Rain mm",
     clouds: "Clouds",
