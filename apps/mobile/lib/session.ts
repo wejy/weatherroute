@@ -15,7 +15,7 @@ export type SessionUser = {
 
 export type DiscoverTier = "anon" | "free" | "pro";
 
-export type BillingPlan = "free" | "one_time" | "monthly";
+export type BillingPlan = "free" | "one_time" | "monthly" | "yearly";
 
 export type SessionSnapshot = {
   user: SessionUser | null;
@@ -23,6 +23,11 @@ export type SessionSnapshot = {
   plan: BillingPlan;
   sameCountryOnly: boolean;
   sameCountryOnlyEffective: boolean;
+  canManageBilling: boolean;
+  proSince: string | null;
+  currentPeriodEnd: string | null;
+  oneTimePaidAt: string | null;
+  oneTimeExpiresAt: string | null;
 };
 
 export async function fetchSession(): Promise<SessionSnapshot> {
@@ -33,6 +38,11 @@ export async function fetchSession(): Promise<SessionSnapshot> {
       plan?: BillingPlan;
       sameCountryOnly?: boolean;
       sameCountryOnlyEffective?: boolean;
+      canManageBilling?: boolean;
+      proSince?: string | null;
+      currentPeriodEnd?: string | null;
+      oneTimePaidAt?: string | null;
+      oneTimeExpiresAt?: string | null;
     }>("/api/auth/me");
     return {
       user: data.user,
@@ -40,6 +50,11 @@ export async function fetchSession(): Promise<SessionSnapshot> {
       plan: data.plan ?? "free",
       sameCountryOnly: Boolean(data.sameCountryOnly),
       sameCountryOnlyEffective: Boolean(data.sameCountryOnlyEffective),
+      canManageBilling: Boolean(data.canManageBilling),
+      proSince: data.proSince ?? null,
+      currentPeriodEnd: data.currentPeriodEnd ?? null,
+      oneTimePaidAt: data.oneTimePaidAt ?? null,
+      oneTimeExpiresAt: data.oneTimeExpiresAt ?? null,
     };
   } catch (err) {
     log.warn({ err }, "fetchSession failed");
@@ -49,6 +64,11 @@ export async function fetchSession(): Promise<SessionSnapshot> {
       plan: "free",
       sameCountryOnly: false,
       sameCountryOnlyEffective: false,
+      canManageBilling: false,
+      proSince: null,
+      currentPeriodEnd: null,
+      oneTimePaidAt: null,
+      oneTimeExpiresAt: null,
     };
   }
 }
@@ -58,9 +78,15 @@ export async function fetchCurrentUser(): Promise<SessionUser | null> {
   return user;
 }
 
-export async function requestOtp(email: string): Promise<void> {
+export async function requestOtp(
+  email: string,
+  opts?: { locale?: "en" | "fi" },
+): Promise<void> {
   log.info({ email }, "request OTP");
-  await apiPost<{ ok: boolean }>("/api/auth/request-otp", { email });
+  await apiPost<{ ok: boolean }>("/api/auth/request-otp", {
+    email,
+    ...(opts?.locale ? { locale: opts.locale } : {}),
+  });
   log.info({ email }, "OTP requested");
 }
 

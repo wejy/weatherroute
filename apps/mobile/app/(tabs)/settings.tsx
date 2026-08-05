@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -11,26 +12,39 @@ import {
 import { Link, useFocusEffect, type Href } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
-import { apiPatch, getApiBaseUrl } from "@/lib/api";
+import { apiPatch, apiPost, getApiBaseUrl } from "@/lib/api";
+import { formatIsoDateForLocale } from "@/lib/dates";
 import {
   fetchSession,
   signOutRemote,
+  type BillingPlan,
   type DiscoverTier,
   type SessionUser,
 } from "@/lib/session";
 import { colors } from "@/constants/Colors";
+import {
+  isStripeCheckoutAllowed,
+  openWebProPage,
+} from "@/lib/billing";
 
 export default function SettingsScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const api = getApiBaseUrl();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [tier, setTier] = useState<DiscoverTier>("anon");
-  const [plan, setPlan] = useState<"free" | "one_time" | "monthly">("free");
+  const [plan, setPlan] = useState<BillingPlan>("free");
+  const [canManageBilling, setCanManageBilling] = useState(false);
+  const [proSince, setProSince] = useState<string | null>(null);
+  const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
+  const [oneTimePaidAt, setOneTimePaidAt] = useState<string | null>(null);
+  const [oneTimeExpiresAt, setOneTimeExpiresAt] = useState<string | null>(null);
   const [sameCountryOnly, setSameCountryOnly] = useState(false);
   const [sameCountryEffective, setSameCountryEffective] = useState(false);
   const [loadingUser, setLoadingUser] = useState(true);
   const [savingCountry, setSavingCountry] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [portalBusy, setPortalBusy] = useState(false);
+  const allowStripe = isStripeCheckoutAllowed();
 
   const refreshUser = useCallback(async () => {
     setLoadingUser(true);
@@ -39,6 +53,11 @@ export default function SettingsScreen() {
       setUser(next.user);
       setTier(next.tier);
       setPlan(next.plan);
+      setCanManageBilling(next.canManageBilling);
+      setProSince(next.proSince);
+      setCurrentPeriodEnd(next.currentPeriodEnd);
+      setOneTimePaidAt(next.oneTimePaidAt);
+      setOneTimeExpiresAt(next.oneTimeExpiresAt);
       setSameCountryOnly(next.sameCountryOnly);
       setSameCountryEffective(next.sameCountryOnlyEffective);
     } finally {
@@ -63,6 +82,11 @@ export default function SettingsScreen() {
       setUser(null);
       setTier("anon");
       setPlan("free");
+      setCanManageBilling(false);
+      setProSince(null);
+      setCurrentPeriodEnd(null);
+      setOneTimePaidAt(null);
+      setOneTimeExpiresAt(null);
       setSameCountryOnly(false);
       setSameCountryEffective(false);
     } finally {
@@ -98,9 +122,35 @@ export default function SettingsScreen() {
       ? t("settings.planOneTime")
       : plan === "monthly"
         ? t("settings.planMonthly")
-        : isPro
-          ? t("settings.tierPro")
-          : t("settings.tierFree");
+        : plan === "yearly"
+          ? t("settings.planYearly")
+          : isPro
+            ? t("settings.tierPro")
+            : t("settings.tierFree");
+
+  const startedLabel = formatIsoDateForLocale(
+    proSince ?? oneTimePaidAt,
+    locale,
+  );
+  const validUntilLabel = formatIsoDateForLocale(oneTimeExpiresAt, locale);
+  const renewsLabel = formatIsoDateForLocale(currentPeriodEnd, locale);
+
+  const openPortal = useCallback(async () => {
+    if (portalBusy) return;
+    setPortalBusy(true);
+    try {
+      if (!allowStripe) {
+        await openWebProPage();
+        return;
+      }
+      const data = await apiPost<{ url: string }>("/api/billing/portal", {
+        returnToApp: true,
+      });
+      await Linking.openURL(data.url);
+    } finally {
+      setPortalBusy(false);
+    }
+  }, [allowStripe, portalBusy]);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -187,7 +237,26 @@ export default function SettingsScreen() {
       <View style={styles.card}>
         <Text style={styles.cardBody}>{t("settings.subscriptionBody")}</Text>
         {user ? (
-          <Text style={styles.tier}>{planLabel}</Text>
+          <>
+            <Text style={styles.tier}>{planLabel}</Text>
+            {isPro && startedLabel ? (
+              <Text style={styles.hint}>
+                {t("pro.startedOn", { date: startedLabel })}
+              </Text>
+            ) : null}
+            {isPro && plan === "one_time" && validUntilLabel ? (
+              <Text style={styles.hint}>
+                {t("pro.validUntil", { date: validUntilLabel })}
+              </Text>
+            ) : null}
+            {isPro &&
+            (plan === "monthly" || plan === "yearly") &&
+            renewsLabel ? (
+              <Text style={styles.hint}>
+                {t("pro.renewsOn", { date: renewsLabel })}
+              </Text>
+            ) : null}
+          </>
         ) : (
           <Text style={styles.hint}>{t("settings.subscriptionSignInHint")}</Text>
         )}
@@ -196,6 +265,26 @@ export default function SettingsScreen() {
             <Text style={styles.signInText}>{t("settings.subscriptionCta")}</Text>
           </Pressable>
         </Link>
+        {user && canManageBilling ? (
+          <>
+            <Pressable
+              style={styles.manageBtn}
+              disabled={portalBusy}
+              onPress={() => void openPortal()}
+            >
+              {portalBusy ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <Text style={styles.manageText}>
+                  {allowStripe
+                    ? t("settings.subscriptionManage")
+                    : t("pro.manageOnWeb")}
+                </Text>
+              )}
+            </Pressable>
+            <Text style={styles.hint}>{t("settings.subscriptionStatusHint")}</Text>
+          </>
+        ) : null}
       </View>
 
       <Text style={styles.label}>{t("language.label")}</Text>
@@ -259,6 +348,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   signInText: { color: colors.onPrimary, fontWeight: "700" },
+  manageBtn: {
+    marginTop: 4,
+    minHeight: 44,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  manageText: { color: colors.onSurfaceVariant, fontWeight: "700" },
   signOutBtn: {
     marginTop: 4,
     minHeight: 44,

@@ -28,13 +28,13 @@ npm run dev:web
 npm run dev:mobile
 ```
 
-Web: [http://localhost:3000](http://localhost:3000).
+Web: [http://localhost:3004](http://localhost:3004) (dev port **3004**).
 
 Confirm `DATABASE_URL` in `apps/web/.env.local` matches Docker defaults:
 
 `postgresql://solviax:solviax@localhost:5433/solviax`
 
-For a physical phone, set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to your machine’s LAN IP (e.g. `http://192.168.1.10:3000`).
+For a physical phone, set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to your machine’s LAN IP (e.g. `http://192.168.1.10:3004`).
 
 ## Local database
 
@@ -112,7 +112,7 @@ npm run dev:web
 npm run dev:mobile:tunnel
 ```
 
-Scan the tunnel QR in Expo Go. Keep `EXPO_PUBLIC_API_URL` on your **Windows Wi‑Fi IPv4** (`ipconfig`), e.g. `http://192.168.50.169:3000`. If the app opens but searches fail, Windows still isn’t forwarding `:3000` into WSL — use mirrored networking below (or `netsh interface portproxy` for 3000 + 8081).
+Scan the tunnel QR in Expo Go. Keep `EXPO_PUBLIC_API_URL` on your **Windows Wi‑Fi IPv4** (`ipconfig`), e.g. `http://192.168.50.169:3004`. If the app opens but searches fail, Windows still isn’t forwarding `:3004` into WSL — use mirrored networking below (or `netsh interface portproxy` for 3004 + 8081).
 
 **Better long-term — mirrored networking** (Windows 11): put this in `%USERPROFILE%\.wslconfig`, then `wsl --shutdown` and reopen:
 
@@ -122,7 +122,7 @@ networkingMode=mirrored
 hostAddressLoopback=true
 ```
 
-After that, LAN/QR can work with `EXPO_PUBLIC_API_URL=http://<same-windows-lan-ip>:3000`. Expo Go must support SDK **57**.
+After that, LAN/QR can work with `EXPO_PUBLIC_API_URL=http://<same-windows-lan-ip>:3004`. Expo Go must support SDK **57**.
 
 ## Agent / contributor rules
 
@@ -154,7 +154,7 @@ See [AGENTS.md](./AGENTS.md) and `.cursor/rules/dual-platform-i18n.mdc`:
 
 ## Production
 
-Full VPS guide (Node, Postgres, nginx/Caddy, env vars, PM2, Resend, Mapbox, Upstash): **[DEPLOYMENT.md](./DEPLOYMENT.md)**.
+Full VPS guide (Node, Postgres, nginx/Caddy, env vars, PM2, Mailgun, Mapbox, Upstash): **[DEPLOYMENT.md](./DEPLOYMENT.md)**.
 
 Expo / Play Store / TestFlight (EAS Build, `EXPO_PUBLIC_API_URL`, what not to put in the app): **[EXPO_DEPLOYMENT.md](./EXPO_DEPLOYMENT.md)**.
 
@@ -163,13 +163,14 @@ Quick env checklist before `NODE_ENV=production`:
 | Variable | Requirement |
 |---|---|
 | `AUTH_SECRET` | Random string, **≥ 32** characters |
-| `EMAIL_MODE` | `resend` (`console` is rejected at boot) |
+| `EMAIL_MODE` | `mailgun` (or `resend`; `console` is rejected at boot) |
+| `MAILGUN_API_KEY` / `MAILGUN_DOMAIN` | Required when `EMAIL_MODE=mailgun` |
 | `RESEND_API_KEY` | Required when `EMAIL_MODE=resend` |
 | `USE_MOCKS` | `false` (`true` is rejected at boot) |
 | `AUTH_TRUST_HOST` | `true` **only** behind a trusted reverse proxy |
 | `CORS_ALLOWED_ORIGINS` | Production web origin |
 | `UPSTASH_REDIS_REST_*` | Recommended for rate limits |
-| `NEXT_PUBLIC_APP_URL` / `AUTH_URL` | Canonical production URL |
+| `NEXT_PUBLIC_APP_URL` / `AUTH_URL` | Canonical production URL (`https://solviax.app`) |
 | `DATABASE_URL` | Postgres connection string |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` / `MAPBOX_ACCESS_TOKEN` | Mapbox `pk.` (+ optional `sk.` server-side) |
 

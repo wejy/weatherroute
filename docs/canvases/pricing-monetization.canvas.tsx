@@ -28,8 +28,9 @@ const stripeFee = (grossEur: number) =>
   Math.round((grossEur * 0.015 + 0.25) * 1000) / 1000;
 
 export default function PricingMonetization() {
-  const fee1 = stripeFee(1);
-  const fee280 = stripeFee(2.8);
+  const fee199 = stripeFee(1.99);
+  const fee299 = stripeFee(2.99);
+  const fee30 = stripeFee(30);
   const fee490 = stripeFee(4.9);
   const fee690 = stripeFee(6.9);
 
@@ -44,17 +45,16 @@ export default function PricingMonetization() {
       </Stack>
 
       <Grid columns={4} gap={12}>
-        <Stat value="€1" label="Kerta · 90 pv" />
-        <Stat value="€2.80" label="Jatkuva / kk" tone="info" />
+        <Stat value="€1.99" label="Kerta · 60 pv · sis. ALV" />
+        <Stat value="€2.99" label="Jatkuva / kk · sis. ALV" tone="info" />
+        <Stat value="€30" label="Vuosi / v · sis. ALV" tone="info" />
         <Stat value="~€27" label="Open-Meteo Standard / kk*" />
-        <Stat value="26%" label="Stripe-osuus €1:stä" tone="warning" />
       </Grid>
 
-      <Callout tone="warning" title="Ydinongelma">
-        Kiinteät API-kustannukset (erityisesti Open-Meteo commercial ~$29/kk) +
-        Stripe €0.25 / maksu syövät matalan listahinnan. €1 kertamaksu on
-        taloudellisesti heikko; €2.80/kk vaatii kymmeniä maksavia ennen kuin
-        kulu + infra peittyvät.
+      <Callout tone="info" title="Listahinnat (brutto)">
+        Kaikki Pro-hinnat sis. ALV 25,5 %. Stripeen tallennetaan brutto
+        (unit_amount) tax_behavior=inclusive. Kerta 60 UTC-päivää; Vuosi =
+        €30 vuodessa (ei /kk).
       </Callout>
 
       <H2>1. Nykyiset käyttörajat (tuote)</H2>
@@ -76,21 +76,28 @@ export default function PricingMonetization() {
             "0",
           ],
           [
-            "Pro Kerta €1",
-            "400 / 90 pv (ei mainosteta)",
+            "Pro Kerta €1.99",
+            "400 / 60 pv (ei mainosteta)",
             "30",
             "Pro-säteet + custom",
             "2",
           ],
           [
-            "Pro Jatkuva €2.80",
+            "Pro Jatkuva €2.99",
+            "200 / UTC-kk (ei mainosteta)",
+            "30",
+            "Pro-säteet + custom",
+            "Rajaton",
+          ],
+          [
+            "Pro Vuosi €30",
             "200 / UTC-kk (ei mainosteta)",
             "30",
             "Pro-säteet + custom",
             "Rajaton",
           ],
         ]}
-        rowTone={["neutral", "neutral", "info", "success"]}
+        rowTone={["neutral", "neutral", "info", "success", "success"]}
       />
       <Text tone="secondary" size="small">
         Pro-ominaisuudet molemmissa: National/Continent/custom-säde, earliest
@@ -181,16 +188,22 @@ export default function PricingMonetization() {
         headers={["Brutto", "Stripe (1.5%+€0.25)", "Netto", "Fee %"]}
         rows={[
           [
-            "€1.00 (Kerta)",
-            `€${fee1.toFixed(3)}`,
-            `€${(1 - fee1).toFixed(3)}`,
-            `${((fee1 / 1) * 100).toFixed(1)}%`,
+            "€1.99 (Kerta)",
+            `€${fee199.toFixed(3)}`,
+            `€${(1.99 - fee199).toFixed(3)}`,
+            `${((fee199 / 1.99) * 100).toFixed(1)}%`,
           ],
           [
-            "€2.80 (Jatkuva)",
-            `€${fee280.toFixed(3)}`,
-            `€${(2.8 - fee280).toFixed(3)}`,
-            `${((fee280 / 2.8) * 100).toFixed(1)}%`,
+            "€2.99 (Jatkuva)",
+            `€${fee299.toFixed(3)}`,
+            `€${(2.99 - fee299).toFixed(3)}`,
+            `${((fee299 / 2.99) * 100).toFixed(1)}%`,
+          ],
+          [
+            "€30 (Vuosi)",
+            `€${fee30.toFixed(3)}`,
+            `€${(30 - fee30).toFixed(3)}`,
+            `${((fee30 / 30) * 100).toFixed(1)}%`,
           ],
           [
             "€4.90",
@@ -205,11 +218,11 @@ export default function PricingMonetization() {
             `${((fee690 / 6.9) * 100).toFixed(1)}%`,
           ],
         ]}
-        rowTone={["danger", "warning", "success", "success"]}
+        rowTone={["warning", "info", "success", "success", "success"]}
       />
       <Text tone="secondary" size="small">
-        Kiinteä €0.25 tekee alle ~€3 maksuista kalliita. Kerta €1 → yli
-        neljännes menee Stripelle.
+        Kiinteä €0.25 painaa pieniä maksuja; vuosimaksu €30 on fee-%:ltään
+        selvästi edullisempi.
       </Text>
 
       <H2>4. API-määrät 10 vs 100 käyttäjällä</H2>
@@ -260,17 +273,18 @@ export default function PricingMonetization() {
 
       <H2>5. Tuotto nykyhinnoilla</H2>
       <Text>
-        Oletusmuunnos: 20 % MAU:sta on Jatkuva-tilaajia, 10 % on aktiivisia
-        Kerta-ostajia (amortisoidaan €1 / 3 kk ≈ €0.33/kk). Loput Free.
+        Oletusmuunnos: 15 % MAU:sta Jatkuva (€2.99/kk), 5 % Vuosi (amort ≈
+        €2.50/kk), 10 % aktiivisia Kerta-ostajia (amort €1.99 / 60 pv ≈
+        €1.00/kk). Loput Free. Hinnat sis. ALV.
       </Text>
       <Table
         headers={["Skenaario", "Kuukausitulo brutto", "Stripe jälkeen", "Kiinteät kulut", "Tulos"]}
         rows={[
-          ["10 MAU · 2×€2.80 + 1×€0.33", "€5.93", "~€5.3", "~€45", "≈ −€40"],
-          ["100 MAU · 20×€2.80 + 10×€0.33", "€59.3", "~€53", "~€52", "≈ ±€0"],
-          ["100 MAU · agressiivinen 35% Jatkuva", "€98", "~€88", "~€52", "≈ +€36"],
+          ["10 MAU · mix", "~€8", "~€7", "~€45", "≈ −€38"],
+          ["100 MAU · mix", "~€80", "~€72", "~€52", "≈ +€20"],
+          ["100 MAU · 25% Jatkuva + 10% Vuosi", "~€100", "~€90", "~€52", "≈ +€38"],
         ]}
-        rowTone={["danger", "warning", "success"]}
+        rowTone={["danger", "success", "success"]}
       />
 
       <H3>Kuukausikate-arvio (nykyhinnat, mallioletus)</H3>
@@ -319,10 +333,10 @@ export default function PricingMonetization() {
         rows={[
           [
             "A · Nykyinen",
-            "€1 / 90 pv · €2.80/kk",
+            "€1.99 / 60 pv · €2.99/kk · €30/v",
             "Soft launch, kokeilu",
             "Brutto ~€70 · kate heikko",
-            "+ helppo kokeilla  − Stripe syö €1:n  − ei skaalaudu",
+            "+ ALV sis.  + vuosi parempi fee-%  − kiinteät API-kulut edelleen",
           ],
           [
             "B · Nosto",
@@ -367,7 +381,7 @@ export default function PricingMonetization() {
         Arvioitu kuukausikate · 20 Jatkuva + 5 Kerta-amort · kiinteät ~€52
       </Text>
       <BarChart
-        categories={["A €2.80 / €1", "B €4.90 / €4.90", "B2 €6.90 / €4.90"]}
+        categories={["A €2.99 / €1.99", "B €4.90 / €4.90", "B2 €6.90 / €4.90"]}
         series={[
           {
             name: "Kate €",
@@ -409,7 +423,7 @@ export default function PricingMonetization() {
           <CardBody>
             <Text>
               ~€50 kiinteällä tarvitset ~15–25 Jatkuva-tilaajaa €4.90:llä
-              break-eveniin; €2.80:llä ~20–25. Kate syntyy vasta siitä yli.
+              break-eveniin; €2.99:llä ~18–22. Vuosi €30 auttaa fee-%:ssä.
             </Text>
           </CardBody>
         </Card>
@@ -427,7 +441,7 @@ export default function PricingMonetization() {
       <Table
         headers={["Kuukausihinta (netto ≈)", "Kiinteät ~€50", "Tavoitekate +€100"]}
         rows={[
-          ["€2.80 (netto ~€2.51)", "~20 tilaajaa", "~60 tilaajaa"],
+          ["€2.99 (netto ~€2.70)", "~19 tilaajaa", "~56 tilaajaa"],
           ["€4.90 (netto ~€4.58)", "~11 tilaajaa", "~33 tilaajaa"],
           ["€6.90 (netto ~€6.55)", "~8 tilaajaa", "~23 tilaajaa"],
         ]}

@@ -274,7 +274,7 @@ const fi = {
     saveRoute: "Tallenna reitti",
     saveRouteSignIn: "Kirjaudu tallentaaksesi reitin",
     saveRouteUpgrade: "Päivitä Prohon tallentaaksesi reittejä",
-    saveRouteLimit: "Reittiraja täynnä — päivitä Jatkuvaan tai poista tallennettu reitti",
+    saveRouteLimit: "Reittiraja täynnä — päivitä Jatkuvaan tai Vuoteen, tai poista tallennettu reitti",
     durationMinutes: "{m} min",
     durationHours: "{h} h",
     durationHoursMinutes: "{h} h {m} min",
@@ -311,7 +311,7 @@ const fi = {
     demoSession: "Kirjautunut: {name}",
     demoHint:
       "Demotila ilman tietokantaa. Käytä sähköpostikirjautumista kun Postgres on käytössä.",
-    otpHint: "Syötä sähköposti — lähetämme 6-numeroisen koodin. Ei salasanaa.",
+    otpHint: "Rekisteröidy tai kirjaudu syöttämällä sähköpostisi — lähetämme sinulle kirjautumiskoodin.",
     emailLabel: "Sähköposti",
     sendCode: "Lähetä koodi",
     sendCodeAgain: "Lähetä uusi koodi",
@@ -332,6 +332,20 @@ const fi = {
     continueDemo: "Jatka demotilillä",
     supabaseHint: "Aseta DATABASE_URL ja USE_MOCKS=false email-OTP:lle.",
     otpFooter: "Lokalisti: EMAIL_MODE=console tulostaa koodin palvelimen lokiin.",
+  },
+  email: {
+    otpSubject: "Solviax.app-kirjautumiskoodisi",
+    otpSubjectWelcome: "Tervetuloa Solviax.appiin — kirjautumiskoodisi",
+    otpGreeting: "Hei,",
+    otpWelcomeTitle: "Tervetuloa Solviax.appiin",
+    otpWelcomeLead:
+      "Kiitos, että liityit. Solviax.app auttaa löytämään paremman sään seuraavalle reissullesi — tutki kohteita, suunnittele reittejä ja tallenna suosikkisi.",
+    otpSignInTitle: "Kirjautumiskoodisi",
+    otpCodeIntro: "Käytä tätä kertakäyttökoodia kirjautuaksesi:",
+    otpExpires: "Koodi vanhenee 10 minuutin kuluttua.",
+    otpIgnore:
+      "Jos et pyytänyt tätä viestiä, voit jättää sen huomiotta.",
+    otpFooter: "Solviax.app · Löydä parempi sää lähistöltä",
   },
   settings: {
     title: "Omat asetukset",
@@ -368,13 +382,16 @@ const fi = {
     themeComingSoon: "Tumma tila tulee pian — toistaiseksi käytössä on vaalea.",
     subscriptionTitle: "Tilaus",
     subscriptionBody:
-      "Avaa laajemmat säteet, enemmän Löydä-tuloksia, 500 reittihakua/kk, lähtöajan ikkuna reiteillä, saman maan rajaus ja tallennetut reitit Kerta- tai Jatkuva-Prolla.",
+      "Avaa laajemmat säteet, enemmän Löydä-tuloksia, 500 reittihakua/kk, lähtöajan ikkuna reiteillä, saman maan rajaus ja tallennetut reitit Kerta-, Jatkuva- tai Vuosi-Prolla.",
     subscriptionCta: "Katso tilaukset ja hinnat",
     subscriptionSoon: "Stripe-avaimia ei ole vielä määritetty.",
     subscriptionSignInHint: "Kirjaudu nähdäksesi tilauksesi ja hallitaksesi laskutusta.",
     subscriptionManage: "Hallitse laskutusta",
+    subscriptionStatusHint:
+      "Peruuta tilaus tai lataa kuitit Stripe Customer Portalissa.",
     planOneTime: "Tilaus: Kerta-Pro",
     planMonthly: "Tilaus: Jatkuva Pro",
+    planYearly: "Tilaus: Vuosi-Pro",
     adminLink: "Admin-näkymä",
   },
   admin: {
@@ -398,6 +415,7 @@ const fi = {
     returningMultiDayRate: "Monipäiväisten osuus",
     usersFree: "Ilmainen",
     usersProMonthly: "Pro kuukausi",
+    usersProYearly: "Pro vuosi",
     usersProOneTime: "Pro kerta (aktiivinen)",
     usersAdmin: "Adminit",
     usersInactive: "Passiiviset / vanhentuneet",
@@ -432,8 +450,10 @@ const fi = {
     openMeteoCost: "Open-Meteo commercial (jakso)",
     variableApi: "Muuttuvat Mapbox/Wikipedia",
     payingMonthly: "Maksavat (kuukausi)",
+    payingYearly: "Maksavat (vuosi)",
     payingOneTime: "Maksavat (kerta)",
-    amortized: "tasattu 90 päivälle",
+    amortized: "tasattu 60 päivälle",
+    amortizedYearly: "tasattu 365 päivälle",
     envHint:
       "Kiinteät kk-env: serveri €{server}, DB €{db}, Upstash €{upstash}, muu €{other}.",
     seriesTitle: "Päivittäiset discoverit & reitit",
@@ -538,7 +558,7 @@ const fi = {
       radius: "Valtakunnallinen, Manner ja oma hakusäde",
       results: "Enintään 30 kohdetta + lähtöajan ikkuna reiteillä",
       sameCountry: "Valinnainen rajoitus: näytä vain saman maan kohteet",
-      saves: "Tallennetut reitit (2 reittiä Kerta-tilauksella · rajaton Jatkuvalla)",
+      saves: "Tallennetut reitit (2 reittiä Kerta-tilauksella · rajaton Jatkuvalla ja Vuodella)",
     },
     plansCta: "Vertaa tilauksia ja tilaa",
     plansHint: "Täysi hinnasto ja maksutavat ovat tilaussivulla.",
@@ -557,23 +577,32 @@ const fi = {
   pro: {
     title: "Tilaukset ja hinnat",
     subtitle:
-      "Valitse Kerta-Pro yhdellä maksulla tai Jatkuva Pro rajattomiin tallennettuihin reitteihin. Molemmat avaavat täyden Pro-Löydä-kokemuksen.",
+      "Valitse Kerta-Pro yhdellä maksulla tai Jatkuva / Vuosi-Pro rajattomiin tallennettuihin reitteihin. Kaikki maksulliset tilaukset avaavat täyden Pro-Löydä-kokemuksen. Hinnat sis. ALV 25,5 %.",
     freePlan: "Ilmainen",
     proPlan: "Pro",
     oneTimePlan: "Kerta",
     monthlyPlan: "Jatkuva",
+    yearlyPlan: "Vuosi",
     freeBadge: "Ilmainen",
     proBadge: "Pro",
     oneTimeBadge: "Kertamaksu",
     monthlyBadge: "Tilaus",
-    oneTimePrice: "1 €",
-    monthlyPrice: "2,80 € / kk",
-    oneTimePriceNote: "Yksi maksu · Pro 90 päivää · enintään 2 reittiä",
-    monthlyPriceNote: "Laskutus kuukausittain · Pro-ominaisuudet · rajattomasti reittejä",
+    yearlyBadge: "Paras hinta",
+    oneTimePrice: "1,99 €",
+    monthlyPrice: "2,99 € / kk",
+    yearlyPrice: "30 € / v",
+    vatInclusive: "Sis. ALV 25,5 %",
+    oneTimePriceNote:
+      "Yksi maksu · Pro 60 päivää · enintään 2 reittiä · sis. ALV 25,5 %",
+    monthlyPriceNote:
+      "Laskutus kuukausittain · Pro-ominaisuudet · rajattomasti reittejä · sis. ALV 25,5 %",
+    yearlyPriceNote:
+      "Laskutus vuosittain · Pro-ominaisuudet · rajattomasti reittejä · sis. ALV 25,5 %",
     comparisonTitle: "Vertaa tilauksia",
     freeCol: "Ilmainen",
     oneTimeCol: "Kerta",
     monthlyCol: "Jatkuva",
+    yearlyCol: "Vuosi",
     proCol: "Pro",
     rows: {
       radius: {
@@ -583,6 +612,8 @@ const fi = {
           "Valtakunnallinen, Manner ja oma säde jopa 2 000 km",
         monthly:
           "Valtakunnallinen, Manner ja oma säde jopa 2 000 km",
+        yearly:
+          "Valtakunnallinen, Manner ja oma säde jopa 2 000 km",
         pro: "Valtakunnallinen · 300 km, Manner · 1 000 km ja oma säde jopa 2 000 km",
       },
       results: {
@@ -590,6 +621,7 @@ const fi = {
         free: "Enintään 20 rankingin jälkeen (10 ilman kirjautumista)",
         oneTime: "Enintään 30 — valitse Asetuksissa",
         monthly: "Enintään 30 — valitse Asetuksissa",
+        yearly: "Enintään 30 — valitse Asetuksissa",
         pro: "Enintään 30 — valitse Asetuksissa",
       },
       departure: {
@@ -597,6 +629,7 @@ const fi = {
         free: "Ei käytössä — ehdotukset voivat käyttää mitä tahansa tuntia",
         oneTime: "Aseta Alku ja/tai Loppu reittisivulla",
         monthly: "Aseta Alku ja/tai Loppu reittisivulla",
+        yearly: "Aseta Alku ja/tai Loppu reittisivulla",
         pro: "Aseta per reitti reittisivulla; ehdotukset pysyvät ikkunassa",
       },
       sameCountry: {
@@ -604,6 +637,7 @@ const fi = {
         free: "Ei käytössä — naapurimaiden kohteet voivat näkyä",
         oneTime: "Valinnainen asetus Asetuksissa — kaikki haut",
         monthly: "Valinnainen asetus Asetuksissa — kaikki haut",
+        yearly: "Valinnainen asetus Asetuksissa — kaikki haut",
         pro: "Valinnainen asetus Asetuksissa — kaikki haut",
       },
       routes: {
@@ -611,18 +645,20 @@ const fi = {
         free: "Ei sisälly — päivitä Prohon tallentaaksesi",
         oneTime: "Enintään 2 tallennettua reittiä",
         monthly: "Rajattomasti tallennettuja reittejä",
+        yearly: "Rajattomasti tallennettuja reittejä",
         pro: "Sisältyy (raja riippuu tilauksesta)",
       },
       discovers: {
         title: "Löydä-haut",
         free: "50 kalenterikuukaudessa kirjautuneena (vierailla pieni kiintiö)",
         /** Tarkka kertakiintiö — ainoa paikka jossa luku näytetään */
-        oneTime: "Enintään 400 90 päivän Pro-jakson ajan",
+        oneTime: "Enintään 400 60 päivän Pro-jakson ajan",
         monthly: "Enintään 200 kalenterikuukaudessa",
+        yearly: "Enintään 200 kalenterikuukaudessa",
         pro: "Satoja Löydä-hakuja",
       },
     },
-    highlightsTitle: "Pro-ominaisuudet (molemmat maksulliset)",
+    highlightsTitle: "Pro-ominaisuudet (kaikki maksulliset)",
     highlights: {
       radius:
         "Hae kauempaa: Valtakunnallinen, Manner ja oma säde.",
@@ -631,34 +667,47 @@ const fi = {
         "Jokaisella reitillä voit asettaa lähtöajan ikkunan (Alku ja/tai Loppu), jotta ehdotukset sopivat aikatauluusi.",
       sameCountry:
         "Pidä Löydä yhdessä maassa — valinnainen asetus, koskee kaikkia hakuja.",
-      routes: "Tallenna reittejä — 2 Kerta-tilauksella, rajattomasti Jatkuvalla.",
+      routes:
+        "Tallenna reittejä — 2 Kerta-tilauksella, rajattomasti Jatkuvalla ja Vuodella.",
       discovers: "Satoja Löydä-hakuja Pro-jakson ajan.",
       future: "Tulevat Pro-ominaisuudet sitä mukaa kun ne julkaistaan.",
     },
     freeNoteTitle: "Mitä Ilmainen jo sisältää",
     freeNoteBody:
-      "Kirjautunut Ilmainen sisältää 50 hakua kalenterikuukaudessa Alueellisella säteellä (200 km), jopa 20 kohdetta, kartan ja reittisuunnittelun. Reittien tallennus ja laajemmat Pro-säteet vaativat Kerta- (90 pv) tai Jatkuva-tilauksen.",
+      "Kirjautunut Ilmainen sisältää 50 hakua kalenterikuukaudessa Alueellisella säteellä (200 km), jopa 20 kohdetta, kartan ja reittisuunnittelun. Reittien tallennus ja laajemmat Pro-säteet vaativat Kerta- (60 pv), Jatkuva- tai Vuosi-tilauksen.",
     ctaTitle: "Valitse tilaus",
     ctaBody: "Maksu hoituu turvallisesti Stripe Checkoutissa.",
     ctaSoon: "Laskutusta ei ole määritetty",
     ctaSettings: "Asetuksesi",
     ctaDiscover: "Löydä reittisi",
     ctaSignIn: "Kirjaudu ostaaksesi",
-    buyOneTime: "Osta Kerta · 1 €",
-    buyMonthly: "Tilaa Jatkuva · 2,80 €",
+    buyOneTime: "Osta Kerta · 1,99 €",
+    buyMonthly: "Tilaa Jatkuva · 2,99 €",
+    buyYearly: "Tilaa Vuosi · 30 €",
     manageBilling: "Hallitse tilausta",
+    manageBillingHint:
+      "Peruuta tilaus tai lataa kuitit Stripe Customer Portalissa.",
+    paymentHistoryTitle: "Maksuhistoria",
+    paymentDate: "Päivä",
+    paymentAmount: "Summa",
+    paymentHistoryEmpty: "Ei maksuja vielä.",
     openWebToBuy: "Jatka verkkosivulla",
     manageOnWeb: "Hallitse verkkosivulla",
     storePurchaseNote:
       "App Store- / Play-buildissa Pro ostetaan Solviax.appin verkkosivulta samalla tilillä — avaa sitten sovellus uudelleen.",
     currentPlan: "Tilauksesi: {plan}",
+    statusTitle: "Pro-tila",
+    statusActive: "Pro on aktiivinen",
+    startedOn: "Alkanut {date}",
+    validUntil: "Voimassa {date} asti",
+    renewsOn: "Uusitaan {date}",
     checkoutSuccess: "Maksu onnistui — Pro on käytössä. Kiitos!",
     checkoutCancel: "Maksusta poistuttiin — veloitusta ei tehty.",
     checkoutError: "Maksuprosessia ei voitu aloittaa. Yritä uudelleen tai tarkista Stripe-asetukset.",
     checkoutUnavailable:
       "Laskutusta ei ole määritetty tällä palvelimella (Stripe-avaimet puuttuvat).",
     checkoutTripLimit:
-      "Tallennettujen reittien raja tuli vastaan. Päivitä Jatkuvaan rajattomiin tallennuksiin tai poista reitti.",
+      "Tallennettujen reittien raja tuli vastaan. Päivitä Jatkuvaan tai Vuoteen rajattomiin tallennuksiin tai poista reitti.",
     alreadyPro: "Olet jo Pro-tilauksella.",
   },
   paywall: {
@@ -675,7 +724,7 @@ const fi = {
       "Olet käyttänyt tämän kuukauden Pro-hakuvarauksen. Kiintiö nollautuu seuraavan kalenterikuukauden alussa.",
     titleProOneTime: "Kerta-Pro:n haut käytetty",
     bodyProOneTime:
-      "Olet käyttänyt tämän 90 päivän Pro-jakson Löydä-hakuvarauksen. Tilaa Jatkuva jatkuviin hakuihin, tai osta Kerta uudelleen jakson päätyttyä.",
+      "Olet käyttänyt tämän 60 päivän Pro-jakson Löydä-hakuvarauksen. Tilaa Jatkuva tai Vuosi jatkuviin hakuihin, tai osta Kerta uudelleen jakson päätyttyä.",
     routeTitle: "Ilmaiset reittihaut käytetty",
     routeTitleFree: "Kuukauden reittihaut käytetty",
     routeTitleNetwork: "Verkon päivittäinen reittiraja täynnä",
@@ -784,7 +833,7 @@ const fi = {
   },
   mobile: {
     apiMissing:
-      "Aseta EXPO_PUBLIC_API_URL Solviax.app-web-APIin (esim. http://LAN-IP:3000).",
+      "Aseta EXPO_PUBLIC_API_URL Solviax.app-web-APIin (esim. http://LAN-IP:3004).",
     pullToRefresh: "Vedä päivittääksesi",
     openWebHint:
       "Käynnistä web-sovellus (`npm run dev:web`), jotta mobiili saa live-sään.",

@@ -2,7 +2,7 @@
 
 How to ship **`apps/mobile`** (Expo SDK 57) to TestFlight / Play Store, and what to mind for API URLs, tokens, and store compliance.
 
-The mobile app is a **thin client**: weather, search, routes, auth OTP, and quota all run on the **production web API** (`apps/web`). There is **no** Mapbox, Resend, or database secret inside the Expo binary.
+The mobile app is a **thin client**: weather, search, routes, auth OTP, and quota all run on the **production web API** (`apps/web`). There is **no** Mapbox, Mailgun/Resend, or database secret inside the Expo binary.
 
 Related docs:
 
@@ -27,9 +27,9 @@ Phone / tablet (Solviax.app)
    │  headers: X-Solviax-Anon, X-Solviax-Device,
    │           X-Solviax-Session (after login)
    ▼
-https://weather.example.com   ← apps/web (Next.js)
+https://solviax.app   ← apps/web (Next.js)
    │
-   ├─ Postgres, Auth.js OTP (Resend)
+   ├─ Postgres, Auth.js OTP (Mailgun)
    ├─ Mapbox (server token), Open-Meteo
    └─ Upstash rate limits
 ```
@@ -66,7 +66,7 @@ eas login
 |---|---|
 | `MAPBOX_ACCESS_TOKEN` (`sk.…`) | Server-only; used by Next `/api/*` |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` (`pk.…`) | Web Mapbox GL only — mobile map tab does not embed Mapbox GL today |
-| `AUTH_SECRET`, `DATABASE_URL`, `RESEND_API_KEY` | Web/API only |
+| `AUTH_SECRET`, `DATABASE_URL`, `MAILGUN_*` / `RESEND_*` | Web/API only |
 | `UPSTASH_*` | Web/API only |
 
 Anything named `EXPO_PUBLIC_*` is **baked into the JS bundle** and is readable by anyone who unpacks the app. Treat it as public configuration, not a secret.
@@ -75,7 +75,7 @@ Anything named `EXPO_PUBLIC_*` is **baked into the JS bundle** and is readable b
 
 | Variable | Production value | Notes |
 |---|---|---|
-| `EXPO_PUBLIC_API_URL` | `https://weather.example.com` | **No trailing slash.** Must be HTTPS in store builds. Changing it requires a **new binary** (or EAS Update if you adopt OTA later). |
+| `EXPO_PUBLIC_API_URL` | `https://solviax.app` | **No trailing slash.** Must be HTTPS in store builds. Changing it requires a **new binary** (or EAS Update if you adopt OTA later). |
 
 Local / Expo Go: see `apps/mobile/.env.example` (LAN IP or tunnel). Never ship a build that still points at `localhost` or a private `192.168.*` address.
 
@@ -87,7 +87,7 @@ Ensure production web has at least:
 |---|---|
 | `NEXT_PUBLIC_APP_URL` / `AUTH_URL` | Canonical links, Auth.js |
 | `AUTH_SECRET` | Session JWT for `X-Solviax-Session` |
-| `EMAIL_MODE=resend` + `RESEND_*` | Mobile login OTP |
+| `EMAIL_MODE=mailgun` + `MAILGUN_*` (or `resend`) | Mobile login OTP |
 | `MAPBOX_ACCESS_TOKEN` | Search / reverse / routes via API |
 | `DATABASE_URL` | Users, quota, share codes |
 | `CORS_ALLOWED_ORIGINS` | Web + optional Expo web; native app OK without listing a mobile origin |
@@ -131,20 +131,20 @@ Place at `apps/mobile/eas.json` (adjust after `eas build:configure`):
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://staging.example.com"
+        "EXPO_PUBLIC_API_URL": "https://staging.solviax.app"
       }
     },
     "preview": {
       "distribution": "internal",
       "android": { "buildType": "apk" },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://weather.example.com"
+        "EXPO_PUBLIC_API_URL": "https://solviax.app"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://weather.example.com"
+        "EXPO_PUBLIC_API_URL": "https://solviax.app"
       }
     }
   },
@@ -264,7 +264,7 @@ eas build --platform all --profile production --auto-submit
 
 ### Security
 
-- [ ] No `sk.` / DB / Resend keys in mobile env or source
+- [ ] No `sk.` / DB / Mailgun/Resend keys in mobile env or source
 - [ ] API rate limits enabled (Upstash recommended)
 - [ ] HTTPS only; certificate valid on the API host
 - [ ] Auth cookies remain httpOnly on web; mobile uses header JWT only
@@ -277,7 +277,7 @@ eas build --platform all --profile production --auto-submit
 - [ ] Export compliance / encryption questions (standard HTTPS → usually exempt)
 - [ ] Android: target API level required by Play (EAS SDK 57 defaults usually OK — verify before submit)
 - [ ] **Billing:** set `EXPO_PUBLIC_ALLOW_STRIPE_CHECKOUT=0` on production/store EAS profiles (digital Pro must not sell via Stripe inside the store binary). Buy on the website; same account unlocks Pro in the app.
-- [ ] Optional: `EXPO_PUBLIC_WEB_ORIGIN=https://your-domain` if the marketing site differs from the API host
+- [ ] Optional: `EXPO_PUBLIC_WEB_ORIGIN=https://solviax.app` if the marketing site differs from the API host
 
 ### Billing / Pro (mobile)
 
@@ -314,7 +314,7 @@ After web purchase, sign in with the same email in the app (`GET /api/auth/me` �
 | Symptom | Likely cause |
 |---|---|
 | “API URL missing” / generic network error | `EXPO_PUBLIC_API_URL` not set in EAS env for that profile |
-| OTP never arrives | Production `EMAIL_MODE` / Resend; check web logs |
+| OTP never arrives | Production `EMAIL_MODE` / Mailgun (or Resend); check web logs |
 | Login works on web, not mobile | Mobile must call `/api/auth/*` with session header support (already implemented) — confirm API deploy includes those routes |
 | Search/reverse empty | Server `MAPBOX_ACCESS_TOKEN` or Nominatim blocked on VPS |
 | Store rejects location permission | Privacy form / purpose string mismatch |

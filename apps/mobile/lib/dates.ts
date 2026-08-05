@@ -182,6 +182,28 @@ export function isDateKey(value: string): boolean {
   return toDateKey(d) === value;
 }
 
+/** `YYYY-MM-DD` → locale display date (FI: dd.mm.yyyy, EN: YYYY-MM-DD). */
+export function formatDateKeyForLocale(
+  key: string,
+  locale: DateLocale = "en",
+): string {
+  if (locale !== "fi") return key;
+  const m = key.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!m) return key;
+  return `${m[3]}.${m[2]}.${m[1]}`;
+}
+
+/** ISO timestamp → locale calendar date for billing UI. */
+export function formatIsoDateForLocale(
+  iso: string | null | undefined,
+  locale: DateLocale = "en",
+): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return formatDateKeyForLocale(toDateKey(d), locale);
+}
+
 export function clampDateKey(
   value: string,
   min = minForecastDateKey(),

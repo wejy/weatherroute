@@ -19,7 +19,7 @@ import { colors } from "@/constants/Colors";
 const COOLDOWN_MS = 30_000;
 
 export default function LoginScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -63,7 +63,7 @@ export default function LoginScreen() {
     setBusy("send");
     setError(null);
     try {
-      await requestOtp(trimmed);
+      await requestOtp(trimmed, { locale });
       const normalized = trimmed.toLowerCase();
       setSentEmail(normalized);
       setCooldownUntil(Date.now() + COOLDOWN_MS);
@@ -77,7 +77,7 @@ export default function LoginScreen() {
     } finally {
       setBusy(null);
     }
-  }, [email, t]);
+  }, [email, locale, t]);
 
   const verify = useCallback(async () => {
     setBusy("verify");

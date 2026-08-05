@@ -272,7 +272,7 @@ const en = {
     saveRoute: "Save route",
     saveRouteSignIn: "Sign in to save this route",
     saveRouteUpgrade: "Upgrade to Pro to save routes",
-    saveRouteLimit: "Route save limit reached — upgrade to Monthly or delete a saved route",
+    saveRouteLimit: "Route save limit reached — upgrade to Monthly or Yearly, or delete a saved route",
     durationMinutes: "{m} min",
     durationHours: "{h} h",
     durationHoursMinutes: "{h} h {m} min",
@@ -329,6 +329,20 @@ const en = {
     supabaseHint: "Set DATABASE_URL and USE_MOCKS=false for email OTP.",
     otpFooter: "Local: EMAIL_MODE=console prints the code in the server log.",
   },
+  email: {
+    otpSubject: "Your Solviax.app sign-in code",
+    otpSubjectWelcome: "Welcome to Solviax.app — your sign-in code",
+    otpGreeting: "Hi,",
+    otpWelcomeTitle: "Welcome to Solviax.app",
+    otpWelcomeLead:
+      "Thanks for joining. Solviax.app helps you find better weather for your next trip — discover destinations, plan routes, and save the ones you love.",
+    otpSignInTitle: "Your sign-in code",
+    otpCodeIntro: "Use this one-time code to sign in:",
+    otpExpires: "This code expires in 10 minutes.",
+    otpIgnore:
+      "If you didn’t request this email, you can safely ignore it.",
+    otpFooter: "Solviax.app · Find better weather nearby",
+  },
   settings: {
     title: "My settings",
     subtitle: "Account, discover limits, and appearance.",
@@ -364,13 +378,16 @@ const en = {
     themeComingSoon: "Dark mode is coming soon — light mode is used for now.",
     subscriptionTitle: "Subscription",
     subscriptionBody:
-      "Unlock wider search radii, more discover results, 500 route lookups/month, a departure time window on routes, same-country filtering, and saved routes with One-time or Monthly Pro.",
+      "Unlock wider search radii, more discover results, 500 route lookups/month, a departure time window on routes, same-country filtering, and saved routes with One-time, Monthly, or Yearly Pro.",
     subscriptionCta: "View plans & pricing",
     subscriptionSoon: "Stripe keys are not configured yet.",
     subscriptionSignInHint: "Sign in to see your plan and manage billing.",
     subscriptionManage: "Manage billing",
+    subscriptionStatusHint:
+      "Cancel or download invoices in the Stripe Customer Portal.",
     planOneTime: "Plan: One-time Pro",
     planMonthly: "Plan: Monthly Pro",
+    planYearly: "Plan: Yearly Pro",
     adminLink: "Admin dashboard",
   },
   admin: {
@@ -394,6 +411,7 @@ const en = {
     returningMultiDayRate: "Multi-day share",
     usersFree: "Free",
     usersProMonthly: "Pro monthly",
+    usersProYearly: "Pro yearly",
     usersProOneTime: "Pro one-time (active)",
     usersAdmin: "Admins",
     usersInactive: "Inactive / expired",
@@ -428,8 +446,10 @@ const en = {
     openMeteoCost: "Open-Meteo commercial (prorated)",
     variableApi: "Variable Mapbox/Wikipedia",
     payingMonthly: "Paying monthly",
+    payingYearly: "Paying yearly",
     payingOneTime: "Paying one-time",
-    amortized: "amortized over 90 days",
+    amortized: "amortized over 60 days",
+    amortizedYearly: "amortized over 365 days",
     envHint:
       "Fixed monthly env: server €{server}, DB €{db}, Upstash €{upstash}, other €{other}.",
     seriesTitle: "Daily discovers & routes",
@@ -534,7 +554,7 @@ const en = {
       radius: "National, Continent, and custom search radius",
       results: "Up to 30 destinations + departure time window on routes",
       sameCountry: "Optional same-country-only destination filter",
-      saves: "Saved routes (2 on One-time · unlimited on Monthly)",
+      saves: "Saved routes (2 on One-time · unlimited on Monthly & Yearly)",
     },
     plansCta: "Compare plans & subscribe",
     plansHint: "Full price table and checkout live on the plans page.",
@@ -553,23 +573,32 @@ const en = {
   pro: {
     title: "Plans & pricing",
     subtitle:
-      "Choose One-time Pro for a single payment, or Monthly Pro for unlimited saved routes. Both unlock the full Pro discover experience.",
+      "Choose One-time Pro for a single payment, or Monthly / Yearly Pro for unlimited saved routes. All paid plans unlock the full Pro discover experience. Prices include VAT 25.5%.",
     freePlan: "Free",
     proPlan: "Pro",
     oneTimePlan: "One-time",
     monthlyPlan: "Monthly",
+    yearlyPlan: "Yearly",
     freeBadge: "Free",
     proBadge: "Pro",
     oneTimeBadge: "Pay once",
     monthlyBadge: "Subscription",
-    oneTimePrice: "€1",
-    monthlyPrice: "€2.80 / month",
-    oneTimePriceNote: "One payment · Pro for 90 days · save up to 2 routes",
-    monthlyPriceNote: "Billed monthly · Pro features · unlimited saved routes",
+    yearlyBadge: "Best value",
+    oneTimePrice: "€1.99",
+    monthlyPrice: "€2.99 / month",
+    yearlyPrice: "€30 / year",
+    vatInclusive: "Incl. VAT 25.5%",
+    oneTimePriceNote:
+      "One payment · Pro for 60 days · save up to 2 routes · incl. VAT 25.5%",
+    monthlyPriceNote:
+      "Billed monthly · Pro features · unlimited saved routes · incl. VAT 25.5%",
+    yearlyPriceNote:
+      "Billed yearly · Pro features · unlimited saved routes · incl. VAT 25.5%",
     comparisonTitle: "Compare plans",
     freeCol: "Free",
     oneTimeCol: "One-time",
     monthlyCol: "Monthly",
+    yearlyCol: "Yearly",
     proCol: "Pro",
     rows: {
       radius: {
@@ -579,6 +608,8 @@ const en = {
           "National Level, Continent, and Custom radius up to 2,000 km",
         monthly:
           "National Level, Continent, and Custom radius up to 2,000 km",
+        yearly:
+          "National Level, Continent, and Custom radius up to 2,000 km",
         pro: "National Level · 300 km, Continent · 1,000 km, and Custom radius up to 2,000 km",
       },
       results: {
@@ -586,6 +617,7 @@ const en = {
         free: "Up to 20 after ranking (10 if you’re not signed in)",
         oneTime: "Up to 30 — choose in Settings",
         monthly: "Up to 30 — choose in Settings",
+        yearly: "Up to 30 — choose in Settings",
         pro: "Up to 30 — choose in Settings",
       },
       departure: {
@@ -593,6 +625,7 @@ const en = {
         free: "Not applied — suggestions can use any hour",
         oneTime: "Set start and/or end hour on the route page",
         monthly: "Set start and/or end hour on the route page",
+        yearly: "Set start and/or end hour on the route page",
         pro: "Set per trip on the route page; suggestions stay inside the window",
       },
       sameCountry: {
@@ -600,6 +633,7 @@ const en = {
         free: "Not applied — nearby countries can appear in results",
         oneTime: "Optional toggle in Settings — all searches",
         monthly: "Optional toggle in Settings — all searches",
+        yearly: "Optional toggle in Settings — all searches",
         pro: "Optional toggle in Settings — all searches",
       },
       routes: {
@@ -607,19 +641,21 @@ const en = {
         free: "Not included — upgrade to save routes",
         oneTime: "Up to 2 saved routes",
         monthly: "Unlimited saved routes",
+        yearly: "Unlimited saved routes",
         pro: "Included (limit depends on plan)",
       },
       discovers: {
         title: "Discover searches",
         free: "50 per calendar month when signed in (guests have a small free quota)",
         /** Exact one-time fair-use — the one place we show the number */
-        oneTime: "Up to 400 during 90-day Pro",
+        oneTime: "Up to 400 during 60-day Pro",
         /** Exact monthly fair-use — the one place we show the number */
         monthly: "Up to 200 per calendar month",
+        yearly: "Up to 200 per calendar month",
         pro: "Hundreds of discover searches",
       },
     },
-    highlightsTitle: "Pro features (both paid plans)",
+    highlightsTitle: "Pro features (all paid plans)",
     highlights: {
       radius:
         "Search farther: National Level, Continent, and your own custom radius.",
@@ -628,34 +664,46 @@ const en = {
         "On each route, set a departure time window (start and/or end) so suggestions match your schedule.",
       sameCountry:
         "Keep Discover inside one country — optional, applies to all your searches.",
-      routes: "Save routes — 2 on One-time, unlimited on Monthly.",
+      routes: "Save routes — 2 on One-time, unlimited on Monthly & Yearly.",
       discovers: "Hundreds of discover searches while Pro is active.",
       future: "Future Pro features as we ship them.",
     },
     freeNoteTitle: "What Free already includes",
     freeNoteBody:
-      "Signed-in Free includes 50 discovers per calendar month within Wider Region (200 km), up to 20 destinations, map, and route planning. Saving routes and wider Pro radii require One-time (90 days) or Monthly.",
+      "Signed-in Free includes 50 discovers per calendar month within Wider Region (200 km), up to 20 destinations, map, and route planning. Saving routes and wider Pro radii require One-time (60 days), Monthly, or Yearly.",
     ctaTitle: "Choose a plan",
     ctaBody: "You’ll complete payment securely with Stripe Checkout.",
     ctaSoon: "Billing not configured",
     ctaSettings: "Back to Settings",
     ctaDiscover: "Try Discover",
     ctaSignIn: "Sign in to purchase",
-    buyOneTime: "Buy One-time · €1",
-    buyMonthly: "Subscribe Monthly · €2.80",
-    manageBilling: "Manage subscription",
+    buyOneTime: "Buy One-time · €1.99",
+    buyMonthly: "Subscribe Monthly · €2.99",
+    buyYearly: "Subscribe Yearly · €30",
+    manageBilling: "Manage billing",
+    manageBillingHint:
+      "Cancel a subscription or download invoices in the Stripe Customer Portal.",
+    paymentHistoryTitle: "Payment history",
+    paymentDate: "Date",
+    paymentAmount: "Amount",
+    paymentHistoryEmpty: "No payments yet.",
     openWebToBuy: "Continue on the website",
     manageOnWeb: "Manage on the website",
     storePurchaseNote:
       "In the App Store / Play Store build, Pro is purchased on the Solviax.app website with the same account — then open the app again.",
     currentPlan: "Your plan: {plan}",
+    statusTitle: "Pro status",
+    statusActive: "Pro is active",
+    startedOn: "Started {date}",
+    validUntil: "Valid until {date}",
+    renewsOn: "Renews on {date}",
     checkoutSuccess: "Payment successful — Pro is active. Thanks!",
     checkoutCancel: "Checkout canceled — no charge was made.",
     checkoutError: "Couldn’t start checkout. Try again or check Stripe config.",
     checkoutUnavailable:
       "Billing isn’t configured on this server yet (missing Stripe keys).",
     checkoutTripLimit:
-      "You’ve reached your saved-route limit. Upgrade to Monthly for unlimited saves, or delete a route.",
+      "You’ve reached your saved-route limit. Upgrade to Monthly or Yearly for unlimited saves, or delete a route.",
     alreadyPro: "You’re already on Pro.",
   },
   paywall: {
@@ -672,7 +720,7 @@ const en = {
       "You’ve used this month’s Pro discover allowance. It resets at the start of next calendar month.",
     titleProOneTime: "One-time Pro discovers used up",
     bodyProOneTime:
-      "You’ve used the discover allowance for this 90-day Pro period. Subscribe to Monthly for ongoing searches, or buy One-time again after it ends.",
+      "You’ve used the discover allowance for this 60-day Pro period. Subscribe to Monthly or Yearly for ongoing searches, or buy One-time again after it ends.",
     routeTitle: "You’ve used your free route lookups",
     routeTitleFree: "Monthly route lookups used up",
     routeTitleNetwork: "Network daily route limit reached",
@@ -778,7 +826,7 @@ const en = {
   },
   mobile: {
     apiMissing:
-      "Set EXPO_PUBLIC_API_URL to your Solviax.app web API (e.g. http://YOUR_LAN_IP:3000).",
+      "Set EXPO_PUBLIC_API_URL to your Solviax.app web API (e.g. http://YOUR_LAN_IP:3004).",
     pullToRefresh: "Pull to refresh",
     openWebHint: "Start the web app (`npm run dev:web`) so mobile can load live weather.",
     retry: "Retry",

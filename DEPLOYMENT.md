@@ -13,7 +13,7 @@ Internet
    │
    ▼
 ┌──────────────────┐
-│  nginx           │  TLS, HTTP/2, gzip, proxy → :3000
+│  nginx           │  TLS, HTTP/2, gzip, proxy → :3004
 └────────┬─────────┘
          │
          ▼
@@ -23,7 +23,7 @@ Internet
          │
          ├──────────► PostgreSQL (managed or self-hosted)
          ├──────────► Upstash Redis REST (rate limits — required in prod)
-         ├──────────► Resend (OTP email)
+         ├──────────► Mailgun (OTP email; Resend optional)
          ├──────────► Mapbox (maps / geocoding / directions)
          └──────────► Open-Meteo (weather, no API key)
 ```
@@ -102,10 +102,13 @@ chmod 600 /var/www/solviax/apps/web/.env.production
 | `NODE_ENV` | `production` (set by `next start` / PM2) |
 | `DATABASE_URL` | `postgresql://USER:PASS@HOST:5432/solviax?sslmode=require` |
 | `AUTH_SECRET` | Random ≥ **32** chars (`openssl rand -base64 48`) |
-| `AUTH_URL` | `https://weather.example.com` (canonical public URL) |
+| `AUTH_URL` | `https://solviax.app` (canonical public URL) |
 | `NEXT_PUBLIC_APP_URL` | Same as `AUTH_URL` |
-| `EMAIL_MODE` | `resend` (`console` is **rejected** at boot) |
-| `RESEND_API_KEY` | From [resend.com](https://resend.com) |
+| `EMAIL_MODE` | `mailgun` (or `resend`; `console` is **rejected** at boot) |
+| `MAILGUN_API_KEY` | Required when `EMAIL_MODE=mailgun` — [Mailgun](https://www.mailgun.com/) private API key |
+| `MAILGUN_DOMAIN` | Verified sending domain (e.g. `mg.solviax.app`) |
+| `MAILGUN_API_BASE_URL` | Default `https://api.eu.mailgun.net` (EU); use `https://api.mailgun.net` for US |
+| `RESEND_API_KEY` | Only if `EMAIL_MODE=resend` |
 | `USE_MOCKS` | `false` (`true` is **rejected** at boot) |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` | Public token starting with `pk.` (browser map) |
 | `MAPBOX_ACCESS_TOKEN` | Server token (`pk.` or `sk.`) for geocoding / directions |
@@ -124,8 +127,8 @@ Without these, production **deny-alls** rate-limited routes (no in-memory fallba
 | Variable | Notes |
 |---|---|
 | `AUTH_TRUST_HOST` | `true` **only** behind nginx / Cloudflare that you control |
-| `CORS_ALLOWED_ORIGINS` | `https://weather.example.com` (+ Expo origins only if needed; no localhost in prod) |
-| `EMAIL_FROM` | Verified Resend sender, e.g. `Solviax.app <noreply@example.com>` |
+| `CORS_ALLOWED_ORIGINS` | `https://solviax.app` (+ Expo origins only if needed; no localhost in prod) |
+| `EMAIL_FROM` | Verified sender, e.g. `Solviax.app <noreply@solviax.app>` (Mailgun/Resend domain) |
 | `CRON_ENABLED` | `true` in production (nightly weather cache warm) |
 
 ### Stripe billing (required for `/pro` checkout)
@@ -136,8 +139,9 @@ Without these, the Pro page shows plans but checkout stays disabled.
 |---|---|
 | `STRIPE_SECRET_KEY` | **Live** secret `sk_live_…` (Dashboard → Developers → API keys) |
 | `STRIPE_WEBHOOK_SECRET` | Signing secret for the **production** webhook endpoint (`whsec_…`) |
-| `STRIPE_PRICE_ONE_TIME` | Live Price id for **€1** one-time Pro (`mode=payment`) |
-| `STRIPE_PRICE_MONTHLY` | Live Price id for **€2.80 / month** Pro (`mode=subscription`) |
+| `STRIPE_PRICE_ONE_TIME` | Live Price id for **€1.99** one-time Pro (`mode=payment`, 60 days, VAT incl.) |
+| `STRIPE_PRICE_MONTHLY` | Live Price id for **€2.99 / month** Pro (`mode=subscription`, VAT incl.) |
+| `STRIPE_PRICE_YEARLY` | Live Price id for **€30 / year** Pro (`mode=subscription`, VAT incl.) |
 
 See **[Stripe (production)](#stripe-production)** below for Dashboard steps. Product details: [PAID_FEATURES.md](./PAID_FEATURES.md).
 
@@ -155,9 +159,9 @@ See **[Stripe (production)](#stripe-production)** below for Dashboard steps. Pro
 | `ANON_SESSION_MINT_LIMIT` | `20` | New anon sessions per IP / 24h |
 | `FREE_MONTHLY_DISCOVER_LIMIT` | `50` | Signed-in Free discovers per UTC calendar month |
 | `PRO_MONTHLY_DISCOVER_LIMIT` | `200` | Monthly Pro fair-use discovers / UTC month |
-| `PRO_ONE_TIME_DISCOVER_LIMIT` | `400` | One-time Pro fair-use discovers / 90-day window |
+| `PRO_ONE_TIME_DISCOVER_LIMIT` | `400` | One-time Pro fair-use discovers / 60-day window |
 | `USE_MOCK_WEATHER` | `false` | Keep `false` in prod |
-| `PORT` | `3000` | Must match reverse proxy upstream |
+| `PORT` | `3004` | Must match reverse proxy upstream |
 | `LOG_LEVEL` | `info` (prod) / `debug` (dev) | Pino via `@solviax/logger` — JSON stdout in production |
 | `LOG_PRETTY` | pretty on in dev | Set `0` to force JSON locally |
 
@@ -165,10 +169,10 @@ See **[Stripe (production)](#stripe-production)** below for Dashboard steps. Pro
 
 ```bash
 NODE_ENV=production
-PORT=3000
+PORT=3004
 
-NEXT_PUBLIC_APP_URL=https://weather.example.com
-AUTH_URL=https://weather.example.com
+NEXT_PUBLIC_APP_URL=https://solviax.app
+AUTH_URL=https://solviax.app
 AUTH_SECRET=REPLACE_WITH_openssl_rand_base64_48
 AUTH_TRUST_HOST=true
 
@@ -177,11 +181,13 @@ USE_MOCK_WEATHER=false
 
 DATABASE_URL=postgresql://solviax:SECRET@db.example.com:5432/solviax?sslmode=require
 
-EMAIL_MODE=resend
-RESEND_API_KEY=re_xxxxxxxx
-EMAIL_FROM=Solviax.app <noreply@example.com>
+EMAIL_MODE=mailgun
+MAILGUN_API_KEY=key-xxxxxxxx
+MAILGUN_DOMAIN=mg.solviax.app
+MAILGUN_API_BASE_URL=https://api.eu.mailgun.net
+EMAIL_FROM=Solviax.app <noreply@solviax.app>
 
-CORS_ALLOWED_ORIGINS=https://weather.example.com
+CORS_ALLOWED_ORIGINS=https://solviax.app
 
 UPSTASH_REDIS_REST_URL=https://xxxx.upstash.io
 UPSTASH_REDIS_REST_TOKEN=AXxxxx
@@ -197,6 +203,7 @@ STRIPE_SECRET_KEY=sk_live_xxxx
 STRIPE_WEBHOOK_SECRET=whsec_xxxx
 STRIPE_PRICE_ONE_TIME=price_xxxx
 STRIPE_PRICE_MONTHLY=price_xxxx
+STRIPE_PRICE_YEARLY=price_xxxx
 ```
 
 Generate secrets:
@@ -285,7 +292,7 @@ module.exports = {
 
       env: {
         NODE_ENV: "production",
-        PORT: "3000",
+        PORT: "3004",
       },
     },
   ],
@@ -342,7 +349,7 @@ pm2 save                  # after config changes you want after reboot
 Smoke-test on the VPS:
 
 ```bash
-curl -sI http://127.0.0.1:3000 | head
+curl -sI http://127.0.0.1:3004 | head
 ```
 
 ---
@@ -420,7 +427,7 @@ sudo reboot
 ssh you@vps
 systemctl is-active nginx
 pm2 status
-curl -sI https://weather.example.com | head
+curl -sI https://solviax.app | head
 ```
 
 ### 4. Optional dry-run
@@ -456,7 +463,7 @@ Tips:
 
 ## Reverse proxy (nginx)
 
-Point DNS `A`/`AAAA` for `weather.example.com` at the VPS before issuing certificates. Set `AUTH_TRUST_HOST=true` in `.env.production` once nginx terminates TLS in front of Next.js.
+Point DNS `A`/`AAAA` for `solviax.app` at the VPS before issuing certificates. Set `AUTH_TRUST_HOST=true` in `.env.production` once nginx terminates TLS in front of Next.js.
 
 ### Global hardening (once per host)
 
@@ -503,7 +510,7 @@ Optional: install `libnginx-mod-http-brotli` (distro-dependent) and enable `brot
 server {
     listen 80;
     listen [::]:80;
-    server_name weather.example.com;
+    server_name solviax.app;
 
     # ACME HTTP-01 (certbot); keep before the redirect if you renew with webroot
     location ^~ /.well-known/acme-challenge/ {
@@ -517,7 +524,7 @@ server {
 }
 
 upstream solviax_next {
-    server 127.0.0.1:3000;
+    server 127.0.0.1:3004;
     keepalive 32;
 }
 
@@ -526,11 +533,11 @@ server {
     # nginx ≥ 1.25.1 may prefer: listen 443 ssl; listen [::]:443 ssl; http2 on;
     listen 443 ssl http2;
     listen [::]:443 ssl http2;
-    server_name weather.example.com;
+    server_name solviax.app;
 
     # certbot --nginx fills these (or set manually after first issue):
-    ssl_certificate     /etc/letsencrypt/live/weather.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/weather.example.com/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/solviax.app/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/solviax.app/privkey.pem;
     # Recommended extras (certbot often drops ssl-dhparams):
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
@@ -591,7 +598,7 @@ sudo nginx -t
 sudo systemctl reload nginx
 
 # First certificate (opens 80, writes ssl paths into the site or use --nginx)
-sudo certbot --nginx -d weather.example.com
+sudo certbot --nginx -d solviax.app
 
 sudo nginx -t && sudo systemctl reload nginx
 ```
@@ -599,7 +606,7 @@ sudo nginx -t && sudo systemctl reload nginx
 Confirm HTTP/2 and headers:
 
 ```bash
-curl -sI --http2 https://weather.example.com | head -20
+curl -sI --http2 https://solviax.app | head -20
 # Expect: HTTP/2 200  (or 3xx), and HSTS / nosniff
 ```
 
@@ -658,7 +665,7 @@ curl -sS "$UPSTASH_REDIS_REST_URL/ping" \
   -H "Authorization: Bearer $UPSTASH_REDIS_REST_TOKEN"
 
 # App smoke: anonymous discover should count toward limits, not 429 everything
-curl -sI "https://weather.example.com/api/discover?origin=Helsinki" | head
+curl -sI "https://solviax.app/api/discover?origin=Helsinki" | head
 ```
 
 If Upstash env vars are missing in production, expect rate-limited endpoints to fail closed (clients see 429 / blocked) until Redis is configured.
@@ -669,7 +676,7 @@ If Upstash env vars are missing in production, expect rate-limited endpoints to 
 
 1. **Postgres** — create DB + user; run migrations; prefer TLS (`sslmode=require`).
 2. **Upstash Redis REST** — create DB; set URL + token ([steps above](#upstash-redis-required)).
-3. **Resend** — verify domain / sender; set `EMAIL_MODE=resend` + API key.
+3. **Mailgun** — verify domain (SPF/DKIM), set `EMAIL_MODE=mailgun` + `MAILGUN_API_KEY` + `MAILGUN_DOMAIN` (+ EU base URL if needed). OTP emails are HTML+text; first-time users get a welcome blurb. Resend remains supported via `EMAIL_MODE=resend`.
 4. **Mapbox** — create tokens; restrict `pk.` by URL; never expose `sk.` to the client (`NEXT_PUBLIC_*` must stay `pk.`).
 5. **Stripe** — live products/prices, webhook to `https://…/api/stripe/webhook`, Customer Portal (see below).
 6. **DNS** — point domain at VPS; wait for propagation before TLS.
@@ -678,7 +685,7 @@ If Upstash env vars are missing in production, expect rate-limited endpoints to 
 
 ## Stripe (production)
 
-Paid plans: **One-time €1** (max 2 saved routes) and **Monthly €2.80** (unlimited saved routes). Both unlock Pro discover features. Full matrix: [PAID_FEATURES.md](./PAID_FEATURES.md).
+Paid plans (VAT-inclusive 25.5%): **One-time €1.99** (60 days, max 2 saved routes), **Monthly €2.99** (unlimited saves), and **Yearly €30** (unlimited saves). All unlock Pro discover features. Full matrix: [PAID_FEATURES.md](./PAID_FEATURES.md).
 
 ### 1. Create live products / prices
 
@@ -686,8 +693,9 @@ In [Stripe Dashboard](https://dashboard.stripe.com) (toggle **Live** mode):
 
 | Product | Price | Checkout mode |
 |---|---|---|
-| Solviax.app Pro — One-time | €1.00 EUR, one-time | `payment` |
-| Solviax.app Pro — Monthly | €2.80 EUR, recurring monthly | `subscription` |
+| Solviax.app Pro — One-time | €1.99 EUR, one-time | `payment` |
+| Solviax.app Pro — Monthly | €2.99 EUR, recurring monthly | `subscription` |
+| Solviax.app Pro — Yearly | €30.00 EUR, recurring yearly | `subscription` |
 
 Or from a machine with the **live** secret key:
 
@@ -695,13 +703,13 @@ Or from a machine with the **live** secret key:
 STRIPE_SECRET_KEY=sk_live_... npm run stripe:setup -w @solviax/web
 ```
 
-Copy the printed `STRIPE_PRICE_ONE_TIME` / `STRIPE_PRICE_MONTHLY` into `.env.production`.
+Copy the printed `STRIPE_PRICE_ONE_TIME` / `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_YEARLY` into `.env.production`.
 
 ### 2. Webhook endpoint
 
 Dashboard → **Developers → Webhooks → Add endpoint**:
 
-- URL: `https://weather.example.com/api/stripe/webhook`
+- URL: `https://solviax.app/api/stripe/webhook`
 - Events (minimum):
   - `checkout.session.completed`
   - `customer.subscription.updated`
@@ -713,9 +721,14 @@ Reverse proxy already forwards `/` to Next.js — no extra nginx location is req
 
 ### 3. Customer Portal
 
-Dashboard → **Settings → Billing → Customer portal**: enable so users can cancel / update payment method from Settings → **Manage billing** (`/api/billing/portal`).
+Dashboard → **Settings → Billing → Customer portal**:
 
-Set portal return URL / branding to your production domain if prompted.
+- [ ] Enable portal for customers
+- [ ] **Cancel subscriptions** ON
+- [ ] **Invoice history** / download invoices ON
+- [ ] Return URL / branding: `https://solviax.app/pro` (app opens portal from Pro & Settings → **Manage billing**)
+
+Users with a `stripe_customer_id` (one-time or monthly) can open the portal for cancel + receipts.
 
 ### 4. App URL
 
@@ -723,7 +736,7 @@ Set portal return URL / branding to your production domain if prompted.
 
 ### 5. Migrate before go-live
 
-Billing columns live in migration `0002_billing_plans`. Always run after deploy:
+Billing columns live in migrations `0002_billing_plans` and `0008_pro_since`. Always run after deploy:
 
 ```bash
 set -a && source apps/web/.env.production && set +a
@@ -746,7 +759,7 @@ Mobile does **not** run on the VPS. Point builds at the production API:
 
 ```bash
 # apps/mobile/.env (EAS / local release builds)
-EXPO_PUBLIC_API_URL=https://weather.example.com
+EXPO_PUBLIC_API_URL=https://solviax.app
 ```
 
 Rebuild the Expo app after changing this. CORS must allow the origins your mobile WebView / Expo web uses if applicable; native `fetch` does not use browser CORS, but the API still rate-limits by IP / device header.
@@ -777,22 +790,39 @@ pm2 save
 
 ---
 
+## Production checklist (security go-live)
+
+Config and edge requirements before public traffic. (Smoke tests after deploy: [Post-deploy smoke checklist](#post-deploy-smoke-checklist).)
+
+- [ ] `CORS_ALLOWED_ORIGINS=https://solviax.app` (no localhost / Expo ports)
+- [ ] `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` set; `curl …/ping` → `PONG`
+- [ ] `EMAIL_MODE=mailgun` + verified domain (or `resend`); **`LOG_OTP_CODE` unset**
+- [ ] Stripe live: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ONE_TIME` | `MONTHLY` | `YEARLY`
+- [ ] nginx / Cloudflare in front — **do not expose** Next.js `:3004` publicly
+- [ ] `AUTH_SECRET` ≥ 32 chars · `USE_MOCKS=false` · `AUTH_TRUST_HOST=true` only behind a trusted proxy
+- [ ] Mobile store / TestFlight builds: `EXPO_PUBLIC_API_URL=https://solviax.app`
+- [ ] Smoke: OTP email · checkout One-time / Monthly / Yearly · webhook updates `subscriptions.plan`
+
+---
+
 ## Post-deploy smoke checklist
 
-- [ ] `https://weather.example.com` loads (valid TLS, **HTTP/2**)
+- [ ] `https://solviax.app` loads (valid TLS, **HTTP/2**)
 - [ ] Upstash: `ping` works; discover/search are not globally deny-all’d
 - [ ] Discover search returns places (DB + Mapbox / places seed)
 - [ ] Map loads with `pk.` token
-- [ ] Login OTP: email arrives via Resend (not console)
+- [ ] Login OTP: HTML email arrives via Mailgun (or Resend; not console); `LOG_OTP_CODE` not set
 - [ ] Anon discover hits soft paywall after limit
-- [ ] `curl -sI --http2 https://weather.example.com` shows HSTS / nosniff (nginx + middleware)
-- [ ] Logs: `pm2 logs solviax` — no boot errors about `AUTH_SECRET` / `EMAIL_MODE` / `USE_MOCKS`
+- [ ] `curl -sI --http2 https://solviax.app` shows HSTS / nosniff (nginx + middleware)
+- [ ] Logs: `pm2 logs solviax` — no boot errors about `AUTH_SECRET` / `EMAIL_MODE` / `USE_MOCKS` / Upstash
 - [ ] Cron: after boot, log line mentioning scheduled nightly weather warm when `CRON_ENABLED=true`
 - [ ] After reboot: `pm2 status` shows `solviax` online (`pm2 startup` + `pm2 save` done)
 - [ ] `unattended-upgrades` enabled; reboot window set; nginx + PM2 recover after test reboot
 - [ ] Stripe: `/pro` shows Buy / Subscribe (keys set); webhook endpoint healthy in Dashboard
-- [ ] Stripe: test One-time + Monthly checkout; `subscriptions.plan` updates after webhook
+- [ ] Stripe: test One-time + Monthly + Yearly checkout; `subscriptions.plan` updates after webhook
 - [ ] Stripe: Customer Portal opens from Settings → Manage billing
+- [ ] Origin not reachable on public `:3004` (only 80/443 via reverse proxy)
+- [ ] Mobile: store build points at `https://solviax.app` (`EXPO_PUBLIC_API_URL`)
 
 ---
 

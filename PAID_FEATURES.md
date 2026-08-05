@@ -10,7 +10,7 @@ Tiers resolved in `resolveUserTier()` / `getBillingEntitlement()`:
 |---|---|
 | `anon` | Not signed in |
 | `free` | Signed in, no active paid plan |
-| `pro` | Signed in + `status` ∈ `active` \| `trial` \| `past_due` **and** `plan` ∈ `one_time` \| `monthly` |
+| `pro` | Signed in + `status` ∈ `active` \| `trial` \| `past_due` **and** `plan` ∈ `one_time` \| `monthly` \| `yearly` |
 | `pro` (admin) | `users.role = admin` → **monthly-equivalent Pro** without Stripe (unlimited saves, no discover quota). Set only via DB/migration — no self-service API. |
 
 Admin dashboard (web only): `/admin` + `GET /api/admin/stats` — usage, paying counts, and EUR cost/revenue **estimates** from `ADMIN_COST_*` / `ADMIN_PRICE_*` env (see `.env.example`).
@@ -19,10 +19,13 @@ Admin dashboard (web only): `/admin` + `GET /api/admin/stats` — usage, paying 
 
 ## Stripe plans
 
+Prices are **VAT-inclusive** (Finland 25.5%). Stripe `unit_amount` is the gross amount; setup uses `tax_behavior: inclusive`.
+
 | Plan key | Mode | Price | Saved routes | Other Pro features |
 |---|---|---:|---:|---|
-| `one_time` | Checkout `payment` | **€1** once | **2** | ✓ |
-| `monthly` | Checkout `subscription` | **€2.80 / month** | Unlimited | ✓ |
+| `one_time` | Checkout `payment` | **€1.99** once | **2** | ✓ (valid **60** UTC days) |
+| `monthly` | Checkout `subscription` | **€2.99 / month** | Unlimited | ✓ |
+| `yearly` | Checkout `subscription` | **€30 / year** | Unlimited | ✓ |
 
 Env (see `apps/web/.env.example`):
 
@@ -30,17 +33,24 @@ Env (see `apps/web/.env.example`):
 - `STRIPE_WEBHOOK_SECRET`
 - `STRIPE_PRICE_ONE_TIME`
 - `STRIPE_PRICE_MONTHLY`
+- `STRIPE_PRICE_YEARLY`
 
 Setup helpers:
 
 ```bash
 STRIPE_SECRET_KEY=sk_test_... npx tsx apps/web/scripts/stripe-setup.ts
-stripe listen --forward-to localhost:3000/api/stripe/webhook
+stripe listen --forward-to localhost:3004/api/stripe/webhook
 ```
 
 Webhook: `POST /api/stripe/webhook`  
 Checkout: server action / `POST /api/billing/checkout`  
-Portal (cancel/update card): `POST /api/billing/portal` or Settings → Manage billing
+Portal (cancel subscription / download invoices): `POST /api/billing/portal` or Pro / Settings → **Manage billing** (requires `stripe_customer_id`).
+
+**Stripe Customer Portal checklist (Dashboard → Settings → Billing → Customer portal):**
+
+- [ ] **Cancel subscriptions** enabled
+- [ ] **Invoice history** / customer invoices download enabled
+- [ ] Return URL: `https://solviax.app/pro` (or Settings)
 
 If monthly cancels and the user previously bought one-time, they keep `plan=one_time`.
 
@@ -49,9 +59,9 @@ If monthly cancels and the user previously bought one-time, they keep `plan=one_
 Pro is granted only when:
 
 - `checkout.session.completed` has `payment_status` ∈ `paid` | `no_payment_required`
-- Line-item price id matches `STRIPE_PRICE_ONE_TIME` / `STRIPE_PRICE_MONTHLY` (and amount/currency when present)
-- Monthly: retrieved subscription status ∈ `active` | `trialing` (not `incomplete`)
-- `customer.subscription.updated`: price must be monthly Pro; `incomplete` is ignored; `unpaid` / canceled deactivate Monthly
+- Line-item price id matches `STRIPE_PRICE_ONE_TIME` / `STRIPE_PRICE_MONTHLY` / `STRIPE_PRICE_YEARLY` (and amount/currency when present)
+- Recurring: retrieved subscription status ∈ `active` | `trialing` (not `incomplete`)
+- `customer.subscription.updated`: price must be monthly or yearly Pro; `incomplete` is ignored; `unpaid` / canceled deactivate recurring Pro
 - Stripe customer id must match the user binding (`subscriptions.stripe_customer_id` is unique)
 
 See `apps/web/src/server/billing/webhook-guards.ts` and `checkout.ts`.
@@ -92,7 +102,7 @@ Pro can set start and/or end hour (“Any” by default) on the **route page**. 
 |---|---:|
 | anon | **30** / UTC calendar month (+ `ANON_IP_ROUTE_LIMIT` / 24h) |
 | free | **50** / UTC month |
-| Pro (one_time + monthly) | **500** / UTC month |
+| Pro (one_time + monthly + yearly) | **500** / UTC month |
 | admin | unlimited |
 
 Counted via `usage_events.type = route`. Same `from|to|mode` within 10 minutes does not re-charge.
@@ -102,12 +112,13 @@ Counted via `usage_events.type = route`. Same `from|to|mode` within 10 minutes d
 | Plan | Max saved routes |
 |---|---:|
 | free / anon | 0 (cannot save) |
-| one_time | 2 (Pro valid **90 days** from purchase) |
+| one_time | 2 (Pro valid **60 days** from purchase) |
 | monthly | unlimited |
+| yearly | unlimited |
 
 ### 6. Soft paywall vs Pro
 
-Anonymous users have a **cookie + IP discover quota**. Sign-in (free) → **50 discovers per UTC calendar month** within free radius. Pro monthly → **200 discovers / month** (marketed as “hundreds”). Pro one-time (within 90 days) → **400 discovers / purchase window** (marketed as “hundreds”) + wider radii + higher caps + departure + route saves. Route lookups are capped separately (see §4). Share-to-Maps (Google + Apple) is available to all tiers.
+Anonymous users have a **cookie + IP discover quota**. Sign-in (free) → **50 discovers per UTC calendar month** within free radius. Pro monthly / yearly → **200 discovers / month** (marketed as “hundreds”). Pro one-time (within 60 days) → **400 discovers / purchase window** (marketed as “hundreds”) + wider radii + higher caps + departure + route saves. Route lookups are capped separately (see §4). Share-to-Maps (Google + Apple) is available to all tiers.
 
 ---
 

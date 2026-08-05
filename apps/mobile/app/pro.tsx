@@ -11,7 +11,9 @@ import {
 import { Link, Stack, useFocusEffect, useLocalSearchParams, type Href } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { colors } from "@/constants/Colors";
-import { apiPost } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
+import { formatIsoDateForLocale } from "@/lib/dates";
+import { formatPaymentAmount } from "@/lib/money";
 import {
   isStripeCheckoutAllowed,
   openWebProPage,
@@ -40,10 +42,17 @@ const HIGHLIGHT_KEYS = [
   "future",
 ] as const;
 
-type CheckoutPlan = "one_time" | "monthly";
+type CheckoutPlan = "one_time" | "monthly" | "yearly";
+
+type PaymentRow = {
+  id: string;
+  paidAt: string;
+  amountCents: number;
+  currency: string;
+};
 
 export default function ProMarketingScreen() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const params = useLocalSearchParams<{
     checkout?: string | string[];
     plan?: string | string[];
@@ -51,6 +60,13 @@ export default function ProMarketingScreen() {
   const [signedIn, setSignedIn] = useState(false);
   const [tier, setTier] = useState<DiscoverTier>("anon");
   const [plan, setPlan] = useState<BillingPlan>("free");
+  const [canManageBilling, setCanManageBilling] = useState(false);
+  const [proSince, setProSince] = useState<string | null>(null);
+  const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
+  const [oneTimePaidAt, setOneTimePaidAt] = useState<string | null>(null);
+  const [oneTimeExpiresAt, setOneTimeExpiresAt] = useState<string | null>(null);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
   const [busy, setBusy] = useState<CheckoutPlan | "portal" | "web" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
@@ -61,6 +77,28 @@ export default function ProMarketingScreen() {
     setSignedIn(Boolean(s.user));
     setTier(s.tier);
     setPlan(s.plan);
+    setCanManageBilling(s.canManageBilling);
+    setProSince(s.proSince);
+    setCurrentPeriodEnd(s.currentPeriodEnd);
+    setOneTimePaidAt(s.oneTimePaidAt);
+    setOneTimeExpiresAt(s.oneTimeExpiresAt);
+
+    const showPayments = Boolean(s.user && s.canManageBilling);
+    if (!showPayments) {
+      setPayments([]);
+      return;
+    }
+    setPaymentsLoading(true);
+    try {
+      const data = await apiGet<{ payments?: PaymentRow[] }>(
+        "/api/billing/payments",
+      );
+      setPayments(Array.isArray(data.payments) ? data.payments : []);
+    } catch {
+      setPayments([]);
+    } finally {
+      setPaymentsLoading(false);
+    }
   }, []);
 
   useFocusEffect(
@@ -142,14 +180,24 @@ export default function ProMarketingScreen() {
   }, [allowStripe, t]);
 
   const isPro = tier === "pro";
+  const showStatus = signedIn && (isPro || canManageBilling);
   const planLabel =
     plan === "one_time"
       ? t("settings.planOneTime")
       : plan === "monthly"
         ? t("settings.planMonthly")
-        : isPro
-          ? t("settings.tierPro")
-          : t("settings.tierFree");
+        : plan === "yearly"
+          ? t("settings.planYearly")
+          : isPro
+            ? t("settings.tierPro")
+            : t("settings.tierFree");
+
+  const startedLabel = formatIsoDateForLocale(
+    proSince ?? oneTimePaidAt,
+    locale,
+  );
+  const validUntilLabel = formatIsoDateForLocale(oneTimeExpiresAt, locale);
+  const renewsLabel = formatIsoDateForLocale(currentPeriodEnd, locale);
 
   return (
     <>
@@ -158,7 +206,89 @@ export default function ProMarketingScreen() {
         <Text style={styles.brand}>{t("brand")}</Text>
         <Text style={styles.title}>{t("pro.title")}</Text>
         <Text style={styles.subtitle}>{t("pro.subtitle")}</Text>
-        {signedIn ? (
+        {showStatus ? (
+          <View style={styles.statusCard}>
+            <Text style={styles.statusEyebrow}>{t("pro.statusTitle")}</Text>
+            <Text style={styles.statusTitle}>
+              {isPro
+                ? t("pro.statusActive")
+                : t("pro.currentPlan", { plan: planLabel })}
+            </Text>
+            {isPro ? (
+              <Text style={styles.currentPlan}>
+                {t("pro.currentPlan", { plan: planLabel })}
+              </Text>
+            ) : null}
+            {startedLabel ? (
+              <Text style={styles.statusLine}>
+                {t("pro.startedOn", { date: startedLabel })}
+              </Text>
+            ) : null}
+            {plan === "one_time" && validUntilLabel ? (
+              <Text style={styles.statusLine}>
+                {t("pro.validUntil", { date: validUntilLabel })}
+              </Text>
+            ) : null}
+            {(plan === "monthly" || plan === "yearly") && renewsLabel ? (
+              <Text style={styles.statusLine}>
+                {t("pro.renewsOn", { date: renewsLabel })}
+              </Text>
+            ) : null}
+
+            <Text style={styles.historyTitle}>
+              {t("pro.paymentHistoryTitle")}
+            </Text>
+            {paymentsLoading ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : payments.length > 0 ? (
+              <View style={styles.historyTable}>
+                <View style={styles.historyHeader}>
+                  <Text style={styles.historyHeaderText}>
+                    {t("pro.paymentDate")}
+                  </Text>
+                  <Text style={[styles.historyHeaderText, styles.historyAmount]}>
+                    {t("pro.paymentAmount")}
+                  </Text>
+                </View>
+                {payments.map((p) => (
+                  <View key={p.id} style={styles.historyRow}>
+                    <Text style={styles.historyDate}>
+                      {formatIsoDateForLocale(p.paidAt, locale)}
+                    </Text>
+                    <Text style={[styles.historySum, styles.historyAmount]}>
+                      {formatPaymentAmount(p.amountCents, p.currency, locale)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <Text style={styles.statusHint}>
+                {t("pro.paymentHistoryEmpty")}
+              </Text>
+            )}
+
+            {canManageBilling ? (
+              <>
+                <Pressable
+                  style={styles.secondaryBtn}
+                  disabled={busy != null}
+                  onPress={() => void openPortal()}
+                >
+                  {busy === "portal" || busy === "web" ? (
+                    <ActivityIndicator color={colors.primary} />
+                  ) : (
+                    <Text style={styles.secondaryText}>
+                      {allowStripe
+                        ? t("pro.manageBilling")
+                        : t("pro.manageOnWeb")}
+                    </Text>
+                  )}
+                </Pressable>
+                <Text style={styles.statusHint}>{t("pro.manageBillingHint")}</Text>
+              </>
+            ) : null}
+          </View>
+        ) : signedIn ? (
           <Text style={styles.currentPlan}>
             {t("pro.currentPlan", { plan: planLabel })}
           </Text>
@@ -169,15 +299,18 @@ export default function ProMarketingScreen() {
           <Text style={styles.storeNote}>{t("pro.storePurchaseNote")}</Text>
         ) : null}
 
-        <View style={styles.planCard}>
+        <View style={[styles.planCard, isPro && styles.dimmed]}>
           <Text style={styles.badge}>{t("pro.oneTimeBadge")}</Text>
           <Text style={styles.planName}>{t("pro.oneTimePlan")}</Text>
           <Text style={styles.price}>{t("pro.oneTimePrice")}</Text>
+          <Text style={styles.vatNote}>{t("pro.vatInclusive")}</Text>
           <Text style={styles.note}>{t("pro.oneTimePriceNote")}</Text>
-          {signedIn ? (
+          {isPro ? (
+            <Text style={styles.alreadyPro}>{t("pro.alreadyPro")}</Text>
+          ) : signedIn ? (
             <Pressable
               style={styles.secondaryBtn}
-              disabled={busy != null || isPro}
+              disabled={busy != null}
               onPress={() => void startCheckout("one_time")}
             >
               {busy === "one_time" || busy === "web" ? (
@@ -199,17 +332,26 @@ export default function ProMarketingScreen() {
           )}
         </View>
 
-        <View style={[styles.planCard, styles.proCard]}>
+        <View
+          style={[
+            styles.planCard,
+            styles.proCard,
+            isPro && (plan === "monthly" || plan === "yearly") && styles.dimmed,
+          ]}
+        >
           <Text style={styles.proBadge}>{t("pro.monthlyBadge")}</Text>
           <Text style={[styles.planName, styles.proName]}>
             {t("pro.monthlyPlan")}
           </Text>
           <Text style={styles.price}>{t("pro.monthlyPrice")}</Text>
+          <Text style={styles.vatNote}>{t("pro.vatInclusive")}</Text>
           <Text style={styles.note}>{t("pro.monthlyPriceNote")}</Text>
-          {signedIn ? (
+          {isPro && (plan === "monthly" || plan === "yearly") ? (
+            <Text style={styles.alreadyPro}>{t("pro.alreadyPro")}</Text>
+          ) : signedIn ? (
             <Pressable
               style={styles.primaryBtn}
-              disabled={busy != null || (isPro && plan === "monthly")}
+              disabled={busy != null}
               onPress={() => void startCheckout("monthly")}
             >
               {busy === "monthly" || busy === "web" ? (
@@ -231,7 +373,48 @@ export default function ProMarketingScreen() {
           )}
         </View>
 
-        {signedIn ? (
+        <View
+          style={[
+            styles.planCard,
+            styles.proCard,
+            isPro && (plan === "monthly" || plan === "yearly") && styles.dimmed,
+          ]}
+        >
+          <Text style={styles.proBadge}>{t("pro.yearlyBadge")}</Text>
+          <Text style={[styles.planName, styles.proName]}>
+            {t("pro.yearlyPlan")}
+          </Text>
+          <Text style={styles.price}>{t("pro.yearlyPrice")}</Text>
+          <Text style={styles.vatNote}>{t("pro.vatInclusive")}</Text>
+          <Text style={styles.note}>{t("pro.yearlyPriceNote")}</Text>
+          {isPro && (plan === "monthly" || plan === "yearly") ? (
+            <Text style={styles.alreadyPro}>{t("pro.alreadyPro")}</Text>
+          ) : signedIn ? (
+            <Pressable
+              style={styles.primaryBtn}
+              disabled={busy != null}
+              onPress={() => void startCheckout("yearly")}
+            >
+              {busy === "yearly" || busy === "web" ? (
+                <ActivityIndicator color={colors.onPrimary} />
+              ) : (
+                <Text style={styles.primaryText}>
+                  {allowStripe
+                    ? t("pro.buyYearly")
+                    : t("pro.openWebToBuy")}
+                </Text>
+              )}
+            </Pressable>
+          ) : (
+            <Link href={"/login" as Href} asChild>
+              <Pressable style={styles.primaryBtn}>
+                <Text style={styles.primaryText}>{t("pro.ctaSignIn")}</Text>
+              </Pressable>
+            </Link>
+          )}
+        </View>
+
+        {signedIn && canManageBilling && !isPro ? (
           <Pressable
             style={styles.secondaryBtn}
             disabled={busy != null}
@@ -263,6 +446,10 @@ export default function ProMarketingScreen() {
               {t("pro.monthlyCol")}
             </Text>
             <Text style={styles.proValue}>{t(`pro.rows.${key}.monthly`)}</Text>
+            <Text style={[styles.colLabel, styles.proLabel]}>
+              {t("pro.yearlyCol")}
+            </Text>
+            <Text style={styles.proValue}>{t(`pro.rows.${key}.yearly`)}</Text>
           </View>
         ))}
 
@@ -308,6 +495,82 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: colors.primary,
   },
+  statusCard: {
+    padding: 16,
+    borderRadius: 16,
+    backgroundColor: "rgba(20, 184, 99, 0.06)",
+    borderWidth: 1,
+    borderColor: "rgba(20, 184, 99, 0.35)",
+    gap: 6,
+  },
+  statusEyebrow: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.primary,
+    textTransform: "uppercase",
+  },
+  statusTitle: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: colors.onSurface,
+  },
+  statusLine: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.onSurfaceVariant,
+  },
+  statusHint: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: colors.onSurfaceVariant,
+    marginTop: 4,
+  },
+  historyTitle: {
+    marginTop: 12,
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.onSurface,
+  },
+  historyTable: {
+    marginTop: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceLowest,
+    overflow: "hidden",
+  },
+  historyHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  historyHeaderText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: colors.onSurfaceVariant,
+    textTransform: "uppercase",
+  },
+  historyRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border,
+  },
+  historyDate: { fontSize: 14, color: colors.onSurface },
+  historySum: { fontSize: 14, fontWeight: "600", color: colors.onSurface },
+  historyAmount: { textAlign: "right" },
+  alreadyPro: {
+    marginTop: 8,
+    fontSize: 14,
+    fontWeight: "700",
+    color: colors.onSurfaceVariant,
+  },
+  dimmed: { opacity: 0.7 },
   flash: {
     fontSize: 14,
     lineHeight: 20,
@@ -360,6 +623,11 @@ const styles = StyleSheet.create({
   planName: { fontSize: 18, fontWeight: "800", color: colors.onSurface },
   proName: { color: colors.primary },
   price: { fontSize: 24, fontWeight: "800", color: colors.onSurface },
+  vatNote: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.onSurfaceVariant,
+  },
   note: { fontSize: 14, lineHeight: 20, color: colors.onSurfaceVariant },
   section: {
     marginTop: 12,

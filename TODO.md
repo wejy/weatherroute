@@ -40,7 +40,7 @@ Logic: [`discover-limits.ts`](apps/web/src/server/dal/discover-limits.ts). Pro s
 Deployment runbook: **[DEPLOYMENT.md](./DEPLOYMENT.md)** (nginx *or* Caddy, env, PM2, migrate).
 
 - [ ] Provision VPS (e.g. UpCloud) + Managed Postgres + TLS (Caddy or nginx+certbot)
-- [ ] Set production env (`AUTH_SECRET`, Resend, Mapbox, CORS, Upstash) per DEPLOYMENT.md
+- [ ] Set production env (`AUTH_SECRET`, Mailgun, Mapbox, CORS, Upstash) per DEPLOYMENT.md
 - [ ] `CRON_ENABLED=true` in production
-- [ ] Resend (`EMAIL_MODE=resend`) for OTP email
+- [ ] Mailgun (`EMAIL_MODE=mailgun`) for OTP email (HTML + welcome for new users)
 - [ ] Point mobile `EXPO_PUBLIC_API_URL` at production API and rebuild
