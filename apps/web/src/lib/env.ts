@@ -84,12 +84,12 @@ export function getCorsAllowedOrigins(): string[] {
       .map((o) => o.trim())
       .filter(Boolean);
   }
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3004";
   // Expo web commonly uses 8081; also allow 19006 / 8080 / 19000 for Expo tooling.
   return [
     appUrl,
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
+    "http://localhost:3004",
+    "http://127.0.0.1:3004",
     "http://localhost:8081",
     "http://127.0.0.1:8081",
     "http://localhost:8080",
@@ -135,7 +135,7 @@ export function isCorsOriginAllowed(origin: string): boolean {
 }
 
 export const env = {
-  appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3004",
   useMocks: resolveUseMocks(),
   useMockWeather: flag(process.env.USE_MOCK_WEATHER, false),
   cronEnabled: flag(process.env.CRON_ENABLED, isProduction),

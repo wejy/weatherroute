@@ -110,6 +110,8 @@ export const subscriptions = pgTable(
     /** Set when one-time Pro was purchased (kept if monthly later cancels). */
     oneTimePaidAt: timestamp("one_time_paid_at", { withTimezone: true }),
     currentPeriodEnd: timestamp("current_period_end", { withTimezone: true }),
+    /** First time the user became Pro (set once, never overwritten). */
+    proSince: timestamp("pro_since", { withTimezone: true }),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

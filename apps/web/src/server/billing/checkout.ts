@@ -16,6 +16,7 @@ import {
   customerUserBindingOk,
   isCheckoutPaymentSettled,
   mapStripeSubscriptionStatus,
+  periodEndFromSubscription,
   sessionAmountPlausible,
   sessionLinePriceIds,
   sessionMatchesExpectedPrice,
@@ -112,7 +113,14 @@ export async function createCheckoutSession(opts: {
           payment_intent_data: {
             metadata: { userId: opts.userId, plan: "one_time" },
           },
+          // So one-time purchases appear in invoices.list / payment history UI.
+          invoice_creation: { enabled: true },
         }),
+    // New accounts enable Managed Payments by default (requires product tax codes).
+    // SDK types may lag; classic Checkout is correct for fixed EUR Pro plans.
+    ...({
+      managed_payments: { enabled: false },
+    } as Stripe.Checkout.SessionCreateParams),
   });
 
   if (!session.url) throw new Error("Stripe Checkout did not return a URL");
@@ -127,27 +135,21 @@ export async function createBillingPortalSession(opts: {
   if (!process.env.STRIPE_SECRET_KEY?.trim()) {
     throw new Error("Stripe is not configured");
   }
-  const customerId = await ensureStripeCustomer(opts);
+  const existing = await getSubscriptionRow(opts.userId);
+  const customerId = existing?.stripeCustomerId;
+  if (!customerId) {
+    throw new Error("No Stripe customer — purchase or subscribe first");
+  }
   const stripe = getStripe();
   const base = env.appUrl.replace(/\/$/, "");
   const returnUrl = opts.returnToApp
     ? `${base}/open-app?to=${encodeURIComponent("solviax://pro")}`
-    : `${base}/settings`;
+    : `${base}/pro`;
   const portal = await stripe.billingPortal.sessions.create({
     customer: customerId,
     return_url: returnUrl,
   });
   return { url: portal.url };
-}
-
-function periodEndFromSubscription(sub: Stripe.Subscription): Date | null {
-  const end = (
-    sub as Stripe.Subscription & { current_period_end?: number }
-  ).current_period_end;
-  if (typeof end === "number" && end > 0) {
-    return new Date(end * 1000);
-  }
-  return null;
 }
 
 async function assertCustomerBinding(opts: {
@@ -310,14 +312,12 @@ async function handleSubscriptionUpdated(
     return;
   }
 
-  const existing = await getSubscriptionRow(userId);
-  await upsertSubscription(userId, {
-    status: mapped.status,
+  await activateCheckoutPlan({
+    userId,
     plan: "monthly",
     stripeCustomerId: customerId,
     stripeSubscriptionId: sub.id,
     currentPeriodEnd: periodEndFromSubscription(sub),
-    oneTimePaidAt: existing?.oneTimePaidAt ?? null,
   });
   log.info(
     { userId, subId: sub.id, status: mapped.status },

@@ -2,13 +2,20 @@ import Link from "next/link";
 import { TopNav, BottomNav } from "@/components/layout/top-nav";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
+import { formatIsoDateForLocale } from "@/lib/dates";
 import { getCurrentUser } from "@/server/auth/session";
 import { getBillingEntitlement } from "@/server/dal/subscriptions";
 import { isStripeBillingConfigured } from "@/server/billing/plans";
 import {
-  openBillingPortalAction,
+  fallbackOneTimePayment,
+  formatPaymentAmount,
+  listCustomerPayments,
+  type CustomerPayment,
+} from "@/server/billing/invoices";
+import {
   startCheckoutAction,
 } from "@/server/actions/billing";
+import { BillingPortalButton } from "@/components/billing/billing-portal-button";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +57,7 @@ export default async function ProMarketingPage({
   const stripeReady = isStripeBillingConfigured();
   const raw = await searchParams;
   const checkout = typeof raw.checkout === "string" ? raw.checkout : "";
+  const isPro = billing.tier === "pro";
 
   const planLabel =
     billing.plan === "one_time"
@@ -57,6 +65,25 @@ export default async function ProMarketingPage({
       : billing.plan === "monthly"
         ? t("pro.monthlyPlan")
         : t("pro.freePlan");
+
+  const startedIso = billing.proSince ?? billing.oneTimePaidAt ?? null;
+  const startedLabel = formatIsoDateForLocale(startedIso, locale);
+  const validUntilLabel = formatIsoDateForLocale(
+    billing.oneTimeExpiresAt,
+    locale,
+  );
+  const renewsLabel = formatIsoDateForLocale(billing.currentPeriodEnd, locale);
+
+  let payments: CustomerPayment[] = [];
+  if (user && billing.stripeCustomerId && stripeReady) {
+    const fromStripe = await listCustomerPayments(billing.stripeCustomerId);
+    payments = fallbackOneTimePayment({
+      oneTimePaidAt: billing.oneTimePaidAt,
+      existing: fromStripe,
+    });
+  }
+
+  const showStatus = Boolean(user && (isPro || billing.canManageBilling));
 
   const statusMessage =
     checkout === "success"
@@ -97,10 +124,92 @@ export default async function ProMarketingPage({
           </p>
         ) : null}
 
-        {user && billing.tier === "pro" ? (
-          <p className="mt-4 text-sm font-semibold text-on-surface">
-            {t("pro.currentPlan", { plan: planLabel })}
-          </p>
+        {showStatus ? (
+          <section
+            className="mt-6 rounded-2xl border border-primary/30 bg-primary/5 p-5"
+            aria-labelledby="pro-status-heading"
+          >
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">
+              {t("pro.statusTitle")}
+            </p>
+            <h2
+              id="pro-status-heading"
+              className="mt-1 text-lg font-bold text-on-surface"
+            >
+              {isPro ? t("pro.statusActive") : t("pro.currentPlan", { plan: planLabel })}
+            </h2>
+            {isPro ? (
+              <p className="mt-1 text-sm font-semibold text-on-surface">
+                {t("pro.currentPlan", { plan: planLabel })}
+              </p>
+            ) : null}
+            <ul className="mt-3 space-y-1 text-sm text-on-surface-variant">
+              {startedLabel ? (
+                <li>{t("pro.startedOn", { date: startedLabel })}</li>
+              ) : null}
+              {billing.plan === "one_time" && validUntilLabel ? (
+                <li>{t("pro.validUntil", { date: validUntilLabel })}</li>
+              ) : null}
+              {billing.plan === "monthly" && renewsLabel ? (
+                <li>{t("pro.renewsOn", { date: renewsLabel })}</li>
+              ) : null}
+            </ul>
+
+            <div className="mt-5">
+              <h3 className="text-sm font-semibold text-on-surface">
+                {t("pro.paymentHistoryTitle")}
+              </h3>
+              {payments.length > 0 ? (
+                <div className="mt-2 overflow-x-auto rounded-xl border border-outline-variant/25 bg-surface-container-lowest">
+                  <table className="w-full min-w-[16rem] text-left text-sm">
+                    <thead>
+                      <tr className="border-b border-outline-variant/20 text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
+                        <th className="px-4 py-2.5 font-semibold">
+                          {t("pro.paymentDate")}
+                        </th>
+                        <th className="px-4 py-2.5 text-right font-semibold">
+                          {t("pro.paymentAmount")}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant/15">
+                      {payments.map((p) => (
+                        <tr key={p.id}>
+                          <td className="px-4 py-2.5 text-on-surface">
+                            {formatIsoDateForLocale(p.paidAt, locale)}
+                          </td>
+                          <td className="px-4 py-2.5 text-right font-medium text-on-surface">
+                            {formatPaymentAmount(
+                              p.amountCents,
+                              p.currency,
+                              locale,
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <p className="mt-2 text-sm text-on-surface-variant">
+                  {t("pro.paymentHistoryEmpty")}
+                </p>
+              )}
+            </div>
+
+            {billing.canManageBilling && stripeReady ? (
+              <div className="mt-4">
+                <BillingPortalButton
+                  label={t("pro.manageBilling")}
+                  errorLabel={t("pro.checkoutError")}
+                  className="rounded-lg bg-secondary px-4 py-2.5 text-sm font-semibold text-on-secondary disabled:opacity-60"
+                />
+                <p className="mt-2 text-xs text-on-surface-variant">
+                  {t("pro.manageBillingHint")}
+                </p>
+              </div>
+            ) : null}
+          </section>
         ) : null}
 
         <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -117,7 +226,11 @@ export default async function ProMarketingPage({
             </p>
           </div>
 
-          <div className="rounded-2xl border border-outline-variant/30 bg-surface-container-lowest p-5">
+          <div
+            className={`rounded-2xl border border-outline-variant/30 bg-surface-container-lowest p-5 ${
+              isPro ? "opacity-70" : ""
+            }`}
+          >
             <span className="inline-flex rounded-lg bg-surface-container px-2.5 py-1 text-xs font-semibold text-on-surface-variant">
               {t("pro.oneTimeBadge")}
             </span>
@@ -130,17 +243,27 @@ export default async function ProMarketingPage({
             <p className="mt-2 text-sm text-on-surface-variant">
               {t("pro.oneTimePriceNote")}
             </p>
-            <CheckoutButton
-              plan="one_time"
-              label={t("pro.buyOneTime")}
-              signedIn={Boolean(user)}
-              stripeReady={stripeReady}
-              signInLabel={t("pro.ctaSignIn")}
-              unavailableLabel={t("pro.ctaSoon")}
-            />
+            {isPro ? (
+              <p className="mt-5 text-sm font-semibold text-on-surface-variant">
+                {t("pro.alreadyPro")}
+              </p>
+            ) : (
+              <CheckoutButton
+                plan="one_time"
+                label={t("pro.buyOneTime")}
+                signedIn={Boolean(user)}
+                stripeReady={stripeReady}
+                signInLabel={t("pro.ctaSignIn")}
+                unavailableLabel={t("pro.ctaSoon")}
+              />
+            )}
           </div>
 
-          <div className="rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-[0px_8px_24px_rgba(20,184,99,0.08)]">
+          <div
+            className={`rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-[0px_8px_24px_rgba(20,184,99,0.08)] ${
+              isPro && billing.plan === "monthly" ? "opacity-70" : ""
+            }`}
+          >
             <span className="inline-flex rounded-lg bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary">
               {t("pro.monthlyBadge")}
             </span>
@@ -153,15 +276,21 @@ export default async function ProMarketingPage({
             <p className="mt-2 text-sm text-on-surface-variant">
               {t("pro.monthlyPriceNote")}
             </p>
-            <CheckoutButton
-              plan="monthly"
-              label={t("pro.buyMonthly")}
-              signedIn={Boolean(user)}
-              stripeReady={stripeReady}
-              signInLabel={t("pro.ctaSignIn")}
-              unavailableLabel={t("pro.ctaSoon")}
-              primary
-            />
+            {isPro && billing.plan === "monthly" ? (
+              <p className="mt-5 text-sm font-semibold text-on-surface-variant">
+                {t("pro.alreadyPro")}
+              </p>
+            ) : (
+              <CheckoutButton
+                plan="monthly"
+                label={t("pro.buyMonthly")}
+                signedIn={Boolean(user)}
+                stripeReady={stripeReady}
+                signInLabel={t("pro.ctaSignIn")}
+                unavailableLabel={t("pro.ctaSoon")}
+                primary
+              />
+            )}
           </div>
         </div>
 
@@ -234,15 +363,12 @@ export default async function ProMarketingPage({
           </h2>
           <p className="mt-2 text-sm text-on-surface-variant">{t("pro.ctaBody")}</p>
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-            {billing.hasMonthlySubscription ? (
-              <form action={openBillingPortalAction}>
-                <button
-                  type="submit"
-                  className="rounded-lg bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary"
-                >
-                  {t("pro.manageBilling")}
-                </button>
-              </form>
+            {billing.canManageBilling && stripeReady ? (
+              <BillingPortalButton
+                label={t("pro.manageBilling")}
+                errorLabel={t("pro.checkoutError")}
+                className="rounded-lg bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary disabled:opacity-60"
+              />
             ) : null}
             <Link
               href="/settings"
@@ -326,7 +452,12 @@ function CheckoutButton({
   }
   if (!stripeReady) {
     return (
-      <button type="button" disabled className={`${className} opacity-60`} title={unavailableLabel}>
+      <button
+        type="button"
+        disabled
+        className={`${className} opacity-60`}
+        title={unavailableLabel}
+      >
         {unavailableLabel}
       </button>
     );

@@ -7,6 +7,9 @@ import {
   createCheckoutSession,
 } from "@/server/billing/checkout";
 import { isStripeBillingConfigured, type CheckoutPlan } from "@/server/billing/plans";
+import { createModuleLogger } from "@/lib/logger";
+
+const log = createModuleLogger("actions.billing");
 
 function parsePlan(raw: FormDataEntryValue | null): CheckoutPlan | null {
   const v = String(raw || "");
@@ -42,6 +45,7 @@ export async function startCheckoutAction(formData: FormData) {
     redirect(url);
   } catch (err) {
     if (isNextRedirect(err)) throw err;
+    log.error({ err, plan, userId: user.id }, "checkout session failed");
     redirect("/pro?checkout=error");
   }
 }
@@ -59,6 +63,7 @@ export async function openBillingPortalAction() {
     redirect(url);
   } catch (err) {
     if (isNextRedirect(err)) throw err;
+    log.error({ err, userId: user.id }, "billing portal failed");
     redirect("/settings?billing=error");
   }
 }

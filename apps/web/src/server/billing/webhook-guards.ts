@@ -54,6 +54,26 @@ export function subscriptionPriceIds(sub: Stripe.Subscription): string[] {
   });
 }
 
+/** Stripe API 2025+ moved period end onto subscription items. */
+export function periodEndFromSubscription(sub: Stripe.Subscription): Date | null {
+  const legacy = (
+    sub as Stripe.Subscription & { current_period_end?: number }
+  ).current_period_end;
+  if (typeof legacy === "number" && legacy > 0) {
+    return new Date(legacy * 1000);
+  }
+  const ends = (sub.items?.data ?? [])
+    .map((item) => {
+      const end = (
+        item as Stripe.SubscriptionItem & { current_period_end?: number }
+      ).current_period_end;
+      return typeof end === "number" && end > 0 ? end : null;
+    })
+    .filter((n): n is number => n != null);
+  if (ends.length === 0) return null;
+  return new Date(Math.max(...ends) * 1000);
+}
+
 export function sessionLinePriceIds(
   session: Stripe.Checkout.Session,
 ): string[] {
@@ -82,9 +102,19 @@ export function sessionMatchesExpectedPrice(
 export function subscriptionMatchesMonthlyPrice(
   priceIds: string[],
 ): boolean {
-  const expected = stripePriceIdForPlan("monthly");
-  if (!expected) return false;
-  return priceIds.includes(expected);
+  return subscriptionMatchesProRecurringPrice(priceIds);
+}
+
+/** True if price ids include configured monthly or yearly Pro price. */
+export function subscriptionMatchesProRecurringPrice(
+  priceIds: string[],
+): boolean {
+  const monthly = stripePriceIdForPlan("monthly");
+  const yearly = stripePriceIdForPlan("yearly");
+  return Boolean(
+    (monthly && priceIds.includes(monthly)) ||
+      (yearly && priceIds.includes(yearly)),
+  );
 }
 
 /** Soft amount check when Stripe reports amount_total (cents). */

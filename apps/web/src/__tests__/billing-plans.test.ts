@@ -7,12 +7,14 @@ import {
   isProBillingStatus,
   maxSavedTripsForPlan,
   ONE_TIME_VALIDITY_DAYS,
+  resolveProSince,
   subscriptionGrantsPro,
 } from "@/server/billing/plans";
 import {
   customerUserBindingOk,
   isCheckoutPaymentSettled,
   mapStripeSubscriptionStatus,
+  periodEndFromSubscription,
   sessionAmountPlausible,
   sessionMatchesExpectedPrice,
   subscriptionMatchesMonthlyPrice,
@@ -65,6 +67,68 @@ describe("billing plans", () => {
     ).toBe(true);
 
     expect(maxSavedTripsForPlan("one_time", "active", expired)).toBe(0);
+  });
+});
+
+describe("proSince sticky activation", () => {
+  it("sets proSince from oneTimePaidAt on first one-time activation", () => {
+    const paidAt = new Date("2026-06-01T10:00:00.000Z");
+    expect(
+      resolveProSince({
+        existingProSince: null,
+        plan: "one_time",
+        oneTimePaidAt: paidAt,
+      }).toISOString(),
+    ).toBe(paidAt.toISOString());
+  });
+
+  it("sets proSince to now on first monthly activation", () => {
+    const now = new Date("2026-07-15T08:00:00.000Z");
+    expect(
+      resolveProSince({
+        existingProSince: null,
+        plan: "monthly",
+        oneTimePaidAt: null,
+        now,
+      }).toISOString(),
+    ).toBe(now.toISOString());
+  });
+
+  it("does not overwrite an existing proSince", () => {
+    const existing = new Date("2026-01-01T00:00:00.000Z");
+    const paidAt = new Date("2026-08-01T00:00:00.000Z");
+    expect(
+      resolveProSince({
+        existingProSince: existing,
+        plan: "one_time",
+        oneTimePaidAt: paidAt,
+      }).toISOString(),
+    ).toBe(existing.toISOString());
+    expect(
+      resolveProSince({
+        existingProSince: existing,
+        plan: "monthly",
+        oneTimePaidAt: null,
+        now: paidAt,
+      }).toISOString(),
+    ).toBe(existing.toISOString());
+  });
+});
+
+describe("periodEndFromSubscription (Stripe API shape)", () => {
+  it("reads current_period_end from subscription items", () => {
+    const end = periodEndFromSubscription({
+      items: { data: [{ current_period_end: 1_788_621_166 }] },
+    } as unknown as Parameters<typeof periodEndFromSubscription>[0]);
+    expect(end?.toISOString()).toBe("2026-09-05T15:12:46.000Z");
+  });
+
+  it("falls back to legacy subscription.current_period_end", () => {
+    const end = periodEndFromSubscription({
+      current_period_end: 1_700_000_000,
+      items: { data: [] },
+    } as unknown as Parameters<typeof periodEndFromSubscription>[0]);
+    expect(end?.toISOString()).toBe("2023-11-14T22:13:20.000Z");
   });
 });
 

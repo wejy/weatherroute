@@ -34,6 +34,11 @@ export async function GET(request: Request) {
       maxSavedTrips: billing.maxSavedTrips,
       savedTripCount: billing.savedTripCount,
       canSaveTrip: billing.canSaveTrip,
+      canManageBilling: billing.canManageBilling,
+      proSince: billing.proSince,
+      currentPeriodEnd: billing.currentPeriodEnd,
+      oneTimePaidAt: billing.oneTimePaidAt,
+      oneTimeExpiresAt: billing.oneTimeExpiresAt,
       sameCountryOnly: sameCountry.preference,
       sameCountryOnlyEffective: sameCountry.effective,
     });

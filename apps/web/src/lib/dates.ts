@@ -70,6 +70,17 @@ export function formatDateKeyForLocale(
   return `${m[3]}.${m[2]}.${m[1]}`;
 }
 
+/** ISO timestamp / date → locale calendar date for billing UI. */
+export function formatIsoDateForLocale(
+  iso: string | null | undefined,
+  locale: DateLocale = "en",
+): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return formatDateKeyForLocale(toDateKey(d), locale);
+}
+
 /** @deprecated Prefer formatDateKeyForLocale */
 export function formatDateKeyDmY(key: string): string {
   return formatDateKeyForLocale(key, "fi");

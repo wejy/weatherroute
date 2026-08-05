@@ -1,18 +1,21 @@
 import "server-only";
 
 /** Paid plan keys stored on `subscriptions.plan`. */
-export type BillingPlan = "none" | "one_time" | "monthly";
+export type BillingPlan = "none" | "one_time" | "monthly" | "yearly";
 
-export type CheckoutPlan = "one_time" | "monthly";
+export type CheckoutPlan = "one_time" | "monthly" | "yearly";
 
-/** One-time Pro access window from `oneTimePaidAt`. */
-export const ONE_TIME_VALIDITY_DAYS = 90;
+/** Finnish VAT rate included in list prices (display + Stripe gross). */
+export const VAT_RATE_FI = 0.255;
+
+/** One-time Pro access window from `oneTimePaidAt` (UTC days). */
+export const ONE_TIME_VALIDITY_DAYS = 60;
 
 export const BILLING_PLANS = {
   one_time: {
     key: "one_time" as const,
-    /** EUR cents */
-    amountCents: 100,
+    /** EUR cents, VAT-inclusive */
+    amountCents: 199,
     currency: "eur",
     mode: "payment" as const,
     /** Max saved routes; null = unlimited */
@@ -21,11 +24,21 @@ export const BILLING_PLANS = {
   },
   monthly: {
     key: "monthly" as const,
-    amountCents: 280,
+    amountCents: 299,
     currency: "eur",
     mode: "subscription" as const,
     maxSavedTrips: null as number | null,
     validityDays: null as number | null,
+    interval: "month" as const,
+  },
+  yearly: {
+    key: "yearly" as const,
+    amountCents: 3000,
+    currency: "eur",
+    mode: "subscription" as const,
+    maxSavedTrips: null as number | null,
+    validityDays: null as number | null,
+    interval: "year" as const,
   },
 } as const;
 
@@ -34,7 +47,13 @@ export function isProBillingStatus(status: string | null | undefined): boolean {
 }
 
 export function isPaidPlan(plan: string | null | undefined): plan is CheckoutPlan {
-  return plan === "one_time" || plan === "monthly";
+  return plan === "one_time" || plan === "monthly" || plan === "yearly";
+}
+
+export function isRecurringPlan(
+  plan: string | null | undefined,
+): plan is "monthly" | "yearly" {
+  return plan === "monthly" || plan === "yearly";
 }
 
 /** Whether a one-time purchase is still inside its validity window. */
@@ -61,14 +80,14 @@ export function oneTimeExpiresAt(
   );
 }
 
-/** Active Pro entitlement including one-time 90-day TTL. */
+/** Active Pro entitlement including one-time TTL. */
 export function subscriptionGrantsPro(row: {
   status: string | null | undefined;
   plan: string | null | undefined;
   oneTimePaidAt?: Date | string | null;
 }): boolean {
   if (!isProBillingStatus(row.status) || !isPaidPlan(row.plan)) return false;
-  if (row.plan === "monthly") return true;
+  if (isRecurringPlan(row.plan)) return true;
   return isOneTimeWithinValidity(row.oneTimePaidAt);
 }
 
@@ -87,6 +106,9 @@ export function stripePriceIdForPlan(plan: CheckoutPlan): string | null {
   if (plan === "one_time") {
     return process.env.STRIPE_PRICE_ONE_TIME?.trim() || null;
   }
+  if (plan === "yearly") {
+    return process.env.STRIPE_PRICE_YEARLY?.trim() || null;
+  }
   return process.env.STRIPE_PRICE_MONTHLY?.trim() || null;
 }
 
@@ -94,6 +116,30 @@ export function isStripeBillingConfigured(): boolean {
   return Boolean(
     process.env.STRIPE_SECRET_KEY?.trim() &&
       process.env.STRIPE_PRICE_ONE_TIME?.trim() &&
-      process.env.STRIPE_PRICE_MONTHLY?.trim(),
+      process.env.STRIPE_PRICE_MONTHLY?.trim() &&
+      process.env.STRIPE_PRICE_YEARLY?.trim(),
   );
+}
+
+/** First Pro date is sticky — never overwrite an existing value. */
+export function resolveProSince(opts: {
+  existingProSince: Date | null;
+  plan: CheckoutPlan;
+  oneTimePaidAt: Date | null;
+  now?: Date;
+}): Date {
+  if (opts.existingProSince) return opts.existingProSince;
+  if (opts.plan === "one_time" && opts.oneTimePaidAt) return opts.oneTimePaidAt;
+  return opts.now ?? new Date();
+}
+
+/** Infer CheckoutPlan from a Stripe subscription's price ids. */
+export function recurringPlanFromPriceIds(
+  priceIds: string[],
+): "monthly" | "yearly" | null {
+  const yearly = stripePriceIdForPlan("yearly");
+  const monthly = stripePriceIdForPlan("monthly");
+  if (yearly && priceIds.includes(yearly)) return "yearly";
+  if (monthly && priceIds.includes(monthly)) return "monthly";
+  return null;
 }

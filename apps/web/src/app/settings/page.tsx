@@ -13,7 +13,7 @@ import {
   saveSameCountryOnlyAction,
   settingsSignOutAction,
 } from "@/server/actions/settings";
-import { openBillingPortalAction } from "@/server/actions/billing";
+import { BillingPortalButton } from "@/components/billing/billing-portal-button";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import {
@@ -24,6 +24,7 @@ import {
 import { getBillingEntitlement } from "@/server/dal/subscriptions";
 import { isStripeBillingConfigured } from "@/server/billing/plans";
 import { getUserRole } from "@/server/dal/roles";
+import { formatIsoDateForLocale } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -282,6 +283,52 @@ export default async function SettingsPage({
             <p className="mb-4 text-sm text-on-surface-variant">
               {t("settings.subscriptionBody")}
             </p>
+            {user && billing.tier === "pro" ? (
+              <ul className="mb-4 space-y-1 text-sm text-on-surface">
+                <li className="font-semibold">
+                  {billing.plan === "one_time"
+                    ? t("settings.planOneTime")
+                    : billing.plan === "monthly"
+                      ? t("settings.planMonthly")
+                      : t("pro.statusActive")}
+                </li>
+                {formatIsoDateForLocale(
+                  billing.proSince ?? billing.oneTimePaidAt,
+                  locale,
+                ) ? (
+                  <li className="text-on-surface-variant">
+                    {t("pro.startedOn", {
+                      date: formatIsoDateForLocale(
+                        billing.proSince ?? billing.oneTimePaidAt,
+                        locale,
+                      ),
+                    })}
+                  </li>
+                ) : null}
+                {billing.plan === "one_time" &&
+                formatIsoDateForLocale(billing.oneTimeExpiresAt, locale) ? (
+                  <li className="text-on-surface-variant">
+                    {t("pro.validUntil", {
+                      date: formatIsoDateForLocale(
+                        billing.oneTimeExpiresAt,
+                        locale,
+                      ),
+                    })}
+                  </li>
+                ) : null}
+                {billing.plan === "monthly" &&
+                formatIsoDateForLocale(billing.currentPeriodEnd, locale) ? (
+                  <li className="text-on-surface-variant">
+                    {t("pro.renewsOn", {
+                      date: formatIsoDateForLocale(
+                        billing.currentPeriodEnd,
+                        locale,
+                      ),
+                    })}
+                  </li>
+                ) : null}
+              </ul>
+            ) : null}
             {billingFlash ? (
               <p className="mb-3 text-sm text-on-surface-variant" role="status">
                 {billingFlash === "unavailable"
@@ -296,17 +343,19 @@ export default async function SettingsPage({
               >
                 {t("settings.subscriptionCta")}
               </Link>
-              {user && billing.hasMonthlySubscription && stripeReady ? (
-                <form action={openBillingPortalAction}>
-                  <button
-                    type="submit"
-                    className="w-full rounded-lg border border-outline-variant px-4 py-3 text-sm font-semibold text-on-surface-variant sm:w-auto"
-                  >
-                    {t("settings.subscriptionManage")}
-                  </button>
-                </form>
+              {user && billing.canManageBilling && stripeReady ? (
+                <BillingPortalButton
+                  label={t("settings.subscriptionManage")}
+                  errorLabel={t("pro.checkoutError")}
+                  className="w-full rounded-lg border border-outline-variant px-4 py-3 text-sm font-semibold text-on-surface-variant disabled:opacity-60 sm:w-auto"
+                />
               ) : null}
             </div>
+            {user && billing.canManageBilling && stripeReady ? (
+              <p className="mt-2 text-xs text-on-surface-variant">
+                {t("settings.subscriptionStatusHint")}
+              </p>
+            ) : null}
             {!stripeReady ? (
               <p className="mt-2 text-xs text-on-surface-variant">
                 {t("settings.subscriptionSoon")}
