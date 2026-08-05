@@ -70,32 +70,62 @@ export const discoverQuerySchema = z.object({
   lang: z.enum(["en", "fi"]).optional(),
 });
 
-export const routeQuerySchema = z.object({
-  from: z.string().min(1).max(200),
-  to: z.string().min(1).max(200),
-  fromLat: z.coerce.number().min(-90).max(90).optional(),
-  fromLon: z.coerce.number().min(-180).max(180).optional(),
-  toLat: z.coerce.number().min(-90).max(90).optional(),
-  toLon: z.coerce.number().min(-180).max(180).optional(),
-  mode: z.enum(["driving", "cycling"]).optional().default("driving"),
-  prefer: z.enum(["fast", "weather"]).optional().default("fast"),
-  alt: z.coerce.number().int().min(0).max(5).optional(),
-  datePreset: z
-    .enum(["today", "tomorrow", "weekend", "custom"])
-    .optional()
-    .default("weekend"),
-  startDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  endDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .optional(),
-  lang: z.enum(["en", "fi"]).optional(),
-  /** Pro-only floor for best departure (0–23). Ignored unless Pro. */
-  earliestHour: z.coerce.number().int().min(0).max(23).optional(),
-});
+const routeQueryObjectSchema = z
+  .object({
+    from: z.string().min(1).max(200),
+    to: z.string().min(1).max(200),
+    fromLat: z.coerce.number().min(-90).max(90).optional(),
+    fromLon: z.coerce.number().min(-180).max(180).optional(),
+    toLat: z.coerce.number().min(-90).max(90).optional(),
+    toLon: z.coerce.number().min(-180).max(180).optional(),
+    mode: z.enum(["driving", "cycling"]).optional().default("driving"),
+    prefer: z.enum(["fast", "weather"]).optional().default("fast"),
+    alt: z.coerce.number().int().min(0).max(5).optional(),
+    datePreset: z
+      .enum(["today", "tomorrow", "weekend", "custom"])
+      .optional()
+      .default("weekend"),
+    startDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    endDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    lang: z.enum(["en", "fi"]).optional(),
+    /** Pro-only departure window start (0–23). Ignored unless Pro. */
+    departureStartHour: z.coerce.number().int().min(0).max(23).optional(),
+    /** Pro-only departure window end inclusive (0–23). Ignored unless Pro. */
+    departureEndHour: z.coerce.number().int().min(0).max(23).optional(),
+    /** Legacy: maps to departureStartHour when start is omitted. */
+    earliestHour: z.coerce.number().int().min(0).max(23).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.departureStartHour != null &&
+      data.departureEndHour != null &&
+      data.departureStartHour > data.departureEndHour
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "departureStartHour must be <= departureEndHour",
+        path: ["departureStartHour"],
+      });
+    }
+  });
+
+/** Maps legacy `earliestHour` → `departureStartHour` when start is missing. */
+export const routeQuerySchema = z.preprocess((raw) => {
+  if (raw == null || typeof raw !== "object") return raw;
+  const data = { ...(raw as Record<string, unknown>) };
+  const startMissing =
+    data.departureStartHour == null || data.departureStartHour === "";
+  if (startMissing && data.earliestHour != null && data.earliestHour !== "") {
+    data.departureStartHour = data.earliestHour;
+  }
+  return data;
+}, routeQueryObjectSchema);
 
 export const wikipediaQuerySchema = z.object({
   name: z.string().min(1).max(200),

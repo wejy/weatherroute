@@ -207,7 +207,7 @@ const fi = {
   routes: {
     dryTrip: "Kuivan matkan takuu",
     dryTripDesc:
-      "Todennäköisyys, että reitin kostein kohta pysyy kuivana tällä lähdöllä.",
+      "Todennäköisyys, että tie pysyy kuivana tämän matkan aikana.",
     bestDeparture: "Paras lähtöaika",
     departureHint:
       "Lähde noin klo {time}, jotta matka {from}–{to} on kuivin. Suurin saderiski lähellä: {place} ({rain} %).",
@@ -262,11 +262,15 @@ const fi = {
       "Lähde noin {time} tällä reitillä {from} → {to} ({extra}). Suurin saderiski lähellä: {place} ({rain} %).",
     pickBoth: "Valitse sekä lähtö että kohde ehdotuksista.",
     travelMode: "Millä matkustat?",
-    earliestDepartureLabel: "Älä ehdota lähtöä ennen",
-    earliestDepartureAny: "Ei rajoitusta",
-    earliestDepartureOptionPro: "{time} (Pro)",
-    earliestDepartureProNote: "Pro-ominaisuus — aseta lattia parhaalle lähtöehdotukselle.",
-    earliestDepartureUpgrade: "Katso tilaukset",
+    departureTimeLabel: "Lähdön ajankohta",
+    departureStart: "Alku",
+    departureEnd: "Loppu",
+    departureAny: "Mikä tahansa",
+    departureWindowInvalid: "Alun on oltava ennen loppua tai sama tunti.",
+    departureOptionPro: "{time} (Pro)",
+    departureProNote:
+      "Pro-ominaisuus — aseta alku- ja/tai lopputunti parhaalle lähtöehdotukselle.",
+    departureUpgrade: "Katso tilaukset",
     saveRoute: "Tallenna reitti",
     saveRouteSignIn: "Kirjaudu tallentaaksesi reitin",
     saveRouteUpgrade: "Päivitä Prohon tallentaaksesi reittejä",
@@ -363,7 +367,7 @@ const fi = {
     themeComingSoon: "Tumma tila tulee pian — toistaiseksi käytössä on vaalea.",
     subscriptionTitle: "Tilaus",
     subscriptionBody:
-      "Avaa laajemmat säteet, enemmän Löydä-tuloksia, aikaisin lähtöaika, saman maan rajaus ja tallennetut reitit Kerta- tai Jatkuva-Prolla.",
+      "Avaa laajemmat säteet, enemmän Löydä-tuloksia, lähtöajan ikkuna reiteillä, saman maan rajaus ja tallennetut reitit Kerta- tai Jatkuva-Prolla.",
     subscriptionCta: "Katso tilaukset ja hinnat",
     subscriptionSoon: "Stripe-avaimia ei ole vielä määritetty.",
     subscriptionSignInHint: "Kirjaudu nähdäksesi tilauksesi ja hallitaksesi laskutusta.",
@@ -459,7 +463,7 @@ const fi = {
       },
       corridor: {
         title: "Sää reitin varrella",
-        body: "Näet kuivuuden ja olosuhteet ajon tai pyöräilyn varrella, sekä fiksun lähtöajan ehdotuksen Prolla.",
+        body: "Näet kuivuuden ja olosuhteet ajon tai pyöräilyn varrella, sekä Pro-lähtöikkunan (Alku–Loppu) fiksummille ehdotuksille.",
       },
       trust: {
         title: "Nopea ja yksityinen kirjautuminen",
@@ -492,7 +496,7 @@ const fi = {
       },
       routes: {
         title: "Reittivertailut",
-        body: "Vertaa vaihtoehtoja, kulkutapoja (auto ja polkupyörä) ja lähtöaikoja — näet sään matkan varrelta.",
+        body: "Vertaa vaihtoehtoja, kulkutapoja (auto ja polkupyörä) ja lähtöajan ikkunaa — näet sään matkan varrelta.",
       },
       save: {
         title: "Reittien tallennus",
@@ -521,7 +525,7 @@ const fi = {
     },
     plansTitle: "Ilmainen vs Pro — lyhyesti",
     plansLead:
-      "Ilmaisella haet lähialueelta. Pro avaa laajemmat haut, enemmän tuloksia, aikaisimman lähtöajan, valinnaisen saman maan rajauksen ja mahdollisuuden tallentaa reittejä.",
+      "Ilmaisella haet lähialueelta. Pro avaa laajemmat haut, enemmän tuloksia, lähtöajan ikkunan (Alku/Loppu reiteillä), valinnaisen saman maan rajauksen ja mahdollisuuden tallentaa reittejä.",
     freeTitle: "Ilmainen",
     freeItems: {
       discovers: "50 hakua kalenterikuukaudessa kirjautuneena (Alueellinen säde)",
@@ -531,7 +535,7 @@ const fi = {
     proTitle: "Pro",
     proItems: {
       radius: "Valtakunnallinen, Manner ja oma hakusäde",
-      results: "Enintään 30 kohdetta + aikaisin lähtöaika",
+      results: "Enintään 30 kohdetta + lähtöajan ikkuna reiteillä",
       sameCountry: "Valinnainen rajoitus: näytä vain saman maan kohteet",
       saves: "Tallennetut reitit (2 Kerta-tilauksella · rajaton Jatkuvalla)",
     },
@@ -588,11 +592,11 @@ const fi = {
         pro: "Enintään 30 — valitse Asetuksissa",
       },
       departure: {
-        title: "Aikaisin lähtöaika (reitit)",
+        title: "Lähdön aikaikkuna (reitit)",
         free: "Ei käytössä — ehdotukset voivat käyttää mitä tahansa tuntia",
-        oneTime: "Aseta ”Älä ehdota lähtöä ennen” reittisivulla",
-        monthly: "Aseta ”Älä ehdota lähtöä ennen” reittisivulla",
-        pro: "Aseta per reitti reittisivulla; ehdotukset noudattavat sitä",
+        oneTime: "Aseta Alku ja/tai Loppu reittisivulla",
+        monthly: "Aseta Alku ja/tai Loppu reittisivulla",
+        pro: "Aseta per reitti reittisivulla; ehdotukset pysyvät ikkunassa",
       },
       sameCountry: {
         title: "Vain saman maan kohteet (Löydä)",
@@ -623,7 +627,7 @@ const fi = {
         "Hae kauempaa: Valtakunnallinen, Manner ja oma säde.",
       results: "Näe enemmän rankattuja kohteita — jopa 30 per haku.",
       departure:
-        "Jokaisella reitillä voit asettaa aikaisimman lähtöajan, jotta ehdotukset sopivat aikatauluusi.",
+        "Jokaisella reitillä voit asettaa lähtöajan ikkunan (Alku ja/tai Loppu), jotta ehdotukset sopivat aikatauluusi.",
       sameCountry:
         "Pidä Löydä yhdessä maassa — valinnainen asetus, koskee kaikkia hakuja.",
       routes: "Tallenna reittejä — 2 Kerta-tilauksella, rajattomasti Jatkuvalla.",

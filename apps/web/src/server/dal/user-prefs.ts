@@ -12,9 +12,18 @@ import type { DiscoverTier } from "@/server/dal/discover-limits";
 import { isAdminUser } from "@/server/dal/roles";
 import { getDb } from "@/db";
 import { users } from "@/db/schema";
-import { parseEarliestHourParam } from "@/lib/departure";
+import {
+  normalizeDepartureWindow,
+  parseDepartureHourParam,
+} from "@/lib/departure";
 
-export { EARLIEST_DEPARTURE_HOURS, formatHourOption, parseEarliestHourParam } from "@/lib/departure";
+export {
+  DEPARTURE_HOURS,
+  EARLIEST_DEPARTURE_HOURS,
+  formatHourOption,
+  parseDepartureHourParam,
+  parseEarliestHourParam,
+} from "@/lib/departure";
 
 export const SAME_COUNTRY_COOKIE = "wt_same_country_only";
 
@@ -35,21 +44,36 @@ export async function resolveUserTier(
 }
 
 /**
- * Per-route earliest departure from query/body.
- * Applied only for Pro; free/anon ignore the requested hour.
+ * Per-route departure window from query/body.
+ * Applied only for Pro; free/anon ignore the requested hours.
+ * Legacy `earliestHour` maps to start when start is omitted.
  */
-export async function resolveRouteEarliestHour(
-  requested: number | null | undefined,
-): Promise<{
+export async function resolveRouteDepartureWindow(opts: {
+  startHour?: number | null;
+  endHour?: number | null;
+  earliestHour?: number | null;
+}): Promise<{
   tier: DiscoverTier;
-  effectiveHour: number | null;
+  startHour: number | null;
+  endHour: number | null;
 }> {
   const user = await getCurrentUser();
   const tier = await resolveUserTier(user?.id ?? null);
-  const hour = parseEarliestHourParam(requested ?? null);
+  if (tier !== "pro") {
+    return { tier, startHour: null, endHour: null };
+  }
+  const start =
+    parseDepartureHourParam(opts.startHour ?? null) ??
+    parseDepartureHourParam(opts.earliestHour ?? null);
+  const end = parseDepartureHourParam(opts.endHour ?? null);
+  const normalized = normalizeDepartureWindow(start, end);
+  if (!normalized.ok) {
+    return { tier, startHour: null, endHour: null };
+  }
   return {
     tier,
-    effectiveHour: tier === "pro" ? hour : null,
+    startHour: normalized.window.startHour,
+    endHour: normalized.window.endHour,
   };
 }
 

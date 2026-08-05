@@ -15,8 +15,9 @@ import { useI18n } from "@/lib/i18n";
 import { apiGet, getApiBaseUrl, ApiError } from "@/lib/api";
 import { formatDistanceKm } from "@/lib/distance";
 import {
-  EARLIEST_DEPARTURE_HOURS,
+  DEPARTURE_HOURS,
   formatHourOption,
+  normalizeDepartureWindow,
 } from "@/lib/departure";
 import {
   clampDateKey,
@@ -68,7 +69,10 @@ export default function RoutesScreen() {
   const [dateWindow, setDateWindow] = useState<DateWindow>(() =>
     resolveDateWindow({ preset: "weekend", locale }),
   );
-  const [earliestHour, setEarliestHour] = useState<number | null>(null);
+  const [departureStartHour, setDepartureStartHour] = useState<number | null>(
+    null,
+  );
+  const [departureEndHour, setDepartureEndHour] = useState<number | null>(null);
   const [tier, setTier] = useState<DiscoverTier>("anon");
   const [route, setRoute] = useState<RouteDto | null>(null);
   const [loading, setLoading] = useState(false);
@@ -96,7 +100,8 @@ export default function RoutesScreen() {
       alt?: number;
       window?: DateWindow;
       travelMode?: TravelMode;
-      earliest?: number | null;
+      startHour?: number | null;
+      endHour?: number | null;
     }) => {
       if (!apiReady) {
         setError(t("mobile.apiMissing"));
@@ -108,8 +113,18 @@ export default function RoutesScreen() {
       }
       const nextWindow = opts?.window ?? dateWindow;
       const nextMode = opts?.travelMode ?? mode;
-      const nextEarliest =
-        opts && "earliest" in opts ? opts.earliest : earliestHour;
+      const nextStart =
+        opts && "startHour" in opts ? opts.startHour : departureStartHour;
+      const nextEnd =
+        opts && "endHour" in opts ? opts.endHour : departureEndHour;
+      const normalized = normalizeDepartureWindow(
+        nextStart ?? null,
+        nextEnd ?? null,
+      );
+      if (!normalized.ok) {
+        setError(t("routes.departureWindowInvalid"));
+        return;
+      }
       setLoading(true);
       setError(null);
       try {
@@ -134,7 +149,14 @@ export default function RoutesScreen() {
           endDate: nextWindow.endDate,
           alt: opts?.alt,
           lang: locale,
-          earliestHour: isPro && nextEarliest != null ? nextEarliest : undefined,
+          departureStartHour:
+            isPro && normalized.window.startHour != null
+              ? normalized.window.startHour
+              : undefined,
+          departureEndHour:
+            isPro && normalized.window.endHour != null
+              ? normalized.window.endHour
+              : undefined,
         });
         setRoute(data);
         log.info(
@@ -159,7 +181,18 @@ export default function RoutesScreen() {
         setLoading(false);
       }
     },
-    [apiReady, dateWindow, earliestHour, fromPlace, isPro, locale, mode, t, toPlace],
+    [
+      apiReady,
+      dateWindow,
+      departureEndHour,
+      departureStartHour,
+      fromPlace,
+      isPro,
+      locale,
+      mode,
+      t,
+      toPlace,
+    ],
   );
 
   const sortedAlts = route?.alternatives
@@ -390,35 +423,39 @@ export default function RoutesScreen() {
           </View>
         )}
 
-        <Text style={styles.label}>{t("routes.earliestDepartureLabel")}</Text>
+        <Text style={styles.label}>{t("routes.departureTimeLabel")}</Text>
+        <Text style={styles.subLabel}>{t("routes.departureStart")}</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.chipRow}
         >
           <Pressable
-            onPress={() => setEarliestHour(null)}
-            style={[styles.chip, earliestHour == null && styles.chipActive]}
+            onPress={() => setDepartureStartHour(null)}
+            style={[
+              styles.chip,
+              departureStartHour == null && styles.chipActive,
+            ]}
             disabled={!isPro}
           >
             <Text
               style={[
                 styles.chipText,
-                earliestHour == null && styles.chipTextActive,
+                departureStartHour == null && styles.chipTextActive,
                 !isPro && styles.chipTextLocked,
               ]}
             >
-              {t("routes.earliestDepartureAny")}
+              {t("routes.departureAny")}
             </Text>
           </Pressable>
-          {EARLIEST_DEPARTURE_HOURS.filter((h) => h % 2 === 0).map((h) => {
-            const active = earliestHour === h;
+          {DEPARTURE_HOURS.map((h) => {
+            const active = departureStartHour === h;
             return (
               <Pressable
-                key={h}
+                key={`start-${h}`}
                 onPress={() => {
                   if (!isPro) return;
-                  setEarliestHour(h);
+                  setDepartureStartHour(h);
                 }}
                 style={[
                   styles.chip,
@@ -436,7 +473,64 @@ export default function RoutesScreen() {
                 >
                   {isPro
                     ? formatHourOption(h)
-                    : t("routes.earliestDepartureOptionPro", {
+                    : t("routes.departureOptionPro", {
+                        time: formatHourOption(h),
+                      })}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+        <Text style={styles.subLabel}>{t("routes.departureEnd")}</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipRow}
+        >
+          <Pressable
+            onPress={() => setDepartureEndHour(null)}
+            style={[
+              styles.chip,
+              departureEndHour == null && styles.chipActive,
+            ]}
+            disabled={!isPro}
+          >
+            <Text
+              style={[
+                styles.chipText,
+                departureEndHour == null && styles.chipTextActive,
+                !isPro && styles.chipTextLocked,
+              ]}
+            >
+              {t("routes.departureAny")}
+            </Text>
+          </Pressable>
+          {DEPARTURE_HOURS.map((h) => {
+            const active = departureEndHour === h;
+            return (
+              <Pressable
+                key={`end-${h}`}
+                onPress={() => {
+                  if (!isPro) return;
+                  setDepartureEndHour(h);
+                }}
+                style={[
+                  styles.chip,
+                  active && styles.chipActive,
+                  !isPro && styles.chipLocked,
+                ]}
+                disabled={!isPro}
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    active && styles.chipTextActive,
+                    !isPro && styles.chipTextLocked,
+                  ]}
+                >
+                  {isPro
+                    ? formatHourOption(h)
+                    : t("routes.departureOptionPro", {
                         time: formatHourOption(h),
                       })}
                 </Text>
@@ -446,9 +540,9 @@ export default function RoutesScreen() {
         </ScrollView>
         {!isPro ? (
           <Text style={styles.hint}>
-            {t("routes.earliestDepartureProNote")}{" "}
+            {t("routes.departureProNote")}{" "}
             <Link href={"/pro" as Href} style={styles.hintLink}>
-              {t("routes.earliestDepartureUpgrade")}
+              {t("routes.departureUpgrade")}
             </Link>
           </Text>
         ) : null}
@@ -657,6 +751,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
     color: colors.onSurfaceVariant,
     textTransform: "uppercase",
+  },
+  subLabel: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: "600",
+    color: colors.onSurfaceVariant,
   },
   input: {
     minHeight: 52,

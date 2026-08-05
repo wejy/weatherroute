@@ -260,11 +260,15 @@ const en = {
       "Leave around {time} on this route from {from} to {to} ({extra}). Highest rain risk near {place} ({rain}%).",
     pickBoth: "Pick both start and destination from the suggestions.",
     travelMode: "How are you traveling?",
-    earliestDepartureLabel: "Don’t leave before",
-    earliestDepartureAny: "No limit",
-    earliestDepartureOptionPro: "{time} (Pro)",
-    earliestDepartureProNote: "Pro feature — set a floor for best departure suggestions.",
-    earliestDepartureUpgrade: "View plans",
+    departureTimeLabel: "Departure time",
+    departureStart: "Start",
+    departureEnd: "End",
+    departureAny: "Any",
+    departureWindowInvalid: "Start must be at or before end.",
+    departureOptionPro: "{time} (Pro)",
+    departureProNote:
+      "Pro feature — set a start and/or end hour for best departure suggestions.",
+    departureUpgrade: "View plans",
     saveRoute: "Save route",
     saveRouteSignIn: "Sign in to save this route",
     saveRouteUpgrade: "Upgrade to Pro to save routes",
@@ -359,7 +363,7 @@ const en = {
     themeComingSoon: "Dark mode is coming soon — light mode is used for now.",
     subscriptionTitle: "Subscription",
     subscriptionBody:
-      "Unlock wider search radii, more discover results, earliest departure, same-country filtering, and saved routes with One-time or Monthly Pro.",
+      "Unlock wider search radii, more discover results, a departure time window on routes, same-country filtering, and saved routes with One-time or Monthly Pro.",
     subscriptionCta: "View plans & pricing",
     subscriptionSoon: "Stripe keys are not configured yet.",
     subscriptionSignInHint: "Sign in to see your plan and manage billing.",
@@ -455,7 +459,7 @@ const en = {
       },
       corridor: {
         title: "Weather along the route",
-        body: "See dryness and conditions along the drive or ride, plus smart departure timing when you’re on Pro.",
+        body: "See dryness and conditions along the drive or ride, plus a Pro departure time window (start–end) for smarter suggestions.",
       },
       trust: {
         title: "Fast, private sign-in",
@@ -488,7 +492,7 @@ const en = {
       },
       routes: {
         title: "Route comparison",
-        body: "Compare alternatives, travel modes (car and bike), and departure timing with weather along the way.",
+        body: "Compare alternatives, travel modes (car and bike), and a departure time window with weather along the way.",
       },
       save: {
         title: "Save routes",
@@ -517,7 +521,7 @@ const en = {
     },
     plansTitle: "Free vs Pro — short version",
     plansLead:
-      "Free covers everyday discovers nearby. Pro unlocks wider radii, more results, earliest departure, optional same-country filtering, and saved routes.",
+      "Free covers everyday discovers nearby. Pro unlocks wider radii, more results, a departure time window (start/end on routes), optional same-country filtering, and saved routes.",
     freeTitle: "Free",
     freeItems: {
       discovers: "50 discovers per calendar month when signed in (within Wider Region)",
@@ -527,7 +531,7 @@ const en = {
     proTitle: "Pro",
     proItems: {
       radius: "National, Continent, and custom search radius",
-      results: "Up to 30 destinations + earliest departure",
+      results: "Up to 30 destinations + departure time window on routes",
       sameCountry: "Optional same-country-only destination filter",
       saves: "Saved routes (2 on One-time · unlimited on Monthly)",
     },
@@ -584,11 +588,11 @@ const en = {
         pro: "Up to 30 — choose in Settings",
       },
       departure: {
-        title: "Earliest departure (routes)",
+        title: "Departure time window (routes)",
         free: "Not applied — suggestions can use any hour",
-        oneTime: "Set “Don’t leave before” on the route page",
-        monthly: "Set “Don’t leave before” on the route page",
-        pro: "Set per trip on the route page; suggestions respect it",
+        oneTime: "Set start and/or end hour on the route page",
+        monthly: "Set start and/or end hour on the route page",
+        pro: "Set per trip on the route page; suggestions stay inside the window",
       },
       sameCountry: {
         title: "Same country only (Discover)",
@@ -620,7 +624,7 @@ const en = {
         "Search farther: National Level, Continent, and your own custom radius.",
       results: "See more ranked destinations — up to 30 per search.",
       departure:
-        "On each route, set earliest departure so suggestions match your schedule.",
+        "On each route, set a departure time window (start and/or end) so suggestions match your schedule.",
       sameCountry:
         "Keep Discover inside one country — optional, applies to all your searches.",
       routes: "Save routes — 2 on One-time, unlimited on Monthly.",

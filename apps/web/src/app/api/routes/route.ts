@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { routeQuerySchema } from "@/lib/validation/schemas";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRouteWeather } from "@/server/services/location-service";
-import { resolveRouteEarliestHour } from "@/server/dal/user-prefs";
+import { resolveRouteDepartureWindow } from "@/server/dal/user-prefs";
 import { withApiLog } from "@/lib/api-log";
 import { getCurrentUser } from "@/server/auth/session";
 import { recordUsageEvent } from "@/server/dal/usage";
@@ -28,7 +28,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const departure = await resolveRouteEarliestHour(parsed.data.earliestHour);
+    const departure = await resolveRouteDepartureWindow({
+      startHour: parsed.data.departureStartHour,
+      endHour: parsed.data.departureEndHour,
+      earliestHour: parsed.data.earliestHour,
+    });
     const route = await getRouteWeather(parsed.data.from, parsed.data.to, {
       fromLat: parsed.data.fromLat,
       fromLon: parsed.data.fromLon,
@@ -41,7 +45,8 @@ export async function GET(request: NextRequest) {
       startDate: parsed.data.startDate,
       endDate: parsed.data.endDate,
       locale: parsed.data.lang,
-      earliestDepartureHour: departure.effectiveHour,
+      departureStartHour: departure.startHour,
+      departureEndHour: departure.endHour,
     });
     const user = await getCurrentUser();
     recordUsageEvent({
@@ -56,7 +61,8 @@ export async function GET(request: NextRequest) {
       {
         mode: parsed.data.mode,
         prefer: parsed.data.prefer,
-        earliestHour: departure.effectiveHour,
+        departureStartHour: departure.startHour,
+        departureEndHour: departure.endHour,
         waypoints: route.waypoints?.length ?? 0,
         alternatives: route.alternatives?.length ?? 0,
       },

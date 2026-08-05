@@ -82,9 +82,9 @@ Free/anon may use up to **Wider Region · 200 km** (FI: Alueellinen).
 | free | 20 | 24 |
 | pro | 30 default, up to **30** (settings) | scales with display |
 
-### 3. Earliest departure (routes)
+### 3. Departure time window (routes)
 
-Pro can set “Don’t leave before HH:00” in settings.
+Pro can set start and/or end hour (“Any” by default) on the **route page**. Best-departure suggestions stay inside that same-day window. Free/anon requests ignore the params.
 
 ### 4. Saved routes
 

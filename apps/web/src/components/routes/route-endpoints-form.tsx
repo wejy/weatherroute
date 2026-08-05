@@ -20,8 +20,9 @@ import {
   type DateWindow,
 } from "@/lib/dates";
 import {
-  EARLIEST_DEPARTURE_HOURS,
+  DEPARTURE_HOURS,
   formatHourOption,
+  normalizeDepartureWindow,
 } from "@/lib/departure";
 
 function parsePreset(raw: string | null): DatePreset | undefined {
@@ -45,7 +46,8 @@ export function RouteEndpointsForm({
   initialDatePreset,
   initialStartDate,
   initialEndDate,
-  initialEarliestHour = null,
+  initialDepartureStartHour = null,
+  initialDepartureEndHour = null,
   isPro = false,
 }: {
   initialFrom: string;
@@ -56,7 +58,8 @@ export function RouteEndpointsForm({
   initialDatePreset?: string | null;
   initialStartDate?: string | null;
   initialEndDate?: string | null;
-  initialEarliestHour?: number | null;
+  initialDepartureStartHour?: number | null;
+  initialDepartureEndHour?: number | null;
   isPro?: boolean;
 }) {
   const { t, locale } = useI18n();
@@ -72,8 +75,11 @@ export function RouteEndpointsForm({
   const [mode, setMode] = useState<TravelMode>(
     isTravelMode(initialMode) ? initialMode : DEFAULT_TRAVEL_MODE,
   );
-  const [earliestHour, setEarliestHour] = useState<number | null>(
-    initialEarliestHour,
+  const [departureStartHour, setDepartureStartHour] = useState<number | null>(
+    initialDepartureStartHour,
+  );
+  const [departureEndHour, setDepartureEndHour] = useState<number | null>(
+    initialDepartureEndHour,
   );
   const [error, setError] = useState<string | null>(null);
 
@@ -123,7 +129,8 @@ export function RouteEndpointsForm({
     nextWhen: DateWindow,
     nextFrom: PlaceDto,
     nextTo: PlaceDto,
-    nextEarliest: number | null = earliestHour,
+    nextStart: number | null = departureStartHour,
+    nextEnd: number | null = departureEndHour,
   ): URLSearchParams {
     const params = new URLSearchParams();
     params.set("from", nextFrom.placeName);
@@ -145,8 +152,11 @@ export function RouteEndpointsForm({
     params.set("datePreset", nextWhen.preset);
     params.set("startDate", nextWhen.startDate);
     params.set("endDate", nextWhen.endDate);
-    if (isPro && nextEarliest != null) {
-      params.set("earliestHour", String(nextEarliest));
+    if (isPro && nextStart != null) {
+      params.set("departureStartHour", String(nextStart));
+    }
+    if (isPro && nextEnd != null) {
+      params.set("departureEndHour", String(nextEnd));
     }
     return params;
   }
@@ -154,14 +164,27 @@ export function RouteEndpointsForm({
   function applyRoute(
     nextMode: TravelMode = mode,
     nextWhen: DateWindow = when,
-    nextEarliest: number | null = earliestHour,
+    nextStart: number | null = departureStartHour,
+    nextEnd: number | null = departureEndHour,
   ) {
     if (!from || !to) {
       setError(t("routes.pickBoth"));
       return;
     }
+    const normalized = normalizeDepartureWindow(nextStart, nextEnd);
+    if (!normalized.ok) {
+      setError(t("routes.departureWindowInvalid"));
+      return;
+    }
     setError(null);
-    const params = buildParams(nextMode, nextWhen, from, to, nextEarliest);
+    const params = buildParams(
+      nextMode,
+      nextWhen,
+      from,
+      to,
+      normalized.window.startHour,
+      normalized.window.endHour,
+    );
     startTransition(() => {
       router.push(`/routes?${params.toString()}`);
     });
@@ -170,24 +193,36 @@ export function RouteEndpointsForm({
   function onModeChange(next: TravelMode) {
     setMode(next);
     if (from && to) {
-      applyRoute(next, when, earliestHour);
+      applyRoute(next, when, departureStartHour, departureEndHour);
     }
   }
 
   function onWhenChange(next: DateWindow) {
     setWhen(next);
     if (from && to) {
-      applyRoute(mode, next, earliestHour);
+      applyRoute(mode, next, departureStartHour, departureEndHour);
     }
   }
 
-  function onEarliestChange(raw: string) {
-    const next = raw === "any" ? null : Number(raw);
-    const hour =
-      next != null && EARLIEST_DEPARTURE_HOURS.includes(next) ? next : null;
-    setEarliestHour(hour);
+  function parseHourSelect(raw: string): number | null {
+    if (raw === "any") return null;
+    const next = Number(raw);
+    return DEPARTURE_HOURS.includes(next) ? next : null;
+  }
+
+  function onStartChange(raw: string) {
+    const hour = parseHourSelect(raw);
+    setDepartureStartHour(hour);
     if (isPro && from && to) {
-      applyRoute(mode, when, hour);
+      applyRoute(mode, when, hour, departureEndHour);
+    }
+  }
+
+  function onEndChange(raw: string) {
+    const hour = parseHourSelect(raw);
+    setDepartureEndHour(hour);
+    if (isPro && from && to) {
+      applyRoute(mode, when, departureStartHour, hour);
     }
   }
 
@@ -300,35 +335,68 @@ export function RouteEndpointsForm({
       )}
 
       <div>
-        <label
-          htmlFor="route-earliest"
-          className="mb-1.5 block text-sm font-medium tracking-wide text-on-surface-variant uppercase"
-        >
-          {t("routes.earliestDepartureLabel")}
-        </label>
-        <select
-          id="route-earliest"
-          value={earliestHour == null ? "any" : String(earliestHour)}
-          onChange={(e) => onEarliestChange(e.target.value)}
-          disabled={!isPro}
-          className="w-full min-h-11 rounded-lg border border-outline-variant/30 bg-surface px-3 py-2.5 text-base text-on-surface disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          <option value="any">{t("routes.earliestDepartureAny")}</option>
-          {EARLIEST_DEPARTURE_HOURS.map((h) => (
-            <option key={h} value={h}>
-              {isPro
-                ? formatHourOption(h)
-                : t("routes.earliestDepartureOptionPro", {
-                    time: formatHourOption(h),
-                  })}
-            </option>
-          ))}
-        </select>
+        <p className="mb-1.5 text-sm font-medium tracking-wide text-on-surface-variant uppercase">
+          {t("routes.departureTimeLabel")}
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label
+              htmlFor="route-departure-start"
+              className="mb-1 block text-xs font-medium text-on-surface-variant"
+            >
+              {t("routes.departureStart")}
+            </label>
+            <select
+              id="route-departure-start"
+              value={departureStartHour == null ? "any" : String(departureStartHour)}
+              onChange={(e) => onStartChange(e.target.value)}
+              disabled={!isPro}
+              className="w-full min-h-11 rounded-lg border border-outline-variant/30 bg-surface px-3 py-2.5 text-base text-on-surface disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              <option value="any">{t("routes.departureAny")}</option>
+              {DEPARTURE_HOURS.map((h) => (
+                <option key={h} value={h}>
+                  {isPro
+                    ? formatHourOption(h)
+                    : t("routes.departureOptionPro", {
+                        time: formatHourOption(h),
+                      })}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label
+              htmlFor="route-departure-end"
+              className="mb-1 block text-xs font-medium text-on-surface-variant"
+            >
+              {t("routes.departureEnd")}
+            </label>
+            <select
+              id="route-departure-end"
+              value={departureEndHour == null ? "any" : String(departureEndHour)}
+              onChange={(e) => onEndChange(e.target.value)}
+              disabled={!isPro}
+              className="w-full min-h-11 rounded-lg border border-outline-variant/30 bg-surface px-3 py-2.5 text-base text-on-surface disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              <option value="any">{t("routes.departureAny")}</option>
+              {DEPARTURE_HOURS.map((h) => (
+                <option key={h} value={h}>
+                  {isPro
+                    ? formatHourOption(h)
+                    : t("routes.departureOptionPro", {
+                        time: formatHourOption(h),
+                      })}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
         {!isPro ? (
           <p className="mt-1.5 text-xs text-on-surface-variant">
-            {t("routes.earliestDepartureProNote")}{" "}
+            {t("routes.departureProNote")}{" "}
             <Link href="/pro" className="font-medium text-primary underline-offset-2 hover:underline">
-              {t("routes.earliestDepartureUpgrade")}
+              {t("routes.departureUpgrade")}
             </Link>
           </p>
         ) : null}

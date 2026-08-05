@@ -22,8 +22,8 @@ import {
 import { resolveDateWindow, type DatePreset } from "@/lib/dates";
 import { RouteShareActions } from "@/components/routes/route-share-actions";
 import {
-  parseEarliestHourParam,
-  resolveRouteEarliestHour,
+  parseDepartureHourParam,
+  resolveRouteDepartureWindow,
 } from "@/server/dal/user-prefs";
 import { getBillingEntitlement } from "@/server/dal/subscriptions";
 import { WEATHER_TONE_COLORS } from "@/lib/weather-tone";
@@ -84,7 +84,10 @@ export default async function RoutesPage({
         : "weekend";
   const startDateParam = first(raw.startDate) || null;
   const endDateParam = first(raw.endDate) || null;
-  const requestedEarliest = parseEarliestHourParam(first(raw.earliestHour));
+  const requestedStart =
+    parseDepartureHourParam(first(raw.departureStartHour)) ??
+    parseDepartureHourParam(first(raw.earliestHour));
+  const requestedEnd = parseDepartureHourParam(first(raw.departureEndHour));
 
   const locale = await getLocale();
   const dateWindow = resolveDateWindow({
@@ -93,7 +96,10 @@ export default async function RoutesPage({
     endDate: endDateParam ?? startDateParam ?? undefined,
     locale,
   });
-  const departure = await resolveRouteEarliestHour(requestedEarliest);
+  const departure = await resolveRouteDepartureWindow({
+    startHour: requestedStart,
+    endHour: requestedEnd,
+  });
   const isPro = departure.tier === "pro";
   const user = await getCurrentUser();
   const billing = await getBillingEntitlement(user?.id ?? null);
@@ -107,7 +113,8 @@ export default async function RoutesPage({
     mode,
     locale,
     altIndex,
-    earliestDepartureHour: departure.effectiveHour,
+    departureStartHour: departure.startHour,
+    departureEndHour: departure.endHour,
     datePreset: dateWindow.preset,
     startDate: dateWindow.startDate,
     endDate: dateWindow.endDate,
@@ -137,8 +144,11 @@ export default async function RoutesPage({
     params.set("datePreset", dateWindow.preset);
     params.set("startDate", dateWindow.startDate);
     params.set("endDate", dateWindow.endDate);
-    if (departure.effectiveHour != null) {
-      params.set("earliestHour", String(departure.effectiveHour));
+    if (departure.startHour != null) {
+      params.set("departureStartHour", String(departure.startHour));
+    }
+    if (departure.endHour != null) {
+      params.set("departureEndHour", String(departure.endHour));
     }
     return `/routes?${params.toString()}`;
   }
@@ -218,7 +228,7 @@ export default async function RoutesPage({
 
             <Suspense fallback={null}>
               <RouteEndpointsForm
-                key={`${route.from.id}-${route.to.id}-${mode}-${dateWindow.startDate}-${dateWindow.endDate}-${departure.effectiveHour ?? "any"}`}
+                key={`${route.from.id}-${route.to.id}-${mode}-${dateWindow.startDate}-${dateWindow.endDate}-${departure.startHour ?? "any"}-${departure.endHour ?? "any"}`}
                 initialFrom={from}
                 initialTo={to}
                 fromPlace={route.from}
@@ -227,7 +237,8 @@ export default async function RoutesPage({
                 initialDatePreset={dateWindow.preset}
                 initialStartDate={dateWindow.startDate}
                 initialEndDate={dateWindow.endDate}
-                initialEarliestHour={departure.effectiveHour}
+                initialDepartureStartHour={departure.startHour}
+                initialDepartureEndHour={departure.endHour}
                 isPro={isPro}
               />
             </Suspense>

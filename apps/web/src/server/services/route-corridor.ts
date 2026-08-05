@@ -3,6 +3,7 @@ import type {
   WeatherCondition,
   WeatherDto,
 } from "@/lib/types";
+import { hourInDepartureWindow } from "@/lib/departure";
 
 export type CorridorSample = {
   name: string;
@@ -167,7 +168,7 @@ function daytimeBonus(hour: number): number {
 
 /**
  * Pick the driest departure (prefer daytime on ties).
- * Skips past hours, optional earliestHour, and optional date window (YYYY-MM-DD).
+ * Skips past hours, optional start/end hour window, and optional date window (YYYY-MM-DD).
  */
 export function findBestDeparture(
   samples: CorridorSample[],
@@ -176,7 +177,9 @@ export function findBestDeparture(
     horizonHours?: number;
     timeZone?: string;
     /** Local hour 0–23; departures before this hour are skipped. */
-    earliestHour?: number | null;
+    startHour?: number | null;
+    /** Local hour 0–23 inclusive; departures after this hour are skipped. */
+    endHour?: number | null;
     /** Inclusive travel window (local calendar dates). */
     startDate?: string | null;
     endDate?: string | null;
@@ -186,12 +189,19 @@ export function findBestDeparture(
     opts?.timeZone ??
     samples[0]?.weather?.timezone ??
     "UTC";
-  const earliestHour =
-    opts?.earliestHour != null &&
-    Number.isInteger(opts.earliestHour) &&
-    opts.earliestHour >= 0 &&
-    opts.earliestHour <= 23
-      ? opts.earliestHour
+  const startHour =
+    opts?.startHour != null &&
+    Number.isInteger(opts.startHour) &&
+    opts.startHour >= 0 &&
+    opts.startHour <= 23
+      ? opts.startHour
+      : null;
+  const endHour =
+    opts?.endHour != null &&
+    Number.isInteger(opts.endHour) &&
+    opts.endHour >= 0 &&
+    opts.endHour <= 23
+      ? opts.endHour
       : null;
   const startDate = opts?.startDate || null;
   const endDate = opts?.endDate || startDate;
@@ -210,7 +220,8 @@ export function findBestDeparture(
     rawCandidates,
     startDate,
     endDate,
-    earliestHour ?? 7,
+    startHour ?? 7,
+    endHour,
   );
 
   const horizonHours =
@@ -221,9 +232,8 @@ export function findBestDeparture(
 
   const candidates = windowCandidates
     .filter((c) => normalizeHourKey(c.time) >= nowHour)
-    .filter(
-      (c) =>
-        earliestHour == null || hourOfLocalKey(c.time) >= earliestHour,
+    .filter((c) =>
+      hourInDepartureWindow(hourOfLocalKey(c.time), startHour, endHour),
     )
     .filter((c) => {
       if (!startDate || !endDate) return true;
@@ -291,6 +301,7 @@ function expandWindowCandidates(
   startDate: string | null,
   endDate: string | null,
   preferredHour: number,
+  endHour: number | null = null,
 ): Array<{ time: string }> {
   if (!startDate || !endDate) return existing;
   const seen = new Set(existing.map((c) => normalizeHourKey(c.time)));
@@ -298,6 +309,9 @@ function expandWindowCandidates(
   const start = parseLocalParts(`${startDate}T00:00`);
   const end = parseLocalParts(`${endDate}T00:00`);
   if (!start || !end) return existing;
+
+  const padHours = new Set([preferredHour, 9, 12, 15, 18]);
+  if (endHour != null) padHours.add(endHour);
 
   for (
     let ms = Date.UTC(start.y, start.mo - 1, start.d);
@@ -308,7 +322,7 @@ function expandWindowCandidates(
     const y = day.getUTCFullYear();
     const mo = pad(day.getUTCMonth() + 1);
     const d = pad(day.getUTCDate());
-    for (const h of [preferredHour, 9, 12, 15, 18]) {
+    for (const h of padHours) {
       const key = `${y}-${mo}-${d}T${pad(h)}:00`;
       if (!seen.has(key)) {
         seen.add(key);

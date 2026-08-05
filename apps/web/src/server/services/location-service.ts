@@ -277,8 +277,10 @@ export async function getRouteWeather(
     toId?: string;
     mode?: TravelMode;
     locale?: DateLocale;
-    /** Pro: do not suggest departures before this local hour (0–23). */
-    earliestDepartureHour?: number | null;
+    /** Pro: departure window start local hour (0–23). */
+    departureStartHour?: number | null;
+    /** Pro: departure window end local hour inclusive (0–23). */
+    departureEndHour?: number | null;
     datePreset?: string | null;
     startDate?: string | null;
     endDate?: string | null;
@@ -413,7 +415,8 @@ export async function getRouteWeather(
         };
       });
       const best = findBestDeparture(samples, meta.durationHours, {
-        earliestHour: opts?.earliestDepartureHour ?? null,
+        startHour: opts?.departureStartHour ?? null,
+        endHour: opts?.departureEndHour ?? null,
         startDate: dateWindow.startDate,
         endDate: dateWindow.endDate,
         timeZone: samples[0]?.weather?.timezone,
@@ -545,7 +548,8 @@ export async function getRouteWeather(
   });
 
   const best = findBestDeparture(samples, durationHours, {
-    earliestHour: opts?.earliestDepartureHour ?? null,
+    startHour: opts?.departureStartHour ?? null,
+    endHour: opts?.departureEndHour ?? null,
     startDate: dateWindow.startDate,
     endDate: dateWindow.endDate,
     timeZone: samples[0]?.weather?.timezone,
