@@ -4,12 +4,15 @@ import { createModuleLogger } from "@/lib/logger";
 import { createHash, randomInt, timingSafeEqual } from "node:crypto";
 import { and, eq, gt } from "drizzle-orm";
 import { z } from "zod";
-import { env } from "@/lib/env";
+import type { Locale } from "@solviax/i18n";
+import { defaultLocale } from "@solviax/i18n";
 import { rateLimit } from "@/lib/rate-limit";
 import { getDb } from "@/db";
 import { emailOtps, users } from "@/db/schema";
 import { recordUsageEvent } from "@/server/dal/usage";
 import { USAGE_TYPES } from "@/server/dal/usage-types";
+import { buildOtpEmail } from "@/server/email/otp-templates";
+import { sendTransactionalEmail } from "@/server/email/send";
 
 const log = createModuleLogger("server.auth.otp");
 const OTP_SEND_PER_EMAIL = 3;
@@ -29,46 +32,6 @@ function codesMatch(stored: string, candidate: string): boolean {
   const b = Buffer.from(candidate, "utf8");
   if (a.length !== b.length) return false;
   return timingSafeEqual(a, b);
-}
-
-async function sendOtpEmail(email: string, code: string): Promise<void> {
-  const subject = "Your Solviax.app sign-in code";
-  const body = `Your Solviax.app code is ${code}. It expires in 10 minutes.`;
-
-  if (env.emailMode === "resend" && env.resendApiKey) {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.resendApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: env.emailFrom,
-        to: [email],
-        subject,
-        text: body,
-      }),
-    });
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      log.error(
-        { status: res.status, body: text.slice(0, 200) },
-        "Resend OTP email failed",
-      );
-      throw new Error("Failed to send code");
-    }
-    return;
-  }
-
-  if (env.isProduction) {
-    throw new Error("Email provider not configured");
-  }
-
-  log.info({ email }, "console OTP sent (code not logged)");
-  if (process.env.LOG_OTP_CODE === "1") {
-    // Explicit local debug only — never enable in production.
-    log.warn({ email, debugCode: code }, "LOG_OTP_CODE=1 — OTP visible");
-  }
 }
 
 async function enforceOtpSendLimits(
@@ -99,7 +62,7 @@ const emailSchema = z.string().email();
 /** Create + send a 6-digit OTP. */
 export async function requestEmailOtp(
   emailRaw: string,
-  opts?: { clientKey?: string },
+  opts?: { clientKey?: string; locale?: Locale },
 ): Promise<{ ok: true }> {
   const parsed = emailSchema.safeParse(emailRaw.trim());
   if (!parsed.success) {
@@ -107,6 +70,7 @@ export async function requestEmailOtp(
   }
   const email = parsed.data.toLowerCase();
   const clientKey = opts?.clientKey ?? "unknown";
+  const locale = opts?.locale ?? defaultLocale;
 
   const db = getDb();
   if (!db) {
@@ -119,16 +83,20 @@ export async function requestEmailOtp(
     .select()
     .from(emailOtps)
     .where(
-      and(
-        eq(emailOtps.email, email),
-        gt(emailOtps.expiresAt, new Date()),
-      ),
+      and(eq(emailOtps.email, email), gt(emailOtps.expiresAt, new Date())),
     )
     .limit(1);
 
   if (locked && locked.attempts >= MAX_VERIFY_ATTEMPTS) {
     throw new Error("Too many attempts. Try again later.");
   }
+
+  const [existingUser] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  const isNewUser = !existingUser;
 
   const code = String(randomInt(100000, 999999));
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -141,7 +109,19 @@ export async function requestEmailOtp(
     attempts: 0,
   });
 
-  await sendOtpEmail(email, code);
+  const content = buildOtpEmail({ locale, code, isNewUser });
+  try {
+    await sendTransactionalEmail({
+      to: email,
+      subject: content.subject,
+      text: content.text,
+      html: content.html,
+    });
+  } catch (err) {
+    log.error({ err, email }, "OTP email send failed");
+    throw err instanceof Error ? err : new Error("Failed to send code");
+  }
+
   return { ok: true };
 }
 

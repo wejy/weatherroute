@@ -76,6 +76,11 @@ export default async function AdminPage({
       value: users.proMonthly,
     },
     {
+      key: "yearly",
+      label: t("admin.usersProYearly"),
+      value: users.proYearly,
+    },
+    {
       key: "one_time",
       label: t("admin.usersProOneTime"),
       value: users.proOneTime,
@@ -236,6 +241,10 @@ export default async function AdminPage({
               value={users.proMonthly}
             />
             <StatCard
+              label={t("admin.usersProYearly")}
+              value={users.proYearly}
+            />
+            <StatCard
               label={t("admin.usersProOneTime")}
               value={users.proOneTime}
             />
@@ -339,6 +348,11 @@ export default async function AdminPage({
               <li>
                 {t("admin.payingMonthly")}: {finance.paying.monthlyActive} ×{" "}
                 {eur(finance.prices.monthlyEur, locale)}
+              </li>
+              <li>
+                {t("admin.payingYearly")}: {finance.paying.yearlyActive} ×{" "}
+                {eur(finance.prices.yearlyEur, locale)} ({t("admin.amortizedYearly")}
+                )
               </li>
               <li>
                 {t("admin.payingOneTime")}: {finance.paying.oneTimeActive} ×{" "}

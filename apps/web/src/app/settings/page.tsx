@@ -72,9 +72,11 @@ export default async function SettingsPage({
       ? t("settings.planOneTime")
       : billing.plan === "monthly"
         ? t("settings.planMonthly")
-        : isPro
-          ? t("settings.tierPro")
-          : t("settings.tierFree");
+        : billing.plan === "yearly"
+          ? t("settings.planYearly")
+          : isPro
+            ? t("settings.tierPro")
+            : t("settings.tierFree");
 
   return (
     <>
@@ -290,7 +292,9 @@ export default async function SettingsPage({
                     ? t("settings.planOneTime")
                     : billing.plan === "monthly"
                       ? t("settings.planMonthly")
-                      : t("pro.statusActive")}
+                      : billing.plan === "yearly"
+                        ? t("settings.planYearly")
+                        : t("pro.statusActive")}
                 </li>
                 {formatIsoDateForLocale(
                   billing.proSince ?? billing.oneTimePaidAt,
@@ -316,7 +320,7 @@ export default async function SettingsPage({
                     })}
                   </li>
                 ) : null}
-                {billing.plan === "monthly" &&
+                {(billing.plan === "monthly" || billing.plan === "yearly") &&
                 formatIsoDateForLocale(billing.currentPeriodEnd, locale) ? (
                   <li className="text-on-surface-variant">
                     {t("pro.renewsOn", {

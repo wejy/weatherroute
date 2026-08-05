@@ -8,6 +8,7 @@ import { env } from "@/lib/env";
 import { createModuleLogger } from "@/lib/logger";
 import {
   isStripeBillingConfigured,
+  recurringPlanFromPriceIds,
   stripePriceIdForPlan,
   type CheckoutPlan,
 } from "@/server/billing/plans";
@@ -81,7 +82,10 @@ export async function createCheckoutSession(opts: {
   });
 
   const base = env.appUrl.replace(/\/$/, "");
-  const mode = opts.plan === "monthly" ? "subscription" : "payment";
+  const mode =
+    opts.plan === "monthly" || opts.plan === "yearly"
+      ? "subscription"
+      : "payment";
 
   const successWeb = `${base}/pro?checkout=success&plan=${opts.plan}`;
   const cancelWeb = `${base}/pro?checkout=cancel`;
@@ -106,7 +110,7 @@ export async function createCheckoutSession(opts: {
     ...(mode === "subscription"
       ? {
           subscription_data: {
-            metadata: { userId: opts.userId, plan: "monthly" },
+            metadata: { userId: opts.userId, plan: opts.plan },
           },
         }
       : {
@@ -186,7 +190,10 @@ async function handleCheckoutSessionCompleted(
   const userId =
     session.metadata?.userId || session.client_reference_id || null;
   const plan = session.metadata?.plan;
-  if (!userId || (plan !== "one_time" && plan !== "monthly")) {
+  if (
+    !userId ||
+    (plan !== "one_time" && plan !== "monthly" && plan !== "yearly")
+  ) {
     log.warn({ sessionId: session.id }, "checkout completed missing user/plan");
     return;
   }
@@ -240,9 +247,12 @@ async function handleCheckoutSessionCompleted(
   }
 
   let currentPeriodEnd: Date | null = null;
-  if (plan === "monthly") {
+  if (plan === "monthly" || plan === "yearly") {
     if (!subscriptionId) {
-      log.warn({ sessionId: session.id }, "monthly checkout missing subscription");
+      log.warn(
+        { sessionId: session.id, plan },
+        "recurring checkout missing subscription",
+      );
       return;
     }
     const sub = await stripe.subscriptions.retrieve(subscriptionId);
@@ -250,14 +260,14 @@ async function handleCheckoutSessionCompleted(
     if (mapped.action !== "activate") {
       log.warn(
         { sessionId: session.id, subStatus: sub.status },
-        "monthly subscription not active/trialing yet — skipping",
+        "subscription not active/trialing yet — skipping",
       );
       return;
     }
     if (!subscriptionMatchesMonthlyPrice(subscriptionPriceIds(sub))) {
       log.warn(
         { sessionId: session.id, subId: sub.id },
-        "subscription price is not STRIPE_PRICE_MONTHLY — skipping",
+        "subscription price is not a configured Pro recurring price — skipping",
       );
       return;
     }
@@ -268,7 +278,8 @@ async function handleCheckoutSessionCompleted(
     userId,
     plan,
     stripeCustomerId: customerId,
-    stripeSubscriptionId: plan === "monthly" ? subscriptionId : null,
+    stripeSubscriptionId:
+      plan === "monthly" || plan === "yearly" ? subscriptionId : null,
     currentPeriodEnd,
   });
   log.info({ userId, plan, sessionId: session.id }, "Pro activated from checkout");
@@ -308,20 +319,24 @@ async function handleSubscriptionUpdated(
   }
   if (mapped.action === "deactivate") {
     await deactivateMonthlySubscription(userId);
-    log.info({ userId, subId: sub.id, status: sub.status }, "monthly deactivated");
+    log.info({ userId, subId: sub.id, status: sub.status }, "recurring deactivated");
     return;
   }
 
+  const plan =
+    recurringPlanFromPriceIds(subscriptionPriceIds(sub)) ??
+    (sub.metadata?.plan === "yearly" ? "yearly" : "monthly");
+
   await activateCheckoutPlan({
     userId,
-    plan: "monthly",
+    plan,
     stripeCustomerId: customerId,
     stripeSubscriptionId: sub.id,
     currentPeriodEnd: periodEndFromSubscription(sub),
   });
   log.info(
-    { userId, subId: sub.id, status: mapped.status },
-    "monthly subscription synced",
+    { userId, subId: sub.id, status: mapped.status, plan },
+    "recurring subscription synced",
   );
 }
 

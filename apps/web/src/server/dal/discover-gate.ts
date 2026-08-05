@@ -27,7 +27,7 @@ export type DiscoverGate =
  * - anon: cookie + IP
  * - free: 50 / UTC month
  * - Pro monthly: 200 / UTC month (fair-use)
- * - Pro one_time (within 90d): 400 / purchase window (fair-use)
+ * - Pro one_time (within 60d): 400 / purchase window (fair-use)
  */
 export async function gateDiscoverAccess(opts: {
   consume: boolean;
@@ -42,7 +42,7 @@ export async function gateDiscoverAccess(opts: {
     const tier = await resolveUserTier(user.id);
     if (tier === "pro") {
       const billing = await getBillingEntitlement(user.id);
-      if (billing.plan === "monthly") {
+      if (billing.plan === "monthly" || billing.plan === "yearly") {
         if (!opts.consume) {
           const quota = await getProMonthlyQuota(user.id);
           if (!quota.allowed) {

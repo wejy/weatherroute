@@ -29,7 +29,9 @@ export async function requestOtpAction(formData: FormData) {
   try {
     const h = await headers();
     const clientKey = getClientIpFromHeaders(h);
-    await requestEmailOtp(email, { clientKey });
+    const { getLocale } = await import("@/i18n/get-dictionary");
+    const locale = await getLocale();
+    await requestEmailOtp(email, { clientKey, locale });
   } catch {
     redirect(`/login?error=send${next ? `&next=${encodeURIComponent(next)}` : ""}`);
   }

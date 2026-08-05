@@ -23,7 +23,7 @@ export type RouteGate =
  * - admin: unlimited
  * - anon: 30 / UTC month + IP day-cap
  * - free: 50 / UTC month
- * - Pro (one_time + monthly): 500 / UTC month
+ * - Pro (one_time + monthly + yearly): 500 / UTC month
  */
 export async function gateRouteAccess(opts: {
   consume: boolean;

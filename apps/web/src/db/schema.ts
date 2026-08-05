@@ -103,7 +103,7 @@ export const subscriptions = pgTable(
       .unique(),
     /** free | active | trial | past_due | canceled */
     status: text("status").notNull().default("free"),
-    /** none | one_time | monthly */
+    /** none | one_time | monthly | yearly */
     plan: text("plan").notNull().default("none"),
     stripeCustomerId: text("stripe_customer_id").unique(),
     stripeSubscriptionId: text("stripe_subscription_id"),

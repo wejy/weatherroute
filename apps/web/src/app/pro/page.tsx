@@ -64,7 +64,9 @@ export default async function ProMarketingPage({
       ? t("pro.oneTimePlan")
       : billing.plan === "monthly"
         ? t("pro.monthlyPlan")
-        : t("pro.freePlan");
+        : billing.plan === "yearly"
+          ? t("pro.yearlyPlan")
+          : t("pro.freePlan");
 
   const startedIso = billing.proSince ?? billing.oneTimePaidAt ?? null;
   const startedLabel = formatIsoDateForLocale(startedIso, locale);
@@ -150,7 +152,8 @@ export default async function ProMarketingPage({
               {billing.plan === "one_time" && validUntilLabel ? (
                 <li>{t("pro.validUntil", { date: validUntilLabel })}</li>
               ) : null}
-              {billing.plan === "monthly" && renewsLabel ? (
+              {(billing.plan === "monthly" || billing.plan === "yearly") &&
+              renewsLabel ? (
                 <li>{t("pro.renewsOn", { date: renewsLabel })}</li>
               ) : null}
             </ul>
@@ -212,7 +215,7 @@ export default async function ProMarketingPage({
           </section>
         ) : null}
 
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <div className="rounded-2xl border border-outline-variant/25 bg-surface-container-lowest p-5">
             <span className="inline-flex rounded-lg bg-surface-container px-2.5 py-1 text-xs font-semibold text-on-surface-variant">
               {t("pro.freeBadge")}
@@ -240,6 +243,9 @@ export default async function ProMarketingPage({
             <p className="mt-2 text-2xl font-bold text-on-surface">
               {t("pro.oneTimePrice")}
             </p>
+            <p className="mt-1 text-xs font-medium text-on-surface-variant">
+              {t("pro.vatInclusive")}
+            </p>
             <p className="mt-2 text-sm text-on-surface-variant">
               {t("pro.oneTimePriceNote")}
             </p>
@@ -261,7 +267,10 @@ export default async function ProMarketingPage({
 
           <div
             className={`rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-[0px_8px_24px_rgba(20,184,99,0.08)] ${
-              isPro && billing.plan === "monthly" ? "opacity-70" : ""
+              isPro &&
+              (billing.plan === "monthly" || billing.plan === "yearly")
+                ? "opacity-70"
+                : ""
             }`}
           >
             <span className="inline-flex rounded-lg bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary">
@@ -273,10 +282,14 @@ export default async function ProMarketingPage({
             <p className="mt-2 text-2xl font-bold text-on-surface">
               {t("pro.monthlyPrice")}
             </p>
+            <p className="mt-1 text-xs font-medium text-on-surface-variant">
+              {t("pro.vatInclusive")}
+            </p>
             <p className="mt-2 text-sm text-on-surface-variant">
               {t("pro.monthlyPriceNote")}
             </p>
-            {isPro && billing.plan === "monthly" ? (
+            {isPro &&
+            (billing.plan === "monthly" || billing.plan === "yearly") ? (
               <p className="mt-5 text-sm font-semibold text-on-surface-variant">
                 {t("pro.alreadyPro")}
               </p>
@@ -292,6 +305,47 @@ export default async function ProMarketingPage({
               />
             )}
           </div>
+
+          <div
+            className={`rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-[0px_8px_24px_rgba(20,184,99,0.08)] ${
+              isPro &&
+              (billing.plan === "monthly" || billing.plan === "yearly")
+                ? "opacity-70"
+                : ""
+            }`}
+          >
+            <span className="inline-flex rounded-lg bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary">
+              {t("pro.yearlyBadge")}
+            </span>
+            <h2 className="mt-3 text-xl font-bold text-primary">
+              {t("pro.yearlyPlan")}
+            </h2>
+            <p className="mt-2 text-2xl font-bold text-on-surface">
+              {t("pro.yearlyPrice")}
+            </p>
+            <p className="mt-1 text-xs font-medium text-on-surface-variant">
+              {t("pro.vatInclusive")}
+            </p>
+            <p className="mt-2 text-sm text-on-surface-variant">
+              {t("pro.yearlyPriceNote")}
+            </p>
+            {isPro &&
+            (billing.plan === "monthly" || billing.plan === "yearly") ? (
+              <p className="mt-5 text-sm font-semibold text-on-surface-variant">
+                {t("pro.alreadyPro")}
+              </p>
+            ) : (
+              <CheckoutButton
+                plan="yearly"
+                label={t("pro.buyYearly")}
+                signedIn={Boolean(user)}
+                stripeReady={stripeReady}
+                signInLabel={t("pro.ctaSignIn")}
+                unavailableLabel={t("pro.ctaSoon")}
+                primary
+              />
+            )}
+          </div>
         </div>
 
         <section className="mt-10">
@@ -299,17 +353,18 @@ export default async function ProMarketingPage({
             {t("pro.comparisonTitle")}
           </h2>
           <div className="mt-4 overflow-x-auto rounded-2xl border border-outline-variant/25 bg-surface-container-lowest">
-            <div className="hidden min-w-[40rem] grid-cols-[1.3fr_1fr_1fr_1fr] gap-3 border-b border-outline-variant/20 bg-surface-container-low px-5 py-3 text-xs font-semibold uppercase tracking-wide text-on-surface-variant md:grid">
+            <div className="hidden min-w-[48rem] grid-cols-[1.3fr_1fr_1fr_1fr_1fr] gap-3 border-b border-outline-variant/20 bg-surface-container-low px-5 py-3 text-xs font-semibold uppercase tracking-wide text-on-surface-variant md:grid">
               <span />
               <span>{t("pro.freeCol")}</span>
               <span>{t("pro.oneTimeCol")}</span>
               <span className="text-primary">{t("pro.monthlyCol")}</span>
+              <span className="text-primary">{t("pro.yearlyCol")}</span>
             </div>
-            <ul className="min-w-[40rem] divide-y divide-outline-variant/20">
+            <ul className="min-w-[48rem] divide-y divide-outline-variant/20">
               {FEATURE_KEYS.map((key) => (
                 <li
                   key={key}
-                  className="grid gap-3 px-5 py-5 md:grid-cols-[1.3fr_1fr_1fr_1fr] md:items-start"
+                  className="grid gap-3 px-5 py-5 md:grid-cols-[1.3fr_1fr_1fr_1fr_1fr] md:items-start"
                 >
                   <p className="font-semibold text-on-surface">
                     {t(`pro.rows.${key}.title`)}
@@ -325,6 +380,11 @@ export default async function ProMarketingPage({
                   <PlanCell
                     label={t("pro.monthlyCol")}
                     value={t(`pro.rows.${key}.monthly`)}
+                    emphasize
+                  />
+                  <PlanCell
+                    label={t("pro.yearlyCol")}
+                    value={t(`pro.rows.${key}.yearly`)}
                     emphasize
                   />
                 </li>
@@ -428,7 +488,7 @@ function CheckoutButton({
   unavailableLabel,
   primary,
 }: {
-  plan: "one_time" | "monthly";
+  plan: "one_time" | "monthly" | "yearly";
   label: string;
   signedIn: boolean;
   stripeReady: boolean;

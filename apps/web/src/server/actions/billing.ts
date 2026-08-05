@@ -13,7 +13,7 @@ const log = createModuleLogger("actions.billing");
 
 function parsePlan(raw: FormDataEntryValue | null): CheckoutPlan | null {
   const v = String(raw || "");
-  if (v === "one_time" || v === "monthly") return v;
+  if (v === "one_time" || v === "monthly" || v === "yearly") return v;
   return null;
 }
 

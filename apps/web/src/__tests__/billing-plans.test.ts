@@ -3,6 +3,7 @@
  */
 
 import {
+  BILLING_PLANS,
   isOneTimeWithinValidity,
   isProBillingStatus,
   maxSavedTripsForPlan,
@@ -21,6 +22,13 @@ import {
 } from "@/server/billing/webhook-guards";
 
 describe("billing plans", () => {
+  it("exposes VAT-inclusive list amounts", () => {
+    expect(BILLING_PLANS.one_time.amountCents).toBe(199);
+    expect(BILLING_PLANS.monthly.amountCents).toBe(299);
+    expect(BILLING_PLANS.yearly.amountCents).toBe(3000);
+    expect(ONE_TIME_VALIDITY_DAYS).toBe(60);
+  });
+
   it("treats active/trial/past_due as Pro status", () => {
     expect(isProBillingStatus("active")).toBe(true);
     expect(isProBillingStatus("trial")).toBe(true);
@@ -33,6 +41,7 @@ describe("billing plans", () => {
     const recent = new Date();
     expect(maxSavedTripsForPlan("one_time", "active", recent)).toBe(2);
     expect(maxSavedTripsForPlan("monthly", "active")).toBeNull();
+    expect(maxSavedTripsForPlan("yearly", "active")).toBeNull();
     expect(maxSavedTripsForPlan("none", "free")).toBe(0);
   });
 
@@ -62,6 +71,13 @@ describe("billing plans", () => {
       subscriptionGrantsPro({
         status: "active",
         plan: "monthly",
+        oneTimePaidAt: null,
+      }),
+    ).toBe(true);
+    expect(
+      subscriptionGrantsPro({
+        status: "active",
+        plan: "yearly",
         oneTimePaidAt: null,
       }),
     ).toBe(true);
@@ -135,15 +151,18 @@ describe("periodEndFromSubscription (Stripe API shape)", () => {
 describe("webhook guards", () => {
   const prevOne = process.env.STRIPE_PRICE_ONE_TIME;
   const prevMonth = process.env.STRIPE_PRICE_MONTHLY;
+  const prevYear = process.env.STRIPE_PRICE_YEARLY;
 
   beforeAll(() => {
     process.env.STRIPE_PRICE_ONE_TIME = "price_one_time_test";
     process.env.STRIPE_PRICE_MONTHLY = "price_monthly_test";
+    process.env.STRIPE_PRICE_YEARLY = "price_yearly_test";
   });
 
   afterAll(() => {
     process.env.STRIPE_PRICE_ONE_TIME = prevOne;
     process.env.STRIPE_PRICE_MONTHLY = prevMonth;
+    process.env.STRIPE_PRICE_YEARLY = prevYear;
   });
 
   it("requires settled payment before granting Pro", () => {
@@ -177,15 +196,20 @@ describe("webhook guards", () => {
     expect(sessionMatchesExpectedPrice("one_time", ["price_other"])).toBe(
       false,
     );
+    expect(sessionMatchesExpectedPrice("yearly", ["price_yearly_test"])).toBe(
+      true,
+    );
     expect(subscriptionMatchesMonthlyPrice(["price_monthly_test"])).toBe(true);
+    expect(subscriptionMatchesMonthlyPrice(["price_yearly_test"])).toBe(true);
     expect(subscriptionMatchesMonthlyPrice(["price_other"])).toBe(false);
   });
 
   it("checks amount/currency when present", () => {
-    expect(sessionAmountPlausible("one_time", 100, "eur")).toBe(true);
-    expect(sessionAmountPlausible("one_time", 999, "eur")).toBe(false);
-    expect(sessionAmountPlausible("monthly", 280, "eur")).toBe(true);
-    expect(sessionAmountPlausible("monthly", 280, "usd")).toBe(false);
+    expect(sessionAmountPlausible("one_time", 199, "eur")).toBe(true);
+    expect(sessionAmountPlausible("one_time", 100, "eur")).toBe(false);
+    expect(sessionAmountPlausible("monthly", 299, "eur")).toBe(true);
+    expect(sessionAmountPlausible("monthly", 299, "usd")).toBe(false);
+    expect(sessionAmountPlausible("yearly", 3000, "eur")).toBe(true);
     expect(sessionAmountPlausible("one_time", null, null)).toBe(true);
   });
 

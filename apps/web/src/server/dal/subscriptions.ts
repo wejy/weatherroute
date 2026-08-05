@@ -7,6 +7,7 @@ import { createModuleLogger } from "@/lib/logger";
 import {
   isPaidPlan,
   isProBillingStatus,
+  isRecurringPlan,
   maxSavedTripsForPlan,
   oneTimeExpiresAt,
   resolveProSince,
@@ -43,14 +44,14 @@ export type BillingEntitlement = {
   canManageBilling: boolean;
   /** Ever purchased one-time (may be expired). */
   oneTimePurchased: boolean;
-  /** One-time Pro still within 90-day window. */
+  /** One-time Pro still within validity window. */
   oneTimeActive: boolean;
-  /** Purchase time that starts the 90-day + discover window. */
+  /** Purchase time that starts the one-time + discover window. */
   oneTimePaidAt: string | null;
   oneTimeExpiresAt: string | null;
   /** First Pro activation (ISO). */
   proSince: string | null;
-  /** Monthly period end / next renewal (ISO). */
+  /** Recurring period end / next renewal (ISO). */
   currentPeriodEnd: string | null;
 };
 
@@ -212,7 +213,7 @@ export async function getBillingEntitlement(
     canSaveTrip,
     stripeCustomerId: row.stripeCustomerId,
     hasMonthlySubscription:
-      Boolean(row.stripeSubscriptionId) && plan === "monthly" && pro,
+      Boolean(row.stripeSubscriptionId) && isRecurringPlan(plan) && pro,
     canManageBilling,
     oneTimePurchased: Boolean(row.oneTimePaidAt),
     oneTimeActive,
@@ -312,7 +313,7 @@ export async function activateCheckoutPlan(opts: {
   currentPeriodEnd?: Date | null;
 }): Promise<void> {
   const existing = await getSubscriptionRow(opts.userId);
-  // Refresh the 90-day window on every one-time purchase.
+  // Refresh the one-time window on every one-time purchase.
   const oneTimePaidAt =
     opts.plan === "one_time"
       ? new Date()
@@ -324,22 +325,22 @@ export async function activateCheckoutPlan(opts: {
     oneTimePaidAt,
   });
 
+  const recurring = isRecurringPlan(opts.plan);
+
   await upsertSubscription(opts.userId, {
     status: "active",
     plan: opts.plan,
     stripeCustomerId: opts.stripeCustomerId ?? existing?.stripeCustomerId ?? null,
-    stripeSubscriptionId:
-      opts.plan === "monthly"
-        ? (opts.stripeSubscriptionId ?? existing?.stripeSubscriptionId ?? null)
-        : null,
+    stripeSubscriptionId: recurring
+      ? (opts.stripeSubscriptionId ?? existing?.stripeSubscriptionId ?? null)
+      : null,
     oneTimePaidAt,
-    currentPeriodEnd:
-      opts.plan === "monthly" ? (opts.currentPeriodEnd ?? null) : null,
+    currentPeriodEnd: recurring ? (opts.currentPeriodEnd ?? null) : null,
     proSince,
   });
 }
 
-/** Monthly subscription ended — fall back to one-time Pro if still within 90 days. */
+/** Recurring subscription ended — fall back to one-time Pro if still within window. */
 export async function deactivateMonthlySubscription(
   userId: string,
 ): Promise<void> {

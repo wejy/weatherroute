@@ -24,6 +24,7 @@ export type AdminUserBuckets = {
   admin: number;
   free: number;
   proMonthly: number;
+  proYearly: number;
   proOneTime: number;
   inactive: number;
 };
@@ -119,6 +120,7 @@ export async function getAdminStats(opts: {
     admin: 0,
     free: 0,
     proMonthly: 0,
+    proYearly: 0,
     proOneTime: 0,
     inactive: 0,
   };
@@ -134,7 +136,7 @@ export async function getAdminStats(opts: {
         openMeteo: 0,
         wikipedia: 0,
       },
-      paying: { monthlyActive: 0, oneTimeActive: 0 },
+      paying: { monthlyActive: 0, yearlyActive: 0, oneTimeActive: 0 },
     });
     return {
       from: from.toISOString().slice(0, 10),
@@ -176,6 +178,8 @@ export async function getAdminStats(opts: {
       status === "active" || status === "trial" || status === "past_due";
     if (activeStatus && plan === "monthly") {
       usersBuckets.proMonthly += 1;
+    } else if (activeStatus && plan === "yearly") {
+      usersBuckets.proYearly += 1;
     } else if (
       activeStatus &&
       plan === "one_time" &&
@@ -363,6 +367,7 @@ export async function getAdminStats(opts: {
     },
     paying: {
       monthlyActive: usersBuckets.proMonthly,
+      yearlyActive: usersBuckets.proYearly,
       oneTimeActive: usersBuckets.proOneTime,
     },
   });

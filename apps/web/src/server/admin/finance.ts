@@ -3,6 +3,8 @@
  * Not accounting-grade — unit costs and fixed ops come from env.
  */
 
+import { ONE_TIME_VALIDITY_DAYS } from "@/server/billing/plans";
+
 export type AdminCostConfig = {
   serverMonthlyEur: number;
   databaseMonthlyEur: number;
@@ -13,6 +15,7 @@ export type AdminCostConfig = {
   mapboxDirectionsPer1kEur: number;
   wikipediaPer1kEur: number;
   priceMonthlyEur: number;
+  priceYearlyEur: number;
   priceOneTimeEur: number;
   stripePercent: number;
   stripeFixedEur: number;
@@ -27,6 +30,7 @@ export type ExternalUsageCounts = {
 
 export type PayingCustomers = {
   monthlyActive: number;
+  yearlyActive: number;
   oneTimeActive: number;
 };
 
@@ -49,6 +53,7 @@ export type FinanceEstimate = {
   paying: PayingCustomers;
   prices: {
     monthlyEur: number;
+    yearlyEur: number;
     oneTimeEur: number;
   };
 };
@@ -67,8 +72,8 @@ function stripeFeeForCharge(
 
 /**
  * Estimate costs and revenue for a date range.
- * Monthly revenue: active monthly × list price (assumes all bill in the period).
- * One-time: list price amortized over 90 days, then scaled to range days.
+ * Monthly: active × list price. Yearly: amortized /365 × range days.
+ * One-time: amortized over ONE_TIME_VALIDITY_DAYS, scaled to range.
  */
 export function estimateAdminFinance(input: {
   rangeDays: number;
@@ -108,23 +113,35 @@ export function estimateAdminFinance(input: {
     fixedProratedEur + openMeteoProratedEur + variableApiEur;
 
   const monthlyGross = input.paying.monthlyActive * cfg.priceMonthlyEur;
-  const oneTimeAmortizedPerDay = cfg.priceOneTimeEur / 90;
+  const yearlyAmortizedPerDay = cfg.priceYearlyEur / 365;
+  const yearlyGross =
+    input.paying.yearlyActive * yearlyAmortizedPerDay * days;
+  const oneTimeAmortizedPerDay =
+    cfg.priceOneTimeEur / ONE_TIME_VALIDITY_DAYS;
   const oneTimeGross =
     input.paying.oneTimeActive * oneTimeAmortizedPerDay * days;
-  const revenueGrossEur = monthlyGross + oneTimeGross;
+  const revenueGrossEur = monthlyGross + yearlyGross + oneTimeGross;
 
   const monthlyFees =
     input.paying.monthlyActive *
     stripeFeeForCharge(cfg.priceMonthlyEur, cfg.stripePercent, cfg.stripeFixedEur);
-  // One-time fee already paid at purchase; amortize fee similarly over 90d
+  const yearlyFeePerCharge = stripeFeeForCharge(
+    cfg.priceYearlyEur,
+    cfg.stripePercent,
+    cfg.stripeFixedEur,
+  );
+  const yearlyFees =
+    input.paying.yearlyActive * (yearlyFeePerCharge / 365) * days;
   const oneTimeFeePerCharge = stripeFeeForCharge(
     cfg.priceOneTimeEur,
     cfg.stripePercent,
     cfg.stripeFixedEur,
   );
   const oneTimeFees =
-    input.paying.oneTimeActive * (oneTimeFeePerCharge / 90) * days;
-  const stripeFeesEur = monthlyFees + oneTimeFees;
+    input.paying.oneTimeActive *
+    (oneTimeFeePerCharge / ONE_TIME_VALIDITY_DAYS) *
+    days;
+  const stripeFeesEur = monthlyFees + yearlyFees + oneTimeFees;
 
   const revenueNetEur = revenueGrossEur - stripeFeesEur;
   const netMarginEur = revenueNetEur - costsTotalEur;
@@ -148,6 +165,7 @@ export function estimateAdminFinance(input: {
     paying: input.paying,
     prices: {
       monthlyEur: cfg.priceMonthlyEur,
+      yearlyEur: cfg.priceYearlyEur,
       oneTimeEur: cfg.priceOneTimeEur,
     },
   };
@@ -175,8 +193,9 @@ export function readAdminCostConfigFromEnv(
       1.85,
     ),
     wikipediaPer1kEur: num("ADMIN_COST_WIKIPEDIA_PER_1K_EUR", 0),
-    priceMonthlyEur: num("ADMIN_PRICE_MONTHLY_EUR", 2.8),
-    priceOneTimeEur: num("ADMIN_PRICE_ONE_TIME_EUR", 1),
+    priceMonthlyEur: num("ADMIN_PRICE_MONTHLY_EUR", 2.99),
+    priceYearlyEur: num("ADMIN_PRICE_YEARLY_EUR", 30),
+    priceOneTimeEur: num("ADMIN_PRICE_ONE_TIME_EUR", 1.99),
     stripePercent: num("ADMIN_STRIPE_PERCENT", 1.5),
     stripeFixedEur: num("ADMIN_STRIPE_FIXED_EUR", 0.25),
   };

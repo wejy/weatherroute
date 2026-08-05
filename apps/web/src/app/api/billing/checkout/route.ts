@@ -11,7 +11,7 @@ import {
 import { withApiLog } from "@/lib/api-log";
 
 function parsePlan(raw: unknown): CheckoutPlan | null {
-  if (raw === "one_time" || raw === "monthly") return raw;
+  if (raw === "one_time" || raw === "monthly" || raw === "yearly") return raw;
   return null;
 }
 

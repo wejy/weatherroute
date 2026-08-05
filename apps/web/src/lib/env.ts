@@ -35,11 +35,25 @@ function resolveEmailMode(): string {
   const mode = (process.env.EMAIL_MODE || "console").toLowerCase();
   if (isProduction && mode === "console") {
     throw new Error(
-      "EMAIL_MODE=console is not allowed in production. Use EMAIL_MODE=resend with RESEND_API_KEY.",
+      "EMAIL_MODE=console is not allowed in production. Use EMAIL_MODE=mailgun (or resend) with the matching API credentials.",
     );
   }
   if (isProduction && mode === "resend" && !process.env.RESEND_API_KEY?.trim()) {
-    throw new Error("RESEND_API_KEY is required when EMAIL_MODE=resend in production.");
+    throw new Error(
+      "RESEND_API_KEY is required when EMAIL_MODE=resend in production.",
+    );
+  }
+  if (isProduction && mode === "mailgun") {
+    if (!process.env.MAILGUN_API_KEY?.trim()) {
+      throw new Error(
+        "MAILGUN_API_KEY is required when EMAIL_MODE=mailgun in production.",
+      );
+    }
+    if (!process.env.MAILGUN_DOMAIN?.trim()) {
+      throw new Error(
+        "MAILGUN_DOMAIN is required when EMAIL_MODE=mailgun in production.",
+      );
+    }
   }
   return mode;
 }
@@ -142,6 +156,12 @@ export const env = {
   emailMode: resolveEmailMode(),
   emailFrom: process.env.EMAIL_FROM || "Solviax.app <noreply@localhost>",
   resendApiKey: process.env.RESEND_API_KEY || "",
+  mailgunApiKey: process.env.MAILGUN_API_KEY || "",
+  mailgunDomain: process.env.MAILGUN_DOMAIN || "",
+  /** EU default; set https://api.mailgun.net for US region */
+  mailgunApiBaseUrl:
+    process.env.MAILGUN_API_BASE_URL?.trim() ||
+    "https://api.eu.mailgun.net",
   authSecret: getAuthSecret(),
   anonDiscoverLimit: Number(process.env.ANON_DISCOVER_LIMIT || 3),
   anonShareBonusCap: Number(process.env.ANON_SHARE_BONUS_CAP || 2),
@@ -156,7 +176,7 @@ export const env = {
   proMonthlyDiscoverLimit: Number(
     process.env.PRO_MONTHLY_DISCOVER_LIMIT || 200,
   ),
-  /** Discover searches for One-time Pro within the 90-day window (soft-marketed) */
+  /** Discover searches for One-time Pro within the 60-day window (soft-marketed) */
   proOneTimeDiscoverLimit: Number(
     process.env.PRO_ONE_TIME_DISCOVER_LIMIT || 400,
   ),

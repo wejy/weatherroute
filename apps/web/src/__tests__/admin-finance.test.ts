@@ -23,8 +23,9 @@ const baseConfig: AdminCostConfig = {
   mapboxGeocodePer1kEur: 1,
   mapboxDirectionsPer1kEur: 2,
   wikipediaPer1kEur: 0,
-  priceMonthlyEur: 2.8,
-  priceOneTimeEur: 1,
+  priceMonthlyEur: 2.99,
+  priceYearlyEur: 30,
+  priceOneTimeEur: 1.99,
   stripePercent: 1.5,
   stripeFixedEur: 0.25,
 };
@@ -87,7 +88,7 @@ describe("estimateAdminFinance", () => {
         openMeteo: 10,
         wikipedia: 100,
       },
-      paying: { monthlyActive: 10, oneTimeActive: 0 },
+      paying: { monthlyActive: 10, yearlyActive: 0, oneTimeActive: 0 },
     });
 
     expect(result.fixedMonthlyEur).toBe(30);
@@ -95,7 +96,7 @@ describe("estimateAdminFinance", () => {
     expect(result.openMeteoProratedEur).toBe(30);
     expect(result.variableBreakdown.mapboxGeocodeEur).toBe(1);
     expect(result.variableBreakdown.mapboxDirectionsEur).toBe(1);
-    expect(result.revenueGrossEur).toBe(28);
+    expect(result.revenueGrossEur).toBeCloseTo(29.9);
     expect(result.costsTotalEur).toBe(62);
     expect(result.netMarginEur).toBeCloseTo(
       result.revenueNetEur - result.costsTotalEur,
@@ -104,7 +105,9 @@ describe("estimateAdminFinance", () => {
 
   it("reads env defaults", () => {
     const cfg = readAdminCostConfigFromEnv({});
-    expect(cfg.priceMonthlyEur).toBe(2.8);
+    expect(cfg.priceMonthlyEur).toBe(2.99);
+    expect(cfg.priceYearlyEur).toBe(30);
+    expect(cfg.priceOneTimeEur).toBe(1.99);
     expect(cfg.serverMonthlyEur).toBe(15);
   });
 });
