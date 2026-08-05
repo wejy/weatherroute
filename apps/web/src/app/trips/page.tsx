@@ -14,7 +14,6 @@ import {
 } from "@/lib/types";
 import { withQuery } from "@/lib/discover-query";
 import { RouteShareActions } from "@/components/routes/route-share-actions";
-import { resolveUserTier } from "@/server/dal/user-prefs";
 
 export const dynamic = "force-dynamic";
 
@@ -116,8 +115,6 @@ export default async function TripsPage({
   }
 
   const trips = await listTripsForUser(user.id, { mode: modeFilter });
-  const tier = await resolveUserTier(user.id);
-  const isPro = tier === "pro";
   const filters: { id: "all" | TravelMode; label: string; icon: string }[] = [
     { id: "all", label: t("trips.filterAll"), icon: "filter_list" },
     { id: "driving", label: t("travel.driving"), icon: travelModeIcon("driving") },
@@ -275,34 +272,32 @@ export default async function TripsPage({
                       </button>
                     </form>
                   </div>
-                  {isPro ? (
-                    <div className="mt-3">
-                      <RouteShareActions
-                        compact
-                        fromName={trip.originName}
-                        toName={trip.destinationName}
-                        origin={
-                          trip.originLat != null &&
-                          trip.originLon != null &&
-                          Number.isFinite(trip.originLat) &&
-                          Number.isFinite(trip.originLon)
-                            ? {
-                                lat: trip.originLat,
-                                lon: trip.originLon,
-                              }
-                            : trip.originName
-                        }
-                        destination={{
-                          lat: trip.destinationLat,
-                          lon: trip.destinationLon,
-                        }}
-                        mode={mode}
-                        datePreset={trip.datePreset}
-                        startDate={trip.startDate}
-                        endDate={trip.endDate}
-                      />
-                    </div>
-                  ) : null}
+                  <div className="mt-3">
+                    <RouteShareActions
+                      compact
+                      fromName={trip.originName}
+                      toName={trip.destinationName}
+                      origin={
+                        trip.originLat != null &&
+                        trip.originLon != null &&
+                        Number.isFinite(trip.originLat) &&
+                        Number.isFinite(trip.originLon)
+                          ? {
+                              lat: trip.originLat,
+                              lon: trip.originLon,
+                            }
+                          : trip.originName
+                      }
+                      destination={{
+                        lat: trip.destinationLat,
+                        lon: trip.destinationLon,
+                      }}
+                      mode={mode}
+                      datePreset={trip.datePreset}
+                      startDate={trip.startDate}
+                      endDate={trip.endDate}
+                    />
+                  </div>
                 </li>
               );
             })}

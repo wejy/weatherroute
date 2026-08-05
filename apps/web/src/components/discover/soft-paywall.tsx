@@ -17,12 +17,16 @@ type QuotaView = {
 export function SoftPaywall({
   quota,
   initialShareToken,
+  surface = "discover",
 }: {
   quota: QuotaView | null;
   initialShareToken?: string;
+  /** Discover share/redeem vs route monthly caps (no share credits). */
+  surface?: "discover" | "route";
 }) {
   const { t } = useI18n();
   const router = useRouter();
+  const isRoute = surface === "route";
   const isFreeTier = quota?.kind === "free";
   const isProMonthlyCap = quota?.kind === "pro_monthly";
   const isProOneTimeCap = quota?.kind === "pro_one_time";
@@ -33,6 +37,26 @@ export function SoftPaywall({
   const [redeemBusy, setRedeemBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const title = isNetworkCap
+    ? t(isRoute ? "paywall.routeTitleNetwork" : "paywall.titleNetwork")
+    : isFreeTier
+      ? t(isRoute ? "paywall.routeTitleFree" : "paywall.titleFree")
+      : isProMonthlyCap || (isRoute && isProFairUseCap)
+        ? t(isRoute ? "paywall.routeTitlePro" : "paywall.titleProMonthly")
+        : isProOneTimeCap
+          ? t("paywall.titleProOneTime")
+          : t(isRoute ? "paywall.routeTitle" : "paywall.title");
+
+  const body = isNetworkCap
+    ? t(isRoute ? "paywall.routeBodyNetwork" : "paywall.bodyNetwork")
+    : isFreeTier
+      ? t(isRoute ? "paywall.routeBodyFree" : "paywall.bodyFree")
+      : isProMonthlyCap || (isRoute && isProFairUseCap)
+        ? t(isRoute ? "paywall.routeBodyPro" : "paywall.bodyProMonthly")
+        : isProOneTimeCap
+          ? t("paywall.bodyProOneTime")
+          : t(isRoute ? "paywall.routeBody" : "paywall.body");
 
   const createAndShare = useCallback(async () => {
     setShareBusy(true);
@@ -106,40 +130,31 @@ export function SoftPaywall({
         id="paywall-title"
         className="text-2xl font-bold tracking-tight text-on-surface"
       >
-        {isNetworkCap
-          ? t("paywall.titleNetwork")
-          : isFreeTier
-            ? t("paywall.titleFree")
-            : isProMonthlyCap
-              ? t("paywall.titleProMonthly")
-              : isProOneTimeCap
-                ? t("paywall.titleProOneTime")
-                : t("paywall.title")}
+        {title}
       </h2>
-      <p className="mt-3 text-on-surface-variant">
-        {isNetworkCap
-          ? t("paywall.bodyNetwork")
-          : isFreeTier
-            ? t("paywall.bodyFree")
-            : isProMonthlyCap
-              ? t("paywall.bodyProMonthly")
-              : isProOneTimeCap
-                ? t("paywall.bodyProOneTime")
-                : t("paywall.body")}
-      </p>
+      <p className="mt-3 text-on-surface-variant">{body}</p>
       {quota ? (
         <p className="mt-2 text-sm text-on-surface-variant">
-          {t(isNetworkCap ? "paywall.quotaUsedNetwork" : "paywall.quotaUsed", {
-            used: String(quota.searchesUsed),
-            limit: String(quota.limit),
-          })}
+          {t(
+            isNetworkCap
+              ? isRoute
+                ? "paywall.routeQuotaUsedNetwork"
+                : "paywall.quotaUsedNetwork"
+              : isRoute
+                ? "paywall.routeQuotaUsed"
+                : "paywall.quotaUsed",
+            {
+              used: String(quota.searchesUsed),
+              limit: String(quota.limit),
+            },
+          )}
         </p>
       ) : null}
 
       <div className="mt-8 flex flex-col gap-3">
-        {isProMonthlyCap ? (
+        {isProMonthlyCap || (isRoute && isProFairUseCap) ? (
           <Link
-            href="/"
+            href={isRoute ? "/" : "/"}
             className="rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container"
           >
             {t("pro.ctaDiscover")}
@@ -159,19 +174,28 @@ export function SoftPaywall({
             >
               {t("paywall.signIn")}
             </Link>
-            <button
-              type="button"
-              onClick={() => void createAndShare()}
-              disabled={shareBusy}
-              className="rounded-lg border border-outline-variant px-5 py-3 font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
-            >
-              {shareBusy ? t("paywall.sharing") : t("paywall.shareForCredit")}
-            </button>
+            {!isRoute ? (
+              <button
+                type="button"
+                onClick={() => void createAndShare()}
+                disabled={shareBusy}
+                className="rounded-lg border border-outline-variant px-5 py-3 font-semibold text-on-surface transition-colors hover:bg-surface-container disabled:opacity-60"
+              >
+                {shareBusy ? t("paywall.sharing") : t("paywall.shareForCredit")}
+              </button>
+            ) : (
+              <Link
+                href="/pro"
+                className="rounded-lg border border-outline-variant px-5 py-3 font-semibold text-on-surface transition-colors hover:bg-surface-container"
+              >
+                {t("paywall.upgradePro")}
+              </Link>
+            )}
           </>
         )}
       </div>
 
-      {!isFreeTier && !isProFairUseCap ? (
+      {!isRoute && !isFreeTier && !isProFairUseCap ? (
       <div className="mt-8 border-t border-outline-variant/25 pt-6 text-left">
         <label className="block text-sm font-medium text-on-surface">
           {t("paywall.redeemLabel")}

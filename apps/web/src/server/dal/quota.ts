@@ -13,6 +13,8 @@ import {
   shareTokens,
   usageEvents,
 } from "@/db/schema";
+import { USAGE_TYPES } from "@/server/dal/usage-types";
+import { routeFingerprint } from "@/lib/route-share";
 
 const log = createModuleLogger("server.dal.quota");
 const ANON_COOKIE = "wt_anon";
@@ -809,4 +811,468 @@ export async function redeemShareToken(token: string): Promise<{
     log.error({ err: error }, "[share] redeem failed");
     return { ok: false, error: "Redeem failed" };
   }
+}
+
+// --- Route lookup quotas (usage_events.type = route) ---
+
+export { routeFingerprint } from "@/lib/route-share";
+
+async function countEventsSince(opts: {
+  type: string;
+  userId?: string;
+  anonSessionId?: string;
+  since: Date;
+}): Promise<number> {
+  const db = getDb();
+  if (!db) return 0;
+  const clauses = [
+    eq(usageEvents.type, opts.type),
+    gte(usageEvents.createdAt, opts.since),
+  ];
+  if (opts.userId) clauses.push(eq(usageEvents.userId, opts.userId));
+  if (opts.anonSessionId) {
+    clauses.push(eq(usageEvents.anonSessionId, opts.anonSessionId));
+  }
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(usageEvents)
+    .where(and(...clauses));
+  return Number(row?.count ?? 0);
+}
+
+async function getRouteIpQuotaStatus(clientKey: string): Promise<QuotaStatus> {
+  const key = `route:ip:${clientKey}`;
+  const bucket = await peekRateLimit(
+    key,
+    env.anonIpRouteLimit,
+    IP_QUOTA_WINDOW_MS,
+  );
+  const searchesUsed = bucket.count;
+  const remaining = Math.max(0, env.anonIpRouteLimit - searchesUsed);
+  return {
+    searchesUsed,
+    bonusCredits: 0,
+    limit: env.anonIpRouteLimit,
+    remaining,
+    allowed: remaining > 0,
+    kind: "anon",
+  };
+}
+
+async function consumeRouteIpQuota(clientKey: string): Promise<{
+  ok: boolean;
+  quota: QuotaStatus;
+}> {
+  const key = `route:ip:${clientKey}`;
+  const bucket = await rateLimit(
+    key,
+    env.anonIpRouteLimit,
+    IP_QUOTA_WINDOW_MS,
+  );
+  const searchesUsed = bucket.count;
+  const remaining = Math.max(0, env.anonIpRouteLimit - searchesUsed);
+  const quota: QuotaStatus = {
+    searchesUsed,
+    bonusCredits: 0,
+    limit: env.anonIpRouteLimit,
+    remaining,
+    allowed: remaining > 0,
+    kind: "anon",
+  };
+  if (!bucket.ok) {
+    return {
+      ok: false,
+      quota: { ...quota, remaining: 0, allowed: false },
+    };
+  }
+  return { ok: true, quota };
+}
+
+async function peekRouteIpLayer(): Promise<{
+  ok: boolean;
+  quota: QuotaStatus | null;
+}> {
+  const ipKey = await resolveIpKey();
+  if (!ipKey) return { ok: true, quota: null };
+  const status = await getRouteIpQuotaStatus(ipKey);
+  return { ok: status.allowed, quota: status };
+}
+
+async function consumeRouteIpLayer(): Promise<{
+  ok: boolean;
+  quota: QuotaStatus | null;
+}> {
+  const ipKey = await resolveIpKey();
+  if (!ipKey) return { ok: true, quota: null };
+  const consumed = await consumeRouteIpQuota(ipKey);
+  return { ok: consumed.ok, quota: consumed.quota };
+}
+
+function routeIpBlockedQuota(
+  ipQuota: QuotaStatus | null,
+  cookieId?: string,
+): QuotaStatus {
+  if (ipQuota) {
+    return {
+      ...ipQuota,
+      cookieId,
+      remaining: 0,
+      allowed: false,
+      blockReason: "ip",
+    };
+  }
+  return {
+    cookieId,
+    searchesUsed: env.anonIpRouteLimit,
+    bonusCredits: 0,
+    limit: env.anonIpRouteLimit,
+    remaining: 0,
+    allowed: false,
+    kind: "anon",
+    blockReason: "ip",
+  };
+}
+
+export async function getAnonRouteQuota(
+  clientKey?: string,
+): Promise<QuotaStatus | null> {
+  const session = await ensureAnonSession();
+  const { start } = utcMonthWindow();
+  if (session) {
+    const limit = env.anonMonthlyRouteLimit;
+    const searchesUsed = await countEventsSince({
+      type: USAGE_TYPES.route,
+      anonSessionId: session.id,
+      since: start,
+    });
+    const remaining = Math.max(0, limit - searchesUsed);
+    const ip = await peekRouteIpLayer();
+    if (remaining <= 0) {
+      return {
+        cookieId: session.cookieId,
+        searchesUsed,
+        bonusCredits: 0,
+        limit,
+        remaining: 0,
+        allowed: false,
+        kind: "anon",
+        blockReason: "session",
+      };
+    }
+    if (!ip.ok) {
+      return routeIpBlockedQuota(ip.quota, session.cookieId);
+    }
+    return {
+      cookieId: session.cookieId,
+      searchesUsed,
+      bonusCredits: 0,
+      limit,
+      remaining,
+      allowed: true,
+      kind: "anon",
+    };
+  }
+
+  const key = (await resolveClientKey(clientKey)) ?? (await resolveIpKey());
+  if (!key) return null;
+  return getRouteIpQuotaStatus(key);
+}
+
+export async function getUserMonthlyRouteQuota(
+  userId: string,
+  limit: number,
+  kind: "free" | "pro_monthly",
+): Promise<QuotaStatus> {
+  const { start } = utcMonthWindow();
+  const searchesUsed = await countEventsSince({
+    type: USAGE_TYPES.route,
+    userId,
+    since: start,
+  });
+  const remaining = Math.max(0, limit - searchesUsed);
+  return {
+    searchesUsed,
+    bonusCredits: 0,
+    limit,
+    remaining,
+    allowed: remaining > 0,
+    kind,
+  };
+}
+
+export async function getFreeUserRouteQuota(
+  userId: string,
+): Promise<QuotaStatus> {
+  return getUserMonthlyRouteQuota(userId, env.freeMonthlyRouteLimit, "free");
+}
+
+export async function getProMonthlyRouteQuota(
+  userId: string,
+): Promise<QuotaStatus> {
+  return getUserMonthlyRouteQuota(
+    userId,
+    env.proMonthlyRouteLimit,
+    "pro_monthly",
+  );
+}
+
+export async function consumeUserMonthlyRoute(
+  userId: string,
+  limit: number,
+  kind: "free" | "pro_monthly",
+  meta?: Record<string, unknown>,
+): Promise<{
+  ok: boolean;
+  quota: QuotaStatus;
+  reason?: "paywall" | "no_db";
+}> {
+  const db = getDb();
+  if (!db) {
+    return {
+      ok: false,
+      reason: "no_db",
+      quota: {
+        searchesUsed: 0,
+        bonusCredits: 0,
+        limit,
+        remaining: 0,
+        allowed: false,
+        kind,
+      },
+    };
+  }
+
+  const { start } = utcMonthWindow();
+  const used = await countEventsSince({
+    type: USAGE_TYPES.route,
+    userId,
+    since: start,
+  });
+  if (used >= limit) {
+    return {
+      ok: false,
+      reason: "paywall",
+      quota: {
+        searchesUsed: used,
+        bonusCredits: 0,
+        limit,
+        remaining: 0,
+        allowed: false,
+        kind,
+      },
+    };
+  }
+
+  const fp = routeFingerprint(meta);
+  if (fp) {
+    const since = new Date(Date.now() - DEDUPE_WINDOW_MS);
+    const [recent] = await db
+      .select()
+      .from(usageEvents)
+      .where(
+        and(
+          eq(usageEvents.userId, userId),
+          eq(usageEvents.type, USAGE_TYPES.route),
+          gt(usageEvents.createdAt, since),
+        ),
+      )
+      .orderBy(desc(usageEvents.createdAt))
+      .limit(1);
+
+    const recentMeta = recent?.meta as Record<string, unknown> | null;
+    if (recent && routeFingerprint(recentMeta ?? undefined) === fp) {
+      return {
+        ok: true,
+        quota: {
+          searchesUsed: used,
+          bonusCredits: 0,
+          limit,
+          remaining: Math.max(0, limit - used),
+          allowed: true,
+          kind,
+        },
+      };
+    }
+  }
+
+  await db.insert(usageEvents).values({
+    userId,
+    type: USAGE_TYPES.route,
+    meta: meta ?? null,
+  });
+
+  const searchesUsed = used + 1;
+  const remaining = Math.max(0, limit - searchesUsed);
+  return {
+    ok: true,
+    quota: {
+      searchesUsed,
+      bonusCredits: 0,
+      limit,
+      remaining,
+      allowed: remaining > 0,
+      kind,
+    },
+  };
+}
+
+export async function consumeFreeUserRoute(
+  userId: string,
+  meta?: Record<string, unknown>,
+): Promise<{
+  ok: boolean;
+  quota: QuotaStatus;
+  reason?: "paywall" | "no_db";
+}> {
+  return consumeUserMonthlyRoute(
+    userId,
+    env.freeMonthlyRouteLimit,
+    "free",
+    meta,
+  );
+}
+
+export async function consumeProMonthlyRoute(
+  userId: string,
+  meta?: Record<string, unknown>,
+): Promise<{
+  ok: boolean;
+  quota: QuotaStatus;
+  reason?: "paywall" | "no_db";
+}> {
+  return consumeUserMonthlyRoute(
+    userId,
+    env.proMonthlyRouteLimit,
+    "pro_monthly",
+    meta,
+  );
+}
+
+/** Consume one anon route credit (monthly session + IP day-cap). */
+export async function consumeAnonRouteQuota(
+  meta?: Record<string, unknown>,
+  opts?: { clientKey?: string },
+): Promise<{
+  ok: boolean;
+  quota: QuotaStatus | null;
+  reason?: "paywall" | "no_db" | "no_session";
+}> {
+  const db = getDb();
+  if (!db) {
+    return { ok: false, quota: null, reason: "no_session" };
+  }
+
+  const session = await ensureAnonSession();
+  const { start } = utcMonthWindow();
+  if (!session) {
+    const key =
+      (await resolveClientKey(opts?.clientKey)) ?? (await resolveIpKey());
+    if (!key) {
+      return { ok: false, quota: null, reason: "no_session" };
+    }
+    const consumed = await consumeRouteIpQuota(key);
+    if (!consumed.ok) {
+      return {
+        ok: false,
+        reason: "paywall",
+        quota: { ...consumed.quota, blockReason: "ip" },
+      };
+    }
+    return { ok: true, quota: consumed.quota };
+  }
+
+  const limit = env.anonMonthlyRouteLimit;
+  const used = await countEventsSince({
+    type: USAGE_TYPES.route,
+    anonSessionId: session.id,
+    since: start,
+  });
+  if (used >= limit) {
+    return {
+      ok: false,
+      reason: "paywall",
+      quota: {
+        cookieId: session.cookieId,
+        searchesUsed: used,
+        bonusCredits: 0,
+        limit,
+        remaining: 0,
+        allowed: false,
+        kind: "anon",
+        blockReason: "session",
+      },
+    };
+  }
+
+  const ipPeek = await peekRouteIpLayer();
+  if (!ipPeek.ok) {
+    return {
+      ok: false,
+      reason: "paywall",
+      quota: routeIpBlockedQuota(ipPeek.quota, session.cookieId),
+    };
+  }
+
+  const fp = routeFingerprint(meta);
+  if (fp) {
+    const since = new Date(Date.now() - DEDUPE_WINDOW_MS);
+    const [recent] = await db
+      .select()
+      .from(usageEvents)
+      .where(
+        and(
+          eq(usageEvents.anonSessionId, session.id),
+          eq(usageEvents.type, USAGE_TYPES.route),
+          gt(usageEvents.createdAt, since),
+        ),
+      )
+      .orderBy(desc(usageEvents.createdAt))
+      .limit(1);
+
+    const recentMeta = recent?.meta as Record<string, unknown> | null;
+    if (recent && routeFingerprint(recentMeta ?? undefined) === fp) {
+      return {
+        ok: true,
+        quota: {
+          cookieId: session.cookieId,
+          searchesUsed: used,
+          bonusCredits: 0,
+          limit,
+          remaining: Math.max(0, limit - used),
+          allowed: true,
+          kind: "anon",
+        },
+      };
+    }
+  }
+
+  const ipConsume = await consumeRouteIpLayer();
+  if (!ipConsume.ok) {
+    return {
+      ok: false,
+      reason: "paywall",
+      quota: routeIpBlockedQuota(ipConsume.quota, session.cookieId),
+    };
+  }
+
+  await db.insert(usageEvents).values({
+    anonSessionId: session.id,
+    type: USAGE_TYPES.route,
+    meta: meta ?? null,
+  });
+
+  const searchesUsed = used + 1;
+  const remaining = Math.max(0, limit - searchesUsed);
+  return {
+    ok: true,
+    quota: {
+      cookieId: session.cookieId,
+      searchesUsed,
+      bonusCredits: 0,
+      limit,
+      remaining,
+      allowed: remaining > 0,
+      kind: "anon",
+    },
+  };
 }

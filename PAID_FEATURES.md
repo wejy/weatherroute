@@ -86,7 +86,18 @@ Free/anon may use up to **Wider Region · 200 km** (FI: Alueellinen).
 
 Pro can set start and/or end hour (“Any” by default) on the **route page**. Best-departure suggestions stay inside that same-day window. Free/anon requests ignore the params.
 
-### 4. Saved routes
+### 4. Route lookup quotas (Näytä reitti)
+
+| Tier | Route lookups |
+|---|---:|
+| anon | **30** / UTC calendar month (+ `ANON_IP_ROUTE_LIMIT` / 24h) |
+| free | **50** / UTC month |
+| Pro (one_time + monthly) | **500** / UTC month |
+| admin | unlimited |
+
+Counted via `usage_events.type = route`. Same `from|to|mode` within 10 minutes does not re-charge.
+
+### 5. Saved routes
 
 | Plan | Max saved routes |
 |---|---:|
@@ -94,9 +105,9 @@ Pro can set start and/or end hour (“Any” by default) on the **route page**. 
 | one_time | 2 (Pro valid **90 days** from purchase) |
 | monthly | unlimited |
 
-### 5. Soft paywall vs Pro
+### 6. Soft paywall vs Pro
 
-Anonymous users have a **cookie + IP discover quota**. Sign-in (free) → **50 discovers per UTC calendar month** within free radius. Pro monthly → **200 discovers / month** (marketed as “hundreds”). Pro one-time (within 90 days) → **400 discovers / purchase window** (marketed as “hundreds”) + wider radii + higher caps + departure + route saves.
+Anonymous users have a **cookie + IP discover quota**. Sign-in (free) → **50 discovers per UTC calendar month** within free radius. Pro monthly → **200 discovers / month** (marketed as “hundreds”). Pro one-time (within 90 days) → **400 discovers / purchase window** (marketed as “hundreds”) + wider radii + higher caps + departure + route saves. Route lookups are capped separately (see §4). Share-to-Maps (Google + Apple) is available to all tiers.
 
 ---
 

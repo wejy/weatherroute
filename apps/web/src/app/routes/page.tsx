@@ -21,12 +21,16 @@ import {
 } from "@/lib/discover-query";
 import { resolveDateWindow, type DatePreset } from "@/lib/dates";
 import { RouteShareActions } from "@/components/routes/route-share-actions";
+import { SoftPaywall } from "@/components/discover/soft-paywall";
 import {
   parseDepartureHourParam,
   resolveRouteDepartureWindow,
 } from "@/server/dal/user-prefs";
+import { gateRouteAccess } from "@/server/dal/route-gate";
 import { getBillingEntitlement } from "@/server/dal/subscriptions";
 import { WEATHER_TONE_COLORS } from "@/lib/weather-tone";
+import { headers } from "next/headers";
+import { getClientIpFromHeaders } from "@/lib/client-ip";
 
 export async function generateMetadata() {
   const locale = await getLocale();
@@ -103,6 +107,87 @@ export default async function RoutesPage({
   const isPro = departure.tier === "pro";
   const user = await getCurrentUser();
   const billing = await getBillingEntitlement(user?.id ?? null);
+  const t = createTranslator(getDictionary(locale));
+  const mapboxToken = getMapboxPublicToken();
+
+  const h = await headers();
+  const clientIp = getClientIpFromHeaders(h);
+  const gate = await gateRouteAccess({
+    consume: true,
+    clientKey: clientIp !== "local" ? clientIp : undefined,
+    meta: {
+      from,
+      to,
+      mode,
+      path: "/routes",
+    },
+  });
+
+  if (gate.paywalled) {
+    return (
+      <div
+        data-testid="routes-page-paywall"
+        className="flex h-screen w-full overflow-hidden bg-background"
+      >
+        <SideNav active="/routes" />
+        <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between bg-surface/80 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl md:hidden">
+          <p className="text-2xl font-bold text-primary">{t("brand")}</p>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <Link
+              href="/settings"
+              aria-label={t("nav.sideSettings")}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/30 bg-surface-container-low text-on-surface-variant"
+            >
+              <span className="material-symbols-outlined text-2xl" aria-hidden="true">
+                settings
+              </span>
+            </Link>
+          </div>
+        </header>
+        <main
+          id="main-content"
+          className="relative flex h-full w-full flex-1 flex-col overflow-y-auto pt-16 md:pt-0 lg:ml-96"
+        >
+          <div className="mx-auto flex w-full max-w-xl flex-col gap-6 px-6 py-10 md:px-8">
+            <h1 className="text-[32px] leading-10 font-semibold text-on-surface">
+              {t("nav.routes")}
+            </h1>
+            <Suspense fallback={null}>
+              <RouteEndpointsForm
+                initialFrom={from}
+                initialTo={to}
+                initialMode={mode}
+                initialDatePreset={dateWindow.preset}
+                initialStartDate={dateWindow.startDate}
+                initialEndDate={dateWindow.endDate}
+                initialDepartureStartHour={departure.startHour}
+                initialDepartureEndHour={departure.endHour}
+                isPro={isPro}
+              />
+            </Suspense>
+            <SoftPaywall
+              surface="route"
+              quota={
+                gate.quota
+                  ? {
+                      remaining: gate.quota.remaining,
+                      limit: gate.quota.limit,
+                      searchesUsed: gate.quota.searchesUsed,
+                      bonusCredits: gate.quota.bonusCredits,
+                      kind: gate.quota.kind,
+                      blockReason: gate.quota.blockReason,
+                    }
+                  : null
+              }
+            />
+          </div>
+        </main>
+        <BottomNav active="/routes" />
+      </div>
+    );
+  }
+
   const route = await getRouteWeather(from, to, {
     fromLat,
     fromLon,
@@ -119,8 +204,6 @@ export default async function RoutesPage({
     startDate: dateWindow.startDate,
     endDate: dateWindow.endDate,
   });
-  const t = createTranslator(getDictionary(locale));
-  const mapboxToken = getMapboxPublicToken();
 
   const shareWaypoints = route.waypoints
     .filter((wp) => wp.role === "midpoint")
@@ -307,26 +390,24 @@ export default async function RoutesPage({
               </Link>
             )}
 
-            {isPro ? (
-              <RouteShareActions
-                fromName={route.from.placeName}
-                toName={route.to.placeName}
-                origin={{ lat: route.from.lat, lon: route.from.lon }}
-                destination={{ lat: route.to.lat, lon: route.to.lon }}
-                waypoints={shareWaypoints}
-                mode={mode}
-                bestDeparture={route.bestDeparture}
-                datePreset={dateWindow.preset}
-                startDate={dateWindow.startDate}
-                endDate={dateWindow.endDate}
-                fromId={
-                  isLinkableDestinationId(route.from.id) ? route.from.id : null
-                }
-                toId={
-                  isLinkableDestinationId(route.to.id) ? route.to.id : null
-                }
-              />
-            ) : null}
+            <RouteShareActions
+              fromName={route.from.placeName}
+              toName={route.to.placeName}
+              origin={{ lat: route.from.lat, lon: route.from.lon }}
+              destination={{ lat: route.to.lat, lon: route.to.lon }}
+              waypoints={shareWaypoints}
+              mode={mode}
+              bestDeparture={route.bestDeparture}
+              datePreset={dateWindow.preset}
+              startDate={dateWindow.startDate}
+              endDate={dateWindow.endDate}
+              fromId={
+                isLinkableDestinationId(route.from.id) ? route.from.id : null
+              }
+              toId={
+                isLinkableDestinationId(route.to.id) ? route.to.id : null
+              }
+            />
 
             <div className="flex items-center justify-between gap-4 rounded-xl border border-outline-variant/20 bg-surface-container-low p-5 shadow-sm">
               <div className="min-w-0 flex-1">

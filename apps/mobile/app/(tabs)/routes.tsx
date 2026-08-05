@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -12,13 +14,19 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Link, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/lib/i18n";
-import { apiGet, getApiBaseUrl, ApiError } from "@/lib/api";
+import { apiGet, getApiBaseUrl, ApiError, type PublicQuota } from "@/lib/api";
 import { formatDistanceKm } from "@/lib/distance";
 import {
   DEPARTURE_HOURS,
   formatHourOption,
   normalizeDepartureWindow,
 } from "@/lib/departure";
+import {
+  appleMapsDirectionsUrl,
+  googleMapsDirectionsUrl,
+  weatherTripRouteShareUrl,
+} from "@/lib/route-share";
+import { SoftPaywall } from "@/components/SoftPaywall";
 import {
   clampDateKey,
   isDateKey,
@@ -77,6 +85,10 @@ export default function RoutesScreen() {
   const [route, setRoute] = useState<RouteDto | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [paywalled, setPaywalled] = useState(false);
+  const [quota, setQuota] = useState<PublicQuota | null>(null);
+  const [shareBusy, setShareBusy] = useState(false);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
 
   useEffect(() => {
     void fetchSession().then((s) => setTier(s.tier));
@@ -127,6 +139,8 @@ export default function RoutesScreen() {
       }
       setLoading(true);
       setError(null);
+      setPaywalled(false);
+      setQuota(null);
       try {
         log.info(
           {
@@ -168,15 +182,22 @@ export default function RoutesScreen() {
           "route ok",
         );
       } catch (e) {
-        log.warn({ err: e }, "route failed");
-        const message =
-          e instanceof Error && e.message === "NETWORK"
-            ? t("mobile.networkError")
-            : e instanceof ApiError && e.isServiceUnavailable
-              ? t("mobile.serviceUnavailable")
-              : t("mobile.errorGeneric");
-        setError(message);
-        setRoute(null);
+        if (e instanceof ApiError && e.isPaywall) {
+          setPaywalled(true);
+          setQuota(e.quota);
+          setRoute(null);
+          setError(null);
+        } else {
+          log.warn({ err: e }, "route failed");
+          const message =
+            e instanceof Error && e.message === "NETWORK"
+              ? t("mobile.networkError")
+              : e instanceof ApiError && e.isServiceUnavailable
+                ? t("mobile.serviceUnavailable")
+                : t("mobile.errorGeneric");
+          setError(message);
+          setRoute(null);
+        }
       } finally {
         setLoading(false);
       }
@@ -571,6 +592,17 @@ export default function RoutesScreen() {
         </Text>
       )}
 
+      {paywalled ? (
+        <SoftPaywall
+          surface="route"
+          quota={quota}
+          onRedeemed={() => {
+            setPaywalled(false);
+            void loadRoute();
+          }}
+        />
+      ) : null}
+
       {route && (
         <View style={styles.results}>
           {route.routingStatus === "unreachable" ? (
@@ -605,6 +637,110 @@ export default function RoutesScreen() {
               <Text style={styles.summaryLabel}>{t("routes.dryTrip")}</Text>
             </View>
           </View>
+
+          <View style={styles.shareRow}>
+            <Pressable
+              onPress={() => {
+                void (async () => {
+                  if (!fromPlace || !toPlace) return;
+                  setShareBusy(true);
+                  setShareMessage(null);
+                  try {
+                    const modeLabel =
+                      mode === "cycling"
+                        ? t("travel.cycling")
+                        : t("travel.driving");
+                    const url = weatherTripRouteShareUrl({
+                      apiBase: getApiBaseUrl() || "https://solviax.app",
+                      from: fromPlace.placeName,
+                      to: toPlace.placeName,
+                      fromLat: fromPlace.lat,
+                      fromLon: fromPlace.lon,
+                      toLat: toPlace.lat,
+                      toLon: toPlace.lon,
+                      mode,
+                      datePreset: dateWindow.preset,
+                      startDate: dateWindow.startDate,
+                      endDate: dateWindow.endDate,
+                    });
+                    const departure = route.bestDeparture?.trim();
+                    const text = departure
+                      ? t("routes.shareTextWithDeparture", {
+                          from: fromPlace.name,
+                          to: toPlace.name,
+                          mode: modeLabel,
+                          time: departure,
+                        })
+                      : t("routes.shareText", {
+                          from: fromPlace.name,
+                          to: toPlace.name,
+                          mode: modeLabel,
+                        });
+                    await Share.share({
+                      message: `${text}\n${url}`,
+                      url,
+                      title: t("routes.shareTitle"),
+                    });
+                    setShareMessage(t("routes.shareDone"));
+                  } catch {
+                    setShareMessage(t("routes.shareError"));
+                  } finally {
+                    setShareBusy(false);
+                  }
+                })();
+              }}
+              disabled={shareBusy}
+              style={styles.shareBtn}
+            >
+              <FontAwesome name="share-alt" size={14} color={colors.onSurface} />
+              <Text style={styles.shareBtnText}>
+                {shareBusy ? t("routes.sharing") : t("routes.shareRoute")}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                if (!fromPlace || !toPlace) return;
+                const href = googleMapsDirectionsUrl({
+                  origin: { lat: fromPlace.lat, lon: fromPlace.lon },
+                  destination: { lat: toPlace.lat, lon: toPlace.lon },
+                  waypoints: route.waypoints
+                    .filter((wp) => wp.role === "midpoint")
+                    .map((wp) => ({ lat: wp.lat, lon: wp.lon })),
+                  mode,
+                });
+                void Linking.openURL(href);
+              }}
+              style={styles.shareBtn}
+            >
+              <FontAwesome name="map" size={14} color={colors.onSurface} />
+              <Text style={styles.shareBtnText}>
+                {t("routes.shareGoogleMaps")}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                if (!fromPlace || !toPlace) return;
+                const href = appleMapsDirectionsUrl({
+                  origin: { lat: fromPlace.lat, lon: fromPlace.lon },
+                  destination: { lat: toPlace.lat, lon: toPlace.lon },
+                  waypoints: route.waypoints
+                    .filter((wp) => wp.role === "midpoint")
+                    .map((wp) => ({ lat: wp.lat, lon: wp.lon })),
+                  mode,
+                });
+                void Linking.openURL(href);
+              }}
+              style={styles.shareBtn}
+            >
+              <FontAwesome name="apple" size={14} color={colors.onSurface} />
+              <Text style={styles.shareBtnText}>
+                {t("routes.shareAppleMaps")}
+              </Text>
+            </Pressable>
+          </View>
+          {shareMessage ? (
+            <Text style={styles.hint}>{shareMessage}</Text>
+          ) : null}
 
           <View style={styles.card}>
             <Text style={styles.cardLabel}>{t("routes.bestDeparture")}</Text>
@@ -865,6 +1001,24 @@ const styles = StyleSheet.create({
     color: colors.onAccent,
     fontSize: 16,
     fontWeight: "700",
+  },
+  shareRow: { gap: 8 },
+  shareBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceLowest,
+    paddingHorizontal: 14,
+  },
+  shareBtnText: {
+    color: colors.onSurface,
+    fontWeight: "700",
+    fontSize: 14,
   },
   disabled: { opacity: 0.55 },
   error: { color: colors.error, fontWeight: "600" },

@@ -3,10 +3,8 @@ import { routeQuerySchema } from "@/lib/validation/schemas";
 import { rateLimit } from "@/lib/rate-limit";
 import { getRouteWeather } from "@/server/services/location-service";
 import { resolveRouteDepartureWindow } from "@/server/dal/user-prefs";
+import { gateRouteAccess } from "@/server/dal/route-gate";
 import { withApiLog } from "@/lib/api-log";
-import { getCurrentUser } from "@/server/auth/session";
-import { recordUsageEvent } from "@/server/dal/usage";
-import { USAGE_TYPES } from "@/server/dal/usage-types";
 
 export async function GET(request: NextRequest) {
   return withApiLog(request, "routes", async ({ log, ip }) => {
@@ -25,6 +23,36 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { error: "Invalid query", details: parsed.error.flatten() },
         { status: 400 },
+      );
+    }
+
+    const gate = await gateRouteAccess({
+      consume: true,
+      clientKey: ip,
+      meta: {
+        from: parsed.data.from,
+        to: parsed.data.to,
+        mode: parsed.data.mode,
+        path: "/api/routes",
+      },
+    });
+    if (gate.paywalled) {
+      log.warn(
+        {
+          from: parsed.data.from,
+          to: parsed.data.to,
+          remaining: gate.quota?.remaining ?? 0,
+          kind: gate.quota?.kind,
+        },
+        "routes paywall",
+      );
+      return NextResponse.json(
+        {
+          error: "PAYWALL",
+          message: "Route lookup limit reached.",
+          quota: gate.quota,
+        },
+        { status: 402 },
       );
     }
 
@@ -48,15 +76,6 @@ export async function GET(request: NextRequest) {
       departureStartHour: departure.startHour,
       departureEndHour: departure.endHour,
     });
-    const user = await getCurrentUser();
-    recordUsageEvent({
-      type: USAGE_TYPES.route,
-      userId: user?.id ?? null,
-      meta: {
-        mode: parsed.data.mode,
-        waypoints: route.waypoints?.length ?? 0,
-      },
-    });
     log.info(
       {
         mode: parsed.data.mode,
@@ -65,9 +84,15 @@ export async function GET(request: NextRequest) {
         departureEndHour: departure.endHour,
         waypoints: route.waypoints?.length ?? 0,
         alternatives: route.alternatives?.length ?? 0,
+        remaining: gate.quota?.remaining,
       },
       "routes ok",
     );
-    return NextResponse.json(route);
+    const headers: Record<string, string> = {};
+    if (gate.quota) {
+      headers["X-Quota-Remaining"] = String(gate.quota.remaining);
+      headers["X-Quota-Limit"] = String(gate.quota.limit);
+    }
+    return NextResponse.json(route, { headers });
   });
 }

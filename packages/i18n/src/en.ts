@@ -279,6 +279,7 @@ const en = {
     viewDestination: "View destination",
     shareRoute: "Share route",
     shareGoogleMaps: "Open in Google Maps",
+    shareAppleMaps: "Open in Apple Maps",
     shareTitle: "Solviax.app route",
     shareText: "{from} → {to} ({mode}) on Solviax.app",
     shareTextWithDeparture:
@@ -363,7 +364,7 @@ const en = {
     themeComingSoon: "Dark mode is coming soon — light mode is used for now.",
     subscriptionTitle: "Subscription",
     subscriptionBody:
-      "Unlock wider search radii, more discover results, a departure time window on routes, same-country filtering, and saved routes with One-time or Monthly Pro.",
+      "Unlock wider search radii, more discover results, 500 route lookups/month, a departure time window on routes, same-country filtering, and saved routes with One-time or Monthly Pro.",
     subscriptionCta: "View plans & pricing",
     subscriptionSoon: "Stripe keys are not configured yet.",
     subscriptionSignInHint: "Sign in to see your plan and manage billing.",
@@ -521,7 +522,7 @@ const en = {
     },
     plansTitle: "Free vs Pro — short version",
     plansLead:
-      "Free covers everyday discovers nearby. Pro unlocks wider radii, more results, a departure time window (start/end on routes), optional same-country filtering, and saved routes.",
+      "Free covers everyday discovers nearby and 50 route lookups/month. Pro unlocks wider radii, more results, 500 routes/month, a departure time window, optional same-country filtering, and saved routes.",
     freeTitle: "Free",
     freeItems: {
       discovers: "50 discovers per calendar month when signed in (within Wider Region)",
@@ -672,6 +673,21 @@ const en = {
     titleProOneTime: "One-time Pro discovers used up",
     bodyProOneTime:
       "You’ve used the discover allowance for this 90-day Pro period. Subscribe to Monthly for ongoing searches, or buy One-time again after it ends.",
+    routeTitle: "You’ve used your free route lookups",
+    routeTitleFree: "Monthly route lookups used up",
+    routeTitleNetwork: "Network daily route limit reached",
+    routeTitlePro: "Monthly Pro route lookups used up",
+    routeBody:
+      "Sign in with email for 50 route lookups per month, or upgrade to Pro for 500.",
+    routeBodyFree:
+      "You’ve used your 50 route lookups this calendar month. Upgrade to Pro for 500 routes per month.",
+    routeBodyNetwork:
+      "This network has used today’s anonymous route allowance. Sign in for 50 per month, or try again tomorrow.",
+    routeBodyPro:
+      "You’ve used this month’s Pro route allowance (500). It resets at the start of next calendar month.",
+    routeQuotaUsed: "Used {used} of {limit} route lookups",
+    routeQuotaUsedNetwork:
+      "Used {used} of {limit} route lookups from this network today",
     upgradePro: "View Pro plans",
     quotaUsed: "Used {used} of {limit} free searches",
     quotaUsedNetwork: "Used {used} of {limit} searches from this network today",

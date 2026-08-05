@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 import {
+  appleMapsDirectionsUrl,
   googleMapsDirectionsUrl,
   weatherTripRouteSharePath,
   type LatLon,
@@ -103,6 +104,12 @@ export function RouteShareActions(props: RouteSharePayload) {
     waypoints: props.waypoints,
     mode: props.mode,
   });
+  const amapsHref = appleMapsDirectionsUrl({
+    origin: props.origin,
+    destination: props.destination,
+    waypoints: props.waypoints,
+    mode: props.mode,
+  });
 
   const btnBase = props.compact
     ? "inline-flex items-center gap-1.5 rounded-lg border border-outline-variant px-3 py-2 text-sm font-medium text-on-surface-variant transition-colors hover:bg-surface-container"
@@ -136,6 +143,17 @@ export function RouteShareActions(props: RouteSharePayload) {
             map
           </span>
           {t("routes.shareGoogleMaps")}
+        </a>
+        <a
+          href={amapsHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={btnBase}
+        >
+          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+            map
+          </span>
+          {t("routes.shareAppleMaps")}
         </a>
       </div>
       {message ? (

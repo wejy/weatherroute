@@ -1,8 +1,6 @@
 import type { TravelMode } from "@/lib/types";
-import { withQuery } from "@/lib/discover-query";
 
 export type LatLon = { lat: number; lon: number };
-
 export type PlaceRef = LatLon | string;
 
 function isLatLon(p: PlaceRef): p is LatLon {
@@ -18,15 +16,9 @@ function googleTravelMode(mode?: TravelMode | string | null): string {
   return mode === "cycling" ? "bicycling" : "driving";
 }
 
-/**
- * Google Maps directions URL from endpoints (+ optional midpoints).
- * Google recalculates its own path — we only pass stop points.
- * @see https://developers.google.com/maps/documentation/urls/get-started#directions-action
- */
 export function googleMapsDirectionsUrl(opts: {
   origin: PlaceRef;
   destination: PlaceRef;
-  /** Midpoints along the corridor (order preserved). */
   waypoints?: LatLon[];
   mode?: TravelMode | string | null;
 }): string {
@@ -57,10 +49,6 @@ export function googleMapsDirectionsUrl(opts: {
   return `https://www.google.com/maps/dir/?${params.toString()}`;
 }
 
-/**
- * Apple Maps directions URL (maps.apple.com).
- * @see https://developer.apple.com/library/archive/featuredarticles/iPhoneURLScheme_Reference/MapLinks/MapLinks.html
- */
 export function appleMapsDirectionsUrl(opts: {
   origin: PlaceRef;
   destination: PlaceRef;
@@ -93,45 +81,33 @@ export function appleMapsDirectionsUrl(opts: {
   return `https://maps.apple.com/?${params.toString()}`;
 }
 
-/** Dedupe key for route quota (same from|to|mode within 10 min). */
-export function routeFingerprint(meta?: Record<string, unknown>): string {
-  if (!meta) return "";
-  const from = String(meta.from ?? "");
-  const to = String(meta.to ?? "");
-  const mode = String(meta.mode ?? "driving");
-  return `${from}|${to}|${mode}`;
-}
-
-/** Absolute Solviax `/routes` link with planning context. */
-export function weatherTripRouteSharePath(opts: {
+export function weatherTripRouteShareUrl(opts: {
+  apiBase: string;
   from: string;
   to: string;
   fromLat?: number | null;
   fromLon?: number | null;
   toLat?: number | null;
   toLon?: number | null;
-  fromId?: string | null;
-  toId?: string | null;
   mode?: string | null;
   datePreset?: string | null;
   startDate?: string | null;
   endDate?: string | null;
 }): string {
-  return withQuery("/routes", {
-    from: opts.from,
-    to: opts.to,
-    origin: opts.from,
-    lat: opts.fromLat ?? undefined,
-    lon: opts.fromLon ?? undefined,
-    fromLat: opts.fromLat ?? undefined,
-    fromLon: opts.fromLon ?? undefined,
-    toLat: opts.toLat ?? undefined,
-    toLon: opts.toLon ?? undefined,
-    fromId: opts.fromId ?? undefined,
-    toId: opts.toId ?? undefined,
-    mode: opts.mode ?? "driving",
-    datePreset: opts.datePreset ?? undefined,
-    startDate: opts.startDate ?? undefined,
-    endDate: opts.endDate ?? undefined,
-  });
+  const params = new URLSearchParams();
+  params.set("from", opts.from);
+  params.set("to", opts.to);
+  params.set("origin", opts.from);
+  if (opts.fromLat != null) params.set("fromLat", String(opts.fromLat));
+  if (opts.fromLon != null) params.set("fromLon", String(opts.fromLon));
+  if (opts.toLat != null) params.set("toLat", String(opts.toLat));
+  if (opts.toLon != null) params.set("toLon", String(opts.toLon));
+  if (opts.fromLat != null) params.set("lat", String(opts.fromLat));
+  if (opts.fromLon != null) params.set("lon", String(opts.fromLon));
+  params.set("mode", opts.mode ?? "driving");
+  if (opts.datePreset) params.set("datePreset", opts.datePreset);
+  if (opts.startDate) params.set("startDate", opts.startDate);
+  if (opts.endDate) params.set("endDate", opts.endDate);
+  const base = opts.apiBase.replace(/\/$/, "") || "https://solviax.app";
+  return `${base}/routes?${params.toString()}`;
 }

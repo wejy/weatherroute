@@ -236,9 +236,9 @@ const fi = {
     alternativeFastest: "Nopein reitti",
     alternativeDriest: "Paras sääreitti",
     alternativeBoth: "Nopein ja paras sääreitti",
-    alternativeOtherRoute: "Toinen reitti",
+    alternativeOtherRoute: "Vaihtoehtoinen reitti",
     alternativesHint:
-      "Nimeämme lyhyimmän Nopeimmaksi ja kuivimman käytävän Parhaaksi sääreitiksi — ne voivat olla sama tie. Yhtenäinen viiva = valittu; tumma katkoviiva = toinen. Valitse kortilla.",
+      "Nimeämme lyhyimmän reitin Nopeimmaksi ja kuivimman Parhaaksi sääreitiksi — ne voivat olla sama tie. Yhtenäinen viiva = valittu; tumma katkoviiva = vaihtoehtoinen. Valitse reitti klikkaamalla.",
     alternativeSelected: "Valittu",
     alternativeChoose: "Valitse tämä reitti",
     alternativeDryness: "Kuivuus {pct} %",
@@ -280,7 +280,8 @@ const fi = {
     durationHoursMinutes: "{h} h {m} min",
     viewDestination: "Kohteen tiedot",
     shareRoute: "Jaa reitti",
-    shareGoogleMaps: "Jaa Google Mapsiin",
+    shareGoogleMaps: "Avaa Google Mapsissa",
+    shareAppleMaps: "Avaa Apple Mapsissa",
     shareTitle: "Solviax.app-reitti",
     shareText: "{from} → {to} ({mode}) Solviax.appissa",
     shareTextWithDeparture:
@@ -367,7 +368,7 @@ const fi = {
     themeComingSoon: "Tumma tila tulee pian — toistaiseksi käytössä on vaalea.",
     subscriptionTitle: "Tilaus",
     subscriptionBody:
-      "Avaa laajemmat säteet, enemmän Löydä-tuloksia, lähtöajan ikkuna reiteillä, saman maan rajaus ja tallennetut reitit Kerta- tai Jatkuva-Prolla.",
+      "Avaa laajemmat säteet, enemmän Löydä-tuloksia, 500 reittihakua/kk, lähtöajan ikkuna reiteillä, saman maan rajaus ja tallennetut reitit Kerta- tai Jatkuva-Prolla.",
     subscriptionCta: "Katso tilaukset ja hinnat",
     subscriptionSoon: "Stripe-avaimia ei ole vielä määritetty.",
     subscriptionSignInHint: "Kirjaudu nähdäksesi tilauksesi ja hallitaksesi laskutusta.",
@@ -466,13 +467,13 @@ const fi = {
         body: "Näet kuivuuden ja olosuhteet ajon tai pyöräilyn varrella, sekä Pro-lähtöikkunan (Alku–Loppu) fiksummille ehdotuksille.",
       },
       trust: {
-        title: "Nopea ja yksityinen kirjautuminen",
-        body: "Sähköpostin kertakoodi (ei salasanaa). Tallennetut reitit pysyvät tililläsi; maksut hoitaa Stripe.",
+        title: "Nopea ja tietoturvallinen",
+        body: "Sähköpostin kertakoodi (ei salasanaa). Tallennetut reitit pysyvät tililläsi. Maksut hoitaa Stripe.",
       },
     },
     featuresTitle: "Mitä voit tehdä",
     featuresLead:
-      "Kaikki mitä tarvitset kysymyksestä ”missä sää näyttää hyvältä?” kysymykseen ”miten pääsen perille?” — plus nopeus ja luottamus mukana.",
+      "Kaikki mitä tarvitset kysymyksestä ”missä sää näyttää hyvältä?” kysymykseen ”miten pääsen perille?”",
     features: {
       horizon: {
         title: "Suunnittele jopa 16 päivän päähän",
@@ -484,19 +485,19 @@ const fi = {
       },
       goals: {
         title: "Tavoitteet jotka sopivat reissuun",
-        body: "Optimoi auringolle, kuivalle säälle, leudolle lämpötilalle ja muille — sekä sopivuusvinkit ulkoiluun.",
+        body: "Paras paikka auringolle, kuivalle säälle, leudolle lämpötilalle — sekä sopivuusvinkit ulkoiluun.",
       },
       map: {
         title: "Karttapohjainen haku",
-        body: "Selaa tuloksia vuorovaikutteisella kartalla — lämpötilat, sateen todennäköisyys ja paikanetäisyys yhdellä silmäyksellä.",
+        body: "Selaa tuloksia vuorovaikutteisella kartalla — lämpötilat, sateen todennäköisyys ja paikan etäisyys yhdellä silmäyksellä.",
       },
       dryTrip: {
         title: "Kuivan matkan näkymä",
-        body: "Reiteillä näet, kuinka todennäköisesti tiesi pysyy kuivana valitulla lähdöllä.",
+        body: "Reiteillä näet, kuinka todennäköisesti tiesi pysyy kuivana valitulla matkalla.",
       },
       routes: {
         title: "Reittivertailut",
-        body: "Vertaa vaihtoehtoja, kulkutapoja (auto ja polkupyörä) ja lähtöajan ikkunaa — näet sään matkan varrelta.",
+        body: "Vertaa vaihtoehtoja, kulkutapoja (auto ja polkupyörä) ja aseta lähtöaikasi (Pro) — näet sään matkan varrelta.",
       },
       save: {
         title: "Reittien tallennus",
@@ -504,32 +505,32 @@ const fi = {
       },
       share: {
         title: "Jako Google Mapsiin",
-        body: "Siirrä suunniteltu reitti Mapsiin (tai jaa linkki) — navigointi on yhden painalluksen päässä.",
+        body: "Siirrä suunniteltu reitti Google ja Apple Mapsiin (tai jaa linkki) — navigointi on yhden painalluksen päässä.",
       },
       wikipedia: {
         title: "Kohdetiedot Wikipediasta",
         body: "Lue lyhyet kohdeyhteenvedot ja kuvat suoraan Wikipediasta.",
       },
       bilingual: {
-        title: "Suomi ja englanti",
+        title: "Englanti ja Suomi",
         body: "Solviax.app on kaksikielinen — vaihda kieltä milloin tahansa yläpalkista tai asetuksista.",
       },
       fast: {
         title: "Rakennettu nopeisiin hakuihin",
-        body: "Säätuloksia välimuistetaan ja haetaan erissä, joten Löydä ja reittitarkistukset pysyvät napakkina ensimmäisen haun jälkeen.",
+        body: "Säätuloksia välimuistetaan ja haetaan erissä, joten Löydä ja reittitarkistukset pysyvät nopeina ja tehokkaina.",
       },
       secure: {
         title: "Tietoturva mukana suunnittelussa",
-        body: "Salasanaton sähköposti-kirjautuminen, HTTPS tuotannossa, tilikohtaiset reitit ja Stripe Checkout maksuille — korttinumeroita emme säilytä.",
+        body: "Salasanaton sähköposti-kirjautuminen, lähes pankkitason tietoturva, tilikohtaiset reitit ja Stripe maksuille — luottokorttinumeroita emme säilytä.",
       },
     },
     plansTitle: "Ilmainen vs Pro — lyhyesti",
     plansLead:
-      "Ilmaisella haet lähialueelta. Pro avaa laajemmat haut, enemmän tuloksia, lähtöajan ikkunan (Alku/Loppu reiteillä), valinnaisen saman maan rajauksen ja mahdollisuuden tallentaa reittejä.",
+      "Ilmaisella haet lähialueelta ja teet 50 reittihakua/kk. Pro avaa laajemmat haut, enemmän tuloksia, 500 reittiä/kk, lähtöajan valinnan, valinnaisen saman maan rajauksen ja mahdollisuuden tallentaa reittejä.",
     freeTitle: "Ilmainen",
     freeItems: {
-      discovers: "50 hakua kalenterikuukaudessa kirjautuneena (Alueellinen säde)",
-      results: "Enintään 20 parasta kohdetta",
+      discovers: "50 hakua kalenterikuukaudessa kirjautuneena",
+      results: "Enintään 20 sopivinta kohdetta",
       mapRoutes: "Kartta, reittisuunnittelu ja Wikipedia-tiedot",
     },
     proTitle: "Pro",
@@ -537,7 +538,7 @@ const fi = {
       radius: "Valtakunnallinen, Manner ja oma hakusäde",
       results: "Enintään 30 kohdetta + lähtöajan ikkuna reiteillä",
       sameCountry: "Valinnainen rajoitus: näytä vain saman maan kohteet",
-      saves: "Tallennetut reitit (2 Kerta-tilauksella · rajaton Jatkuvalla)",
+      saves: "Tallennetut reitit (2 reittiä Kerta-tilauksella · rajaton Jatkuvalla)",
     },
     plansCta: "Vertaa tilauksia ja tilaa",
     plansHint: "Täysi hinnasto ja maksutavat ovat tilaussivulla.",
@@ -675,6 +676,21 @@ const fi = {
     titleProOneTime: "Kerta-Pro:n haut käytetty",
     bodyProOneTime:
       "Olet käyttänyt tämän 90 päivän Pro-jakson Löydä-hakuvarauksen. Tilaa Jatkuva jatkuviin hakuihin, tai osta Kerta uudelleen jakson päätyttyä.",
+    routeTitle: "Ilmaiset reittihaut käytetty",
+    routeTitleFree: "Kuukauden reittihaut käytetty",
+    routeTitleNetwork: "Verkon päivittäinen reittiraja täynnä",
+    routeTitlePro: "Pro-reittihaut käytetty tältä kuulta",
+    routeBody:
+      "Kirjaudu sähköpostilla 50 reittihakuun kuukaudessa, tai päivitä Prohon (500 / kk).",
+    routeBodyFree:
+      "Olet käyttänyt 50 reittihakua tältä kalenterikuukaudelta. Päivitä Prohon 500 reittiin kuukaudessa.",
+    routeBodyNetwork:
+      "Tästä verkosta on tehty jo päivän maksimimäärä anonyymejä reittihakuja. Kirjaudu sisään (50 / kk) tai yritä huomenna uudelleen.",
+    routeBodyPro:
+      "Olet käyttänyt tämän kuukauden Pro-reittivarauksen (500). Kiintiö nollautuu seuraavan kalenterikuukauden alussa.",
+    routeQuotaUsed: "Käytetty {used}/{limit} reittihakua",
+    routeQuotaUsedNetwork:
+      "Käytetty {used}/{limit} reittihakua tältä verkolta tänään",
     upgradePro: "Katso Pro-tilaukset",
     quotaUsed: "Käytetty {used}/{limit} ilmaista hakua",
     quotaUsedNetwork: "Käytetty {used}/{limit} hakua tältä verkolta tänään",

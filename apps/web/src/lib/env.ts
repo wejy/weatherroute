@@ -160,6 +160,14 @@ export const env = {
   proOneTimeDiscoverLimit: Number(
     process.env.PRO_ONE_TIME_DISCOVER_LIMIT || 400,
   ),
+  /** UTC-month route lookups for anonymous users */
+  anonMonthlyRouteLimit: Number(process.env.ANON_MONTHLY_ROUTE_LIMIT || 30),
+  /** Per-IP route lookups / 24h (cookie-rotation defense) */
+  anonIpRouteLimit: Number(process.env.ANON_IP_ROUTE_LIMIT || 20),
+  /** UTC-month route lookups for signed-in Free users */
+  freeMonthlyRouteLimit: Number(process.env.FREE_MONTHLY_ROUTE_LIMIT || 50),
+  /** UTC-month route lookups for Pro (one_time + monthly) */
+  proMonthlyRouteLimit: Number(process.env.PRO_MONTHLY_ROUTE_LIMIT || 500),
   /** Admin dashboard fixed monthly costs (EUR) — see ADMIN_COST_* */
   adminCostServerEur: Number(process.env.ADMIN_COST_SERVER_EUR || 15),
   adminCostDatabaseEur: Number(process.env.ADMIN_COST_DATABASE_EUR || 10),
