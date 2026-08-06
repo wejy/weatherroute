@@ -4,6 +4,8 @@ import { cn } from "@/lib/utils";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { DiscoverQueryLink } from "@/components/discover/discover-query-link";
+import { getCurrentUser } from "@/server/auth/session";
+import { getBillingEntitlement } from "@/server/dal/subscriptions";
 
 export async function SideNav({
   active,
@@ -18,6 +20,10 @@ export async function SideNav({
 }) {
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
+  const user = await getCurrentUser();
+  const billing = user ? await getBillingEntitlement(user.id) : null;
+  const showSubscription = billing?.tier !== "pro";
+
   const items = [
     {
       href: "/",
@@ -49,6 +55,16 @@ export async function SideNav({
       icon: "info",
       preserve: false,
     },
+    ...(showSubscription
+      ? [
+          {
+            href: "/pro",
+            label: t("nav.subscription"),
+            icon: "workspace_premium",
+            preserve: false,
+          },
+        ]
+      : []),
     {
       href: "/settings",
       label: t("nav.sideSettings"),

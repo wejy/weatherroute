@@ -4,6 +4,7 @@ import { Link, type Href } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import type { AppColors } from "@/constants/Colors";
 import { useColors } from "@/lib/theme";
+import { SiteFooter } from "@/components/SiteFooter";
 
 const HIGHLIGHTS = ["horizon", "ranking", "corridor", "trust"] as const;
 
@@ -115,6 +116,8 @@ export default function AboutScreen() {
           <Text style={styles.primaryText}>{t("about.ctaDiscover")}</Text>
         </Pressable>
       </Link>
+
+      <SiteFooter />
     </ScrollView>
   );
 }
@@ -122,7 +125,7 @@ export default function AboutScreen() {
 function createStyles(colors: AppColors) {
   return StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 20, paddingBottom: 40, gap: 10 },
+  content: { padding: 20, paddingBottom: 48, gap: 10 },
   eyebrow: {
     fontSize: 12,
     fontWeight: "700",

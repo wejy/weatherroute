@@ -21,6 +21,56 @@ import {
   originDotHtml,
   weatherMarkerToneBorder,
 } from "@/lib/map-marker-chrome";
+import {
+  installMapboxTelemetryGuard,
+  safeRemoveMap,
+} from "@/lib/mapbox-safe-remove";
+
+function addSearchRadiusLayers(
+  map: mapboxgl.Map,
+  origin: { lat: number; lon: number },
+  radiusKm: number,
+) {
+  if (radiusKm >= 15000) {
+    map.setCenter([origin.lon, origin.lat]);
+    map.setZoom(2);
+    return;
+  }
+  const circle = circlePolygon(origin.lon, origin.lat, radiusKm);
+  if (map.getSource("search-radius")) {
+    (map.getSource("search-radius") as mapboxgl.GeoJSONSource).setData(circle);
+  } else {
+    map.addSource("search-radius", {
+      type: "geojson",
+      data: circle,
+    });
+    map.addLayer({
+      id: "search-radius-fill",
+      type: "fill",
+      source: "search-radius",
+      paint: {
+        "fill-color": "#14b863",
+        "fill-opacity": 0.08,
+      },
+    });
+    map.addLayer({
+      id: "search-radius-line",
+      type: "line",
+      source: "search-radius",
+      paint: {
+        "line-color": "#14b863",
+        "line-width": 2,
+        "line-opacity": 0.55,
+      },
+    });
+  }
+
+  const bounds = new mapboxgl.LngLatBounds();
+  for (const c of circle.geometry.coordinates[0]!) {
+    bounds.extend(c as [number, number]);
+  }
+  map.fitBounds(bounds, { padding: 48, maxZoom: 10, duration: 0 });
+}
 
 export function MapboxWeatherMap({
   markers,
@@ -37,6 +87,7 @@ export function MapboxWeatherMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const appliedStyleRef = useRef(mapStyle);
   const locationQueryRef = useRef(locationQuery);
   locationQueryRef.current = locationQuery;
 
@@ -77,6 +128,7 @@ export function MapboxWeatherMap({
   useEffect(() => {
     if (!containerRef.current || !token) return;
 
+    installMapboxTelemetryGuard();
     mapboxgl.accessToken = token;
 
     const center: [number, number] = origin
@@ -93,6 +145,7 @@ export function MapboxWeatherMap({
 
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
     mapRef.current = map;
+    appliedStyleRef.current = mapStyle;
 
     const onMapClick = () => {
       // Marker clicks also fire the map click; ignore the immediate follow-up.
@@ -102,37 +155,8 @@ export function MapboxWeatherMap({
     map.on("click", onMapClick);
 
     map.on("load", () => {
-      if (showRadius && origin && radiusKm < 15000) {
-        const circle = circlePolygon(origin.lon, origin.lat, radiusKm);
-        map.addSource("search-radius", {
-          type: "geojson",
-          data: circle,
-        });
-        map.addLayer({
-          id: "search-radius-fill",
-          type: "fill",
-          source: "search-radius",
-          paint: {
-            "fill-color": "#14b863",
-            "fill-opacity": 0.08,
-          },
-        });
-        map.addLayer({
-          id: "search-radius-line",
-          type: "line",
-          source: "search-radius",
-          paint: {
-            "line-color": "#14b863",
-            "line-width": 2,
-            "line-opacity": 0.55,
-          },
-        });
-
-        const bounds = new mapboxgl.LngLatBounds();
-        for (const c of circle.geometry.coordinates[0]!) {
-          bounds.extend(c as [number, number]);
-        }
-        map.fitBounds(bounds, { padding: 48, maxZoom: 10, duration: 0 });
+      if (showRadius && origin) {
+        addSearchRadiusLayers(map, origin, radiusKm);
       } else if (origin) {
         map.setCenter([origin.lon, origin.lat]);
         map.setZoom(radiusKm >= 15000 ? 2 : 5);
@@ -143,10 +167,31 @@ export function MapboxWeatherMap({
       map.off("click", onMapClick);
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
-      map.remove();
+      safeRemoveMap(map);
       mapRef.current = null;
     };
-  }, [token, origin?.lat, origin?.lon, radiusKm, showRadius, mapStyle]);
+    // Theme/style changes use setStyle below — avoid full remount (Mapbox errorCb race).
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mapStyle applied via separate effect
+  }, [token, origin?.lat, origin?.lon, radiusKm, showRadius]);
+
+  // Swap basemap on theme change without destroying the Map instance.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (appliedStyleRef.current === mapStyle) return;
+    appliedStyleRef.current = mapStyle;
+
+    const onStyle = () => {
+      if (showRadius && origin) {
+        addSearchRadiusLayers(map, origin, radiusKm);
+      }
+    };
+    map.once("style.load", onStyle);
+    map.setStyle(mapStyle);
+    return () => {
+      map.off("style.load", onStyle);
+    };
+  }, [mapStyle, origin, radiusKm, showRadius]);
 
   // Sync marker pins when data changes (without recreating the map).
   useEffect(() => {
@@ -212,7 +257,7 @@ export function MapboxWeatherMap({
 
     if (map.isStyleLoaded()) sync();
     else map.once("load", sync);
-  }, [markers, selectedId, theme]);
+  }, [markers, selectedId]);
 
   // Keep React popup anchored to the selected marker while the map moves.
   useEffect(() => {

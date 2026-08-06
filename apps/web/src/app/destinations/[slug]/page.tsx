@@ -51,7 +51,31 @@ function parseDatePreset(raw: string | undefined): DatePreset | undefined {
 export async function generateMetadata({ params }: { params: Params }) {
   const { slug } = await params;
   const dest = await getDestinationBySlug(slug);
-  return { title: dest ? `${dest.name} Forecast` : "Destination" };
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  const t = createTranslator(dict);
+
+  if (!dest) {
+    return {
+      title: "Destination",
+      robots: { index: false, follow: false },
+    };
+  }
+
+  const title = `${dest.name}`;
+  const description = t("meta.pages.destination", { name: dest.name });
+  const path = `/destinations/${slug}`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: path },
+    openGraph: {
+      title: `${dest.name} · ${dict.brand}`,
+      description,
+      url: path,
+    },
+  };
 }
 
 export default async function DestinationPage({

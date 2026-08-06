@@ -1,14 +1,16 @@
 import "server-only";
 
 import { placeholderImageFor } from "@/server/integrations/places/candidates";
+import { mapboxStaticImageUrl } from "@/server/integrations/mapbox/static-image";
 import { fetchWikipediaPlaceSummary } from "@/server/integrations/wikipedia";
 import {
   readPlaceExtras,
   upsertPlaceExtrasFromWikipedia,
+  upsertPlaceExtrasThumbnail,
 } from "@/server/dal/place-extras";
 import type { DateLocale } from "@/lib/dates";
 
-const WIKI_FETCH_MS = 2800;
+const WIKI_FETCH_MS = 4500;
 /** Avoid Wikipedia / Wikimedia 429 on cold discover. */
 const WIKI_CONCURRENCY = 2;
 
@@ -60,12 +62,18 @@ async function mapPool<T, R>(
   return results;
 }
 
+function mapboxFallbackUrl(lat: number, lon: number): string | null {
+  // Smaller than hero to reduce Static Images bandwidth on discover grids.
+  return mapboxStaticImageUrl(lat, lon, {
+    width: 480,
+    height: 320,
+    zoom: 11,
+  });
+}
+
 /**
  * Resolve a card/hero image for a destination.
- * Order: curated → place_extras → Wikipedia thumb → local placeholder.
- *
- * Mapbox Static is intentionally not used here: free-tier 429s break cards
- * when Next/Image (or the browser) loads many static URLs at once.
+ * Order: curated → place_extras → Wikipedia thumb → Mapbox Static → local placeholder.
  */
 export async function resolveDestinationImageUrl(input: {
   id: string;
@@ -102,6 +110,14 @@ export async function resolveDestinationImageUrl(input: {
     if (summary.thumbnailUrl) {
       return ensureHttps(summary.thumbnailUrl);
     }
+  }
+
+  const mapboxUrl = mapboxFallbackUrl(input.lat, input.lon);
+  if (mapboxUrl) {
+    void upsertPlaceExtrasThumbnail(input.id, mapboxUrl).catch(() => {
+      /* place may not exist in DB */
+    });
+    return mapboxUrl;
   }
 
   return placeholderImageFor(input.id);

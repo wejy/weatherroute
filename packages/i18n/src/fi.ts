@@ -6,6 +6,20 @@ const fi = {
     titleTemplate: "%s · Solviax.app",
     description:
       "Löydä kohteita parhaalla säällä seuraavaa reissuasi varten. Karttapohjainen matkasuunnittelu Open-Meteo-ennusteilla.",
+    keywords:
+      "säänmukainen matkasuunnittelu, säkartta, aurinkoiset kohteet, reittisää, Solviax, Suomi matkailu",
+    ogSiteName: "Solviax.app",
+    pages: {
+      about:
+        "Näin Solviax.app järjestää kohteet sääennusteiden mukaan — suunnittele matkasi selkeämmän taivaan mukaan.",
+      pro: "Vertaa Solviax.appin ilmaista ja Pro-tilausta — laajemmat haut, enemmän tuloksia ja tallennetut reitit.",
+      map: "Tutki lähikohteita säkartalla ja löydä selkeämpi sää ympärilläsi.",
+      routes:
+        "Suunnittele reitti ja näe sää matkan varrella — kuivat käytävät, sateen riski ja ennusteet jopa 16 päivää.",
+      home: "Löydä paremman sään kohteita lähelläsi. Säätä seuraava matkasuunnittelu ja reititys.",
+      destination:
+        "Sääennuste: {name}. Tutki kohdetta Solviax.appissa ja suunnittele matka sään mukaan.",
+    },
   },
   brand: "Solviax.app",
   nav: {
@@ -22,6 +36,7 @@ const fi = {
     about: "Tietoa",
     sideAbout: "Tietoa",
     sideSettings: "Asetukset",
+    subscription: "Tilaus",
     signIn: "Kirjaudu",
     accountMenu: "Tili ja asetukset",
     signedInAs: "Kirjautunut: {name}",
@@ -76,6 +91,16 @@ const fi = {
       neighborhood: "Alueellinen · 200 km",
       region: "Valtakunnallinen · 300 km",
       continent: "Manner · 1 000 km",
+      custom: "Oma säde",
+    },
+    /** Suljettu trigger / kapea layout — täydet nimet `distances`-avaimissa. */
+    distancesCompact: {
+      near: "Lähialue",
+      semi: "Lähiympäristö",
+      surroundings: "Paikallisalue",
+      neighborhood: "Alueellinen",
+      region: "Valtakunnallinen",
+      continent: "Manner",
       custom: "Oma säde",
     },
     customRadius: "Säde",
@@ -253,7 +278,7 @@ const fi = {
       "Näiden paikkojen välillä ei löytynyt pyörä- tai lauttayhteyttä. Kartalla näkyvät vain päätepisteet säätä varten — tämä ei todennäköisesti ole pyöräiltävä reitti.",
     durationUnavailable: "Matka-aikaa ei saatavilla",
     straightLineDistance: "Lintuperspektiivi {distance}",
-    windowPeakRain: "Kohteen korkein saderiski {pct} % (valitut päivät)",
+    windowPeakRain: "Kohteen korkein saderiski {pct} % (valittu ajankohta)",
     arrivalRain: "Saapumisella (paras lähtö): {pct} %",
     unreachableDepartureHint:
       "Sää päätepisteissä noin {time}. {mode}-reittiä ei ole, joten käytävää ei voida ajoittaa.",
@@ -570,6 +595,15 @@ const fi = {
     plansCta: "Vertaa tilauksia ja tilaa",
     plansHint: "Täysi hinnasto ja maksutavat ovat tilaussivulla.",
     ctaDiscover: "Löydä paikkasi auringossa",
+  },
+  footer: {
+    brand: "Solviax.app",
+    taglineEn1: "Weather-first trip planning",
+    taglineEn2: "Weather based routing",
+    taglineFi1: "Suunnittele matkasi sään mukaan",
+    taglineFi2: "Löydä aurinkoiset paikat ympärilläsi",
+    copyright: "© Whitefield Ltd, Oulu Finland",
+    contactAria: "Lähetä sähköpostia Solviax.appiin",
   },
   errors: {
     genericTitle: "Jokin meni pieleen",

@@ -273,6 +273,18 @@ a[href] {
   color: var(--on-primary-container);
 }
 
+/* Native `<select>` option popups often ignore page theme. Prefer FieldSelect
+   for discover filters; this keeps remaining native selects readable in dark mode. */
+select {
+  color-scheme: inherit;
+}
+
+select option,
+select optgroup {
+  background-color: var(--surface-container-lowest);
+  color: var(--on-surface);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

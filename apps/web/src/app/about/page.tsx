@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { TopNav, BottomNav } from "@/components/layout/top-nav";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
+import { publicPageMeta } from "@/lib/seo-meta";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +34,13 @@ const PRO_KEYS = ["radius", "results", "sameCountry", "saves"] as const;
 
 export async function generateMetadata() {
   const locale = await getLocale();
-  const t = createTranslator(getDictionary(locale));
-  return { title: t("about.title") };
+  const dict = getDictionary(locale);
+  const t = createTranslator(dict);
+  return publicPageMeta({
+    title: t("about.title"),
+    description: dict.meta.pages.about,
+    path: "/about",
+  });
 }
 
 export default async function AboutPage() {
@@ -259,6 +266,8 @@ export default async function AboutPage() {
             </div>
           </div>
         </section>
+
+        <SiteFooter />
       </main>
       <BottomNav active="/about" />
     </>

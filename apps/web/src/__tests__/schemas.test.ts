@@ -8,7 +8,7 @@ describe("discoverQuerySchema", () => {
   it("applies defaults", () => {
     const parsed = discoverQuerySchema.parse({});
     expect(parsed.datePreset).toBe("weekend");
-    expect(parsed.distance).toBe("neighborhood");
+    expect(parsed.distance).toBe("surroundings");
     expect(parsed.weatherGoal).toBe("best");
     expect(parsed.mode).toBe("driving");
   });

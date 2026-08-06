@@ -24,6 +24,7 @@ import {
   CUSTOM_RADIUS_DEFAULT_KM,
   CUSTOM_RADIUS_MAX_KM,
   CUSTOM_RADIUS_MIN_KM,
+  DEFAULT_DISTANCE_KEY,
   DISTANCE_PRESET_KEYS,
   FREE_MAX_DISTANCE_KEY,
   formatDistanceKm,
@@ -75,7 +76,7 @@ export default function DiscoverScreen() {
   const [dateWindow, setDateWindow] = useState<DateWindow>(() =>
     resolveDateWindow({ preset: "weekend", locale }),
   );
-  const [distance, setDistance] = useState<DistanceOption>(FREE_MAX_DISTANCE_KEY);
+  const [distance, setDistance] = useState<DistanceOption>(DEFAULT_DISTANCE_KEY);
   const [customRadiusKm, setCustomRadiusKm] = useState(CUSTOM_RADIUS_DEFAULT_KM);
   const [result, setResult] = useState<DiscoverResultDto | null>(null);
   const [showingCached, setShowingCached] = useState(false);
@@ -946,19 +947,19 @@ function createStyles(colors: AppColors) {
     justifyContent: "center",
   },
   chipActive: {
-    backgroundColor: colors.accent,
-    borderColor: colors.accentContainer,
-    shadowColor: colors.accentContainer,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.45,
-    shadowRadius: 8,
-    elevation: 4,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.28,
+    shadowRadius: 6,
+    elevation: 3,
   },
   chipLocked: {
     opacity: 0.55,
   },
   chipText: { fontWeight: "600", color: colors.onSurface, fontSize: 13 },
-  chipTextActive: { color: colors.onAccent },
+  chipTextActive: { color: colors.onPrimary },
   chipTextLocked: { color: colors.onSurfaceVariant },
   dateRangeHint: {
     fontSize: 13,

@@ -17,6 +17,7 @@
     "db:seed": "tsx scripts/seed.ts",
     "db:seed:pro": "tsx scripts/seed-pro.ts",
     "db:seed:geonames": "tsx scripts/seed-geonames.ts",
+    "db:clear-thumbnails": "tsx scripts/clear-place-thumbnails.ts",
     "db:studio": "drizzle-kit studio",
     "stripe:setup": "tsx scripts/stripe-setup.ts"
   },

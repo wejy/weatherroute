@@ -21,6 +21,10 @@ export const CUSTOM_RADIUS_DEFAULT_KM = 300;
 export const FREE_MAX_DISTANCE_KEY = "neighborhood" as const satisfies DistanceKey;
 export const FREE_MAX_RADIUS_KM = DISTANCE_RADIUS_KM[FREE_MAX_DISTANCE_KEY];
 
+/** Default discover radius for all tiers (Paikallisalue / Regional Area). */
+export const DEFAULT_DISTANCE_KEY = "surroundings" as const satisfies DistanceKey;
+export const DEFAULT_RADIUS_KM = DISTANCE_RADIUS_KM[DEFAULT_DISTANCE_KEY];
+
 export const PRO_DISTANCE_KEYS = [
   "region",
   "continent",
@@ -40,7 +44,7 @@ export function clampDistanceForTier(
   radiusKm: number | null | undefined,
   tier: "anon" | "free" | "pro",
 ): { distance: string; radiusKm?: number; clamped: boolean } {
-  const requested = distance || FREE_MAX_DISTANCE_KEY;
+  const requested = distance || DEFAULT_DISTANCE_KEY;
   if (tier === "pro") {
     return {
       distance: requested,
@@ -72,7 +76,7 @@ export function resolveRadiusKm(
   if (distance && distance in DISTANCE_RADIUS_KM) {
     return DISTANCE_RADIUS_KM[distance as DistanceKey];
   }
-  return DISTANCE_RADIUS_KM[FREE_MAX_DISTANCE_KEY];
+  return DISTANCE_RADIUS_KM[DEFAULT_DISTANCE_KEY];
 }
 
 /** Statute miles per kilometre. */

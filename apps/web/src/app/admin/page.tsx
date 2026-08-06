@@ -10,6 +10,7 @@ import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { recordUsageEvent } from "@/server/dal/usage";
 import { USAGE_TYPES } from "@/server/dal/usage-types";
+import { noIndexPageMeta } from "@/lib/seo-meta";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,7 @@ function eur(n: number, locale: string): string {
 export async function generateMetadata() {
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
-  return { title: t("admin.title") };
+  return noIndexPageMeta(t("admin.title"));
 }
 
 export default async function AdminPage({

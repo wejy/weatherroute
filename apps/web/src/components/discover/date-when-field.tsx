@@ -131,12 +131,15 @@ export function DateWhenField({
                   aria-selected={active}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-base transition-colors hover:bg-surface-container-low",
-                    active && "bg-accent/15 font-semibold text-on-accent",
+                    active && "bg-primary/15 font-semibold text-primary",
                   )}
                   onClick={() => selectPreset(p.value)}
                 >
                   <span
-                    className="material-symbols-outlined text-secondary"
+                    className={cn(
+                      "material-symbols-outlined",
+                      active ? "text-primary" : "text-secondary",
+                    )}
                     aria-hidden="true"
                   >
                     {PRESET_ICONS[p.value]}

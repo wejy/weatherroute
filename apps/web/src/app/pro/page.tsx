@@ -16,6 +16,7 @@ import {
   startCheckoutAction,
 } from "@/server/actions/billing";
 import { BillingPortalButton } from "@/components/billing/billing-portal-button";
+import { publicPageMeta } from "@/lib/seo-meta";
 
 export const dynamic = "force-dynamic";
 
@@ -41,8 +42,13 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export async function generateMetadata() {
   const locale = await getLocale();
-  const t = createTranslator(getDictionary(locale));
-  return { title: t("pro.title") };
+  const dict = getDictionary(locale);
+  const t = createTranslator(dict);
+  return publicPageMeta({
+    title: t("pro.title"),
+    description: dict.meta.pages.pro,
+    path: "/pro",
+  });
 }
 
 export default async function ProMarketingPage({

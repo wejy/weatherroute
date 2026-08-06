@@ -67,7 +67,7 @@ export function TravelModeSelector({
               "flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md font-semibold transition-colors",
               size === "sm" ? "px-2 py-1.5 text-sm" : "px-3 py-2 text-sm",
               selected
-                ? "bg-accent text-on-accent shadow-sm"
+                ? "bg-primary text-on-primary shadow-sm"
                 : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface",
             )}
           >

@@ -19,13 +19,19 @@ import {
   isActiveDiscoverQuery,
 } from "@/server/dal/discover-gate";
 import { resolveDiscoverLimits } from "@/server/dal/discover-limits";
+import { publicPageMeta } from "@/lib/seo-meta";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata() {
   const locale = await getLocale();
-  const t = createTranslator(getDictionary(locale));
-  return { title: t("nav.map") };
+  const dict = getDictionary(locale);
+  const t = createTranslator(dict);
+  return publicPageMeta({
+    title: t("nav.map"),
+    description: dict.meta.pages.map,
+    path: "/map",
+  });
 }
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;

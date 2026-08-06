@@ -63,12 +63,18 @@ export async function TopNav({ active }: { active?: string }) {
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
   const user = await getCurrentUser();
+  const billing = user ? await getBillingEntitlement(user.id) : null;
+  const showSubscription = billing?.tier !== "pro";
+
   const links = [
     { href: "/", label: t("nav.discover") },
     { href: "/map", label: t("nav.map") },
     { href: "/routes", label: t("nav.routes") },
     { href: "/trips", label: t("nav.trips") },
     { href: "/about", label: t("nav.about") },
+    ...(showSubscription
+      ? [{ href: "/pro", label: t("nav.subscription") }]
+      : []),
   ];
   const loginHref = `/login?next=${encodeURIComponent(active && active !== "/login" ? active : "/settings")}`;
 

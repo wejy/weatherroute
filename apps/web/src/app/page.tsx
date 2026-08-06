@@ -29,6 +29,21 @@ export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
+export async function generateMetadata() {
+  const locale = await getLocale();
+  const dict = getDictionary(locale);
+  return {
+    title: { absolute: dict.meta.titleDefault },
+    description: dict.meta.pages.home,
+    alternates: { canonical: "/" },
+    openGraph: {
+      title: dict.meta.titleDefault,
+      description: dict.meta.pages.home,
+      url: "/",
+    },
+  };
+}
+
 export default async function HomePage({
   searchParams,
 }: {

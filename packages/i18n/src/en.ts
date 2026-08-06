@@ -6,6 +6,20 @@ const en = {
     titleTemplate: "%s · Solviax.app",
     description:
       "Discover destinations with the best weather for your next escape. Map-based trip planning with Open-Meteo forecasts.",
+    keywords:
+      "weather trip planning, weather map, sunny destinations, route weather, Solviax, Finland travel",
+    ogSiteName: "Solviax.app",
+    pages: {
+      about:
+        "Learn how Solviax.app ranks destinations by weather forecasts so you can plan trips around clearer skies.",
+      pro: "Compare Free and Pro plans for Solviax.app — wider search radii, more results, and saved routes.",
+      map: "Explore nearby destinations on a weather map and find clearer skies around you.",
+      routes:
+        "Plan a route and see weather along the way — dry corridors, rain risk, and forecasts up to 16 days.",
+      home: "Find destinations with better weather near you. Weather-first trip planning and routing.",
+      destination:
+        "Weather forecast for {name}. Explore on Solviax.app and plan your trip around the weather.",
+    },
   },
   brand: "Solviax.app",
   nav: {
@@ -22,6 +36,7 @@ const en = {
     about: "About",
     sideAbout: "About",
     sideSettings: "Settings",
+    subscription: "Subscription",
     signIn: "Sign in",
     accountMenu: "Account and settings",
     signedInAs: "Signed in as {name}",
@@ -76,6 +91,16 @@ const en = {
       region: "National Level · 300 km (~186 mi)",
       continent: "Continent · 1,000 km (~621 mi)",
       custom: "Custom radius",
+    },
+    /** Closed trigger / tight layouts — full names stay in `distances`. */
+    distancesCompact: {
+      near: "Local · 30 km",
+      semi: "Nearby · 60 km",
+      surroundings: "Regional · 120 km",
+      neighborhood: "Wider · 200 km",
+      region: "National · 300 km",
+      continent: "Continent · 1,000 km",
+      custom: "Custom",
     },
     customRadius: "Radius",
     customRadiusHint: "0–2,000 km (~0–1,243 mi)",
@@ -567,6 +592,15 @@ const en = {
     plansHint: "Full price table and checkout live on the plans page.",
     ctaDiscover: "Start discovering",
   },
+  footer: {
+    brand: "Solviax.app",
+    taglineEn1: "Weather-first trip planning",
+    taglineEn2: "Weather based routing",
+    taglineFi1: "Suunnittele matkasi sään mukaan",
+    taglineFi2: "Löydä aurinkoiset paikat ympärilläsi",
+    copyright: "© Whitefield Ltd, Oulu Finland",
+    contactAria: "Email Solviax.app",
+  },
   errors: {
     genericTitle: "Something went wrong",
     genericBody:
@@ -610,14 +644,14 @@ const en = {
     rows: {
       radius: {
         title: "Discover search radius",
-        free: "Up to Wider Region · 200 km",
+        free: "Up to Wider Region · 200 km (~125 miles)",
         oneTime:
-          "National Level, Continent, and Custom radius up to 2,000 km",
+          "National Level, Continent, and Custom radius up to 2,000 km (~1,250 miles)",
         monthly:
-          "National Level, Continent, and Custom radius up to 2,000 km",
+          "National Level, Continent, and Custom radius up to 2,000 km (~1,250 miles)",
         yearly:
-          "National Level, Continent, and Custom radius up to 2,000 km",
-        pro: "National Level · 300 km, Continent · 1,000 km, and Custom radius up to 2,000 km",
+          "National Level, Continent, and Custom radius up to 2,000 km (~1,250 miles)",
+        pro: "National Level · 300 km (~185 miles), Continent · 1,000 km (~620 miles), and Custom radius up to 2,000 km (~1,250 miles)",
       },
       results: {
         title: "Discover destinations shown",
@@ -671,13 +705,13 @@ const en = {
         "On each route, set a departure time window (start and/or end) so suggestions match your schedule.",
       sameCountry:
         "Keep Discover inside one country — optional, applies to all your searches.",
-      routes: "Save routes — 2 on One-time, unlimited on Monthly & Yearly.",
+      routes: "Save routes — 2 on One-time order, unlimited amount on Monthly & Yearly.",
       discovers: "Hundreds of discover searches while Pro is active.",
       future: "Future Pro features as we ship them.",
     },
     freeNoteTitle: "What Free already includes",
     freeNoteBody:
-      "Signed-in Free includes 50 discovers per calendar month within Wider Region (200 km), up to 20 destinations, map, and route planning. Saving routes and wider Pro radii require One-time (60 days), Monthly, or Yearly.",
+      "Signed-in Free includes 50 discovers per calendar month within Wider Region (200 km ~125 miles), up to 20 destinations, map, and route planning. Saving routes and wider Pro radii require One-time (60 days), Monthly, or Yearly.",
     ctaTitle: "Choose a plan",
     ctaBody: "You’ll complete payment securely with Stripe Checkout.",
     ctaSoon: "Billing not configured",
@@ -716,7 +750,7 @@ const en = {
       "Billing isn’t configured on this server yet (missing Stripe keys).",
     checkoutTripLimit:
       "You’ve reached your saved-route limit. Upgrade to Monthly or Yearly for unlimited saves, or delete a route.",
-    alreadyPro: "You’re already on Pro.",
+    alreadyPro: "You’re already on Pro. 👍",
   },
   paywall: {
     title: "You’ve used your free searches",

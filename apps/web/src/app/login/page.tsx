@@ -9,13 +9,14 @@ import { getCurrentUser } from "@/server/auth/session";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { env, hasDatabase } from "@/lib/env";
+import { noIndexPageMeta } from "@/lib/seo-meta";
 
 export const dynamic = "force-dynamic";
 
 export async function generateMetadata() {
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
-  return { title: t("login.title") };
+  return noIndexPageMeta(t("login.title"));
 }
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;

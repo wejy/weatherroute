@@ -21,6 +21,7 @@ import {
   CUSTOM_RADIUS_DEFAULT_KM,
   CUSTOM_RADIUS_MAX_KM,
   CUSTOM_RADIUS_MIN_KM,
+  DEFAULT_DISTANCE_KEY,
   DISTANCE_PRESET_KEYS,
   DISTANCE_RADIUS_KM,
   FREE_MAX_DISTANCE_KEY,
@@ -34,6 +35,7 @@ import {
   type GeoDetectMeta,
 } from "@/components/discover/location-origin-field";
 import { DateWhenField } from "@/components/discover/date-when-field";
+import { FieldSelect } from "@/components/discover/field-select";
 import { TravelModeSelector } from "@/components/travel/travel-mode-selector";
 import { DiscoverPendingUpdate } from "@/components/discover/discover-pending-update";
 import { useI18n } from "@/components/i18n/locale-provider";
@@ -107,7 +109,7 @@ export function DiscoverSearch({
   const initialDistance =
     !isPro && isProDistance(defaults?.distance)
       ? FREE_MAX_DISTANCE_KEY
-      : (defaults?.distance ?? FREE_MAX_DISTANCE_KEY);
+      : (defaults?.distance ?? DEFAULT_DISTANCE_KEY);
 
   const [origin, setOrigin] = useState(defaults?.origin ?? "");
   const [place, setPlace] = useState<PlaceDto | null>(
@@ -390,15 +392,32 @@ export function DiscoverSearch({
 
   const fieldClass = stack
     ? "rounded-xl border border-outline-variant/30 bg-surface-container-low px-3 py-2.5"
-    : "group relative flex-1 border-b border-outline-variant/30 px-4 py-3 transition-colors hover:bg-surface-container-low md:px-6 md:py-4 lg:border-r lg:border-b-0";
+    : "group relative min-w-0 border-b border-outline-variant/30 px-4 py-3 transition-colors hover:bg-surface-container-low md:px-6 md:py-4 lg:border-r lg:border-b-0";
 
   const labelClass = stack
     ? "mb-1 block text-left text-xs font-medium tracking-wide text-on-surface-variant uppercase"
-    : "mb-1 block text-left text-sm font-medium text-on-surface-variant transition-colors group-hover:text-primary";
+    : "mb-1 block truncate text-left text-sm font-medium text-on-surface-variant transition-colors group-hover:text-primary";
 
-  const selectClass = stack
-    ? "w-full cursor-pointer appearance-none border-none bg-transparent p-0 text-base font-semibold text-on-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-    : "w-full cursor-pointer appearance-none border-none bg-transparent p-0 pr-4 text-xl font-semibold text-on-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+  const distanceOptions = DISTANCE_OPTIONS.map((key) => {
+    const locked = !isPro && isProDistance(key);
+    const full = t(`search.distances.${key}`);
+    const compact = t(`search.distancesCompact.${key}`);
+    return {
+      value: key,
+      disabled: locked,
+      label: locked
+        ? t("search.distanceProOption", { label: full })
+        : full,
+      compactLabel: locked
+        ? t("search.distanceProOption", { label: compact })
+        : compact,
+    };
+  });
+
+  const goalOptions = GOAL_KEYS.map((key) => ({
+    value: key,
+    label: t(`search.goals.${key}`),
+  }));
 
   return (
     <>
@@ -407,13 +426,13 @@ export function DiscoverSearch({
       className={cn(
         stack
           ? "flex w-full flex-col gap-3"
-          : "relative z-40 flex w-full max-w-5xl flex-col overflow-visible rounded-[2rem] border border-outline-variant/20 bg-surface-container-lowest p-2 shadow-[0px_10px_30px_rgba(0,0,0,0.08)] md:p-4 lg:flex-row lg:flex-wrap lg:pr-10",
+          : "relative z-40 flex w-full max-w-5xl flex-col overflow-visible rounded-[2rem] border border-outline-variant/20 bg-surface-container-lowest p-2 shadow-[0px_10px_30px_rgba(0,0,0,0.08)] md:p-4 lg:flex-row lg:flex-nowrap lg:items-stretch lg:pr-10",
       )}
     >
       <div
         className={cn(
           fieldClass,
-          !stack && "rounded-t-2xl lg:rounded-l-2xl lg:rounded-tr-none",
+          !stack && "flex-[1.8] rounded-t-2xl lg:rounded-l-2xl lg:rounded-tr-none",
         )}
       >
         <label
@@ -443,7 +462,7 @@ export function DiscoverSearch({
         )}
       </div>
 
-      <div className={fieldClass}>
+      <div className={cn(fieldClass, !stack && "flex-[1.1]")}>
         <span id={whenLabelId} className={labelClass}>
           {t("search.whenGoing")}
         </span>
@@ -457,7 +476,7 @@ export function DiscoverSearch({
         />
       </div>
 
-      <div className={fieldClass}>
+      <div className={cn(fieldClass, !stack && "flex-none")}>
         <p className={labelClass}>{t("travel.modeLabel")}</p>
         <TravelModeSelector
           value={travelMode}
@@ -469,43 +488,26 @@ export function DiscoverSearch({
       <div
         className={cn(
           fieldClass,
+          !stack && "max-w-[11rem] flex-[0.85]",
           !stack &&
             !showGoalField &&
             "rounded-b-2xl lg:rounded-r-2xl lg:rounded-bl-none lg:border-r-0",
         )}
       >
-        <label htmlFor={distanceId} className={labelClass}>
+        <label id={distanceId} className={labelClass}>
           {t("search.howFar")}
         </label>
-        <div className="flex items-center gap-2 overflow-hidden">
-          <span
-            className="material-symbols-outlined text-xl text-secondary"
-            aria-hidden="true"
-          >
-            radar
-          </span>
-          <select
-            id={distanceId}
-            className={selectClass}
-            value={distance}
-            onChange={(e) => onDistanceChange(e.target.value)}
-          >
-            {DISTANCE_OPTIONS.map((key) => {
-              const locked = !isPro && isProDistance(key);
-              return (
-                <option key={key} value={key} disabled={locked}>
-                  {locked
-                    ? t("search.distanceProOption", {
-                        label: t(`search.distances.${key}`),
-                      })
-                    : t(`search.distances.${key}`)}
-                </option>
-              );
-            })}
-          </select>
-        </div>
-        {!isPro ? (
-          <p className="mt-1 text-left text-[10px] leading-snug text-outline">
+        <FieldSelect
+          value={distance}
+          options={distanceOptions}
+          onChange={onDistanceChange}
+          labelledBy={distanceId}
+          icon="radar"
+          size={stack ? "sm" : "lg"}
+          menuAlign="end"
+        />
+        {!isPro && stack ? (
+          <p className="mt-1 text-left text-[10px] leading-snug break-words text-outline">
             {t("search.distanceProHint")}{" "}
             <a
               href="/settings"
@@ -553,33 +555,23 @@ export function DiscoverSearch({
         <div
           className={cn(
             fieldClass,
+            !stack && "min-w-0 flex-1",
             !stack &&
               "cursor-pointer rounded-b-2xl lg:rounded-r-2xl lg:rounded-bl-none lg:border-r-0",
           )}
         >
-          <label htmlFor={goalId} className={labelClass}>
+          <label id={goalId} className={labelClass}>
             {t("search.weatherGoal")}
           </label>
-          <div className="flex items-center gap-2 overflow-hidden">
-            <span
-              className="material-symbols-outlined text-xl text-secondary"
-              aria-hidden="true"
-            >
-              wb_sunny
-            </span>
-            <select
-              id={goalId}
-              className={selectClass}
-              value={weatherGoal}
-              onChange={(e) => onGoalChange(e.target.value)}
-            >
-              {GOAL_KEYS.map((key) => (
-                <option key={key} value={key}>
-                  {t(`search.goals.${key}`)}
-                </option>
-              ))}
-            </select>
-          </div>
+          <FieldSelect
+            value={weatherGoal}
+            options={goalOptions}
+            onChange={onGoalChange}
+            labelledBy={goalId}
+            icon="wb_sunny"
+            size={stack ? "sm" : "lg"}
+            menuAlign="end"
+          />
         </div>
       )}
 

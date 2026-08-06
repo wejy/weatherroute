@@ -26,6 +26,8 @@ import { isStripeBillingConfigured } from "@/server/billing/plans";
 import { getUserRole } from "@/server/dal/roles";
 import { formatIsoDateForLocale } from "@/lib/dates";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { SiteFooter } from "@/components/layout/site-footer";
+import { noIndexPageMeta } from "@/lib/seo-meta";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +36,7 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 export async function generateMetadata() {
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
-  return { title: t("settings.title") };
+  return noIndexPageMeta(t("settings.title"));
 }
 
 export default async function SettingsPage({
@@ -359,6 +361,8 @@ export default async function SettingsPage({
             ) : null}
           </div>
         </section>
+
+        <SiteFooter />
       </main>
       <BottomNav />
     </>

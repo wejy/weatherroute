@@ -15,9 +15,9 @@ describe("resolveRadiusKm", () => {
     expect(resolveRadiusKm("continent")).toBe(1000);
   });
 
-  it("defaults unknown / missing to neighborhood (free max)", () => {
-    expect(resolveRadiusKm(undefined)).toBe(DISTANCE_RADIUS_KM.neighborhood);
-    expect(resolveRadiusKm("nope")).toBe(DISTANCE_RADIUS_KM.neighborhood);
+  it("defaults unknown / missing to surroundings (default radius)", () => {
+    expect(resolveRadiusKm(undefined)).toBe(DISTANCE_RADIUS_KM.surroundings);
+    expect(resolveRadiusKm("nope")).toBe(DISTANCE_RADIUS_KM.surroundings);
   });
 
   it("clamps custom radius", () => {
@@ -80,5 +80,14 @@ describe("clampDistanceForTier", () => {
     expect(
       clampDistanceForTier("neighborhood", undefined, "anon").distance,
     ).toBe("neighborhood");
+  });
+
+  it("uses surroundings when distance is omitted", () => {
+    expect(clampDistanceForTier(undefined, undefined, "free").distance).toBe(
+      "surroundings",
+    );
+    expect(clampDistanceForTier(null, undefined, "pro").distance).toBe(
+      "surroundings",
+    );
   });
 });

@@ -14,6 +14,10 @@ import {
   routeWarnBadgeHtml,
   routeWaypointChipHtml,
 } from "@/lib/map-marker-chrome";
+import {
+  installMapboxTelemetryGuard,
+  safeRemoveMap,
+} from "@/lib/mapbox-safe-remove";
 
 function escapeHtml(value: string): string {
   return value
@@ -199,6 +203,7 @@ export function MapboxRouteMap({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const appliedStyleRef = useRef(mapStyle);
   const waypointsRef = useRef(waypoints);
   waypointsRef.current = waypoints;
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
@@ -232,6 +237,7 @@ export function MapboxRouteMap({
   useEffect(() => {
     if (!containerRef.current || !token) return;
 
+    installMapboxTelemetryGuard();
     mapboxgl.accessToken = token;
     setSelectedIdx(null);
 
@@ -252,8 +258,135 @@ export function MapboxRouteMap({
       "top-right",
     );
     mapRef.current = map;
+    appliedStyleRef.current = mapStyle;
 
-    map.on("load", () => {
+    const addRouteLayers = () => {
+      if (!map.getSource("route-alts")) {
+        map.addSource("route-alts", {
+          type: "geojson",
+          data: alternativesGeoJSON(drawRouteLine ? alternatives : undefined),
+        });
+        map.addLayer({
+          id: "route-alts-casing",
+          type: "line",
+          source: "route-alts",
+          paint: {
+            "line-color": "#ffffff",
+            "line-width": 7,
+            "line-opacity": 0.95,
+            "line-dasharray": [1.2, 1.2],
+          },
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+          },
+        });
+        map.addLayer({
+          id: "route-alts",
+          type: "line",
+          source: "route-alts",
+          paint: {
+            "line-color": "#1b1b24",
+            "line-width": 4,
+            "line-opacity": 0.9,
+            "line-dasharray": [1.5, 1.2],
+          },
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+          },
+        });
+      }
+
+      if (!map.getSource("route-segments")) {
+        map.addSource("route-segments", {
+          type: "geojson",
+          data:
+            coords.length >= 2
+              ? coloredSegmentsGeoJSON(coords, waypointsRef.current)
+              : { type: "FeatureCollection", features: [] },
+        });
+        map.addLayer({
+          id: "route-line-casing",
+          type: "line",
+          source: "route-segments",
+          paint: {
+            "line-color": "#ffffff",
+            "line-width": 7,
+            "line-opacity": 0.9,
+          },
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+          },
+        });
+        map.addLayer({
+          id: "route-line",
+          type: "line",
+          source: "route-segments",
+          paint: {
+            "line-color": ["get", "color"],
+            "line-width": 4,
+            "line-opacity": 0.95,
+          },
+          layout: {
+            "line-cap": "round",
+            "line-join": "round",
+          },
+        });
+      }
+
+      const bounds = new mapboxgl.LngLatBounds();
+      bounds.extend([from.lon, from.lat]);
+      bounds.extend([to.lon, to.lat]);
+      for (const c of coords) bounds.extend(c);
+      for (const wp of waypointsRef.current) {
+        bounds.extend([wp.lon, wp.lat]);
+      }
+      if (drawRouteLine) {
+        for (const a of alternatives ?? []) {
+          for (const c of a.geometry) bounds.extend(c);
+        }
+      }
+      map.fitBounds(bounds, { padding: 72, maxZoom: 10, duration: 0 });
+    };
+
+    map.on("load", addRouteLayers);
+
+    map.on("click", () => setSelectedIdx(null));
+
+    return () => {
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
+      safeRemoveMap(map);
+      mapRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- remount on route identity; theme via setStyle
+  }, [
+    token,
+    from.id,
+    from.lat,
+    from.lon,
+    to.id,
+    to.lat,
+    to.lon,
+    geometryKey,
+    altKey,
+    drawRouteLine,
+  ]);
+
+  // Theme basemap swap without tearing down the map (avoids Mapbox errorCb race).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (appliedStyleRef.current === mapStyle) return;
+    appliedStyleRef.current = mapStyle;
+
+    const coords = lineCoordinates(from, to, waypointsRef.current, geometry, {
+      drawRouteLine,
+    });
+
+    const onStyle = () => {
       map.addSource("route-alts", {
         type: "geojson",
         data: alternativesGeoJSON(drawRouteLine ? alternatives : undefined),
@@ -268,10 +401,7 @@ export function MapboxRouteMap({
           "line-opacity": 0.95,
           "line-dasharray": [1.2, 1.2],
         },
-        layout: {
-          "line-cap": "round",
-          "line-join": "round",
-        },
+        layout: { "line-cap": "round", "line-join": "round" },
       });
       map.addLayer({
         id: "route-alts",
@@ -283,12 +413,8 @@ export function MapboxRouteMap({
           "line-opacity": 0.9,
           "line-dasharray": [1.5, 1.2],
         },
-        layout: {
-          "line-cap": "round",
-          "line-join": "round",
-        },
+        layout: { "line-cap": "round", "line-join": "round" },
       });
-
       map.addSource("route-segments", {
         type: "geojson",
         data:
@@ -305,10 +431,7 @@ export function MapboxRouteMap({
           "line-width": 7,
           "line-opacity": 0.9,
         },
-        layout: {
-          "line-cap": "round",
-          "line-join": "round",
-        },
+        layout: { "line-cap": "round", "line-join": "round" },
       });
       map.addLayer({
         id: "route-line",
@@ -319,49 +442,16 @@ export function MapboxRouteMap({
           "line-width": 4,
           "line-opacity": 0.95,
         },
-        layout: {
-          "line-cap": "round",
-          "line-join": "round",
-        },
+        layout: { "line-cap": "round", "line-join": "round" },
       });
-
-      const bounds = new mapboxgl.LngLatBounds();
-      bounds.extend([from.lon, from.lat]);
-      bounds.extend([to.lon, to.lat]);
-      for (const c of coords) bounds.extend(c);
-      for (const wp of waypointsRef.current) {
-        bounds.extend([wp.lon, wp.lat]);
-      }
-      if (drawRouteLine) {
-        for (const a of alternatives ?? []) {
-          for (const c of a.geometry) bounds.extend(c);
-        }
-      }
-      map.fitBounds(bounds, { padding: 72, maxZoom: 10, duration: 0 });
-    });
-
-    map.on("click", () => setSelectedIdx(null));
-
-    return () => {
-      markersRef.current.forEach((m) => m.remove());
-      markersRef.current = [];
-      map.remove();
-      mapRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- remount on route identity only
-  }, [
-    token,
-    from.id,
-    from.lat,
-    from.lon,
-    to.id,
-    to.lat,
-    to.lon,
-    geometryKey,
-    altKey,
-    drawRouteLine,
-    mapStyle,
-  ]);
+
+    map.once("style.load", onStyle);
+    map.setStyle(mapStyle);
+    return () => {
+      map.off("style.load", onStyle);
+    };
+  }, [mapStyle, from, to, geometry, alternatives, drawRouteLine]);
 
   // Sync weather markers + segment colors when waypoints / selection change.
   useEffect(() => {
@@ -418,7 +508,6 @@ export function MapboxRouteMap({
     geometry,
     alternatives,
     drawRouteLine,
-    theme,
   ]);
 
   useEffect(() => {

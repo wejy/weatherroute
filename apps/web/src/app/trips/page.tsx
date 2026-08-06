@@ -19,6 +19,7 @@ import {
 } from "@/lib/types";
 import { withQuery } from "@/lib/discover-query";
 import { RouteShareActions } from "@/components/routes/route-share-actions";
+import { noIndexPageMeta } from "@/lib/seo-meta";
 
 export const dynamic = "force-dynamic";
 
@@ -82,7 +83,7 @@ function formatTripDates(
 export async function generateMetadata() {
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
-  return { title: t("trips.title") };
+  return noIndexPageMeta(t("trips.title"));
 }
 
 export default async function TripsPage({

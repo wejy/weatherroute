@@ -289,7 +289,7 @@ function emptyDiscoverResult(
     endDate: query.endDate,
     locale,
   });
-  const distance = (query.distance ?? "neighborhood") as DistanceRange;
+  const distance = (query.distance ?? "surroundings") as DistanceRange;
   const radiusKm = resolveRadiusKm(distance, query.radiusKm);
 
   return {

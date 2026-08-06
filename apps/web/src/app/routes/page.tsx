@@ -31,11 +31,17 @@ import { getBillingEntitlement } from "@/server/dal/subscriptions";
 import { WEATHER_TONE_COLORS } from "@/lib/weather-tone";
 import { headers } from "next/headers";
 import { getClientIpFromHeaders } from "@/lib/client-ip";
+import { publicPageMeta } from "@/lib/seo-meta";
 
 export async function generateMetadata() {
   const locale = await getLocale();
-  const t = createTranslator(getDictionary(locale));
-  return { title: t("nav.routes") };
+  const dict = getDictionary(locale);
+  const t = createTranslator(dict);
+  return publicPageMeta({
+    title: t("nav.routes"),
+    description: dict.meta.pages.routes,
+    path: "/routes",
+  });
 }
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;

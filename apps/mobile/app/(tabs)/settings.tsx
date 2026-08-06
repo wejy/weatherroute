@@ -27,6 +27,7 @@ import {
   isStripeCheckoutAllowed,
   openWebProPage,
 } from "@/lib/billing";
+import { SiteFooter } from "@/components/SiteFooter";
 
 const THEME_OPTIONS: { value: ThemePreference; labelKey: "settings.themeSystem" | "settings.themeLight" | "settings.themeDark" }[] = [
   { value: "system", labelKey: "settings.themeSystem" },
@@ -351,6 +352,8 @@ export default function SettingsScreen() {
         <Text style={styles.cardBody}>{api || t("mobile.apiMissing")}</Text>
         {!api && <Text style={styles.hint}>{t("mobile.openWebHint")}</Text>}
       </View>
+
+      <SiteFooter />
     </ScrollView>
   );
 }
@@ -358,7 +361,7 @@ export default function SettingsScreen() {
 function createStyles(colors: AppColors) {
   return StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
-  content: { padding: 20, gap: 16 },
+  content: { padding: 20, paddingBottom: 40, gap: 16 },
   title: {
     fontSize: 28,
     fontWeight: "800",
