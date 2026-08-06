@@ -281,6 +281,7 @@ async function handleCheckoutSessionCompleted(
     stripeSubscriptionId:
       plan === "monthly" || plan === "yearly" ? subscriptionId : null,
     currentPeriodEnd,
+    cancelAtPeriodEnd: false,
   });
   log.info({ userId, plan, sessionId: session.id }, "Pro activated from checkout");
 }
@@ -301,12 +302,17 @@ async function handleSubscriptionUpdated(
     return;
   }
 
-  if (!subscriptionMatchesMonthlyPrice(subscriptionPriceIds(sub))) {
+  const priceMatched = subscriptionMatchesMonthlyPrice(
+    subscriptionPriceIds(sub),
+  );
+  if (!priceMatched) {
+    // Bound customer already verified above. Price IDs often drift after
+    // re-running stripe-setup while an older subscription remains active —
+    // still sync cancel_at_period_end / status or Pro stays wrong forever.
     log.warn(
       { userId, subId: sub.id, prices: subscriptionPriceIds(sub) },
-      "subscription update ignored — unexpected price id",
+      "subscription update price ≠ configured STRIPE_PRICE_* — syncing anyway",
     );
-    return;
   }
 
   const mapped = mapStripeSubscriptionStatus(sub.status);
@@ -333,9 +339,22 @@ async function handleSubscriptionUpdated(
     stripeCustomerId: customerId,
     stripeSubscriptionId: sub.id,
     currentPeriodEnd: periodEndFromSubscription(sub),
+    cancelAtPeriodEnd: Boolean(
+      sub.cancel_at_period_end ||
+        (typeof sub.cancel_at === "number" && sub.cancel_at > 0),
+    ),
   });
   log.info(
-    { userId, subId: sub.id, status: mapped.status, plan },
+    {
+      userId,
+      subId: sub.id,
+      status: mapped.status,
+      plan,
+      cancelAtPeriodEnd: Boolean(
+        sub.cancel_at_period_end ||
+          (typeof sub.cancel_at === "number" && sub.cancel_at > 0),
+      ),
+    },
     "recurring subscription synced",
   );
 }

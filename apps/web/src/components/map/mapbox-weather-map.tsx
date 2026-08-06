@@ -15,6 +15,12 @@ import { useResolvedTheme } from "@/components/theme/theme-provider";
 import { mapboxDarkBasemapClass, mapboxStyleForTheme } from "@/lib/theme";
 import { prefetchWikipediaForMarkers } from "@/lib/wikipedia-client";
 import type { MapMarkerDto } from "@/lib/types";
+import {
+  markerChipHtml,
+  markerWarnDotHtml,
+  originDotHtml,
+  weatherMarkerToneBorder,
+} from "@/lib/map-marker-chrome";
 
 export function MapboxWeatherMap({
   markers,
@@ -171,26 +177,22 @@ export function MapboxWeatherMap({
 
         const selected = selectedIdRef.current === marker.id;
         const tone = marker.tone ?? "clear";
-        const severe = marker.condition === "storm" || marker.condition === "hail" || marker.condition === "freezing_rain";
-        const toneBorder = severe
-          ? "#ba1a1a"
-          : tone === "warning"
-            ? "#006591"
-            : tone === "caution"
-              ? "#f59e0b"
-              : selected
-                ? "#14b863"
-                : "rgba(199,196,216,.5)";
-        const warnDot =
-          tone === "warning" || tone === "caution" || severe
-            ? `<span style="position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:999px;background:${severe ? "#ba1a1a" : tone === "warning" ? "#006591" : "#f59e0b"};border:2px solid #fff;" aria-hidden="true"></span>`
-            : "";
+        const severe =
+          marker.condition === "storm" ||
+          marker.condition === "hail" ||
+          marker.condition === "freezing_rain";
+        const toneBorder = weatherMarkerToneBorder({ tone, severe, selected });
+        const showWarn =
+          tone === "warning" || tone === "caution" || severe;
         el.innerHTML = isOrigin
-          ? `<div style="background:#14b863;color:#fff;border-radius:999px;padding:8px 12px;font:600 12px/1 Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.18);border:2px solid #fff;">●</div>`
-          : `<div style="position:relative;display:flex;align-items:center;gap:4px;background:rgba(252,248,255,.98);border-radius:999px;padding:6px 10px;font:600 12px/1 Inter,system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.12);border:2px solid ${toneBorder};color:#1b1b24;">
-              <span>${Math.round(marker.temperatureC)}°</span>
-              ${warnDot}
-            </div>`;
+          ? originDotHtml()
+          : markerChipHtml({
+              tempLabel: `${Math.round(marker.temperatureC)}°`,
+              toneBorder,
+              warnDotHtml: showWarn
+                ? markerWarnDotHtml({ severe, tone })
+                : "",
+            });
 
         el.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -210,7 +212,7 @@ export function MapboxWeatherMap({
 
     if (map.isStyleLoaded()) sync();
     else map.once("load", sync);
-  }, [markers, selectedId]);
+  }, [markers, selectedId, theme]);
 
   // Keep React popup anchored to the selected marker while the map moves.
   useEffect(() => {

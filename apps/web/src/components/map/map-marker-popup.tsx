@@ -61,6 +61,17 @@ export function MapMarkerPopup({
   );
 
   useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  useEffect(() => {
     let cancelled = false;
     const hit = getCachedWikipedia(cacheKey);
     if (hit?.status === "ready") {
@@ -109,7 +120,7 @@ export function MapMarkerPopup({
 
   return (
     <article
-      role="dialog"
+      role="region"
       aria-label={marker.name}
       className={cn(
         "overflow-hidden rounded-xl border border-outline-variant/30 bg-surface shadow-[0px_12px_36px_rgba(0,0,0,0.18)]",

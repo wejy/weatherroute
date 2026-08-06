@@ -42,7 +42,7 @@ export function ErrorRecovery({
         <button
           type="button"
           onClick={() => reset()}
-          className="rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container"
+          className="rounded-lg bg-primary px-5 py-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container"
         >
           {t("errors.retry")}
         </button>

@@ -29,6 +29,7 @@ export type SessionSnapshot = {
   savedTripCount: number;
   proSince: string | null;
   currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
   oneTimePaidAt: string | null;
   oneTimeExpiresAt: string | null;
 };
@@ -47,6 +48,7 @@ export async function fetchSession(): Promise<SessionSnapshot> {
       savedTripCount?: number;
       proSince?: string | null;
       currentPeriodEnd?: string | null;
+      cancelAtPeriodEnd?: boolean;
       oneTimePaidAt?: string | null;
       oneTimeExpiresAt?: string | null;
     }>("/api/auth/me");
@@ -62,6 +64,7 @@ export async function fetchSession(): Promise<SessionSnapshot> {
       savedTripCount: data.savedTripCount ?? 0,
       proSince: data.proSince ?? null,
       currentPeriodEnd: data.currentPeriodEnd ?? null,
+      cancelAtPeriodEnd: Boolean(data.cancelAtPeriodEnd),
       oneTimePaidAt: data.oneTimePaidAt ?? null,
       oneTimeExpiresAt: data.oneTimeExpiresAt ?? null,
     };
@@ -79,6 +82,7 @@ export async function fetchSession(): Promise<SessionSnapshot> {
       savedTripCount: 0,
       proSince: null,
       currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
       oneTimePaidAt: null,
       oneTimeExpiresAt: null,
     };

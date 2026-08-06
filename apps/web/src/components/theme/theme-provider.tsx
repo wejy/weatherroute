@@ -7,6 +7,7 @@ import {
   useEffect,
   useMemo,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import {
@@ -54,6 +55,27 @@ function systemPrefersDark(): boolean {
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
 }
 
+function subscribeSystemDark(onStoreChange: () => void): () => void {
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  mq.addEventListener("change", onStoreChange);
+  return () => mq.removeEventListener("change", onStoreChange);
+}
+
+function getSystemDarkSnapshot(): boolean {
+  return systemPrefersDark();
+}
+
+function getSystemDarkServerSnapshot(): boolean {
+  return false;
+}
+
+function readDomResolvedTheme(): ResolvedTheme {
+  if (typeof document === "undefined") return "light";
+  return document.documentElement.getAttribute("data-theme") === "dark"
+    ? "dark"
+    : "light";
+}
+
 export function ThemeProvider({
   children,
   initialPreference = "system",
@@ -64,15 +86,16 @@ export function ThemeProvider({
   const [preference, setPreferenceState] = useState<ThemePreference>(
     initialPreference,
   );
-  const [systemDark, setSystemDark] = useState(false);
+  const [clientReady, setClientReady] = useState(false);
+  const systemDark = useSyncExternalStore(
+    subscribeSystemDark,
+    getSystemDarkSnapshot,
+    getSystemDarkServerSnapshot,
+  );
 
   useEffect(() => {
     setPreferenceState(readCookiePreference());
-    setSystemDark(systemPrefersDark());
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => setSystemDark(mq.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
+    setClientReady(true);
   }, []);
 
   const resolved = useMemo(
@@ -81,8 +104,11 @@ export function ThemeProvider({
   );
 
   useEffect(() => {
+    // While preference is "system", avoid overwriting the boot script until
+    // the client store has subscribed (server snapshot is always false).
+    if (preference === "system" && !clientReady) return;
     applyDomTheme(resolved);
-  }, [resolved]);
+  }, [resolved, preference, clientReady]);
 
   const setPreference = useCallback((next: ThemePreference) => {
     setPreferenceState(next);
@@ -111,7 +137,9 @@ export function useTheme(): ThemeContextValue {
 /** Safe for map components that may render outside provider in tests. */
 export function useResolvedTheme(): ResolvedTheme {
   const ctx = useContext(ThemeContext);
-  const [fallback, setFallback] = useState<ResolvedTheme>("light");
+  const [fallback, setFallback] = useState<ResolvedTheme>(() =>
+    readDomResolvedTheme(),
+  );
   useEffect(() => {
     if (ctx) return;
     const pref = readCookiePreference();

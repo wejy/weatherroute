@@ -749,7 +749,11 @@ export default function DiscoverScreen() {
       )}
 
       {quota && !paywalled && (
-        <QuotaHint remaining={quota.remaining} limit={quota.limit} />
+        <QuotaHint
+          remaining={quota.remaining}
+          limit={quota.limit}
+          kind={quota.kind}
+        />
       )}
 
       {locating && !result && (

@@ -302,12 +302,19 @@ export default async function SettingsPage({
                 {(billing.plan === "monthly" || billing.plan === "yearly") &&
                 formatIsoDateForLocale(billing.currentPeriodEnd, locale) ? (
                   <li className="text-on-surface-variant">
-                    {t("pro.renewsOn", {
-                      date: formatIsoDateForLocale(
-                        billing.currentPeriodEnd,
-                        locale,
-                      ),
-                    })}
+                    {billing.cancelAtPeriodEnd
+                      ? t("pro.cancelingEndsOn", {
+                          date: formatIsoDateForLocale(
+                            billing.currentPeriodEnd,
+                            locale,
+                          ),
+                        })
+                      : t("pro.renewsOn", {
+                          date: formatIsoDateForLocale(
+                            billing.currentPeriodEnd,
+                            locale,
+                          ),
+                        })}
                   </li>
                 ) : null}
               </ul>
@@ -328,7 +335,11 @@ export default async function SettingsPage({
               </Link>
               {user && billing.canManageBilling && stripeReady ? (
                 <BillingPortalButton
-                  label={t("settings.subscriptionManage")}
+                  label={
+                    billing.cancelAtPeriodEnd
+                      ? t("settings.subscriptionManageCanceling")
+                      : t("settings.subscriptionManage")
+                  }
                   errorLabel={t("pro.checkoutError")}
                   className="w-full rounded-lg border border-outline-variant px-4 py-3 text-sm font-semibold text-on-surface-variant disabled:opacity-60 sm:w-auto"
                 />
@@ -336,7 +347,9 @@ export default async function SettingsPage({
             </div>
             {user && billing.canManageBilling && stripeReady ? (
               <p className="mt-2 text-xs text-on-surface-variant">
-                {t("settings.subscriptionStatusHint")}
+                {billing.cancelAtPeriodEnd
+                  ? t("settings.subscriptionStatusHintCanceling")
+                  : t("settings.subscriptionStatusHint")}
               </p>
             ) : null}
             {!stripeReady ? (

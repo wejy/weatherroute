@@ -46,6 +46,7 @@ export default function SettingsScreen() {
   const [canManageBilling, setCanManageBilling] = useState(false);
   const [proSince, setProSince] = useState<string | null>(null);
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
+  const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(false);
   const [oneTimePaidAt, setOneTimePaidAt] = useState<string | null>(null);
   const [oneTimeExpiresAt, setOneTimeExpiresAt] = useState<string | null>(null);
   const [sameCountryOnly, setSameCountryOnly] = useState(false);
@@ -66,6 +67,7 @@ export default function SettingsScreen() {
       setCanManageBilling(next.canManageBilling);
       setProSince(next.proSince);
       setCurrentPeriodEnd(next.currentPeriodEnd);
+      setCancelAtPeriodEnd(next.cancelAtPeriodEnd);
       setOneTimePaidAt(next.oneTimePaidAt);
       setOneTimeExpiresAt(next.oneTimeExpiresAt);
       setSameCountryOnly(next.sameCountryOnly);
@@ -270,7 +272,9 @@ export default function SettingsScreen() {
             (plan === "monthly" || plan === "yearly") &&
             renewsLabel ? (
               <Text style={styles.hint}>
-                {t("pro.renewsOn", { date: renewsLabel })}
+                {cancelAtPeriodEnd
+                  ? t("pro.cancelingEndsOn", { date: renewsLabel })
+                  : t("pro.renewsOn", { date: renewsLabel })}
               </Text>
             ) : null}
           </>
@@ -294,12 +298,18 @@ export default function SettingsScreen() {
               ) : (
                 <Text style={styles.manageText}>
                   {allowStripe
-                    ? t("settings.subscriptionManage")
+                    ? cancelAtPeriodEnd
+                      ? t("settings.subscriptionManageCanceling")
+                      : t("settings.subscriptionManage")
                     : t("pro.manageOnWeb")}
                 </Text>
               )}
             </Pressable>
-            <Text style={styles.hint}>{t("settings.subscriptionStatusHint")}</Text>
+            <Text style={styles.hint}>
+              {cancelAtPeriodEnd
+                ? t("settings.subscriptionStatusHintCanceling")
+                : t("settings.subscriptionStatusHint")}
+            </Text>
           </>
         ) : null}
       </View>

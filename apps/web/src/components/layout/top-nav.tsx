@@ -30,7 +30,7 @@ function NavLinks({
           "relative py-1 text-xl font-semibold transition-colors after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-full after:origin-left after:scale-x-0 after:bg-primary after:transition-transform hover:after:scale-x-100",
           active === link.href
             ? "text-primary after:scale-x-100"
-            : "text-on-surface-variant hover:text-primary-container",
+            : "text-on-surface-variant hover:text-primary",
         );
         if (preserve) {
           return (
@@ -141,7 +141,7 @@ export async function TopNav({ active }: { active?: string }) {
           <Link
             href={loginHref}
             data-testid="nav-sign-in"
-            className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container"
+            className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container hover:text-on-primary-container"
           >
             {t("nav.signIn")}
           </Link>

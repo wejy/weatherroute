@@ -8,13 +8,42 @@ import {
   View,
 } from "react-native";
 import { Link, useFocusEffect, type Href } from "expo-router";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useI18n } from "@/lib/i18n";
 import { apiDelete, apiGet, getApiBaseUrl } from "@/lib/api";
 import { fetchSession } from "@/lib/session";
 import { formatDistanceKm } from "@/lib/distance";
+import {
+  formatDateKeyForLocale,
+  formatIsoDateForLocale,
+  type DateLocale,
+} from "@/lib/dates";
 import type { AppColors } from "@/constants/Colors";
 import { useColors } from "@/lib/theme";
 import type { TripDto, TravelMode } from "@/lib/types";
+
+function formatTripDates(
+  trip: {
+    datePreset?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
+  },
+  locale: DateLocale,
+): string | null {
+  if (trip.startDate && trip.endDate) {
+    if (trip.startDate === trip.endDate) {
+      return formatDateKeyForLocale(trip.startDate, locale);
+    }
+    return `${formatDateKeyForLocale(trip.startDate, locale)} – ${formatDateKeyForLocale(trip.endDate, locale)}`;
+  }
+  if (trip.startDate) return formatDateKeyForLocale(trip.startDate, locale);
+  if (trip.datePreset === "today") return locale === "fi" ? "Tänään" : "Today";
+  if (trip.datePreset === "tomorrow")
+    return locale === "fi" ? "Huomenna" : "Tomorrow";
+  if (trip.datePreset === "weekend")
+    return locale === "fi" ? "Viikonloppu" : "Weekend";
+  return null;
+}
 
 export default function TripsScreen() {
   const { t, locale } = useI18n();
@@ -90,6 +119,8 @@ export default function TripsScreen() {
 
       {trips.map((trip) => {
         const mode = (trip.travelMode ?? "driving") as TravelMode;
+        const datesLabel = formatTripDates(trip, locale);
+        const savedLabel = formatIsoDateForLocale(trip.createdAt, locale);
         return (
           <View key={trip.id} style={styles.card}>
             <Text style={styles.cardTitle}>{trip.title}</Text>
@@ -103,6 +134,30 @@ export default function TripsScreen() {
                 : ""}
               {trip.durationLabel ? ` · ${trip.durationLabel}` : ""}
             </Text>
+            {datesLabel || savedLabel ? (
+              <View style={styles.metaRow}>
+                {datesLabel ? (
+                  <View style={styles.metaItem}>
+                    <MaterialIcons
+                      name="event"
+                      size={16}
+                      color={colors.onSurfaceVariant}
+                    />
+                    <Text style={styles.cardMeta}>{datesLabel}</Text>
+                  </View>
+                ) : null}
+                {savedLabel ? (
+                  <View style={styles.metaItem}>
+                    <MaterialIcons
+                      name="bookmark"
+                      size={16}
+                      color={colors.onSurfaceVariant}
+                    />
+                    <Text style={styles.cardMeta}>{savedLabel}</Text>
+                  </View>
+                ) : null}
+              </View>
+            ) : null}
             <View style={styles.row}>
               <Link
                 href={
@@ -169,6 +224,17 @@ function createStyles(colors: AppColors) {
   cardMeta: {
     fontSize: 13,
     color: colors.onSurfaceVariant,
+  },
+  metaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginTop: 2,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   row: {
     flexDirection: "row",

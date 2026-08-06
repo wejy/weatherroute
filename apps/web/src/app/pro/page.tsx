@@ -75,6 +75,7 @@ export default async function ProMarketingPage({
     locale,
   );
   const renewsLabel = formatIsoDateForLocale(billing.currentPeriodEnd, locale);
+  const cancelScheduled = Boolean(billing.cancelAtPeriodEnd);
 
   let payments: CustomerPayment[] = [];
   if (user && billing.stripeCustomerId && stripeReady) {
@@ -139,7 +140,9 @@ export default async function ProMarketingPage({
               className="mt-1 text-lg font-bold text-on-surface"
             >
               {isPro
-                ? t("pro.statusActive")
+                ? cancelScheduled
+                  ? t("pro.statusCanceling")
+                  : t("pro.statusActive")
                 : t("pro.currentPlan", { plan: planLabel })}
             </h2>
             {isPro ? (
@@ -156,7 +159,11 @@ export default async function ProMarketingPage({
               ) : null}
               {(billing.plan === "monthly" || billing.plan === "yearly") &&
               renewsLabel ? (
-                <li>{t("pro.renewsOn", { date: renewsLabel })}</li>
+                <li>
+                  {cancelScheduled
+                    ? t("pro.cancelingEndsOn", { date: renewsLabel })
+                    : t("pro.renewsOn", { date: renewsLabel })}
+                </li>
               ) : null}
             </ul>
 
@@ -205,12 +212,18 @@ export default async function ProMarketingPage({
             {billing.canManageBilling && stripeReady ? (
               <div className="mt-4">
                 <BillingPortalButton
-                  label={t("pro.manageBilling")}
+                  label={
+                    cancelScheduled
+                      ? t("pro.manageBillingCanceling")
+                      : t("pro.manageBilling")
+                  }
                   errorLabel={t("pro.checkoutError")}
                   className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-secondary px-4 py-2.5 text-sm font-semibold text-on-secondary disabled:opacity-60 sm:w-auto"
                 />
                 <p className="mt-2 text-xs text-on-surface-variant">
-                  {t("pro.manageBillingHint")}
+                  {cancelScheduled
+                    ? t("pro.manageBillingHintCanceling")
+                    : t("pro.manageBillingHint")}
                 </p>
               </div>
             ) : null}
@@ -431,7 +444,11 @@ export default async function ProMarketingPage({
           <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-stretch">
             {billing.canManageBilling && stripeReady ? (
               <BillingPortalButton
-                label={t("pro.manageBilling")}
+                label={
+                  cancelScheduled
+                    ? t("pro.manageBillingCanceling")
+                    : t("pro.manageBilling")
+                }
                 errorLabel={t("pro.checkoutError")}
                 className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary disabled:opacity-60 sm:w-auto"
               />

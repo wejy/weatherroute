@@ -105,7 +105,7 @@ export default async function LoginPage({
             <form action={loginDemoAction}>
               <button
                 type="submit"
-                className="w-full rounded-lg bg-primary py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container"
+                className="w-full rounded-lg bg-primary py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container"
               >
                 {t("login.continueDemo")}
               </button>

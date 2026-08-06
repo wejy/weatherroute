@@ -155,14 +155,14 @@ export function SoftPaywall({
         {isProMonthlyCap || (isRoute && isProFairUseCap) ? (
           <Link
             href={isRoute ? "/" : "/"}
-            className="rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container"
+            className="rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container"
           >
             {t("pro.ctaDiscover")}
           </Link>
         ) : isProOneTimeCap || isFreeTier ? (
           <Link
             href="/pro"
-            className="rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container"
+            className="rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container"
           >
             {t("paywall.upgradePro")}
           </Link>
@@ -170,7 +170,7 @@ export function SoftPaywall({
           <>
             <Link
               href="/login"
-              className="rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container"
+              className="rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container"
             >
               {t("paywall.signIn")}
             </Link>
@@ -233,17 +233,35 @@ export function SoftPaywall({
 }
 
 /** Small remaining-searches chip for the discover header. */
+export function shouldShowQuotaRemainingHint(opts: {
+  remaining: number;
+  limit: number;
+  kind?: "anon" | "free" | "pro_monthly" | "pro_one_time";
+}): boolean {
+  const { remaining, limit, kind } = opts;
+  if (limit <= 0) return false;
+  // Pro quotas are large — only nudge when ≤ 25% remain.
+  if (kind === "pro_monthly" || kind === "pro_one_time") {
+    return remaining <= limit / 4;
+  }
+  return true;
+}
+
 export function QuotaHint({
   remaining,
   limit,
+  kind,
+  className,
 }: {
   remaining: number;
   limit: number;
+  kind?: "anon" | "free" | "pro_monthly" | "pro_one_time";
+  className?: string;
 }) {
   const { t } = useI18n();
-  if (limit <= 0) return null;
+  if (!shouldShowQuotaRemainingHint({ remaining, limit, kind })) return null;
   return (
-    <p className="text-sm text-on-surface-variant">
+    <p className={className ?? "text-sm text-on-surface-variant"}>
       {t("paywall.remaining", {
         remaining: String(remaining),
         limit: String(limit),

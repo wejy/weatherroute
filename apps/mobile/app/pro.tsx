@@ -67,6 +67,7 @@ export default function ProMarketingScreen() {
   const [canManageBilling, setCanManageBilling] = useState(false);
   const [proSince, setProSince] = useState<string | null>(null);
   const [currentPeriodEnd, setCurrentPeriodEnd] = useState<string | null>(null);
+  const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(false);
   const [oneTimePaidAt, setOneTimePaidAt] = useState<string | null>(null);
   const [oneTimeExpiresAt, setOneTimeExpiresAt] = useState<string | null>(null);
   const [payments, setPayments] = useState<PaymentRow[]>([]);
@@ -84,6 +85,7 @@ export default function ProMarketingScreen() {
     setCanManageBilling(s.canManageBilling);
     setProSince(s.proSince);
     setCurrentPeriodEnd(s.currentPeriodEnd);
+    setCancelAtPeriodEnd(s.cancelAtPeriodEnd);
     setOneTimePaidAt(s.oneTimePaidAt);
     setOneTimeExpiresAt(s.oneTimeExpiresAt);
 
@@ -215,7 +217,9 @@ export default function ProMarketingScreen() {
             <Text style={styles.statusEyebrow}>{t("pro.statusTitle")}</Text>
             <Text style={styles.statusTitle}>
               {isPro
-                ? t("pro.statusActive")
+                ? cancelAtPeriodEnd
+                  ? t("pro.statusCanceling")
+                  : t("pro.statusActive")
                 : t("pro.currentPlan", { plan: planLabel })}
             </Text>
             {isPro ? (
@@ -235,7 +239,9 @@ export default function ProMarketingScreen() {
             ) : null}
             {(plan === "monthly" || plan === "yearly") && renewsLabel ? (
               <Text style={styles.statusLine}>
-                {t("pro.renewsOn", { date: renewsLabel })}
+                {cancelAtPeriodEnd
+                  ? t("pro.cancelingEndsOn", { date: renewsLabel })
+                  : t("pro.renewsOn", { date: renewsLabel })}
               </Text>
             ) : null}
 
@@ -283,12 +289,18 @@ export default function ProMarketingScreen() {
                   ) : (
                     <Text style={styles.secondaryText}>
                       {allowStripe
-                        ? t("pro.manageBilling")
+                        ? cancelAtPeriodEnd
+                          ? t("pro.manageBillingCanceling")
+                          : t("pro.manageBilling")
                         : t("pro.manageOnWeb")}
                     </Text>
                   )}
                 </Pressable>
-                <Text style={styles.statusHint}>{t("pro.manageBillingHint")}</Text>
+                <Text style={styles.statusHint}>
+                  {cancelAtPeriodEnd
+                    ? t("pro.manageBillingHintCanceling")
+                    : t("pro.manageBillingHint")}
+                </Text>
               </>
             ) : null}
           </View>
@@ -429,7 +441,9 @@ export default function ProMarketingScreen() {
             ) : (
               <Text style={styles.secondaryText}>
                 {allowStripe
-                  ? t("pro.manageBilling")
+                  ? cancelAtPeriodEnd
+                    ? t("pro.manageBillingCanceling")
+                    : t("pro.manageBilling")
                   : t("pro.manageOnWeb")}
               </Text>
             )}

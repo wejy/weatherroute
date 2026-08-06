@@ -6,6 +6,11 @@ import { deleteTripAction } from "@/server/actions/trips";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { formatDistanceKm } from "@/lib/distance";
+import {
+  formatDateKeyForLocale,
+  formatIsoDateForLocale,
+  type DateLocale,
+} from "@/lib/dates";
 import { env, hasDatabase } from "@/lib/env";
 import {
   isTravelMode,
@@ -57,13 +62,15 @@ function formatTripDates(
     startDate?: string | null;
     endDate?: string | null;
   },
-  locale: string,
+  locale: DateLocale,
 ): string | null {
   if (trip.startDate && trip.endDate) {
-    if (trip.startDate === trip.endDate) return trip.startDate;
-    return `${trip.startDate} – ${trip.endDate}`;
+    if (trip.startDate === trip.endDate) {
+      return formatDateKeyForLocale(trip.startDate, locale);
+    }
+    return `${formatDateKeyForLocale(trip.startDate, locale)} – ${formatDateKeyForLocale(trip.endDate, locale)}`;
   }
-  if (trip.startDate) return trip.startDate;
+  if (trip.startDate) return formatDateKeyForLocale(trip.startDate, locale);
   if (trip.datePreset === "today") return locale === "fi" ? "Tänään" : "Today";
   if (trip.datePreset === "tomorrow")
     return locale === "fi" ? "Huomenna" : "Tomorrow";
@@ -136,7 +143,7 @@ export default async function TripsPage({
           </div>
           <Link
             href="/"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-3 font-semibold text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container"
           >
             <span className="material-symbols-outlined">add</span>
             {t("trips.discoverMore")}
@@ -249,10 +256,14 @@ export default async function TripsPage({
                         {datesLabel}
                       </span>
                     ) : null}
-                    <span>
-                      {new Date(trip.createdAt).toLocaleDateString(
-                        locale === "fi" ? "fi-FI" : "en-GB",
-                      )}
+                    <span className="flex items-center gap-1">
+                      <span
+                        className="material-symbols-outlined text-[18px]"
+                        aria-hidden="true"
+                      >
+                        bookmark
+                      </span>
+                      {formatIsoDateForLocale(trip.createdAt, locale)}
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-2">

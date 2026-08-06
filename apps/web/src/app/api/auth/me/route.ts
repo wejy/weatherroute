@@ -37,6 +37,7 @@ export async function GET(request: Request) {
       canManageBilling: billing.canManageBilling,
       proSince: billing.proSince,
       currentPeriodEnd: billing.currentPeriodEnd,
+      cancelAtPeriodEnd: billing.cancelAtPeriodEnd,
       oneTimePaidAt: billing.oneTimePaidAt,
       oneTimeExpiresAt: billing.oneTimeExpiresAt,
       sameCountryOnly: sameCountry.preference,

@@ -394,7 +394,7 @@ export default async function DestinationPage({
                   <input type="hidden" name="distanceKm" value={distanceKm} />
                   <button
                     type="submit"
-                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-on-primary shadow-sm transition-colors hover:bg-primary-container"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-on-primary shadow-sm transition-colors hover:bg-primary-container hover:text-on-primary-container"
                   >
                     <span className="material-symbols-outlined text-[18px]">
                       bookmark

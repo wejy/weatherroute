@@ -17,12 +17,14 @@
   --on-surface-variant: #464555;
   --inverse-surface: #302f39;
   --inverse-on-surface: #f3effc;
+  /* Borders/dividers only — never use as text (fails AA on surfaces). */
   --outline: #5f5e6e;
   --outline-variant: #c7c4d8;
   --primary: #14b863;
   --on-primary: #ffffff;
+  /* Filled accents: pair with on-primary-container, never text-primary on this fill. */
   --primary-container: #34d399;
-  --on-primary-container: #ecfdf5;
+  --on-primary-container: #064e3b;
   --primary-fixed: #d1fae5;
   --primary-fixed-dim: #a7f3d0;
   --on-primary-fixed: #064e3b;
@@ -72,10 +74,12 @@
   --on-surface-variant: #b4b2c0;
   --inverse-surface: #e8e6f2;
   --inverse-on-surface: #1b1b24;
+  /* Borders/dividers only — never use as text. */
   --outline: #8e8c9c;
   --outline-variant: #3e3e4a;
   --primary: #34d399;
   --on-primary: #053b24;
+  /* Do not put text-primary on primary-container (~2.8:1); use on-primary-container. */
   --primary-container: #0b7a4a;
   --on-primary-container: #d1fae5;
   --primary-fixed: #064e3b;

@@ -208,7 +208,7 @@ const fi = {
   routes: {
     dryTrip: "Kuivuusarvio",
     dryTripDesc:
-      "Arvio siitä, kuinka kuiva reitin kostein kohta näyttää tälle lähdölle (100 − huippusade %). Ei takuu.",
+      "Arvio siitä, kuinka todennäköisesti reitti pysyy kuivana.",
     bestDeparture: "Paras lähtöaika",
     departureHint:
       "Lähde noin klo {time}, jotta matka {from}–{to} on kuivin. Suurin saderiski lähellä: {place} ({rain} %).",
@@ -253,7 +253,7 @@ const fi = {
       "Näiden paikkojen välillä ei löytynyt pyörä- tai lauttayhteyttä. Kartalla näkyvät vain päätepisteet säätä varten — tämä ei todennäköisesti ole pyöräiltävä reitti.",
     durationUnavailable: "Matka-aikaa ei saatavilla",
     straightLineDistance: "Lintuperspektiivi {distance}",
-    windowPeakRain: "Kohteen huippusaderiski {pct} % (valitut päivät)",
+    windowPeakRain: "Kohteen korkein saderiski {pct} % (valitut päivät)",
     arrivalRain: "Saapumisella (paras lähtö): {pct} %",
     unreachableDepartureHint:
       "Sää päätepisteissä noin {time}. {mode}-reittiä ei ole, joten käytävää ei voida ajoittaa.",
@@ -387,12 +387,15 @@ const fi = {
     subscriptionTitle: "Tilaus",
     subscriptionBody:
       "Avaa laajemmat säteet, enemmän Löydä-tuloksia, 500 reittihakua/kk, lähtöajan ikkuna reiteillä, saman maan rajaus ja tallennetut reitit Kerta-, Jatkuva- tai Vuosi-Prolla.",
-    subscriptionCta: "Katso tilaukset ja hinnat",
+    subscriptionCta: "Katso tilaus ja hinnat",
     subscriptionSoon: "Stripe-avaimia ei ole vielä määritetty.",
     subscriptionSignInHint: "Kirjaudu nähdäksesi tilauksesi ja hallitaksesi laskutusta.",
     subscriptionManage: "Hallitse laskutusta",
+    subscriptionManageCanceling: "Hallitse tai jatka tilausta",
     subscriptionStatusHint:
       "Peruuta tilaus tai lataa kuitit Stripe Customer Portalissa.",
+    subscriptionStatusHintCanceling:
+      "Jatka tilausta tai lataa kuitit Stripe Customer Portalissa ennen Pron päättymistä.",
     planOneTime: "Tilaus: Kerta-Pro",
     planMonthly: "Tilaus: Jatkuva Pro",
     planYearly: "Tilaus: Vuosi-Pro",
@@ -689,8 +692,11 @@ const fi = {
     buyMonthly: "Tilaa Jatkuva · 2,99 €",
     buyYearly: "Tilaa Vuosi · 30 €",
     manageBilling: "Hallitse tilausta",
+    manageBillingCanceling: "Hallitse tai jatka tilausta",
     manageBillingHint:
       "Peruuta tilaus tai lataa kuitit Stripe Customer Portalissa.",
+    manageBillingHintCanceling:
+      "Jatka tilausta tai lataa kuitit Stripe Customer Portalissa ennen Pron päättymistä.",
     paymentHistoryTitle: "Maksuhistoria",
     paymentDate: "Päivä",
     paymentAmount: "Summa",
@@ -702,9 +708,11 @@ const fi = {
     currentPlan: "Tilauksesi: {plan}",
     statusTitle: "Pro-tila",
     statusActive: "Pro on aktiivinen",
+    statusCanceling: "Pro on aktiivinen — peruutus ajastettu",
     startedOn: "Alkanut {date}",
     validUntil: "Voimassa {date} asti",
     renewsOn: "Uusitaan {date}",
+    cancelingEndsOn: "Päättyy {date} — ei uusita",
     checkoutSuccess: "Maksu onnistui — Pro on käytössä. Kiitos!",
     checkoutCancel: "Maksusta poistuttiin — veloitusta ei tehty.",
     checkoutError: "Maksuprosessia ei voitu aloittaa. Yritä uudelleen tai tarkista Stripe-asetukset.",
@@ -745,9 +753,9 @@ const fi = {
     routeQuotaUsedNetwork:
       "Käytetty {used}/{limit} reittihakua tältä verkolta tänään",
     upgradePro: "Katso Pro-tilaukset",
-    quotaUsed: "Käytetty {used}/{limit} ilmaista hakua",
+    quotaUsed: "Käytetty {used}/{limit} hakua",
     quotaUsedNetwork: "Käytetty {used}/{limit} hakua tältä verkolta tänään",
-    remaining: "{remaining}/{limit} ilmaista hakua jäljellä",
+    remaining: "{remaining}/{limit} hakua jäljellä",
     signIn: "Kirjaudu sähköpostilla",
     shareForCredit: "Jaa ja saa +1 haku",
     sharing: "Valmistellaan jakoa…",

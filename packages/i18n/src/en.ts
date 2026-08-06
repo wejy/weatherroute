@@ -387,8 +387,11 @@ const en = {
     subscriptionSoon: "Stripe keys are not configured yet.",
     subscriptionSignInHint: "Sign in to see your plan and manage billing.",
     subscriptionManage: "Manage billing",
+    subscriptionManageCanceling: "Manage or resume subscription",
     subscriptionStatusHint:
       "Cancel or download invoices in the Stripe Customer Portal.",
+    subscriptionStatusHintCanceling:
+      "Resume renewal or download invoices in the Stripe Customer Portal before Pro ends.",
     planOneTime: "Plan: One-time Pro",
     planMonthly: "Plan: Monthly Pro",
     planYearly: "Plan: Yearly Pro",
@@ -685,8 +688,11 @@ const en = {
     buyMonthly: "Subscribe Monthly · €2.99",
     buyYearly: "Subscribe Yearly · €30",
     manageBilling: "Manage billing",
+    manageBillingCanceling: "Manage or resume subscription",
     manageBillingHint:
       "Cancel a subscription or download invoices in the Stripe Customer Portal.",
+    manageBillingHintCanceling:
+      "Resume renewal or download invoices in the Stripe Customer Portal before Pro ends.",
     paymentHistoryTitle: "Payment history",
     paymentDate: "Date",
     paymentAmount: "Amount",
@@ -698,9 +704,11 @@ const en = {
     currentPlan: "Your plan: {plan}",
     statusTitle: "Pro status",
     statusActive: "Pro is active",
+    statusCanceling: "Pro is active — cancellation scheduled",
     startedOn: "Started {date}",
     validUntil: "Valid until {date}",
     renewsOn: "Renews on {date}",
+    cancelingEndsOn: "Ends on {date} — won’t renew",
     checkoutSuccess: "Payment successful — Pro is active. Thanks!",
     checkoutCancel: "Checkout canceled — no charge was made.",
     checkoutError: "Couldn’t start checkout. Try again or check Stripe config.",

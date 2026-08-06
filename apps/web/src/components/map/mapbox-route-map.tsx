@@ -10,6 +10,10 @@ import { weatherIcon } from "@/lib/weather-icons";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { useResolvedTheme } from "@/components/theme/theme-provider";
 import { mapboxDarkBasemapClass, mapboxStyleForTheme } from "@/lib/theme";
+import {
+  routeWarnBadgeHtml,
+  routeWaypointChipHtml,
+} from "@/lib/map-marker-chrome";
 
 function escapeHtml(value: string): string {
   return value
@@ -150,26 +154,22 @@ function weatherMarkerEl(
   el.style.cursor = "pointer";
 
   const border = mapWeatherColor(wp.tone, wp.condition, wp.advisories);
-  const scale = selected ? "scale(1.08)" : "none";
   const badgeColor = severe
     ? SEVERE_ALERT_COLOR
     : hasWarning
       ? WEATHER_TONE_COLORS.warning
       : WEATHER_TONE_COLORS.caution;
   const warnBadge =
-    hasWarning || hasCaution
-      ? `<span style="position:absolute;top:-6px;right:-6px;width:16px;height:16px;border-radius:999px;background:${badgeColor};border:2px solid #fff;display:flex;align-items:center;justify-content:center;font:700 9px/1 system-ui,sans-serif;color:#fff;" aria-hidden="true">!</span>`
-      : "";
+    hasWarning || hasCaution ? routeWarnBadgeHtml(badgeColor) : "";
 
-  el.innerHTML = `<div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;transform:${scale};">
-    <div style="position:relative;display:flex;align-items:center;gap:6px;background:rgba(252,248,255,.98);border-radius:14px;padding:8px 10px;font:600 12px/1.1 system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.14);border:2px solid ${border};color:#1b1b24;white-space:nowrap;">
-      <span style="font-size:15px;font-variant-numeric:tabular-nums;">${Math.round(wp.temperatureC)}°</span>
-      <span style="width:1px;height:14px;background:rgba(0,0,0,.12);"></span>
-      <span style="font-size:10px;font-weight:600;color:#5c5a6e;">${wp.rainProbability}%</span>
-      ${warnBadge}
-    </div>
-    <span style="max-width:110px;overflow:hidden;text-overflow:ellipsis;font:600 10px/1.2 system-ui,sans-serif;color:#3d3b4a;background:rgba(255,255,255,.9);padding:2px 6px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.08);">${escapeHtml(wp.name)}</span>
-  </div>`;
+  el.innerHTML = routeWaypointChipHtml({
+    tempLabel: `${Math.round(wp.temperatureC)}°`,
+    rainPct: wp.rainProbability,
+    toneBorder: border,
+    warnBadgeHtml: warnBadge,
+    nameHtml: escapeHtml(wp.name),
+    selected,
+  });
   return el;
 }
 
@@ -215,6 +215,18 @@ export function MapboxRouteMap({
     .join("|");
 
   const selected = selectedIdx != null ? waypoints[selectedIdx] : null;
+
+  useEffect(() => {
+    if (!selected) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setSelectedIdx(null);
+      }
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [selected]);
 
   // Create map once per route geometry / endpoints.
   useEffect(() => {
@@ -398,7 +410,16 @@ export function MapboxRouteMap({
 
     if (map.isStyleLoaded()) sync();
     else map.once("load", sync);
-  }, [waypoints, selectedIdx, from, to, geometry, alternatives, drawRouteLine]);
+  }, [
+    waypoints,
+    selectedIdx,
+    from,
+    to,
+    geometry,
+    alternatives,
+    drawRouteLine,
+    theme,
+  ]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -434,7 +455,7 @@ export function MapboxRouteMap({
         <div
           className="pointer-events-auto absolute z-20 w-[min(260px,calc(100vw-2rem))] -translate-x-1/2 -translate-y-[calc(100%+12px)] rounded-xl border border-outline-variant/30 bg-surface p-3 shadow-[0px_12px_36px_rgba(0,0,0,0.18)]"
           style={{ left: anchor.x, top: anchor.y }}
-          role="dialog"
+          role="region"
           aria-label={selected.name}
           onClick={(e) => e.stopPropagation()}
         >

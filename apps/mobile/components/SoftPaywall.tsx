@@ -231,17 +231,33 @@ export function SoftPaywall({
   );
 }
 
+export function shouldShowQuotaRemainingHint(opts: {
+  remaining: number;
+  limit: number;
+  kind?: "anon" | "free" | "pro_monthly" | "pro_one_time";
+}): boolean {
+  const { remaining, limit, kind } = opts;
+  if (limit <= 0) return false;
+  // Pro quotas are large — only nudge when ≤ 25% remain.
+  if (kind === "pro_monthly" || kind === "pro_one_time") {
+    return remaining <= limit / 4;
+  }
+  return true;
+}
+
 export function QuotaHint({
   remaining,
   limit,
+  kind,
 }: {
   remaining: number;
   limit: number;
+  kind?: "anon" | "free" | "pro_monthly" | "pro_one_time";
 }) {
   const { t } = useI18n();
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
-  if (limit <= 0) return null;
+  if (!shouldShowQuotaRemainingHint({ remaining, limit, kind })) return null;
   return (
     <Text style={styles.hint}>
       {t("paywall.remaining", {

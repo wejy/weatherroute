@@ -27,6 +27,7 @@ export type SubscriptionRow = {
   stripeSubscriptionId: string | null;
   oneTimePaidAt: Date | null;
   currentPeriodEnd: Date | null;
+  cancelAtPeriodEnd: boolean;
   proSince: Date | null;
 };
 
@@ -53,6 +54,8 @@ export type BillingEntitlement = {
   proSince: string | null;
   /** Recurring period end / next renewal (ISO). */
   currentPeriodEnd: string | null;
+  /** Recurring canceled in portal; access until currentPeriodEnd. */
+  cancelAtPeriodEnd: boolean;
 };
 
 function emptyEntitlement(tier: DiscoverTier): BillingEntitlement {
@@ -72,6 +75,7 @@ function emptyEntitlement(tier: DiscoverTier): BillingEntitlement {
     oneTimeExpiresAt: null,
     proSince: null,
     currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
   };
 }
 
@@ -94,6 +98,7 @@ export async function getSubscriptionRow(
     const [row] = await db
       .select({
         ...baseSelect,
+        cancelAtPeriodEnd: subscriptions.cancelAtPeriodEnd,
         proSince: subscriptions.proSince,
       })
       .from(subscriptions)
@@ -101,21 +106,41 @@ export async function getSubscriptionRow(
       .limit(1);
     return row ?? null;
   } catch (err) {
-    // Pre-migration DBs lack pro_since — don't wipe entitlement to "free".
+    // Pre-migration DBs may lack newer columns — don't wipe entitlement to "free".
     log.warn(
       { err, userId },
-      "subscription select with pro_since failed; retrying without column",
+      "subscription select with new columns failed; retrying without cancel_at_period_end",
     );
     try {
       const [row] = await db
-        .select(baseSelect)
+        .select({
+          ...baseSelect,
+          proSince: subscriptions.proSince,
+        })
         .from(subscriptions)
         .where(eq(subscriptions.userId, userId))
         .limit(1);
-      return row ? { ...row, proSince: null } : null;
+      return row
+        ? { ...row, cancelAtPeriodEnd: false }
+        : null;
     } catch (err2) {
-      log.error({ err: err2, userId }, "subscription select failed");
-      return null;
+      log.warn(
+        { err: err2, userId },
+        "subscription select with pro_since failed; retrying base columns",
+      );
+      try {
+        const [row] = await db
+          .select(baseSelect)
+          .from(subscriptions)
+          .where(eq(subscriptions.userId, userId))
+          .limit(1);
+        return row
+          ? { ...row, cancelAtPeriodEnd: false, proSince: null }
+          : null;
+      } catch (err3) {
+        log.error({ err: err3, userId }, "subscription select failed");
+        return null;
+      }
     }
   }
 }
@@ -142,7 +167,12 @@ export async function getBillingEntitlement(
 
   const savedTripCount = await countTripsForUser(userId);
 
-  if (await isAdminUser(userId)) {
+  let row = await getSubscriptionRow(userId);
+  const isAdmin = await isAdminUser(userId);
+
+  // Admins always get Pro access, but if they also have a Stripe customer,
+  // keep portal / cancel_at_period_end in sync like a normal subscriber.
+  if (isAdmin && !row?.stripeCustomerId) {
     return {
       tier: "pro",
       plan: "monthly",
@@ -159,23 +189,24 @@ export async function getBillingEntitlement(
       oneTimeExpiresAt: null,
       proSince: null,
       currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
     };
   }
 
-  let row = await getSubscriptionRow(userId);
-
   // Missed webhooks (e.g. local stripe listen down): repair from Stripe.
-  if (
-    row?.stripeCustomerId &&
-    !subscriptionGrantsPro(row) &&
-    process.env.STRIPE_SECRET_KEY?.trim()
-  ) {
-    const { reconcileSubscriptionFromStripe } = await import(
-      "@/server/billing/sync"
-    );
-    const changed = await reconcileSubscriptionFromStripe(userId);
-    if (changed) {
-      row = await getSubscriptionRow(userId);
+  // Also refresh cancel_at_period_end while Pro is still active.
+  if (row?.stripeCustomerId && process.env.STRIPE_SECRET_KEY?.trim()) {
+    const needsEntitlementRepair = !subscriptionGrantsPro(row);
+    const needsCancelSync =
+      subscriptionGrantsPro(row) && isRecurringPlan(row.plan);
+    if (needsEntitlementRepair || needsCancelSync) {
+      const { reconcileSubscriptionFromStripe } = await import(
+        "@/server/billing/sync"
+      );
+      const changed = await reconcileSubscriptionFromStripe(userId);
+      if (changed) {
+        row = await getSubscriptionRow(userId);
+      }
     }
   }
 
@@ -192,13 +223,15 @@ export async function getBillingEntitlement(
     plan === "one_time" &&
     isProBillingStatus(row.status) &&
     subscriptionGrantsPro(row);
-  const pro = subscriptionGrantsPro(row);
-  const effectivePlan: BillingPlan = pro ? plan : "none";
-  const maxSaved = maxSavedTripsForPlan(
-    row.plan,
-    row.status,
-    row.oneTimePaidAt,
-  );
+  const pro = isAdmin || subscriptionGrantsPro(row);
+  const effectivePlan: BillingPlan = pro
+    ? plan !== "none"
+      ? plan
+      : "monthly"
+    : "none";
+  const maxSaved = isAdmin
+    ? null
+    : maxSavedTripsForPlan(row.plan, row.status, row.oneTimePaidAt);
   const canSaveTrip =
     maxSaved === null ? pro : pro && savedTripCount < maxSaved;
   const expires = oneTimeExpiresAt(row.oneTimePaidAt);
@@ -207,13 +240,15 @@ export async function getBillingEntitlement(
   return {
     tier: pro ? "pro" : "free",
     plan: effectivePlan,
-    status: row.status,
+    status: isAdmin && !subscriptionGrantsPro(row) ? "active" : row.status,
     maxSavedTrips: maxSaved,
     savedTripCount,
     canSaveTrip,
     stripeCustomerId: row.stripeCustomerId,
     hasMonthlySubscription:
-      Boolean(row.stripeSubscriptionId) && isRecurringPlan(plan) && pro,
+      Boolean(row.stripeSubscriptionId) &&
+      isRecurringPlan(effectivePlan) &&
+      subscriptionGrantsPro(row),
     canManageBilling,
     oneTimePurchased: Boolean(row.oneTimePaidAt),
     oneTimeActive,
@@ -225,6 +260,10 @@ export async function getBillingEntitlement(
     currentPeriodEnd: row.currentPeriodEnd
       ? row.currentPeriodEnd.toISOString()
       : null,
+    cancelAtPeriodEnd:
+      Boolean(row.cancelAtPeriodEnd) &&
+      isRecurringPlan(effectivePlan) &&
+      subscriptionGrantsPro(row),
   };
 }
 
@@ -237,6 +276,7 @@ export async function upsertSubscription(
     stripeSubscriptionId?: string | null;
     oneTimePaidAt?: Date | null;
     currentPeriodEnd?: Date | null;
+    cancelAtPeriodEnd?: boolean;
     /** Only written when provided; activate path preserves existing. */
     proSince?: Date | null;
   },
@@ -254,6 +294,7 @@ export async function upsertSubscription(
       stripeSubscriptionId: patch.stripeSubscriptionId ?? null,
       oneTimePaidAt: patch.oneTimePaidAt ?? null,
       currentPeriodEnd: patch.currentPeriodEnd ?? null,
+      cancelAtPeriodEnd: patch.cancelAtPeriodEnd ?? false,
       proSince: patch.proSince ?? null,
       updatedAt: new Date(),
     })
@@ -273,6 +314,9 @@ export async function upsertSubscription(
           : {}),
         ...(patch.currentPeriodEnd !== undefined
           ? { currentPeriodEnd: patch.currentPeriodEnd }
+          : {}),
+        ...(patch.cancelAtPeriodEnd !== undefined
+          ? { cancelAtPeriodEnd: patch.cancelAtPeriodEnd }
           : {}),
         ...(patch.proSince !== undefined
           ? { proSince: patch.proSince }
@@ -311,6 +355,7 @@ export async function activateCheckoutPlan(opts: {
   stripeCustomerId: string | null;
   stripeSubscriptionId?: string | null;
   currentPeriodEnd?: Date | null;
+  cancelAtPeriodEnd?: boolean;
 }): Promise<void> {
   const existing = await getSubscriptionRow(opts.userId);
   // Refresh the one-time window on every one-time purchase.
@@ -336,6 +381,7 @@ export async function activateCheckoutPlan(opts: {
       : null,
     oneTimePaidAt,
     currentPeriodEnd: recurring ? (opts.currentPeriodEnd ?? null) : null,
+    cancelAtPeriodEnd: recurring ? Boolean(opts.cancelAtPeriodEnd) : false,
     proSince,
   });
 }
@@ -359,6 +405,7 @@ export async function deactivateMonthlySubscription(
       stripeSubscriptionId: null,
       oneTimePaidAt: existing.oneTimePaidAt,
       currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
       proSince: existing.proSince,
     });
     return;
@@ -371,6 +418,7 @@ export async function deactivateMonthlySubscription(
     stripeSubscriptionId: null,
     oneTimePaidAt: existing.oneTimePaidAt,
     currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
     proSince: existing.proSince,
   });
 }

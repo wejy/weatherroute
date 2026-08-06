@@ -129,12 +129,12 @@ export default async function HomePage({
                 </Link>
               </p>
               {gate.quota && !gate.paywalled ? (
-                <div className="mt-4">
-                  <QuotaHint
-                    remaining={gate.quota.remaining}
-                    limit={gate.quota.limit}
-                  />
-                </div>
+                <QuotaHint
+                  className="mt-4 text-sm text-on-surface-variant"
+                  remaining={gate.quota.remaining}
+                  limit={gate.quota.limit}
+                  kind={gate.quota.kind}
+                />
               ) : null}
             </div>
 
