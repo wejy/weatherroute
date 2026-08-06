@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -37,8 +37,13 @@ import {
   type DatePreset,
   type DateWindow,
 } from "@/lib/dates";
-import { colors } from "@/constants/Colors";
+import type { AppColors } from "@/constants/Colors";
+import { useColors } from "@/lib/theme";
 import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
+import {
+  detectCurrentPlace,
+  LocationDetectError,
+} from "@/lib/location";
 import type {
   PlaceDto,
   RouteAlternativeDto,
@@ -65,6 +70,9 @@ function alternativeTitle(
 
 export default function RoutesScreen() {
   const { t, translateCondition, locale } = useI18n();
+
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const minDate = minForecastDateKey();
   const maxDate = maxForecastDateKey();
@@ -74,6 +82,7 @@ export default function RoutesScreen() {
   const [toQuery, setToQuery] = useState("");
   const [fromPlace, setFromPlace] = useState<PlaceDto | null>(null);
   const [toPlace, setToPlace] = useState<PlaceDto | null>(null);
+  const [locatingFrom, setLocatingFrom] = useState(false);
   const [mode, setMode] = useState<TravelMode>("driving");
   const [dateWindow, setDateWindow] = useState<DateWindow>(() =>
     resolveDateWindow({ preset: "weekend", locale }),
@@ -115,6 +124,28 @@ export default function RoutesScreen() {
   }, [locale]);
 
   const isPro = tier === "pro";
+
+  const locateFrom = useCallback(async () => {
+    if (!apiReady) {
+      setError(t("mobile.apiMissing"));
+      return;
+    }
+    setLocatingFrom(true);
+    setError(null);
+    try {
+      const place = await detectCurrentPlace(t("mobile.here"), locale);
+      setFromPlace(place);
+      setFromQuery(place.placeName);
+    } catch (e) {
+      if (e instanceof LocationDetectError && e.code === "denied") {
+        setError(t("location.denied"));
+      } else {
+        setError(t("location.failed"));
+      }
+    } finally {
+      setLocatingFrom(false);
+    }
+  }, [apiReady, locale, t]);
 
   const loadRoute = useCallback(
     async (opts?: {
@@ -260,7 +291,11 @@ export default function RoutesScreen() {
           value={fromQuery}
           onChange={setFromQuery}
           onPlaceSelect={setFromPlace}
-          placeholder={t("routes.fromPlaceholder")}
+          placeholder={
+            locatingFrom
+              ? t("location.detecting")
+              : t("routes.fromPlaceholder")
+          }
           selected={Boolean(fromPlace)}
           proximity={
             fromPlace
@@ -269,7 +304,25 @@ export default function RoutesScreen() {
                 ? { lat: toPlace.lat, lon: toPlace.lon }
                 : null
           }
-          editable={apiReady}
+          editable={apiReady && !locatingFrom}
+          trailing={
+            <Pressable
+              onPress={() => void locateFrom()}
+              disabled={locatingFrom || !apiReady}
+              accessibilityLabel={t("location.useMyLocation")}
+              style={[styles.geoBtn, locatingFrom && styles.disabled]}
+            >
+              {locatingFrom ? (
+                <ActivityIndicator color={colors.primary} />
+              ) : (
+                <FontAwesome
+                  name="location-arrow"
+                  size={18}
+                  color={colors.primary}
+                />
+              )}
+            </Pressable>
+          }
         />
 
         <Text style={styles.label}>{t("routes.to")}</Text>
@@ -931,7 +984,8 @@ export default function RoutesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   content: { paddingHorizontal: 20, paddingBottom: 48, gap: 14 },
   brand: {
@@ -1041,6 +1095,16 @@ const styles = StyleSheet.create({
   chipText: { fontWeight: "600", color: colors.onSurface, fontSize: 13 },
   chipTextActive: { color: colors.onAccent },
   chipTextLocked: { color: colors.onSurfaceVariant },
+  geoBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceContainer,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   hint: { fontSize: 13, color: colors.onSurfaceVariant, lineHeight: 18 },
   hintLink: { color: colors.primary, fontWeight: "700" },
   dateRangeHint: {
@@ -1299,3 +1363,4 @@ const styles = StyleSheet.create({
     color: colors.onSurfaceVariant,
   },
 });
+}

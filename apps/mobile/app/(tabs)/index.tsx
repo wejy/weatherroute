@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -40,7 +40,8 @@ import {
   type DatePreset,
   type DateWindow,
 } from "@/lib/dates";
-import { colors } from "@/constants/Colors";
+import type { AppColors } from "@/constants/Colors";
+import { useColors } from "@/lib/theme";
 import { DestinationCard } from "@/components/DestinationCard";
 import { SoftPaywall, QuotaHint } from "@/components/SoftPaywall";
 import { PlaceAutocomplete } from "@/components/PlaceAutocomplete";
@@ -55,6 +56,9 @@ type DistanceOption = (typeof DISTANCE_PRESET_KEYS)[number] | "custom";
 
 export default function DiscoverScreen() {
   const { t, translateCondition, locale } = useI18n();
+
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
   const autoStarted = useRef(false);
   const minDate = minForecastDateKey();
@@ -820,7 +824,8 @@ export default function DiscoverScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   content: { paddingHorizontal: 20, paddingBottom: 48, gap: 14 },
   brand: {
@@ -1019,7 +1024,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: 1,
     borderColor: colors.primary + "40",
-    backgroundColor: colors.surfaceContainerLowest,
+    backgroundColor: colors.surfaceLowest,
     gap: 10,
   },
   pendingText: {
@@ -1096,3 +1101,4 @@ const styles = StyleSheet.create({
   },
   empty: { color: colors.onSurfaceVariant, paddingVertical: 8 },
 });
+}

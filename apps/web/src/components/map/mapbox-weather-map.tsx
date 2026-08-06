@@ -11,10 +11,10 @@ import { circlePolygon, type WeatherMapProps } from "@/components/map/geo";
 import { destinationHref } from "@/lib/discover-query";
 import { MapMarkerPopup } from "@/components/map/map-marker-popup";
 import { useI18n } from "@/components/i18n/locale-provider";
+import { useResolvedTheme } from "@/components/theme/theme-provider";
+import { mapboxDarkBasemapClass, mapboxStyleForTheme } from "@/lib/theme";
 import { prefetchWikipediaForMarkers } from "@/lib/wikipedia-client";
 import type { MapMarkerDto } from "@/lib/types";
-
-const STYLE = "mapbox://styles/mapbox/light-v11";
 
 export function MapboxWeatherMap({
   markers,
@@ -26,6 +26,8 @@ export function MapboxWeatherMap({
   locationQuery,
 }: WeatherMapProps) {
   const { locale, t } = useI18n();
+  const theme = useResolvedTheme();
+  const mapStyle = mapboxStyleForTheme(theme);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -77,7 +79,7 @@ export function MapboxWeatherMap({
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: STYLE,
+      style: mapStyle,
       center,
       zoom: origin ? 6 : 4.5,
       attributionControl: true,
@@ -138,7 +140,7 @@ export function MapboxWeatherMap({
       map.remove();
       mapRef.current = null;
     };
-  }, [token, origin?.lat, origin?.lon, radiusKm, showRadius]);
+  }, [token, origin?.lat, origin?.lon, radiusKm, showRadius, mapStyle]);
 
   // Sync marker pins when data changes (without recreating the map).
   useEffect(() => {
@@ -241,7 +243,13 @@ export function MapboxWeatherMap({
   }, [markers, selectedId]);
 
   return (
-    <div className={cn("relative h-full w-full overflow-hidden", className)}>
+    <div
+      className={cn(
+        "relative h-full w-full overflow-hidden",
+        theme === "dark" && mapboxDarkBasemapClass,
+        className,
+      )}
+    >
       <div ref={containerRef} className="absolute inset-0 h-full w-full" />
       {showRadius && radiusKm < 15000 && (
         <div className="pointer-events-none absolute top-4 left-4 z-10 rounded-full border border-primary/20 bg-surface/90 px-3 py-1.5 text-sm font-medium text-primary shadow-sm backdrop-blur-md">

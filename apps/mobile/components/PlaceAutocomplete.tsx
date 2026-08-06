@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, useMemo } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -13,7 +13,8 @@ import {
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useI18n } from "@/lib/i18n";
 import { apiGet, ApiError } from "@/lib/api";
-import { colors } from "@/constants/Colors";
+import type { AppColors } from "@/constants/Colors";
+import { useColors } from "@/lib/theme";
 import type { PlaceDto } from "@/lib/types";
 
 type PlaceAutocompleteProps = {
@@ -49,6 +50,9 @@ export function PlaceAutocomplete({
   containerStyle,
 }: PlaceAutocompleteProps) {
   const { t, locale } = useI18n();
+
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const abortRef = useRef<AbortController | null>(null);
   const requestIdRef = useRef(0);
   const selectedLabelRef = useRef<string | null>(null);
@@ -223,7 +227,8 @@ export function PlaceAutocomplete({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   wrap: { gap: 6 },
   inputRow: { flexDirection: "row", gap: 8, alignItems: "center" },
   input: {
@@ -278,3 +283,4 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
+}

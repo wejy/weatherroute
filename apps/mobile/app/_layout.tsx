@@ -3,7 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { Platform } from "react-native";
 import { I18nProvider, useI18n } from "@/lib/i18n";
-import { colors } from "@/constants/Colors";
+import { ThemeProvider, useColors, useTheme } from "@/lib/theme";
 import { createModuleLogger } from "@/lib/logger";
 import { getApiBaseUrl } from "@/lib/api";
 
@@ -11,6 +11,8 @@ const log = createModuleLogger("root");
 
 function RootNavigator() {
   const { t } = useI18n();
+  const colors = useColors();
+  const { resolved } = useTheme();
 
   useEffect(() => {
     log.info(
@@ -24,7 +26,7 @@ function RootNavigator() {
 
   return (
     <>
-      <StatusBar style="dark" />
+      <StatusBar style={resolved === "dark" ? "light" : "dark"} />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: colors.surface },
@@ -54,7 +56,9 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <I18nProvider>
-      <RootNavigator />
+      <ThemeProvider>
+        <RootNavigator />
+      </ThemeProvider>
     </I18nProvider>
   );
 }

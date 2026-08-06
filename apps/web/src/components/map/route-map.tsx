@@ -10,7 +10,7 @@ const MapboxRouteMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center bg-[#dfe9f5] text-sm text-on-surface-variant">
+      <div className="flex h-full w-full items-center justify-center bg-surface-container text-sm text-on-surface-variant">
         Loading map…
       </div>
     ),
@@ -34,7 +34,7 @@ function MockRouteMap({
   return (
     <div
       className={cn(
-        "relative h-full w-full overflow-hidden bg-[#dfe9f5]",
+        "relative h-full w-full overflow-hidden bg-surface-container",
         className,
       )}
     >

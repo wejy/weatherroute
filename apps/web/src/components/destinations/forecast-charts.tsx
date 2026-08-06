@@ -25,6 +25,7 @@ import {
   temperatureSeriesGradientStops,
 } from "@/lib/temp-color";
 import { useI18n } from "@/components/i18n/locale-provider";
+import { useResolvedTheme } from "@/components/theme/theme-provider";
 import { translateCondition } from "@/i18n/translate";
 import type { Dictionary } from "@/i18n/dictionaries/en";
 import type { Translator } from "@/i18n/translate";
@@ -39,14 +40,26 @@ type HourlyPoint = {
   precipitationMm?: number;
 };
 
-const COLORS = {
-  secondary: "#006591",
-  secondaryBright: "#39b8fd",
-  surfaceVariant: "#e4e1ee",
-  onSurface: "#1b1b24",
-  onSurfaceVariant: "#464555",
-  grid: "rgba(70, 69, 85, 0.12)",
-};
+function chartPalette(theme: "light" | "dark") {
+  if (theme === "dark") {
+    return {
+      secondary: "#5ec8ff",
+      secondaryBright: "#7dd3fc",
+      surfaceVariant: "#2e2e3a",
+      onSurface: "#e8e6f2",
+      onSurfaceVariant: "#b4b2c0",
+      grid: "rgba(180, 178, 192, 0.18)",
+    };
+  }
+  return {
+    secondary: "#006591",
+    secondaryBright: "#39b8fd",
+    surfaceVariant: "#e4e1ee",
+    onSurface: "#1b1b24",
+    onSurfaceVariant: "#464555",
+    grid: "rgba(70, 69, 85, 0.12)",
+  };
+}
 
 /** Unique X key must be the ISO date — weekday labels alone collide (two Fridays). */
 function axisDayTick(date: string, days: ChartDay[]): string {
@@ -315,6 +328,8 @@ export function ForecastCharts({
   hourly?: HourlyForecastDto[];
 }) {
   const { t, dict, locale } = useI18n();
+  const theme = useResolvedTheme();
+  const COLORS = chartPalette(theme);
   const dateLocale = locale === "fi" ? "fi" : "en";
   const gid = useId().replace(/:/g, "");
   const tripWindowLabel = t("destination.tripWindow");

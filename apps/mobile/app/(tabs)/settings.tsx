@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -21,14 +21,24 @@ import {
   type DiscoverTier,
   type SessionUser,
 } from "@/lib/session";
-import { colors } from "@/constants/Colors";
+import type { AppColors } from "@/constants/Colors";
+import { useColors, useTheme, type ThemePreference } from "@/lib/theme";
 import {
   isStripeCheckoutAllowed,
   openWebProPage,
 } from "@/lib/billing";
 
+const THEME_OPTIONS: { value: ThemePreference; labelKey: "settings.themeSystem" | "settings.themeLight" | "settings.themeDark" }[] = [
+  { value: "system", labelKey: "settings.themeSystem" },
+  { value: "light", labelKey: "settings.themeLight" },
+  { value: "dark", labelKey: "settings.themeDark" },
+];
+
 export default function SettingsScreen() {
   const { t, locale } = useI18n();
+  const colors = useColors();
+  const { preference, setPreference } = useTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const api = getApiBaseUrl();
   const [user, setUser] = useState<SessionUser | null>(null);
   const [tier, setTier] = useState<DiscoverTier>("anon");
@@ -294,6 +304,35 @@ export default function SettingsScreen() {
         ) : null}
       </View>
 
+      <Text style={styles.label}>{t("settings.appearanceTitle")}</Text>
+      <View style={styles.card}>
+        <Text style={styles.cardBody}>{t("settings.themeHint")}</Text>
+        <Text style={styles.switchLabel}>{t("settings.themeLabel")}</Text>
+        <View style={styles.themeRow}>
+          {THEME_OPTIONS.map(({ value, labelKey }) => {
+            const active = preference === value;
+            return (
+              <Pressable
+                key={value}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                onPress={() => setPreference(value)}
+                style={[styles.themeChip, active && styles.themeChipActive]}
+              >
+                <Text
+                  style={[
+                    styles.themeChipText,
+                    active && styles.themeChipTextActive,
+                  ]}
+                >
+                  {t(labelKey)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+
       <Text style={styles.label}>{t("language.label")}</Text>
       <LanguageSwitcher />
 
@@ -306,7 +345,8 @@ export default function SettingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   content: { padding: 20, gap: 16 },
   title: {
@@ -376,4 +416,27 @@ const styles = StyleSheet.create({
   },
   signOutText: { color: colors.error, fontWeight: "700" },
   disabled: { opacity: 0.55 },
-});
+  themeRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 4 },
+  themeChip: {
+    minHeight: 44,
+    paddingHorizontal: 16,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceContainer,
+    justifyContent: "center",
+  },
+  themeChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  themeChipText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: colors.onSurface,
+  },
+  themeChipTextActive: {
+    color: colors.onPrimary,
+  },
+  });
+}

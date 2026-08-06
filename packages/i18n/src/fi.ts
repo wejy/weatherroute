@@ -380,9 +380,10 @@ const fi = {
       "Kirjaudu ja päivitä Prohon rajoittaaksesi haun yhteen maahan.",
     appearanceTitle: "Ulkoasu",
     themeLabel: "Teema",
+    themeSystem: "Järjestelmä",
     themeLight: "Vaalea",
     themeDark: "Tumma",
-    themeComingSoon: "Tumma tila tulee pian — toistaiseksi käytössä on vaalea.",
+    themeHint: "Valitse vaalea, tumma tai seuraa laitteen asetusta.",
     subscriptionTitle: "Tilaus",
     subscriptionBody:
       "Avaa laajemmat säteet, enemmän Löydä-tuloksia, 500 reittihakua/kk, lähtöajan ikkuna reiteillä, saman maan rajaus ja tallennetut reitit Kerta-, Jatkuva- tai Vuosi-Prolla.",

@@ -14,12 +14,16 @@ import { Stack, useRouter } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { ApiError } from "@/lib/api";
 import { requestOtp, verifyOtp } from "@/lib/session";
-import { colors } from "@/constants/Colors";
+import type { AppColors } from "@/constants/Colors";
+import { useColors } from "@/lib/theme";
 
 const COOLDOWN_MS = 30_000;
 
 export default function LoginScreen() {
   const { t, locale } = useI18n();
+
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
@@ -178,7 +182,8 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   content: { padding: 24, gap: 12 },
   welcome: {
@@ -234,3 +239,4 @@ const styles = StyleSheet.create({
   error: { color: colors.error, fontWeight: "600" },
   disabled: { opacity: 0.55 },
 });
+}

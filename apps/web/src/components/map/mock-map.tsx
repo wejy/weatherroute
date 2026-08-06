@@ -102,7 +102,7 @@ export function MockMap({
   return (
     <div
       className={cn(
-        "relative h-full w-full overflow-hidden bg-[#dfe9f5]",
+        "relative h-full w-full overflow-hidden bg-surface-container",
         className,
       )}
       onClick={() => setSelectedId(null)}

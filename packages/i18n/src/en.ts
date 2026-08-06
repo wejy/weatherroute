@@ -376,9 +376,10 @@ const en = {
       "Sign in and upgrade to Pro to limit Discover to one country.",
     appearanceTitle: "Appearance",
     themeLabel: "Theme",
+    themeSystem: "System",
     themeLight: "Light",
     themeDark: "Dark",
-    themeComingSoon: "Dark mode is coming soon — light mode is used for now.",
+    themeHint: "Choose light, dark, or match your device.",
     subscriptionTitle: "Subscription",
     subscriptionBody:
       "Unlock wider search radii, more discover results, 500 route lookups/month, a departure time window on routes, same-country filtering, and saved routes with One-time, Monthly, or Yearly Pro.",

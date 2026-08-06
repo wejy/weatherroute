@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -12,7 +12,8 @@ import { Image } from "expo-image";
 import { Stack, useLocalSearchParams } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { apiGet } from "@/lib/api";
-import { colors } from "@/constants/Colors";
+import type { AppColors } from "@/constants/Colors";
+import { useColors } from "@/lib/theme";
 import type { WeatherDto } from "@/lib/types";
 
 type WikipediaSummary = {
@@ -36,6 +37,9 @@ export default function DestinationScreen() {
       datePreset?: string;
     }>();
   const { t, translateCondition, translateUv, locale } = useI18n();
+
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [weather, setWeather] = useState<WeatherDto | null>(null);
   const [wikipedia, setWikipedia] = useState<WikipediaSummary | null>(null);
   const [wikiLoading, setWikiLoading] = useState(false);
@@ -301,6 +305,8 @@ export default function DestinationScreen() {
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   return (
     <View style={styles.metric}>
       <Text style={styles.metricLabel}>{label}</Text>
@@ -309,7 +315,8 @@ function Metric({ label, value }: { label: string; value: string }) {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   content: { padding: 20, gap: 12, paddingBottom: 40 },
   place: {
@@ -488,3 +495,4 @@ const styles = StyleSheet.create({
   },
   retryText: { color: colors.onPrimary, fontWeight: "700" },
 });
+}

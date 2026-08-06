@@ -8,8 +8,8 @@ import type { PlaceDto, RouteAlternativeDto, RouteWaypointDto } from "@/lib/type
 import { WEATHER_TONE_COLORS, worseTone, mapWeatherColor, isSevereMapAlert, SEVERE_ALERT_COLOR } from "@/lib/weather-tone";
 import { weatherIcon } from "@/lib/weather-icons";
 import { useI18n } from "@/components/i18n/locale-provider";
-
-const STYLE = "mapbox://styles/mapbox/light-v11";
+import { useResolvedTheme } from "@/components/theme/theme-provider";
+import { mapboxDarkBasemapClass, mapboxStyleForTheme } from "@/lib/theme";
 
 function escapeHtml(value: string): string {
   return value
@@ -194,6 +194,8 @@ export function MapboxRouteMap({
   routingStatus?: "routed" | "unreachable";
 }) {
   const { t } = useI18n();
+  const theme = useResolvedTheme();
+  const mapStyle = mapboxStyleForTheme(theme);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
@@ -227,7 +229,7 @@ export function MapboxRouteMap({
 
     const map = new mapboxgl.Map({
       container: containerRef.current,
-      style: STYLE,
+      style: mapStyle,
       center: [(from.lon + to.lon) / 2, (from.lat + to.lat) / 2],
       zoom: 6,
       attributionControl: true,
@@ -346,6 +348,7 @@ export function MapboxRouteMap({
     geometryKey,
     altKey,
     drawRouteLine,
+    mapStyle,
   ]);
 
   // Sync weather markers + segment colors when waypoints / selection change.
@@ -419,7 +422,13 @@ export function MapboxRouteMap({
   }, [selected]);
 
   return (
-    <div className={cn("relative h-full w-full overflow-hidden", className)}>
+    <div
+      className={cn(
+        "relative h-full w-full overflow-hidden",
+        theme === "dark" && mapboxDarkBasemapClass,
+        className,
+      )}
+    >
       <div ref={containerRef} className="absolute inset-0 h-full w-full" />
       {selected && anchor ? (
         <div

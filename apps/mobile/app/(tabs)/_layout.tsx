@@ -2,7 +2,7 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import type { ComponentProps } from "react";
 import { Tabs } from "expo-router";
 import { useI18n } from "@/lib/i18n";
-import { colors } from "@/constants/Colors";
+import { useColors } from "@/lib/theme";
 import { useClientOnlyValue } from "@/components/useClientOnlyValue";
 
 function TabBarIcon(props: {
@@ -14,6 +14,7 @@ function TabBarIcon(props: {
 
 export default function TabLayout() {
   const { t } = useI18n();
+  const colors = useColors();
 
   return (
     <Tabs

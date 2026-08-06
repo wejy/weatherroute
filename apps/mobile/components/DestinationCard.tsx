@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { Link } from "expo-router";
@@ -5,7 +6,8 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useI18n } from "@/lib/i18n";
 import { formatDistanceKm } from "@/lib/distance";
 import { getApiBaseUrl } from "@/lib/api";
-import { colors } from "@/constants/Colors";
+import type { AppColors } from "@/constants/Colors";
+import { useColors } from "@/lib/theme";
 import type { DestinationDto } from "@/lib/types";
 
 function resolveImageUrl(url: string): string {
@@ -22,6 +24,9 @@ export function DestinationCard({
   destination: DestinationDto;
 }) {
   const { t, translateCondition, locale } = useI18n();
+
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const forecast = destination.forecast;
   const imageUri = resolveImageUrl(destination.imageUrl);
   const href = {
@@ -98,7 +103,8 @@ export function DestinationCard({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   card: {
     backgroundColor: colors.surfaceLowest,
     borderRadius: 20,
@@ -168,3 +174,4 @@ const styles = StyleSheet.create({
     color: colors.onSurface,
   },
 });
+}

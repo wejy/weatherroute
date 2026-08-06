@@ -25,6 +25,7 @@ import { getBillingEntitlement } from "@/server/dal/subscriptions";
 import { isStripeBillingConfigured } from "@/server/billing/plans";
 import { getUserRole } from "@/server/dal/roles";
 import { formatIsoDateForLocale } from "@/lib/dates";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -249,31 +250,9 @@ export default async function SettingsPage({
           </h2>
           <div className="rounded-2xl border border-outline-variant/25 bg-surface-container-lowest p-5">
             <p className="mb-3 text-sm text-on-surface-variant">
-              {t("settings.themeComingSoon")}
+              {t("settings.themeHint")}
             </p>
-            <div
-              className="flex gap-2"
-              aria-label={t("settings.themeLabel")}
-            >
-              <div
-                aria-current="true"
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-primary bg-primary/5 px-3 py-3 text-sm font-semibold text-primary opacity-90"
-              >
-                <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
-                  light_mode
-                </span>
-                {t("settings.themeLight")}
-              </div>
-              <div
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-outline-variant/40 px-3 py-3 text-sm font-semibold text-on-surface-variant opacity-50"
-                title={t("settings.themeComingSoon")}
-              >
-                <span className="material-symbols-outlined text-[20px]" aria-hidden="true">
-                  dark_mode
-                </span>
-                {t("settings.themeDark")}
-              </div>
-            </div>
+            <ThemeToggle />
           </div>
         </section>
 

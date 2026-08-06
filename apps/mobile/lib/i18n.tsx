@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, useColorScheme, View } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Localization from "expo-localization";
 import {
@@ -20,7 +20,7 @@ import {
   type Locale,
   type Translator,
 } from "@solviax/i18n";
-import { colors } from "@/constants/Colors";
+import { darkColors, lightColors } from "@/constants/Colors";
 
 const STORAGE_KEY = "wt_locale";
 
@@ -50,6 +50,7 @@ type I18nContextValue = {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
+  const systemScheme = useColorScheme();
   // Start from device language so FI users don't flash English before AsyncStorage loads.
   const [locale, setLocaleState] = useState<Locale>(() => deviceLocale());
   const [hydrated, setHydrated] = useState(false);
@@ -87,16 +88,17 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, [locale, setLocale]);
 
   if (!hydrated) {
+    const splashColors = systemScheme === "dark" ? darkColors : lightColors;
     return (
       <View
         style={{
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: colors.background,
+          backgroundColor: splashColors.background,
         }}
       >
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={splashColors.primary} />
       </View>
     );
   }

@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { StyleSheet, View } from "react-native";
-import { colors } from "@/constants/Colors";
+import type { AppColors } from "@/constants/Colors";
+import { useColors } from "@/lib/theme";
 
 type Props = {
   /** Mapbox-style [lon, lat] pairs */
@@ -54,6 +56,8 @@ export function RoutePolylinePreview({
   alternatives,
   height = 160,
 }: Props) {
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const width = 320;
   const selected =
     geometry && geometry.length >= 2
@@ -114,7 +118,8 @@ export function RoutePolylinePreview({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   box: {
     width: "100%",
     maxWidth: 320,
@@ -142,3 +147,4 @@ const styles = StyleSheet.create({
     opacity: 0.55,
   },
 });
+}

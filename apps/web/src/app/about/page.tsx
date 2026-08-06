@@ -260,7 +260,7 @@ export default async function AboutPage() {
           </div>
         </section>
       </main>
-      <BottomNav />
+      <BottomNav active="/about" />
     </>
   );
 }

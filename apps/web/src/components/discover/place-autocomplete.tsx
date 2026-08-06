@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
 import type { PlaceDto } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/components/i18n/locale-provider";
@@ -20,6 +28,8 @@ function kindIcon(kind?: PlaceDto["kind"]): string {
       return "location_on";
   }
 }
+
+type MenuCoords = { top: number; left: number; width: number };
 
 export function PlaceAutocomplete({
   value,
@@ -46,6 +56,7 @@ export function PlaceAutocomplete({
   const { t, locale } = useI18n();
   const listId = useId();
   const wrapRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -53,6 +64,8 @@ export function PlaceAutocomplete({
   const [results, setResults] = useState<PlaceDto[]>([]);
   const [searching, setSearching] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [mounted, setMounted] = useState(false);
+  const [menuCoords, setMenuCoords] = useState<MenuCoords | null>(null);
 
   const listVisible = open && results.length > 0;
 
@@ -105,10 +118,19 @@ export function PlaceAutocomplete({
   }
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     function onDocClick(e: MouseEvent) {
-      if (!wrapRef.current?.contains(e.target as Node)) {
-        setOpen(false);
+      const target = e.target as Node;
+      if (
+        wrapRef.current?.contains(target) ||
+        listRef.current?.contains(target)
+      ) {
+        return;
       }
+      setOpen(false);
     }
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
@@ -127,6 +149,40 @@ export function PlaceAutocomplete({
       abortRef.current?.abort();
     };
   }, []);
+
+  useLayoutEffect(() => {
+    if (!listVisible) {
+      setMenuCoords(null);
+      return;
+    }
+
+    function updatePosition() {
+      const el = wrapRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      const gutter = 8;
+      const maxWidth = Math.min(24 * 16, window.innerWidth - gutter * 2);
+      const width = Math.min(Math.max(r.width, 12 * 16), maxWidth);
+      let left = r.left;
+      if (left + width > window.innerWidth - gutter) {
+        left = Math.max(gutter, window.innerWidth - gutter - width);
+      }
+      setMenuCoords({
+        top: r.bottom + gutter,
+        left,
+        width,
+      });
+    }
+
+    updatePosition();
+    // Capture scroll from nested overflow containers (e.g. routes sidebar).
+    window.addEventListener("scroll", updatePosition, true);
+    window.addEventListener("resize", updatePosition);
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [listVisible, results.length, value]);
 
   function selectPlace(place: PlaceDto) {
     onChange(place.placeName);
@@ -155,6 +211,62 @@ export function PlaceAutocomplete({
       selectPlace(results[activeIndex]!);
     }
   }
+
+  const listbox = (
+    <ul
+      ref={listRef}
+      id={listId}
+      role="listbox"
+      hidden={!listVisible}
+      style={
+        mounted && menuCoords
+          ? {
+              position: "fixed",
+              top: menuCoords.top,
+              left: menuCoords.left,
+              width: menuCoords.width,
+            }
+          : undefined
+      }
+      className={cn(
+        "z-[80] max-h-72 overflow-auto rounded-xl border border-outline-variant/30 bg-surface-container-lowest py-1 text-left shadow-[0px_10px_30px_rgba(0,0,0,0.12)]",
+        mounted
+          ? null
+          : "absolute top-full left-0 mt-2 w-[min(100vw-2rem,24rem)]",
+        !listVisible && "hidden",
+      )}
+    >
+      {results.map((place, i) => (
+        <li
+          key={place.id}
+          id={`${listId}-opt-${i}`}
+          role="option"
+          aria-selected={i === activeIndex}
+          className={cn(
+            "flex w-full cursor-pointer items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface-container-low",
+            i === activeIndex && "bg-surface-container-low",
+          )}
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => selectPlace(place)}
+        >
+          <span
+            className="material-symbols-outlined mt-0.5 text-secondary"
+            aria-hidden="true"
+          >
+            {kindIcon(place.kind)}
+          </span>
+          <span>
+            <span className="block font-semibold text-on-surface">
+              {place.name}
+            </span>
+            <span className="block text-sm text-on-surface-variant">
+              {place.placeName}
+            </span>
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
 
   return (
     <div ref={wrapRef} className="relative w-full">
@@ -204,46 +316,8 @@ export function PlaceAutocomplete({
         )}
       </div>
 
-      {/* Keep listbox in the DOM so aria-controls is never a broken reference (WAVE). */}
-      <ul
-        id={listId}
-        role="listbox"
-        hidden={!listVisible}
-        className={cn(
-          "absolute top-full left-0 z-50 mt-2 max-h-72 w-[min(100vw-2rem,24rem)] overflow-auto rounded-xl border border-outline-variant/30 bg-surface-container-lowest py-1 text-left shadow-[0px_10px_30px_rgba(0,0,0,0.12)]",
-          !listVisible && "hidden",
-        )}
-      >
-        {results.map((place, i) => (
-          <li
-            key={place.id}
-            id={`${listId}-opt-${i}`}
-            role="option"
-            aria-selected={i === activeIndex}
-            className={cn(
-              "flex w-full cursor-pointer items-start gap-3 px-4 py-2.5 text-left transition-colors hover:bg-surface-container-low",
-              i === activeIndex && "bg-surface-container-low",
-            )}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => selectPlace(place)}
-          >
-            <span
-              className="material-symbols-outlined mt-0.5 text-secondary"
-              aria-hidden="true"
-            >
-              {kindIcon(place.kind)}
-            </span>
-            <span>
-              <span className="block font-semibold text-on-surface">
-                {place.name}
-              </span>
-              <span className="block text-sm text-on-surface-variant">
-                {place.placeName}
-              </span>
-            </span>
-          </li>
-        ))}
-      </ul>
+      {/* Portal escapes overflow:auto parents (routes sidebar); keep in DOM for aria-controls. */}
+      {mounted ? createPortal(listbox, document.body) : listbox}
     </div>
   );
 }

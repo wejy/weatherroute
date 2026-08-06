@@ -102,10 +102,10 @@ export default async function ProMarketingPage({
 
   return (
     <>
-      <TopNav active="/settings" />
+      <TopNav active="/pro" />
       <main
         id="main-content"
-        className="mx-auto min-h-screen max-w-4xl px-margin-mobile pt-24 pb-28 md:px-margin-desktop"
+        className="mx-auto min-h-screen max-w-4xl overflow-x-hidden px-margin-mobile pt-24 pb-[max(7rem,calc(5.5rem+env(safe-area-inset-bottom)))] md:px-margin-desktop"
       >
         <p className="text-sm font-semibold uppercase tracking-wide text-primary">
           {t("brand")}
@@ -113,13 +113,13 @@ export default async function ProMarketingPage({
         <h1 className="mt-2 text-3xl font-bold tracking-tight text-on-surface md:text-4xl">
           {t("pro.title")}
         </h1>
-        <p className="mt-3 max-w-2xl text-on-surface-variant">
+        <p className="mt-3 max-w-2xl text-base leading-relaxed text-on-surface-variant">
           {t("pro.subtitle")}
         </p>
 
         {statusMessage ? (
           <p
-            className="mt-4 rounded-lg bg-primary/10 px-4 py-2 text-sm text-primary"
+            className="mt-4 rounded-lg bg-primary/10 px-4 py-2.5 text-sm text-primary"
             role="status"
           >
             {statusMessage}
@@ -128,7 +128,7 @@ export default async function ProMarketingPage({
 
         {showStatus ? (
           <section
-            className="mt-6 rounded-2xl border border-primary/30 bg-primary/5 p-5"
+            className="mt-6 rounded-2xl border border-primary/30 bg-primary/5 p-4 sm:p-5"
             aria-labelledby="pro-status-heading"
           >
             <p className="text-xs font-semibold uppercase tracking-wide text-primary">
@@ -138,7 +138,9 @@ export default async function ProMarketingPage({
               id="pro-status-heading"
               className="mt-1 text-lg font-bold text-on-surface"
             >
-              {isPro ? t("pro.statusActive") : t("pro.currentPlan", { plan: planLabel })}
+              {isPro
+                ? t("pro.statusActive")
+                : t("pro.currentPlan", { plan: planLabel })}
             </h2>
             {isPro ? (
               <p className="mt-1 text-sm font-semibold text-on-surface">
@@ -167,10 +169,10 @@ export default async function ProMarketingPage({
                   <table className="w-full min-w-[16rem] text-left text-sm">
                     <thead>
                       <tr className="border-b border-outline-variant/20 text-xs font-semibold uppercase tracking-wide text-on-surface-variant">
-                        <th className="px-4 py-2.5 font-semibold">
+                        <th className="px-3 py-2.5 font-semibold sm:px-4">
                           {t("pro.paymentDate")}
                         </th>
-                        <th className="px-4 py-2.5 text-right font-semibold">
+                        <th className="px-3 py-2.5 text-right font-semibold sm:px-4">
                           {t("pro.paymentAmount")}
                         </th>
                       </tr>
@@ -178,10 +180,10 @@ export default async function ProMarketingPage({
                     <tbody className="divide-y divide-outline-variant/15">
                       {payments.map((p) => (
                         <tr key={p.id}>
-                          <td className="px-4 py-2.5 text-on-surface">
+                          <td className="px-3 py-2.5 text-on-surface sm:px-4">
                             {formatIsoDateForLocale(p.paidAt, locale)}
                           </td>
-                          <td className="px-4 py-2.5 text-right font-medium text-on-surface">
+                          <td className="px-3 py-2.5 text-right font-medium text-on-surface sm:px-4">
                             {formatPaymentAmount(
                               p.amountCents,
                               p.currency,
@@ -205,7 +207,7 @@ export default async function ProMarketingPage({
                 <BillingPortalButton
                   label={t("pro.manageBilling")}
                   errorLabel={t("pro.checkoutError")}
-                  className="rounded-lg bg-secondary px-4 py-2.5 text-sm font-semibold text-on-secondary disabled:opacity-60"
+                  className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-secondary px-4 py-2.5 text-sm font-semibold text-on-secondary disabled:opacity-60 sm:w-auto"
                 />
                 <p className="mt-2 text-xs text-on-surface-variant">
                   {t("pro.manageBillingHint")}
@@ -216,7 +218,7 @@ export default async function ProMarketingPage({
         ) : null}
 
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-outline-variant/25 bg-surface-container-lowest p-5">
+          <div className="rounded-2xl border border-outline-variant/25 bg-surface-container-lowest p-4 sm:p-5">
             <span className="inline-flex rounded-lg bg-surface-container px-2.5 py-1 text-xs font-semibold text-on-surface-variant">
               {t("pro.freeBadge")}
             </span>
@@ -224,13 +226,13 @@ export default async function ProMarketingPage({
               {t("pro.freePlan")}
             </h2>
             <p className="mt-2 text-2xl font-bold text-on-surface">€0</p>
-            <p className="mt-2 text-sm text-on-surface-variant">
+            <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
               {t("pro.freeNoteBody")}
             </p>
           </div>
 
           <div
-            className={`rounded-2xl border border-outline-variant/30 bg-surface-container-lowest p-5 ${
+            className={`flex flex-col rounded-2xl border border-outline-variant/30 bg-surface-container-lowest p-4 sm:p-5 ${
               isPro ? "opacity-70" : ""
             }`}
           >
@@ -246,7 +248,7 @@ export default async function ProMarketingPage({
             <p className="mt-1 text-xs font-medium text-on-surface-variant">
               {t("pro.vatInclusive")}
             </p>
-            <p className="mt-2 text-sm text-on-surface-variant">
+            <p className="mt-2 flex-1 text-sm leading-relaxed text-on-surface-variant">
               {t("pro.oneTimePriceNote")}
             </p>
             {isPro ? (
@@ -266,7 +268,7 @@ export default async function ProMarketingPage({
           </div>
 
           <div
-            className={`rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-[0px_8px_24px_rgba(20,184,99,0.08)] ${
+            className={`flex flex-col rounded-2xl border border-primary/30 bg-primary/5 p-4 shadow-[0px_8px_24px_rgba(20,184,99,0.08)] sm:p-5 ${
               isPro &&
               (billing.plan === "monthly" || billing.plan === "yearly")
                 ? "opacity-70"
@@ -285,7 +287,7 @@ export default async function ProMarketingPage({
             <p className="mt-1 text-xs font-medium text-on-surface-variant">
               {t("pro.vatInclusive")}
             </p>
-            <p className="mt-2 text-sm text-on-surface-variant">
+            <p className="mt-2 flex-1 text-sm leading-relaxed text-on-surface-variant">
               {t("pro.monthlyPriceNote")}
             </p>
             {isPro &&
@@ -307,7 +309,7 @@ export default async function ProMarketingPage({
           </div>
 
           <div
-            className={`rounded-2xl border border-primary/30 bg-primary/5 p-5 shadow-[0px_8px_24px_rgba(20,184,99,0.08)] ${
+            className={`flex flex-col rounded-2xl border border-primary/30 bg-primary/5 p-4 shadow-[0px_8px_24px_rgba(20,184,99,0.08)] sm:p-5 ${
               isPro &&
               (billing.plan === "monthly" || billing.plan === "yearly")
                 ? "opacity-70"
@@ -326,7 +328,7 @@ export default async function ProMarketingPage({
             <p className="mt-1 text-xs font-medium text-on-surface-variant">
               {t("pro.vatInclusive")}
             </p>
-            <p className="mt-2 text-sm text-on-surface-variant">
+            <p className="mt-2 flex-1 text-sm leading-relaxed text-on-surface-variant">
               {t("pro.yearlyPriceNote")}
             </p>
             {isPro &&
@@ -352,41 +354,43 @@ export default async function ProMarketingPage({
           <h2 className="text-lg font-semibold text-on-surface">
             {t("pro.comparisonTitle")}
           </h2>
-          <div className="mt-4 overflow-x-auto rounded-2xl border border-outline-variant/25 bg-surface-container-lowest">
-            <div className="hidden min-w-[48rem] grid-cols-[1.3fr_1fr_1fr_1fr_1fr] gap-3 border-b border-outline-variant/20 bg-surface-container-low px-5 py-3 text-xs font-semibold uppercase tracking-wide text-on-surface-variant md:grid">
+          <div className="mt-4 overflow-x-auto rounded-2xl border border-outline-variant/25 bg-surface-container-lowest [-webkit-overflow-scrolling:touch]">
+            <div className="hidden min-w-[48rem] grid-cols-[minmax(10rem,1.3fr)_repeat(4,minmax(6.5rem,1fr))] gap-3 border-b border-outline-variant/20 bg-surface-container-low px-5 py-3 text-xs font-semibold uppercase tracking-wide text-on-surface-variant md:grid">
               <span />
               <span>{t("pro.freeCol")}</span>
               <span>{t("pro.oneTimeCol")}</span>
               <span className="text-primary">{t("pro.monthlyCol")}</span>
               <span className="text-primary">{t("pro.yearlyCol")}</span>
             </div>
-            <ul className="min-w-[48rem] divide-y divide-outline-variant/20">
+            <ul className="divide-y divide-outline-variant/20 md:min-w-[48rem]">
               {FEATURE_KEYS.map((key) => (
                 <li
                   key={key}
-                  className="grid gap-3 px-5 py-5 md:grid-cols-[1.3fr_1fr_1fr_1fr_1fr] md:items-start"
+                  className="grid gap-3 px-4 py-4 md:grid-cols-[minmax(10rem,1.3fr)_repeat(4,minmax(6.5rem,1fr))] md:items-start md:px-5 md:py-5"
                 >
                   <p className="font-semibold text-on-surface">
                     {t(`pro.rows.${key}.title`)}
                   </p>
-                  <PlanCell
-                    label={t("pro.freeCol")}
-                    value={t(`pro.rows.${key}.free`)}
-                  />
-                  <PlanCell
-                    label={t("pro.oneTimeCol")}
-                    value={t(`pro.rows.${key}.oneTime`)}
-                  />
-                  <PlanCell
-                    label={t("pro.monthlyCol")}
-                    value={t(`pro.rows.${key}.monthly`)}
-                    emphasize
-                  />
-                  <PlanCell
-                    label={t("pro.yearlyCol")}
-                    value={t(`pro.rows.${key}.yearly`)}
-                    emphasize
-                  />
+                  <div className="grid grid-cols-2 gap-3 md:contents">
+                    <PlanCell
+                      label={t("pro.freeCol")}
+                      value={t(`pro.rows.${key}.free`)}
+                    />
+                    <PlanCell
+                      label={t("pro.oneTimeCol")}
+                      value={t(`pro.rows.${key}.oneTime`)}
+                    />
+                    <PlanCell
+                      label={t("pro.monthlyCol")}
+                      value={t(`pro.rows.${key}.monthly`)}
+                      emphasize
+                    />
+                    <PlanCell
+                      label={t("pro.yearlyCol")}
+                      value={t(`pro.rows.${key}.yearly`)}
+                      emphasize
+                    />
+                  </div>
                 </li>
               ))}
             </ul>
@@ -409,7 +413,7 @@ export default async function ProMarketingPage({
                 >
                   check_circle
                 </span>
-                <p className="text-sm text-on-surface">
+                <p className="text-sm leading-relaxed text-on-surface">
                   {t(`pro.highlights.${key}`)}
                 </p>
               </li>
@@ -417,28 +421,30 @@ export default async function ProMarketingPage({
           </ul>
         </section>
 
-        <section className="mt-10 rounded-2xl border border-primary/25 bg-surface-container-lowest p-6 shadow-[0px_10px_30px_rgba(0,0,0,0.06)]">
+        <section className="mt-10 rounded-2xl border border-primary/25 bg-surface-container-lowest p-4 shadow-[0px_10px_30px_rgba(0,0,0,0.06)] sm:p-6">
           <h2 className="text-xl font-bold text-on-surface">
             {t("pro.ctaTitle")}
           </h2>
-          <p className="mt-2 text-sm text-on-surface-variant">{t("pro.ctaBody")}</p>
-          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <p className="mt-2 text-sm leading-relaxed text-on-surface-variant">
+            {t("pro.ctaBody")}
+          </p>
+          <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-stretch">
             {billing.canManageBilling && stripeReady ? (
               <BillingPortalButton
                 label={t("pro.manageBilling")}
                 errorLabel={t("pro.checkoutError")}
-                className="rounded-lg bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary disabled:opacity-60"
+                className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary disabled:opacity-60 sm:w-auto"
               />
             ) : null}
             <Link
               href="/settings"
-              className="rounded-lg border border-outline-variant px-4 py-3 text-center text-sm font-semibold text-on-surface-variant transition-colors hover:border-primary/40 hover:text-primary"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-outline-variant px-4 py-3 text-center text-sm font-semibold text-on-surface-variant transition-colors hover:border-primary/40 hover:text-primary sm:w-auto"
             >
               {t("pro.ctaSettings")}
             </Link>
             <Link
               href="/"
-              className="rounded-lg bg-primary px-4 py-3 text-center text-sm font-semibold text-on-primary"
+              className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-center text-sm font-semibold text-on-primary sm:w-auto"
             >
               {t("pro.ctaDiscover")}
             </Link>
@@ -460,16 +466,16 @@ function PlanCell({
   emphasize?: boolean;
 }) {
   return (
-    <div>
+    <div className="min-w-0 rounded-lg bg-surface-container/60 p-2.5 md:rounded-none md:bg-transparent md:p-0">
       <p
-        className={`mb-1 text-xs font-semibold uppercase tracking-wide md:hidden ${
+        className={`mb-1 text-[11px] font-semibold tracking-wide uppercase md:hidden ${
           emphasize ? "text-primary" : "text-on-surface-variant"
         }`}
       >
         {label}
       </p>
       <p
-        className={`text-sm ${
+        className={`text-sm leading-snug break-words ${
           emphasize ? "font-medium text-on-surface" : "text-on-surface-variant"
         }`}
       >
@@ -497,14 +503,14 @@ function CheckoutButton({
   primary?: boolean;
 }) {
   const className = primary
-    ? "mt-5 w-full rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-on-primary"
-    : "mt-5 w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-on-surface transition-colors hover:border-primary/40 hover:text-primary";
+    ? "inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-on-primary"
+    : "inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-on-surface transition-colors hover:border-primary/40 hover:text-primary";
 
   if (!signedIn) {
     return (
       <Link
         href={`/login?next=${encodeURIComponent("/pro")}`}
-        className={`${className} inline-flex items-center justify-center`}
+        className={`mt-5 ${className}`}
       >
         {signInLabel}
       </Link>
@@ -515,7 +521,7 @@ function CheckoutButton({
       <button
         type="button"
         disabled
-        className={`${className} opacity-60`}
+        className={`mt-5 ${className} opacity-60`}
         title={unavailableLabel}
       >
         {unavailableLabel}
@@ -523,7 +529,7 @@ function CheckoutButton({
     );
   }
   return (
-    <form action={startCheckoutAction}>
+    <form action={startCheckoutAction} className="mt-5">
       <input type="hidden" name="plan" value={plan} />
       <button type="submit" className={className}>
         {label}

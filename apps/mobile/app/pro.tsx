@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo } from "react";
 import {
   ActivityIndicator,
   Linking,
@@ -10,7 +10,8 @@ import {
 } from "react-native";
 import { Link, Stack, useFocusEffect, useLocalSearchParams, type Href } from "expo-router";
 import { useI18n } from "@/lib/i18n";
-import { colors } from "@/constants/Colors";
+import type { AppColors } from "@/constants/Colors";
+import { useColors } from "@/lib/theme";
 import { apiGet, apiPost } from "@/lib/api";
 import { formatIsoDateForLocale } from "@/lib/dates";
 import { formatPaymentAmount } from "@/lib/money";
@@ -53,6 +54,9 @@ type PaymentRow = {
 
 export default function ProMarketingScreen() {
   const { t, locale } = useI18n();
+
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const params = useLocalSearchParams<{
     checkout?: string | string[];
     plan?: string | string[];
@@ -473,7 +477,8 @@ export default function ProMarketingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   content: { padding: 20, paddingBottom: 40, gap: 12 },
   brand: {
@@ -700,3 +705,4 @@ const styles = StyleSheet.create({
   },
   primaryText: { color: colors.onPrimary, fontWeight: "700" },
 });
+}

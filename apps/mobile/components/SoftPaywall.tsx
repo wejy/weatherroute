@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -12,7 +12,8 @@ import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { Link } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import { apiPost, getApiBaseUrl, type PublicQuota } from "@/lib/api";
-import { colors } from "@/constants/Colors";
+import type { AppColors } from "@/constants/Colors";
+import { useColors } from "@/lib/theme";
 import { createModuleLogger } from "@/lib/logger";
 
 const log = createModuleLogger("paywall");
@@ -27,6 +28,8 @@ export function SoftPaywall({
   surface?: "discover" | "route";
 }) {
   const { t } = useI18n();
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const isRoute = surface === "route";
   const isFreeTier = quota?.kind === "free";
   const isProMonthlyCap = quota?.kind === "pro_monthly";
@@ -236,6 +239,8 @@ export function QuotaHint({
   limit: number;
 }) {
   const { t } = useI18n();
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   if (limit <= 0) return null;
   return (
     <Text style={styles.hint}>
@@ -247,7 +252,8 @@ export function QuotaHint({
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   card: {
     marginTop: 8,
     padding: 20,
@@ -325,3 +331,4 @@ const styles = StyleSheet.create({
   hint: { fontSize: 13, color: colors.onSurfaceVariant },
   disabled: { opacity: 0.55 },
 });
+}

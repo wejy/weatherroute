@@ -7,10 +7,11 @@ import { cn, formatTemp } from "@/lib/utils";
 import { formatDistanceKm } from "@/lib/distance";
 import {
   temperatureColor,
-  temperatureInkColor,
+  temperatureLabelColor,
 } from "@/lib/temp-color";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { useI18n } from "@/components/i18n/locale-provider";
+import { useResolvedTheme } from "@/components/theme/theme-provider";
 import { translateCondition } from "@/i18n/translate";
 
 /** Compact 7-day max-temp bars colored by absolute °C scale. */
@@ -26,6 +27,7 @@ export function TempSparkline({
   className?: string;
   height?: number;
 }) {
+  const theme = useResolvedTheme();
   if (values.length < 2) return null;
   const min = Math.min(...values);
   const max = Math.max(...values);
@@ -43,7 +45,7 @@ export function TempSparkline({
       {values.map((v, i) => {
         const h = 10 + ((v - min) / span) * (barMax - 10);
         const fill = temperatureColor(v);
-        const ink = temperatureInkColor(v);
+        const ink = temperatureLabelColor(v, theme);
         const day = labels?.[i] ? formatSparkDayLabel(labels[i]!) : null;
         return (
           <div
@@ -84,20 +86,22 @@ function formatSparkDayLabel(raw: string): string {
 export function tempSeriesBarsHtml(
   series: number[],
   labels?: string[],
+  theme: "light" | "dark" = "light",
 ): string {
   if (series.length < 2) return "";
   const min = Math.min(...series);
   const max = Math.max(...series);
   const span = Math.max(max - min, 1);
   const showLabels = Boolean(labels && labels.length === series.length);
+  const dayColor = theme === "dark" ? "#9aa0a6" : "#5f6368";
   const bars = series
     .map((v, i) => {
       const h = 10 + ((v - min) / span) * (showLabels ? 28 : 36);
       const fill = temperatureColor(v);
-      const ink = temperatureInkColor(v);
+      const ink = temperatureLabelColor(v, theme);
       const day = labels?.[i] ? formatSparkDayLabel(labels[i]!) : "";
       const dayHtml = day
-        ? `<span style="font-size:9px;font-weight:500;color:#5f6368;line-height:1">${day}</span>`
+        ? `<span style="font-size:9px;font-weight:500;color:${dayColor};line-height:1">${day}</span>`
         : "";
       return `<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;height:100%">
         <span style="font-size:10px;font-weight:600;color:${ink};line-height:1">${Math.round(v)}°</span>

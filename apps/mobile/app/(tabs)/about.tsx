@@ -1,7 +1,9 @@
+import { useMemo } from "react";
 import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import { Link, type Href } from "expo-router";
 import { useI18n } from "@/lib/i18n";
-import { colors } from "@/constants/Colors";
+import type { AppColors } from "@/constants/Colors";
+import { useColors } from "@/lib/theme";
 
 const HIGHLIGHTS = ["horizon", "ranking", "corridor", "trust"] as const;
 
@@ -25,6 +27,9 @@ const PRO_KEYS = ["radius", "results", "sameCountry", "saves"] as const;
 
 export default function AboutScreen() {
   const { t } = useI18n();
+
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -114,7 +119,8 @@ export default function AboutScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   content: { padding: 20, paddingBottom: 40, gap: 10 },
   eyebrow: {
@@ -306,3 +312,4 @@ const styles = StyleSheet.create({
   },
   primaryText: { color: colors.onPrimary, fontWeight: "700" },
 });
+}

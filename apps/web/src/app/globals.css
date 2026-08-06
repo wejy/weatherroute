@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-:root {
+:root,
+[data-theme="light"] {
   --background: #fcf8ff;
   --foreground: #1b1b24;
   --surface: #fcf8ff;
@@ -51,6 +52,61 @@
   --error-container: #ffdad6;
   --on-error-container: #93000a;
   --focus-ring: #14b863;
+  color-scheme: light;
+}
+
+/* Calm dark surfaces — same brand green/yellow, no neon glow */
+[data-theme="dark"] {
+  --background: #121218;
+  --foreground: #e8e6f2;
+  --surface: #121218;
+  --surface-dim: #0a0a0e;
+  --surface-bright: #1c1c24;
+  --surface-container-lowest: #0e0e14;
+  --surface-container-low: #18181f;
+  --surface-container: #1e1e27;
+  --surface-container-high: #262630;
+  --surface-container-highest: #2e2e3a;
+  --surface-variant: #2e2e3a;
+  --on-surface: #e8e6f2;
+  --on-surface-variant: #b4b2c0;
+  --inverse-surface: #e8e6f2;
+  --inverse-on-surface: #1b1b24;
+  --outline: #8e8c9c;
+  --outline-variant: #3e3e4a;
+  --primary: #34d399;
+  --on-primary: #053b24;
+  --primary-container: #0b7a4a;
+  --on-primary-container: #d1fae5;
+  --primary-fixed: #064e3b;
+  --primary-fixed-dim: #047857;
+  --on-primary-fixed: #d1fae5;
+  --on-primary-fixed-variant: #a7f3d0;
+  --inverse-primary: #14b863;
+  --accent: #ffe566;
+  --on-accent: #422006;
+  --accent-container: #ca8a04;
+  --on-accent-container: #422006;
+  --accent-fixed: #ffe566;
+  --accent-fixed-dim: #facc15;
+  --secondary: #5ec8ff;
+  --on-secondary: #00344f;
+  --secondary-container: #004d73;
+  --on-secondary-container: #c9e6ff;
+  --secondary-fixed: #00344f;
+  --secondary-fixed-dim: #004d73;
+  --tertiary: #7dd3fc;
+  --on-tertiary: #082f49;
+  --tertiary-container: #0369a1;
+  --on-tertiary-container: #e0f2fe;
+  --tertiary-fixed: #0c4a6e;
+  --tertiary-fixed-dim: #0369a1;
+  --error: #ffb4ab;
+  --on-error: #690005;
+  --error-container: #93000a;
+  --on-error-container: #ffdad6;
+  --focus-ring: #34d399;
+  color-scheme: dark;
 }
 
 @theme inline {

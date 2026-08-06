@@ -6,6 +6,7 @@ import { DiscoverQueryLink } from "@/components/discover/discover-query-link";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { getCurrentUser } from "@/server/auth/session";
+import { getBillingEntitlement } from "@/server/dal/subscriptions";
 
 function NavLinks({
   active,
@@ -153,17 +154,26 @@ export async function TopNav({ active }: { active?: string }) {
 export async function BottomNav({ active }: { active?: string }) {
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
+  const user = await getCurrentUser();
+  // Saved trips are a Pro benefit — show About for guests / free accounts.
+  const billing = user ? await getBillingEntitlement(user.id) : null;
+  const showSavedTrips = billing?.tier === "pro";
+
+  const fourth = showSavedTrips
+    ? { href: "/trips", label: t("nav.trips"), icon: "bookmark" }
+    : { href: "/about", label: t("nav.about"), icon: "info" };
+
   const items = [
     { href: "/", label: t("nav.discover"), icon: "travel_explore" },
     { href: "/map", label: t("nav.map"), icon: "map" },
     { href: "/routes", label: t("nav.plan"), icon: "edit_calendar" },
-    { href: "/trips", label: t("nav.trips"), icon: "bookmark" },
+    fourth,
   ];
 
   return (
     <nav
       data-testid="bottom-nav"
-      className="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around rounded-t-xl bg-surface/95 px-2 pt-2 pb-4 shadow-[0px_-4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl lg:hidden"
+      className="fixed bottom-0 left-0 z-50 flex w-full items-center justify-around gap-1 rounded-t-xl bg-surface/95 px-1.5 pt-2 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0px_-4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl lg:hidden"
       aria-label={t("brand")}
     >
       <Suspense fallback={null}>
@@ -172,15 +182,15 @@ export async function BottomNav({ active }: { active?: string }) {
           const preserve =
             item.href === "/" || item.href === "/map" || item.href === "/routes";
           const className = cn(
-            "flex min-h-11 min-w-14 flex-col items-center justify-center px-2 py-1 transition-colors",
+            "flex min-h-12 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1.5 py-1.5 transition-colors",
             isActive
-              ? "rounded-full bg-primary-container/20 text-primary"
+              ? "bg-primary-container/20 text-primary"
               : "text-on-surface-variant hover:text-primary",
           );
           const content = (
             <>
               <span
-                className="material-symbols-outlined"
+                className="material-symbols-outlined text-[22px] leading-none"
                 aria-hidden="true"
                 style={
                   isActive ? { fontVariationSettings: "'FILL' 1" } : undefined
@@ -188,7 +198,9 @@ export async function BottomNav({ active }: { active?: string }) {
               >
                 {item.icon}
               </span>
-              <span className="mt-1 text-xs font-medium">{item.label}</span>
+              <span className="max-w-full text-center text-[11px] leading-tight font-medium">
+                {item.label}
+              </span>
             </>
           );
           if (preserve) {

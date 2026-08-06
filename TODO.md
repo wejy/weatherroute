@@ -23,7 +23,7 @@ Expo app (`apps/mobile`, SDK 57) talks to web `/api/*`.
 
 ## Appearance
 
-- [ ] Dark mode — see plan `.cursor/plans/dark_mode_8f2a1c90.plan.md` (settings toggle still disabled)
+- [x] Dark mode — System / Light / Dark on web + mobile settings (cookie / AsyncStorage)
 
 ## Discover result caps (tiered)
 

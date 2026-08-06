@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -12,11 +12,15 @@ import { useI18n } from "@/lib/i18n";
 import { apiDelete, apiGet, getApiBaseUrl } from "@/lib/api";
 import { fetchSession } from "@/lib/session";
 import { formatDistanceKm } from "@/lib/distance";
-import { colors } from "@/constants/Colors";
+import type { AppColors } from "@/constants/Colors";
+import { useColors } from "@/lib/theme";
 import type { TripDto, TravelMode } from "@/lib/types";
 
 export default function TripsScreen() {
   const { t, locale } = useI18n();
+
+  const colors = useColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const apiReady = Boolean(getApiBaseUrl());
   const [trips, setTrips] = useState<TripDto[]>([]);
   const [loading, setLoading] = useState(true);
@@ -124,7 +128,8 @@ export default function TripsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+function createStyles(colors: AppColors) {
+  return StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.background },
   content: { padding: 20, gap: 12, paddingBottom: 40 },
   title: {
@@ -188,3 +193,4 @@ const styles = StyleSheet.create({
   },
   removeText: { color: colors.onSurfaceVariant, fontWeight: "600", fontSize: 13 },
 });
+}

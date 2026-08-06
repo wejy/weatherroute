@@ -28,6 +28,8 @@ export function LocationOriginField({
   autoDetect = true,
   labelledBy,
   inputId = "origin-location-input",
+  placeholder,
+  inputClassName,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -37,6 +39,9 @@ export function LocationOriginField({
   autoDetect?: boolean;
   labelledBy?: string;
   inputId?: string;
+  /** Idle-state placeholder; detecting states still use location.* strings. */
+  placeholder?: string;
+  inputClassName?: string;
 }) {
   const { t } = useI18n();
   const detectedOnce = useRef(false);
@@ -187,10 +192,15 @@ export function LocationOriginField({
                 ? t("location.detectingCoarse")
                 : status === "locating"
                   ? t("location.detecting")
-                  : t("location.placeholder")
+                  : (placeholder ?? t("location.placeholder"))
             }
             ariaLabelledBy={labelledBy}
-            ariaLabel={labelledBy ? undefined : t("location.placeholder")}
+            ariaLabel={
+              labelledBy
+                ? undefined
+                : (placeholder ?? t("location.placeholder"))
+            }
+            inputClassName={inputClassName}
           />
         </div>
       </div>

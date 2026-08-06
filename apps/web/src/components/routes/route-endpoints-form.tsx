@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { PlaceDto, TravelMode } from "@/lib/types";
 import { DEFAULT_TRAVEL_MODE, isTravelMode } from "@/lib/types";
 import { PlaceAutocomplete } from "@/components/discover/place-autocomplete";
+import { LocationOriginField } from "@/components/discover/location-origin-field";
 import { TravelModeSelector } from "@/components/travel/travel-mode-selector";
 import { DateWhenField } from "@/components/discover/date-when-field";
 import { useI18n } from "@/components/i18n/locale-provider";
@@ -276,16 +277,20 @@ export function RouteEndpointsForm({
           {t("routes.from")}
         </label>
         <div className="rounded-lg border border-outline-variant/30 bg-surface px-3 py-2">
-          <PlaceAutocomplete
-            id="route-from"
+          <LocationOriginField
             value={fromText}
-            onChange={setFromText}
+            onChange={(next) => {
+              setFromText(next);
+              setError(null);
+            }}
             onPlaceSelect={(place) => {
+              setError(null);
               void resolveSelectedPlace(place).then(setFrom);
             }}
+            autoDetect={false}
+            labelledBy={fromLabelId}
+            inputId="route-from"
             placeholder={t("routes.fromPlaceholder")}
-            ariaLabelledBy={fromLabelId}
-            proximity={from ? { lat: from.lat, lon: from.lon } : null}
             inputClassName="text-base"
           />
         </div>

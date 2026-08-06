@@ -13,7 +13,7 @@ const MapboxWeatherMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex h-full w-full items-center justify-center bg-[#dfe9f5] text-sm text-on-surface-variant">
+      <div className="flex h-full w-full items-center justify-center bg-surface-container text-sm text-on-surface-variant">
         …
       </div>
     ),

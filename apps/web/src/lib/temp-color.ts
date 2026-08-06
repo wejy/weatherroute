@@ -76,6 +76,28 @@ export function temperatureInkColor(celsius: number): string {
   return rgbToHex([r, g, b]);
 }
 
+/**
+ * Label color for °C sitting on the page/card surface (above bars), not on the fill.
+ * Light theme: darkened ink on pale yellows. Dark theme: vivid (lifted) scale color.
+ */
+export function temperatureLabelColor(
+  celsius: number,
+  theme: "light" | "dark" = "light",
+): string {
+  if (theme === "light") return temperatureInkColor(celsius);
+  const [r, g, b] = temperatureColorRgb(celsius);
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  if (luminance < 0.5) {
+    const lift = 0.4;
+    return rgbToHex([
+      Math.min(255, Math.round(r + (255 - r) * lift)),
+      Math.min(255, Math.round(g + (255 - g) * lift)),
+      Math.min(255, Math.round(b + (255 - b) * lift)),
+    ]);
+  }
+  return rgbToHex([r, g, b]);
+}
+
 /** Horizontal CSS gradient for the full −40…+50 scale legend. */
 export function temperatureScaleCssGradient(): string {
   const parts = STOPS.map((s) => {
