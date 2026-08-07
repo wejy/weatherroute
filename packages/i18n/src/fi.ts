@@ -5,18 +5,18 @@ const fi = {
     titleDefault: "Solviax.app — Löydä täydellinen sää",
     titleTemplate: "%s · Solviax.app",
     description:
-      "Löydä kohteita parhaalla säällä seuraavaa reissuasi varten. Karttapohjainen matkasuunnittelu Open-Meteo-ennusteilla.",
+      "Löydä kohteita parhaalla säällä seuraavaa matkaasi varten. Karttapohjainen matkasuunnittelu sääennusteilla.",
     keywords:
-      "säänmukainen matkasuunnittelu, säkartta, aurinkoiset kohteet, reittisää, Solviax, Suomi matkailu",
+      "säänmukainen matkasuunnittelu, sääpohjainen navigointi, sääkartta, aurinkoiset kohteet, reittisää, Solviax, Suomi matkailu",
     ogSiteName: "Solviax.app",
     pages: {
       about:
-        "Näin Solviax.app järjestää kohteet sääennusteiden mukaan — suunnittele matkasi selkeämmän taivaan mukaan.",
-      pro: "Vertaa Solviax.appin ilmaista ja Pro-tilausta — laajemmat haut, enemmän tuloksia ja tallennetut reitit.",
-      map: "Tutki lähikohteita säkartalla ja löydä selkeämpi sää ympärilläsi.",
+        "Solviax.app järjestää lähialueen kohteet sääennusteiden mukaan — suunnittele matkasi sään perusteella.",
+      pro: "Vertaa Solviax.appin ilmaista ja Pro-tilausta — laajemmat haut, enemmän tuloksia ja tallenna halutut reitit.",
+      map: "Tutki lähikohteita sääkartalla ja löydä haluamasi sää lähialueeltasi.",
       routes:
-        "Suunnittele reitti ja näe sää matkan varrella — kuivat käytävät, sateen riski ja ennusteet jopa 16 päivää.",
-      home: "Löydä paremman sään kohteita lähelläsi. Säätä seuraava matkasuunnittelu ja reititys.",
+        "Suunnittele reitti ja näet sään matkan varrella — kuivat tiet, sateen mahdollisuus ja ennusteet jopa 16 päivään asti.",
+      home: "Löydä matkustuskohteita lähelläsi sään perusteella. Sääperustainen matkasuunnittelu ja navigointi.",
       destination:
         "Sääennuste: {name}. Tutki kohdetta Solviax.appissa ja suunnittele matka sään mukaan.",
     },
@@ -70,7 +70,7 @@ const fi = {
     detecting:
       "Paikannetaan sijaintia kartan keskittämiseksi… Salli sijainti tai kirjoita osoite/kaupunki ja hae.",
     noDestinations:
-      "Ei kohteita tällä säteellä. Kokeile laajempaa etäisyyttä.",
+      "Ei kohteita tällä haulla. Kokeile laajempaa etäisyyttä.",
   },
   search: {
     whereFrom: "Mistä lähdet?",
@@ -81,9 +81,9 @@ const fi = {
     searching: "Haetaan…",
     updateResults: "Päivitä tulokset",
     pendingUpdate:
-      "Suodattimia muutettu — päivitä haku nähdäksesi uudet kohteet (käyttää Discover-haun).",
+      "Suodattimia muutettu — päivitä haku nähdäksesi uudet kohteet.",
     chooseOrigin: "Valitse ensin lähtöpaikka.",
-    placeNotFound: "Paikkaa ei löytynyt. Valitse ehdotuksista.",
+    placeNotFound: "Paikkaa ei löytynyt. Valitse ehdotuksista tai kirjoita uusi osoite.",
     distances: {
       near: "Lähialue · 30 km",
       semi: "Lähiympäristö · 60 km",
@@ -91,7 +91,7 @@ const fi = {
       neighborhood: "Alueellinen · 200 km",
       region: "Valtakunnallinen · 300 km",
       continent: "Manner · 1 000 km",
-      custom: "Oma säde",
+      custom: "Oma etäisyys",
     },
     /** Suljettu trigger / kapea layout — täydet nimet `distances`-avaimissa. */
     distancesCompact: {
@@ -101,7 +101,7 @@ const fi = {
       neighborhood: "Alueellinen",
       region: "Valtakunnallinen",
       continent: "Manner",
-      custom: "Oma säde",
+      custom: "Oma etäisyys",
     },
     customRadius: "Säde",
     customRadiusHint: "0–2 000 km",
@@ -179,7 +179,7 @@ const fi = {
     precipHint:
       "Siniset palkit = päivän huipputodennäköisyys. Viiva = arvioitu sade (mm). Napauta päivää nähdäksesi sade-ennusteen tunnittain alla.",
     hourlyForDay: "Sade-ennuste tunnittain · {day}",
-    hourlyEmpty: "Tuntiennustetta ei ole vielä tälle päivälle.",
+    hourlyEmpty: "Tuntiennustetta ei ole vielä saatavilla tälle päivälle.",
     precipMm: "Sade mm",
     clouds: "Pilvet",
     rainPct: "Sade {pct} %",
@@ -195,10 +195,10 @@ const fi = {
     wikipediaUnavailable: "Wikipedia-artikkelia ei löytynyt tälle kohteelle.",
   },
   map: {
-    nearbyIdeal: "Lähiseudun kohteet",
+    nearbyIdeal: "Parhaat kohteet sinulle",
     searchPlaceholder: "Hae 300 km säteellä…",
     kmAway: "{distance} päässä (~{duration}) · {temp} °C",
-    rainProbability: "Sadetodennäköisyys: {pct} %",
+    rainProbability: "Saateen todennäköisyys: {pct} %",
     rainAmount: "Sademäärä: {mm} mm",
     generateRoute: "Luo reitti",
     filterWeather: "Suodata säätä",
@@ -242,23 +242,23 @@ const fi = {
     roleStart: "Lähtö",
     roleMidpoint: "Väli",
     roleDestination: "Kohde",
-    rainProbability: "Sadetodennäköisyys",
+    rainProbability: "Sateen todennäköisyys",
     rainAmount: "Sademääräarvio",
     rainAmountValue: "{mm} mm",
     conditions: "Reittiolosuhteet",
     clearRoute: "Selkeä reitti",
-    cloudyCaution: "Pilvistä / varovaisuus",
+    cloudyCaution: "Pilvistä / muuta huomioitavaa",
     rainWarning: "Sade",
     noAdvisories: "Ei säävaroituksia tässä kohdassa.",
     advisoriesTitle: "Reitin varoitukset",
     advisoriesHint:
-      "Perustuu reittikäytävän ennusteeseen (ei virallisia sääpalvelun varoituksia).",
+      "Perustuu reitin ennusteeseen (ei virallisia sääpalvelun varoituksia).",
     from: "Mistä",
     to: "Minne",
     fromPlaceholder: "Osoite, maamerkki tai kaupunki…",
     toPlaceholder: "Osoite, maamerkki tai kaupunki…",
     updateRoute: "Näytä reitti",
-    alternativesTitle: "Vertailussa olevat reitit",
+    alternativesTitle: "Vertailtavat reitit",
     alternativeFastest: "Nopein reitti",
     alternativeDriest: "Paras sääreitti",
     alternativeBoth: "Nopein ja paras sääreitti",
@@ -278,14 +278,14 @@ const fi = {
       "Näiden paikkojen välillä ei löytynyt pyörä- tai lauttayhteyttä. Kartalla näkyvät vain päätepisteet säätä varten — tämä ei todennäköisesti ole pyöräiltävä reitti.",
     durationUnavailable: "Matka-aikaa ei saatavilla",
     straightLineDistance: "Lintuperspektiivi {distance}",
-    windowPeakRain: "Kohteen korkein saderiski {pct} % (valittu ajankohta)",
+    windowPeakRain: "Kohteen korkein sateen todennäköisyys {pct} % (valittuna ajankohtana)",
     arrivalRain: "Saapumisella (paras lähtö): {pct} %",
     unreachableDepartureHint:
-      "Sää päätepisteissä noin {time}. {mode}-reittiä ei ole, joten käytävää ei voida ajoittaa.",
+      "Sää päätepisteissä noin {time}. {mode}-reittiä ei ole, joten ajankohtaa ei voida ajoittaa.",
     modeDriving: "auto",
     modeCycling: "pyörä",
     departureHintWeatherRoute:
-      "Lähde noin {time} tällä reitillä {from} → {to} ({extra}). Suurin saderiski lähellä: {place} ({rain} %).",
+      "Lähde noin {time} tällä reitillä {from} → {to} ({extra}). Suurin sateen todennäköisyys lähellä: {place} ({rain} %).",
     pickBoth: "Valitse sekä lähtö että kohde ehdotuksista.",
     travelMode: "Millä matkustat?",
     departureTimeLabel: "Lähdön ajankohta",
@@ -298,9 +298,9 @@ const fi = {
       "Pro-ominaisuus — aseta alku- ja/tai lopputunti parhaalle lähtöehdotukselle.",
     departureUpgrade: "Katso tilaukset",
     saveRoute: "Tallenna reitti",
-    saveRouteSignIn: "Kirjaudu tallentaaksesi reitin",
+    saveRouteSignIn: "Kirjaudu tallentaaksesi reitti",
     saveRouteUpgrade: "Päivitä Prohon tallentaaksesi reittejä",
-    saveRouteLimit: "Reittiraja täynnä — päivitä Jatkuvaan tai Vuoteen, tai poista tallennettu reitti",
+    saveRouteLimit: "Reittiraja täynnä — päivitä maksulliseen tilaukseen, tai poista tallennettu reitti",
     saveRouteDone: "Reitti tallennettu",
     saveRouteError: "Reitin tallennus epäonnistui",
     durationMinutes: "{m} min",
@@ -321,11 +321,11 @@ const fi = {
   },
   trips: {
     title: "Tallennetut matkat",
-    subtitle: "Sään mukaan optimoidut reissut · kirjautunut: {name}",
+    subtitle: "Sään mukaan optimoidut matkat · kirjautunut: {name}",
     discoverMore: "Löydä lisää",
     empty:
       "Ei tallennettuja matkoja vielä. Löydä aurinkoinen tai muu kiinnostava kohde ja tallenna se.",
-    emptyFiltered: "Ei tallennettuja matkoja tällä kulkuvälineellä vielä.",
+    emptyFiltered: "Ei tallennettuja matkoja tällä kulkuvälineellä.",
     continueDemo: "Jatka demokäyttäjänä",
     openRoute: "Avaa reitti",
     remove: "Poista",
@@ -339,7 +339,7 @@ const fi = {
     demoSession: "Kirjautunut: {name}",
     demoHint:
       "Demotila ilman tietokantaa. Käytä sähköpostikirjautumista kun Postgres on käytössä.",
-    otpHint: "Rekisteröidy tai kirjaudu syöttämällä sähköpostisi — lähetämme sinulle kirjautumiskoodin.",
+    otpHint: "Rekisteröidy tai kirjaudu syöttämällä sähköpostisi — lähetämme sinulle kirjautumiskoodin sähköpostiisi.",
     emailLabel: "Sähköposti",
     sendCode: "Lähetä koodi",
     sendCodeAgain: "Lähetä uusi koodi",
@@ -349,7 +349,7 @@ const fi = {
     verifyCode: "Vahvista ja kirjaudu",
     verifyingCode: "Vahvistetaan…",
     codeSent:
-      "Koodi lähetetty osoitteeseen {email}. Tarkista sähköposti (tai palvelimen konsoli lokalisti).",
+      "Koodi lähetetty osoitteeseen {email}. Tarkista sähköpostisi (myös spam-kansio).",
     changeEmailHint: "Vaihda sähköposti yllä lähettääksesi koodin toiseen osoitteeseen.",
     errorEmail: "Anna kelvollinen sähköposti.",
     errorSend: "Koodin lähetys epäonnistui. Yritä uudelleen.",
@@ -359,7 +359,7 @@ const fi = {
     signOut: "Kirjaudu ulos",
     continueDemo: "Jatka demotilillä",
     supabaseHint: "Aseta DATABASE_URL ja USE_MOCKS=false email-OTP:lle.",
-    otpFooter: "Lokalisti: EMAIL_MODE=console tulostaa koodin palvelimen lokiin.",
+    otpFooter: "",
   },
   email: {
     otpSubject: "Solviax.app-kirjautumiskoodisi",
@@ -367,13 +367,13 @@ const fi = {
     otpGreeting: "Hei,",
     otpWelcomeTitle: "Tervetuloa Solviax.appiin",
     otpWelcomeLead:
-      "Kiitos, että liityit. Solviax.app auttaa löytämään paremman sään seuraavalle reissullesi — tutki kohteita, suunnittele reittejä ja tallenna suosikkisi.",
+      "Kiitos, että aloitit palvelun käytön. Solviax.app auttaa löytämään paremman sään seuraavalle matkallesi — tutki kohteita, suunnittele reittejä ja tallenna suosikkisi.",
     otpSignInTitle: "Kirjautumiskoodisi",
     otpCodeIntro: "Käytä tätä kertakäyttökoodia kirjautuaksesi:",
     otpExpires: "Koodi vanhenee 10 minuutin kuluttua.",
     otpIgnore:
       "Jos et pyytänyt tätä viestiä, voit jättää sen huomiotta.",
-    otpFooter: "Solviax.app · Löydä parempi sää lähistöltä",
+    otpFooter: "Solviax.app · Karttapohjainen matkasuunnittelu sääennusteilla.",
   },
   settings: {
     title: "Omat asetukset",
@@ -396,13 +396,13 @@ const fi = {
       "Ilman kirjautumista näet {count} kohdetta. Kirjaudu saadaksesi enemmän.",
     sameCountryTitle: "Vain sama maa",
     sameCountryHint:
-      "Kun asetus on päällä, Löydä ja Kartta näyttävät vain kohteita samasta maasta kuin lähtöpaikkasi (esim. Oulusta ei näy Ruotsin kaupunkeja). Koskee kaikkia hakuja.",
+      "Kun asetus on päällä, Löydä ja Kartta näyttävät vain kohteita samasta maasta kuin lähtöpaikkasi (esim. Oulusta ei näy Ruotsin kaupunkeja). Asetus koskee kaikkia hakuja.",
     sameCountryLabel: "Rajoita tulokset lähtömaan sisälle",
     sameCountryProNote:
       "Tallennus odottaa Pro-päivitystä. Siihen asti hauissa voi olla naapurimaita.",
-    sameCountryActive: "Käytössä: kohteet pysyvät samassa maassa kuin lähtö.",
+    sameCountryActive: "Käytössä: kohteet pysyvät samassa maassa kuin lähtöpaikka.",
     sameCountrySignInNote:
-      "Kirjaudu ja päivitä Prohon rajoittaaksesi haun yhteen maahan.",
+      "Kirjaudu ja päivitä Prohon rajoittaaksesi haun tulokset lähtöpaikan maan sisälle.",
     appearanceTitle: "Ulkoasu",
     themeLabel: "Teema",
     themeSystem: "Järjestelmä",
@@ -411,7 +411,7 @@ const fi = {
     themeHint: "Valitse vaalea, tumma tai seuraa laitteen asetusta.",
     subscriptionTitle: "Tilaus",
     subscriptionBody:
-      "Avaa laajemmat säteet, enemmän Löydä-tuloksia, 500 reittihakua/kk, lähtöajan ikkuna reiteillä, saman maan rajaus ja tallennetut reitit Kerta-, Jatkuva- tai Vuosi-Prolla.",
+      "Avaa laajemmat säteet, enemmän Löydä-tuloksia, 500 reittihakua/kk, lähtöajan valinta reiteillä, saman maan rajaus ja tallennetut reitit Kerta-, Jatkuva- tai Vuosi-Prolla.",
     subscriptionCta: "Katso tilaus ja hinnat",
     subscriptionSoon: "Stripe-avaimia ei ole vielä määritetty.",
     subscriptionSignInHint: "Kirjaudu nähdäksesi tilauksesi ja hallitaksesi laskutusta.",
@@ -497,30 +497,30 @@ const fi = {
     eyebrow: "Suunnittele matkasi sään mukaan",
     headline: "Löydä paras sää seuraavaa reissuasi varten",
     lead:
-      "Solviax.app auttaa löytämään, missä on poutaisempi sää — ja suunnittelemaan reitin sään perusteella. Ennusteet ulottuvat jopa 16 päivään, joten voit lukita viikonlopun tai pidemmän reissun hyvissä ajoin.",
+      "Solviax.app auttaa löytämään, missä on poutaisempi sää — ja suunnittelemaan reitin sään perusteella. Ennusteet ulottuvat jopa 16 päivään, joten voit varmistaa tulevan viikonlopun tai muun matkustusajankohdan hyvän sään aikana.",
     purposeTitle: "Miten Solviax.app toimii",
     purposeBody:
-      "Rankkaamme lähialueen kohteet sääennusteen mukaan valitsemillesi päiville, jotta arvailet vähemmän ja nautit selkeämmästä säästä enemmän.",
+      "Arvotamme lähialueen kohteet sääennusteen mukaan valitsemillesi päiville, jotta pystyt nauttimaan paremman sään aikana enemmän.",
     whyTitle: "Miksi Solviax.app",
     whyBody:
-      "Solviax.app syntyi omasta tarpeesta. Suomen epävakainen sää sai minut epäröimään. Missä olisi paras sää seuraavana viikonloppuna? Tähän en löytänyt täysin sopivaa ratkaisua. Tässä siis Sol-via-x — aurinkoista tietä pitkin.",
-    highlightsTitle: "Miksi matkustajat pitävät siitä",
+      "Solviax.app syntyi omasta tarpeesta. Suomen epävakainen sää sai minut epävarmaksi. Missä olisi lähialueen paras sää seuraavana viikonloppuna? Tähän en löytänyt täysin sopivaa ratkaisua. Tässä siis Sol-via-x — aurinkoista tietä pitkin.",
+    highlightsTitle: "Miksi käyttäjät pitävät siitä",
     highlights: {
       horizon: {
         title: "Jopa 16 päivän päähän",
         body: "Valitse tänään, huomenna, viikonloppu tai oma aikaväli — ennusteet yltävät jopa 16 päivään, jotta suunnittelu onnistuu ajoissa.",
       },
       ranking: {
-        title: "Sään mukaan rankatut kohteet",
+        title: "Sään mukaan arvotetut kohteet",
         body: "Kerro mitä etsit — aurinkoa, kuivaa tietä, leutoa säätä — ja nostamme esiin päiviisi sopivat paikat, ei vain lähintä kaupunkia.",
       },
       corridor: {
         title: "Sää reitin varrella",
-        body: "Näet kuivuuden ja olosuhteet ajon tai pyöräilyn varrella, sekä Pro-lähtöikkunan (Alku–Loppu) fiksummille ehdotuksille.",
+        body: "Näet reitin lämpötilan, kuivuuden ja olosuhteet ajon tai pyöräilyn varrella, sekä Pro-lähtöajan (Alku–Loppu) fiksummille ehdotuksille.",
       },
       trust: {
         title: "Nopea ja tietoturvallinen",
-        body: "Sähköpostin kertakoodi (ei salasanaa). Tallennetut reitit pysyvät tililläsi. Maksut hoitaa Stripe.",
+        body: "Palvelussa on priorisoitu tietoturvallisuutta. Käyttöön tarvitset vain sähköpostin (ei salasanaa). Tallennetut reitit pysyvät tililläsi. Maksut hoitaa Stripe.",
       },
     },
     featuresTitle: "Mitä voit tehdä",
@@ -528,12 +528,12 @@ const fi = {
       "Kaikki mitä tarvitset kysymyksestä ”missä sää näyttää hyvältä?” kysymykseen ”miten pääsen perille?”",
     features: {
       horizon: {
-        title: "Suunnittele jopa 16 päivän päähän",
-        body: "Käytä valmiita päiviä tai omaa aikaväliä. Monipäiväiset ennusteet kattavat sekä keskiviikon että seuraavan viikonlopun.",
+        title: "Suunnittele matkasi jopa 16 päivän päähän",
+        body: "Käytä valmiita päiviä tai omaa aikaväliäsi. Monipäiväiset ennusteet kattavat sekä tulevan keskiviikon että seuraavan viikonlopun.",
       },
       discover: {
         title: "Säähaku (Löydä)",
-        body: "Hae paikkoja lähialueeltasi ja anna Solviax.appin nostaa parhaat olosuhteet esiin haluamillesi päiville.",
+        body: "Hae paikkoja lähialueeltasi ja anna Solviax.appin nostaa parhaat paikat esiin haluamillesi päiville.",
       },
       goals: {
         title: "Tavoitteet jotka sopivat reissuun",
@@ -569,7 +569,7 @@ const fi = {
       },
       fast: {
         title: "Rakennettu nopeisiin hakuihin",
-        body: "Säätuloksia välimuistetaan ja haetaan erissä, joten Löydä ja reittitarkistukset pysyvät nopeina ja tehokkaina.",
+        body: "Sää- ja karttadata on erittäin monimutkaista. Me olemme ottaneet sen huomioon. Paikkasuositukset ja reittitarkistukset pysyvät nopeina ja tehokkaina.",
       },
       secure: {
         title: "Tietoturva mukana suunnittelussa",
@@ -588,9 +588,9 @@ const fi = {
     proTitle: "Pro",
     proItems: {
       radius: "Valtakunnallinen, Manner ja oma hakusäde",
-      results: "Enintään 30 kohdetta + lähtöajan ikkuna reiteillä",
-      sameCountry: "Valinnainen rajoitus: näytä vain saman maan kohteet",
-      saves: "Tallennetut reitit (2 reittiä Kerta-tilauksella · rajaton Jatkuvalla ja Vuodella)",
+      results: "Enintään 30 kohdetta + lähtöajan valinta reiteillä",
+      sameCountry: "Valinnainen rajoitus: näytä vain lähtöpaikan maan kohteet",
+      saves: "Tallennetut reitit (2 reittiä Kerta-tilauksella · rajaton määrä reittejä Jatkuvalla ja Vuodella)",
     },
     plansCta: "Vertaa tilauksia ja tilaa",
     plansHint: "Täysi hinnasto ja maksutavat ovat tilaussivulla.",
@@ -705,13 +705,13 @@ const fi = {
         "Hae kauempaa: Valtakunnallinen, Manner ja oma säde.",
       results: "Näe enemmän rankattuja kohteita — jopa 30 per haku.",
       departure:
-        "Jokaisella reitillä voit asettaa lähtöajan ikkunan (Alku ja/tai Loppu), jotta ehdotukset sopivat aikatauluusi.",
+        "Jokaisella reitillä voit asettaa lähtöajan rajauksen (Alku ja/tai Loppu), jotta ehdotukset sopivat aikatauluusi.",
       sameCountry:
         "Pidä Löydä yhdessä maassa — valinnainen asetus, koskee kaikkia hakuja.",
       routes:
         "Tallenna reittejä — 2 Kerta-tilauksella, rajattomasti Jatkuvalla ja Vuodella.",
       discovers: "Satoja Löydä-hakuja Pro-jakson ajan.",
-      future: "Tulevat Pro-ominaisuudet sitä mukaa kun ne julkaistaan.",
+      future: "Tulevat Pro-ominaisuudet sitä mukaa kun ne julkaistaan...",
     },
     freeNoteTitle: "Mitä Ilmainen jo sisältää",
     freeNoteBody:
@@ -721,7 +721,7 @@ const fi = {
     ctaSoon: "Laskutusta ei ole määritetty",
     ctaSettings: "Asetuksesi",
     ctaDiscover: "Löydä reittisi",
-    ctaSignIn: "Kirjaudu ostaaksesi",
+    ctaSignIn: "Kirjaudu tilataksesi",
     buyOneTime: "Osta Kerta · 1,99 €",
     buyMonthly: "Tilaa Jatkuva · 2,99 €",
     buyYearly: "Tilaa Vuosi · 30 €",
@@ -734,7 +734,7 @@ const fi = {
     paymentHistoryTitle: "Maksuhistoria",
     paymentDate: "Päivä",
     paymentAmount: "Summa",
-    paymentHistoryEmpty: "Ei maksuja vielä.",
+    paymentHistoryEmpty: "Ei vielä maksuja.",
     openWebToBuy: "Jatka verkkosivulla",
     manageOnWeb: "Hallitse verkkosivulla",
     storePurchaseNote:
@@ -785,7 +785,7 @@ const fi = {
       "Olet käyttänyt tämän kuukauden Pro-reittivarauksen (500). Kiintiö nollautuu seuraavan kalenterikuukauden alussa.",
     routeQuotaUsed: "Käytetty {used}/{limit} reittihakua",
     routeQuotaUsedNetwork:
-      "Käytetty {used}/{limit} reittihakua tältä verkolta tänään",
+      "Käytetty {used}/{limit} reittihakua samasta verkko-osoitteesta tänään",
     upgradePro: "Katso Pro-tilaukset",
     quotaUsed: "Käytetty {used}/{limit} hakua",
     quotaUsedNetwork: "Käytetty {used}/{limit} hakua tältä verkolta tänään",
@@ -854,7 +854,7 @@ const fi = {
     freezingRainDescPlace: "Alijäähtynyttä vettä lähellä: {place}.",
     icingTitle: "Liukkaus- / jäätymisriski",
     icingDesc:
-      "Lämpötila nollan tuntumassa kosteuden kanssa — varo liukkaita pintoja.",
+      "Lämpötila nollan tuntumassa kosteuden kanssa — varo liukkautta.",
     snowTitle: "Lunta / liukkautta",
     snowDesc: "Lunta odotettavissa — varaa lisää ajoaikaa.",
     snowDescPlace: "Lunta odotettavissa lähellä: {place}.",

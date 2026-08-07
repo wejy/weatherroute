@@ -2,23 +2,23 @@ import type { WeatherCondition } from "./types";
 
 const en = {
   meta: {
-    titleDefault: "Solviax.app — Find perfect weather",
+    titleDefault: "Solviax.app — Find perfect weather nearby",
     titleTemplate: "%s · Solviax.app",
     description:
-      "Discover destinations with the best weather for your next escape. Map-based trip planning with Open-Meteo forecasts.",
+      "Discover destinations with the best weather for your next escape. Map-based trip planning with weather forecasts.",
     keywords:
-      "weather trip planning, weather map, sunny destinations, route weather, Solviax, Finland travel",
+      "weather trip planning, weather map, sunny destinations, route weather, weather based routing, weather based navigation, Solviax, Finland travel",
     ogSiteName: "Solviax.app",
     pages: {
       about:
-        "Learn how Solviax.app ranks destinations by weather forecasts so you can plan trips around clearer skies.",
+        "Solviax.app ranks destinations by weather forecasts so you can plan trips around your preferred weather.",
       pro: "Compare Free and Pro plans for Solviax.app — wider search radii, more results, and saved routes.",
       map: "Explore nearby destinations on a weather map and find clearer skies around you.",
       routes:
         "Plan a route and see weather along the way — dry corridors, rain risk, and forecasts up to 16 days.",
       home: "Find destinations with better weather near you. Weather-first trip planning and routing.",
       destination:
-        "Weather forecast for {name}. Explore on Solviax.app and plan your trip around the weather.",
+        "Weather forecast for {name}. Explore on Solviax.app and plan your trip based around the weather.",
     },
   },
   brand: "Solviax.app",
@@ -74,13 +74,13 @@ const en = {
   search: {
     whereFrom: "Where are you starting from?",
     whenGoing: "When are you going?",
-    howFar: "Distance? (Radius)",
+    howFar: "Distance? (Circle)",
     weatherGoal: "Weather goal",
     search: "Search Destinations",
     searching: "Searching…",
     updateResults: "Update results",
     pendingUpdate:
-      "Filters changed — tap Update to refresh destinations (uses a discover search).",
+      "Filters changed — tap Update to refresh destinations.",
     chooseOrigin: "Choose a starting point first.",
     placeNotFound: "Couldn’t find that place. Pick one from the suggestions.",
     distances: {
@@ -90,7 +90,7 @@ const en = {
       neighborhood: "Wider Region · 200 km (~124 mi)",
       region: "National Level · 300 km (~186 mi)",
       continent: "Continent · 1,000 km (~621 mi)",
-      custom: "Custom radius",
+      custom: "Custom circle",
     },
     /** Closed trigger / tight layouts — full names stay in `distances`. */
     distancesCompact: {
@@ -102,7 +102,7 @@ const en = {
       continent: "Continent · 1,000 km",
       custom: "Custom",
     },
-    customRadius: "Radius",
+    customRadius: "Circle",
     customRadiusHint: "0–2,000 km (~0–1,243 mi)",
     distanceProOption: "{label} (Pro)",
     distanceProHint:
@@ -193,7 +193,7 @@ const en = {
     wikipediaUnavailable: "No Wikipedia article found for this place.",
   },
   map: {
-    nearbyIdeal: "Nearby Ideal Weather",
+    nearbyIdeal: "Best destinations for You",
     searchPlaceholder: "Search within 300 km (~186 mi)…",
     kmAway: "{distance} away (~{duration}) · {temp}C",
     rainProbability: "Rain probability: {pct}%",
@@ -231,7 +231,7 @@ const en = {
   routes: {
     dryTrip: "Dryness score",
     dryTripDesc:
-      "How dry the wettest point on your corridor looks for this departure (100 − peak rain %). Not a guarantee.",
+      "How dry the road looks for this departure. Not a guarantee.",
     bestDeparture: "Best Departure Time",
     departureHint:
       "Leave around {time} for the driest drive from {from} to {to}. Highest rain risk near {place} ({rain}%).",
@@ -336,7 +336,7 @@ const en = {
     demoSession: "Signed in as {name}",
     demoHint:
       "Demo mode — no database. Use email sign-in when Postgres is configured.",
-    otpHint: "Enter your email and we’ll send a 6-digit code. No password.",
+    otpHint: "Enter your email and we’ll send a 6-digit code. No password needed.",
     emailLabel: "Email",
     sendCode: "Send code",
     sendCodeAgain: "Send new code",
@@ -345,7 +345,7 @@ const en = {
     codeLabel: "One-time code",
     verifyCode: "Verify and sign in",
     verifyingCode: "Verifying…",
-    codeSent: "Code sent to {email}. Check your inbox (or server console in local mode).",
+    codeSent: "Code sent to {email}. Check your inbox (or spam folder).",
     changeEmailHint: "Change the email above to send a code to a different address.",
     errorEmail: "Please enter a valid email.",
     errorSend: "Could not send the code. Try again.",
@@ -355,7 +355,7 @@ const en = {
     signOut: "Sign out",
     continueDemo: "Continue with demo account",
     supabaseHint: "Set DATABASE_URL and USE_MOCKS=false for email OTP.",
-    otpFooter: "Local: EMAIL_MODE=console prints the code in the server log.",
+    otpFooter: "",
   },
   email: {
     otpSubject: "Your Solviax.app sign-in code",
@@ -382,7 +382,7 @@ const en = {
     tierPro: "Plan: Pro",
     discoverTitle: "Discover results",
     discoverHint:
-      "How many destinations to show after ranking. Higher values fetch more weather and may load a bit slower.",
+      "How many destinations to show after ranking. Higher values fetch more weather data and may load a bit slower.",
     discoverLabel: "Results to show",
     discoverOption: "{count} destinations",
     discoverOptionPro: "{count} (Pro)",
@@ -392,7 +392,7 @@ const en = {
       "Without signing in you get {count} destinations. Sign in for more.",
     sameCountryTitle: "Same country only",
     sameCountryHint:
-      "When enabled, Discover and Map only show destinations in the same country as your starting point (for example Oulu won’t return Swedish towns). Applies to all your searches.",
+      "When enabled, Discover and Map only show destinations in the same country as your starting point (for example Berlin won’t return French towns). Applies to all your searches.",
     sameCountryLabel: "Limit results to the origin country",
     sameCountryProNote:
       "Saved for when you upgrade to Pro. Until then, searches can include nearby countries.",
@@ -508,11 +508,11 @@ const en = {
       },
       ranking: {
         title: "Weather-ranked destinations",
-        body: "Tell us what you want — sun, dry roads, mild air — and we surface places that match your window, not just the closest town.",
+        body: "Tell us what you want — sun, dry roads, mild air — and we match places that match your window, not just the closest town.",
       },
       corridor: {
         title: "Weather along the route",
-        body: "See dryness and conditions along the drive or ride, plus a Pro departure time window (start–end) for smarter suggestions.",
+        body: "See the weather,dryness and conditions along the drive or ride, plus a Pro departure time window (start–end) for smarter suggestions.",
       },
       trust: {
         title: "Fast, private sign-in",
@@ -529,7 +529,7 @@ const en = {
       },
       discover: {
         title: "Weather-smart discover",
-        body: "Search within a radius and let Solviax.app find the best conditions for your window.",
+        body: "Search within a radius and let Solviax.app find the best conditions for your trip.",
       },
       goals: {
         title: "Goals that match the trip",
@@ -553,7 +553,7 @@ const en = {
       },
       share: {
         title: "Share to Google Maps",
-        body: "Hand off a planned route to Maps (or share a link) so navigation is one tap away.",
+        body: "Hand off a planned route to Google Maps or Apple Maps (or share a link) so realtime navigation is one tap away.",
       },
       wikipedia: {
         title: "Place context from Wikipedia",
@@ -565,11 +565,11 @@ const en = {
       },
       fast: {
         title: "Built for snappy searches",
-        body: "Weather results are cached and fetched in batches, so Discover and route checks stay responsive after the first hit.",
+        body: "Weather and map data is very complex. Discover and route checks are designed performace first - so they are fast.",
       },
       secure: {
         title: "Security-minded by design",
-        body: "Passwordless email sign-in, HTTPS in production, account-scoped saved routes, and Stripe Checkout for payments — we don’t store card numbers.",
+        body: "Passwordless email sign-in, near bank level security, account-scoped saved routes, and Stripe Checkout for payments — we don’t store card numbers.",
       },
     },
     plansTitle: "Free vs Pro — short version",
@@ -908,10 +908,10 @@ const en = {
 
 type DeepStringify<T> = {
   [K in keyof T]: T[K] extends string
-    ? string
-    : T[K] extends Record<string, unknown>
-      ? DeepStringify<T[K]>
-      : T[K];
+  ? string
+  : T[K] extends Record<string, unknown>
+  ? DeepStringify<T[K]>
+  : T[K];
 };
 
 export type Dictionary = DeepStringify<typeof en>;
