@@ -1,10 +1,11 @@
-import { useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
-import { Link, type Href } from "expo-router";
+import { Link, useFocusEffect, type Href } from "expo-router";
 import { useI18n } from "@/lib/i18n";
 import type { AppColors } from "@/constants/Colors";
 import { useColors } from "@/lib/theme";
 import { SiteFooter } from "@/components/SiteFooter";
+import { fetchSession, type DiscoverTier, type SessionUser } from "@/lib/session";
 
 const HIGHLIGHTS = ["horizon", "ranking", "corridor", "trust"] as const;
 
@@ -28,9 +29,28 @@ const PRO_KEYS = ["radius", "results", "sameCountry", "saves"] as const;
 
 export default function AboutScreen() {
   const { t } = useI18n();
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [tier, setTier] = useState<DiscoverTier>("anon");
 
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
+
+  const refreshSession = useCallback(async () => {
+    const next = await fetchSession();
+    setUser(next.user);
+    setTier(next.tier);
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshSession();
+    }, [refreshSession]),
+  );
+
+  const plansCtaLabel =
+    user && tier === "pro"
+      ? t("about.plansCtaManage")
+      : t("about.plansCta");
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
@@ -108,7 +128,7 @@ export default function AboutScreen() {
 
       <Link href={"/pro" as Href} asChild>
         <Pressable style={styles.secondaryBtn}>
-          <Text style={styles.secondaryText}>{t("about.plansCta")}</Text>
+          <Text style={styles.secondaryText}>{plansCtaLabel}</Text>
         </Pressable>
       </Link>
       <Link href={"/(tabs)" as Href} asChild>

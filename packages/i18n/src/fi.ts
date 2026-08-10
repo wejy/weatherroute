@@ -593,15 +593,15 @@ const fi = {
       saves: "Tallennetut reitit (2 reittiä Kerta-tilauksella · rajaton määrä reittejä Jatkuvalla ja Vuodella)",
     },
     plansCta: "Vertaa tilauksia ja tilaa",
+    plansCtaManage: "Hallitse tilaustasi",
     plansHint: "Täysi hinnasto ja maksutavat ovat tilaussivulla.",
     ctaDiscover: "Löydä paikkasi auringossa",
   },
   footer: {
     brand: "Solviax.app",
-    taglineEn1: "Weather-first trip planning",
-    taglineEn2: "Weather based routing",
-    taglineFi1: "Suunnittele matkasi sään mukaan",
-    taglineFi2: "Löydä aurinkoiset paikat ympärilläsi",
+    tagline1: "Suunnittele matkasi sään mukaan",
+    tagline2: "Löydä aurinkoiset paikat ympärilläsi",
+    linksLabel: "Sivusto",
     copyright: "© Whitefield Ltd, Oulu Finland",
     contactAria: "Lähetä sähköpostia Solviax.appiin",
   },
@@ -911,6 +911,19 @@ const fi = {
     body: "Jos sovellus ei aukea automaattisesti, napauta painiketta.",
     open: "Avaa Solviax.app-sovellus",
     webFallback: "Jatka verkkosivulla",
+  },
+  mobileLite: {
+    loading: "Ladataan Solviaxia…",
+    offlineTitle: "Olet offline-tilassa",
+    offlineBody:
+      "Tarkista verkkoyhteys ja yritä uudelleen. Solviax Lite tarvitsee verkon sään ja reittien lataamiseen.",
+    errorTitle: "Solviaxia ei voitu ladata",
+    errorBody:
+      "Palvelu voi olla tilapäisesti poissa käytöstä. Tarkista yhteys ja yritä uudelleen.",
+    retry: "Yritä uudelleen",
+    missingUrlTitle: "Verkko-osoite puuttuu",
+    missingUrlBody:
+      "Aseta EXPO_PUBLIC_WEB_URL Solviaxin web-osoitteeksi (esim. http://OMAN_KONEEN_IP:3004 tai https://solviax.app).",
   },
 } as const satisfies Dictionary;
 

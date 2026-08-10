@@ -4,6 +4,8 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { publicPageMeta } from "@/lib/seo-meta";
+import { getCurrentUser } from "@/server/auth/session";
+import { getBillingEntitlement } from "@/server/dal/subscriptions";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +48,12 @@ export async function generateMetadata() {
 export default async function AboutPage() {
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
+  const user = await getCurrentUser();
+  const billing = user ? await getBillingEntitlement(user.id) : null;
+  const plansCtaLabel =
+    user && billing?.tier === "pro"
+      ? t("about.plansCtaManage")
+      : t("about.plansCta");
 
   return (
     <>
@@ -255,7 +263,7 @@ export default async function AboutPage() {
                 href="/pro"
                 className="inline-flex items-center justify-center rounded-lg bg-secondary px-4 py-3 text-sm font-semibold text-on-secondary"
               >
-                {t("about.plansCta")}
+                {plansCtaLabel}
               </Link>
               <Link
                 href="/"

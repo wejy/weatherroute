@@ -24,6 +24,7 @@ import {
   type BillingPlan,
   type DiscoverTier,
 } from "@/lib/session";
+import { SiteFooter } from "@/components/SiteFooter";
 
 const FEATURE_KEYS = [
   "radius",
@@ -486,6 +487,8 @@ export default function ProMarketingScreen() {
             <Text style={styles.secondaryText}>{t("pro.ctaSettings")}</Text>
           </Pressable>
         </Link>
+
+        <SiteFooter />
       </ScrollView>
     </>
   );

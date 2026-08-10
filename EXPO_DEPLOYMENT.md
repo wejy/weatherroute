@@ -306,6 +306,23 @@ After web purchase, sign in with the same email in the app (`GET /api/auth/me` �
 | **Mapbox in the app** | If you add Mapbox GL Native, use a **public** `pk.` token via `EXPO_PUBLIC_…` and URL restrictions in Mapbox dashboard |
 | **Push notifications** | Extra credentials (FCM / APNs) — not in the app today |
 | **CI** | `eas build` from GitHub Actions with an Expo token |
+| **Solviax Lite (`apps/mobile-lite`)** | WebView store shell over production web — day-1 store rules in [`apps/mobile-lite/STORE.md`](./apps/mobile-lite/STORE.md); run `npm run dev:mobile-lite` |
+
+---
+
+## Solviax Lite (WebView shell)
+
+Separate binary from `apps/mobile`:
+
+| | Full Expo | Lite |
+|--|-----------|------|
+| Package | `@solviax/mobile` | `@solviax/mobile-lite` |
+| Scheme | `solviax://` | `solviaxlite://` |
+| Bundle ID | `com.solviax.app` | `com.solviax.lite` |
+| UI | Native screens | `EXPO_PUBLIC_WEB_URL` in WebView |
+| Auth | `X-Solviax-Session` | Web Auth.js cookies |
+
+Stripe Checkout must open **outside** the WebView (already enforced in the lite shell). See **STORE.md** before any TestFlight / Play upload.
 
 ---
 

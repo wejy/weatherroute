@@ -1,0 +1,54 @@
+{
+  "expo": {
+    "name": "Solviax Lite",
+    "slug": "solviax-lite",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "solviaxlite",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.solviax.lite",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Solviax uses your location to find nearby destinations with better weather. / Solviax käyttää sijaintiasi löytääkseen lähistöltä kohteita paremman sään perusteella."
+      }
+    },
+    "android": {
+      "package": "com.solviax.lite",
+      "adaptiveIcon": {
+        "backgroundColor": "#3525CD",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ],
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FCF8FF"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Allow Solviax to use your location to find nearby destinations with better weather. / Salli Solviaxin käyttää sijaintiasi, jotta se löytää lähistöltä kohteita paremman sään perusteella."
+        }
+      ],
+      "expo-localization",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

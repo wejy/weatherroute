@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { TopNav, BottomNav } from "@/components/layout/top-nav";
+import { SiteFooter } from "@/components/layout/site-footer";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { formatIsoDateForLocale } from "@/lib/dates";
@@ -473,6 +474,8 @@ export default async function ProMarketingPage({
             </Link>
           </div>
         </section>
+
+        <SiteFooter />
       </main>
       <BottomNav />
     </>

@@ -66,7 +66,8 @@ export async function createCheckoutSession(opts: {
   userId: string;
   email: string;
   plan: CheckoutPlan;
-  /** When true, Stripe returns via /open-app → solviax:// deep link. */
+  /** When true, Stripe returns via /open-app → solviax:// deep link (full Expo app).
+   *  Lite (`solviaxlite://`) uses WebView + external browser instead; /open-app also accepts solviaxlite:. */
   returnToApp?: boolean;
 }): Promise<{ url: string }> {
   if (!isStripeBillingConfigured()) {

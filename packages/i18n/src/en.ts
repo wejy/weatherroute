@@ -589,15 +589,15 @@ const en = {
       saves: "Saved routes (2 on One-time · unlimited on Monthly & Yearly)",
     },
     plansCta: "Compare plans & subscribe",
+    plansCtaManage: "Manage your subscription",
     plansHint: "Full price table and checkout live on the plans page.",
     ctaDiscover: "Start discovering",
   },
   footer: {
     brand: "Solviax.app",
-    taglineEn1: "Weather-first trip planning",
-    taglineEn2: "Weather based routing",
-    taglineFi1: "Suunnittele matkasi sään mukaan",
-    taglineFi2: "Löydä aurinkoiset paikat ympärilläsi",
+    tagline1: "Weather-first trip planning",
+    tagline2: "Weather based routing",
+    linksLabel: "Explore",
     copyright: "© Whitefield Ltd, Oulu Finland",
     contactAria: "Email Solviax.app",
   },
@@ -903,6 +903,19 @@ const en = {
     body: "If the app does not open automatically, tap the button below.",
     open: "Open Solviax.app",
     webFallback: "Continue on the website",
+  },
+  mobileLite: {
+    loading: "Loading Solviax…",
+    offlineTitle: "You’re offline",
+    offlineBody:
+      "Check your connection, then try again. Solviax Lite needs the network to load weather and routes.",
+    errorTitle: "Couldn’t load Solviax",
+    errorBody:
+      "The service may be temporarily unavailable. Check your connection and try again.",
+    retry: "Try again",
+    missingUrlTitle: "Web URL not configured",
+    missingUrlBody:
+      "Set EXPO_PUBLIC_WEB_URL to your Solviax web origin (e.g. http://YOUR_LAN_IP:3004 or https://solviax.app).",
   },
 } as const;
 

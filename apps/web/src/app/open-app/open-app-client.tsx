@@ -5,9 +5,11 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useI18n } from "@/components/i18n/locale-provider";
 
+const ALLOWED_APP_SCHEMES = new Set(["solviax:", "solviaxlite:"]);
+
 /**
- * Bridge after Stripe Checkout / Portal when the purchase was started from the
- * Expo app. Lands on https://…/open-app?to=solviax://… then hands off to the app.
+ * Bridge after Stripe Checkout / Portal when the purchase was started from a
+ * native app. Lands on https://…/open-app?to=solviax(lite)://… then hands off.
  */
 export default function OpenAppClient() {
   const { t } = useI18n();
@@ -16,10 +18,9 @@ export default function OpenAppClient() {
 
   const target = useMemo(() => {
     const raw = searchParams.get("to")?.trim() ?? "";
-    if (!raw.startsWith("solviax://")) return null;
     try {
       const u = new URL(raw);
-      if (u.protocol !== "solviax:") return null;
+      if (!ALLOWED_APP_SCHEMES.has(u.protocol)) return null;
       return u.toString();
     } catch {
       return null;
