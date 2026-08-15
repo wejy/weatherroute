@@ -16,11 +16,17 @@ import { mapboxDarkBasemapClass, mapboxStyleForTheme } from "@/lib/theme";
 import { prefetchWikipediaForMarkers } from "@/lib/wikipedia-client";
 import type { MapMarkerDto } from "@/lib/types";
 import {
-  markerChipHtml,
-  markerWarnDotHtml,
+  escapeMarkerHtml,
   originDotHtml,
+  rankedMarkerLabel,
+  routeWarnBadgeHtml,
+  routeWaypointChipHtml,
   weatherMarkerToneBorder,
 } from "@/lib/map-marker-chrome";
+import {
+  SEVERE_ALERT_COLOR,
+  WEATHER_TONE_COLORS,
+} from "@/lib/weather-tone";
 import {
   installMapboxTelemetryGuard,
   safeRemoveMap,
@@ -207,11 +213,13 @@ export function MapboxWeatherMap({
         const el = document.createElement("button");
         el.type = "button";
         el.className = "solviax-map-marker";
+        const displayName = rankedMarkerLabel(marker.name, marker.rank);
+        const rainPct = marker.rainProbability ?? 0;
         el.setAttribute(
           "aria-label",
           isOrigin
             ? `${marker.name}`
-            : `${marker.name}, ${Math.round(marker.temperatureC)}C`,
+            : `${displayName}, ${Math.round(marker.temperatureC)}°, rain ${rainPct}%`,
         );
         el.style.cursor = isOrigin ? "default" : "pointer";
         el.style.border = "none";
@@ -229,14 +237,20 @@ export function MapboxWeatherMap({
         const toneBorder = weatherMarkerToneBorder({ tone, severe, selected });
         const showWarn =
           tone === "warning" || tone === "caution" || severe;
+        const badgeColor = severe
+          ? SEVERE_ALERT_COLOR
+          : tone === "warning"
+            ? WEATHER_TONE_COLORS.warning
+            : WEATHER_TONE_COLORS.caution;
         el.innerHTML = isOrigin
           ? originDotHtml()
-          : markerChipHtml({
+          : routeWaypointChipHtml({
               tempLabel: `${Math.round(marker.temperatureC)}°`,
+              rainPct,
               toneBorder,
-              warnDotHtml: showWarn
-                ? markerWarnDotHtml({ severe, tone })
-                : "",
+              warnBadgeHtml: showWarn ? routeWarnBadgeHtml(badgeColor) : "",
+              nameHtml: escapeMarkerHtml(displayName),
+              selected,
             });
 
         el.addEventListener("click", (e) => {

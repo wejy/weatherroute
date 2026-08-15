@@ -268,6 +268,18 @@ a[href] {
   cursor: pointer;
 }
 
+/*
+ * OLED/LCD fringe on lemon yellow: hard yellow→surface AA reads as 1px red/green.
+ * Soft multi-stop outer glow blends the edge into the page (filter keeps box-shadow free).
+ */
+.bg-accent,
+.bg-accent-container {
+  filter:
+    drop-shadow(0 0 0.5px color-mix(in srgb, var(--accent) 35%, var(--surface) 65%))
+    drop-shadow(0 0 1.5px color-mix(in srgb, var(--accent) 22%, var(--surface) 78%))
+    drop-shadow(0 0 3px color-mix(in srgb, var(--surface) 88%, transparent));
+}
+
 ::selection {
   background: var(--primary-container);
   color: var(--on-primary-container);

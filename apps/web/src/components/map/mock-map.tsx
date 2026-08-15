@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from "react";
 import type { MapMarkerDto, PlaceDto } from "@/lib/types";
-import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
-import { formatTemp, cn } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { formatDistanceKm } from "@/lib/distance";
 import { destinationHref, markerNavHrefs } from "@/lib/discover-query";
 import { MapMarkerPopup } from "@/components/map/map-marker-popup";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { prefetchWikipediaForMarkers } from "@/lib/wikipedia-client";
+import { rankedMarkerLabel } from "@/lib/map-marker-chrome";
 
 /** Project lat/lon into map % coords relative to origin + radius circle. */
 function project(
@@ -163,6 +163,14 @@ export function MockMap({
         );
         const isOrigin = marker.id.startsWith("origin-");
         const isSelected = selectedId === marker.id;
+        const displayName = rankedMarkerLabel(marker.name, marker.rank);
+        const rainPct = marker.rainProbability ?? 0;
+        const severe =
+          marker.condition === "storm" ||
+          marker.condition === "hail" ||
+          marker.condition === "freezing_rain";
+        const tone = marker.tone ?? "clear";
+        const showWarn = tone === "warning" || tone === "caution" || severe;
 
         return (
           <button
@@ -178,57 +186,73 @@ export function MockMap({
             aria-label={
               isOrigin
                 ? `${marker.name} (origin)`
-                : `${marker.name}, ${formatTemp(marker.temperatureC)}`
+                : `${displayName}, ${Math.round(marker.temperatureC)}°, rain ${rainPct}%`
             }
             className={cn(
-              "absolute z-20 flex min-h-11 min-w-11 -translate-x-1/2 -translate-y-1/2 cursor-pointer flex-col items-center transition-all",
+              "absolute z-20 flex min-h-11 min-w-11 cursor-pointer flex-col items-center gap-0.5 transition-transform",
               isSelected && "z-30",
             )}
-            style={{ left: `${left}%`, top: `${top}%` }}
+            style={{
+              left: `${left}%`,
+              top: `${top}%`,
+              transform: isSelected
+                ? "translate(-50%, -100%) scale(1.08)"
+                : "translate(-50%, -100%)",
+            }}
           >
-            <div
-              className={cn(
-                "mb-1 flex items-center gap-2 rounded-full border px-3 py-1.5 shadow-lg backdrop-blur-md transition-transform",
-                isOrigin
-                  ? "border-primary/40 bg-primary text-on-primary"
-                  :                 isSelected
-                  ? "border-primary bg-surface/95"
-                  : marker.tone === "warning" ||
-                      marker.condition === "storm" ||
-                      marker.condition === "hail" ||
-                      marker.condition === "freezing_rain"
-                      ? marker.condition === "storm" ||
-                        marker.condition === "hail" ||
-                        marker.condition === "freezing_rain"
-                        ? "border-error/60 bg-surface/95"
-                        : "border-secondary/60 bg-surface/95"
-                      : marker.tone === "caution"
-                        ? "border-amber-400/70 bg-surface/95"
-                        : "border-outline-variant/30 bg-surface/95",
-              )}
-            >
-              {!isOrigin && (
-                <>
-                  <span
-                    className="text-xl font-semibold text-on-surface"
-                    aria-hidden="true"
-                  >
-                    {formatTemp(marker.temperatureC)}
-                  </span>
-                  <span
-                    className={`material-symbols-outlined fill-icon text-lg ${weatherIconClass(marker.condition)}`}
-                    aria-hidden="true"
-                  >
-                    {weatherIcon(marker.condition)}
-                  </span>
-                </>
-              )}
-              {isOrigin && (
+            {isOrigin ? (
+              <div className="mb-1 flex items-center gap-2 rounded-full border-2 border-surface bg-primary px-3 py-1.5 text-on-primary shadow-lg">
                 <span className="text-sm font-semibold" aria-hidden="true">
                   ●
                 </span>
-              )}
-            </div>
+              </div>
+            ) : (
+              <>
+                <div
+                  className={cn(
+                    "relative flex items-center gap-1.5 rounded-[14px] border-2 bg-surface/95 px-2.5 py-2 shadow-lg backdrop-blur-md",
+                    isSelected
+                      ? "border-primary"
+                      : severe
+                        ? "border-error/60"
+                        : tone === "warning"
+                          ? "border-secondary/60"
+                          : tone === "caution"
+                            ? "border-amber-400/70"
+                            : "border-outline-variant/30",
+                  )}
+                >
+                  <span className="text-[15px] font-semibold tabular-nums text-on-surface">
+                    {Math.round(marker.temperatureC)}°
+                  </span>
+                  <span
+                    className="h-3.5 w-px bg-on-surface/10"
+                    aria-hidden="true"
+                  />
+                  <span className="text-[10px] font-semibold text-on-surface-variant">
+                    {rainPct}%
+                  </span>
+                  {showWarn ? (
+                    <span
+                      className={cn(
+                        "absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-surface text-[9px] font-bold text-white",
+                        severe
+                          ? "bg-error"
+                          : tone === "warning"
+                            ? "bg-secondary"
+                            : "bg-amber-500",
+                      )}
+                      aria-hidden="true"
+                    >
+                      !
+                    </span>
+                  ) : null}
+                </div>
+                <span className="max-w-[110px] truncate rounded-md bg-surface-container-lowest px-1.5 py-0.5 text-[10px] font-semibold text-on-surface-variant shadow-sm">
+                  {displayName}
+                </span>
+              </>
+            )}
           </button>
         );
       })}

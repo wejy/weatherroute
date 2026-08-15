@@ -15,6 +15,19 @@ const FONT =
 /** Quiet border when the pin is neither selected nor alerting. */
 export const MARKER_NEUTRAL_BORDER = "color-mix(in srgb, var(--outline-variant) 70%, transparent)";
 
+export function escapeMarkerHtml(value: string): string {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+/** Label under map pins: `1. Tampere` when ranked. */
+export function rankedMarkerLabel(name: string, rank?: number): string {
+  return rank != null ? `${rank}. ${name}` : name;
+}
+
 export function originDotHtml(): string {
   return `<div style="background:var(--primary);color:var(--on-primary);border-radius:999px;padding:8px 12px;font:${FONT};box-shadow:0 4px 14px rgba(0,0,0,.18);border:2px solid var(--surface);">●</div>`;
 }

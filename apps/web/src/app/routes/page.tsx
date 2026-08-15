@@ -21,6 +21,7 @@ import {
 } from "@/lib/discover-query";
 import { resolveDateWindow, type DatePreset } from "@/lib/dates";
 import { RouteShareActions } from "@/components/routes/route-share-actions";
+import { RouteConditionsLegend } from "@/components/routes/route-conditions-legend";
 import { SoftPaywall } from "@/components/discover/soft-paywall";
 import {
   parseDepartureHourParam,
@@ -28,7 +29,6 @@ import {
 } from "@/server/dal/user-prefs";
 import { gateRouteAccess } from "@/server/dal/route-gate";
 import { getBillingEntitlement } from "@/server/dal/subscriptions";
-import { WEATHER_TONE_COLORS } from "@/lib/weather-tone";
 import { headers } from "next/headers";
 import { getClientIpFromHeaders } from "@/lib/client-ip";
 import { publicPageMeta } from "@/lib/seo-meta";
@@ -836,37 +836,7 @@ export default async function RoutesPage({
           />
 
           {route.routingStatus !== "unreachable" ? (
-          <div className="pointer-events-none absolute top-2.5 right-14 z-10 rounded-xl border border-outline-variant/20 bg-surface/95 p-4 shadow-[0px_10px_30px_rgba(0,0,0,0.08)] backdrop-blur-md">
-            <h2 className="mb-2 text-sm font-medium tracking-wider text-on-surface-variant uppercase">
-              {t("routes.conditions")}
-            </h2>
-            <ul className="flex flex-col gap-2">
-              <li className="flex items-center gap-2">
-                <span
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: WEATHER_TONE_COLORS.clear }}
-                  aria-hidden="true"
-                />
-                <span className="text-base text-on-surface">{t("routes.clearRoute")}</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: WEATHER_TONE_COLORS.caution }}
-                  aria-hidden="true"
-                />
-                <span className="text-base text-on-surface">{t("routes.cloudyCaution")}</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <span
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: WEATHER_TONE_COLORS.warning }}
-                  aria-hidden="true"
-                />
-                <span className="text-base text-on-surface">{t("routes.rainWarning")}</span>
-              </li>
-            </ul>
-          </div>
+            <RouteConditionsLegend />
           ) : null}
         </section>
       </main>

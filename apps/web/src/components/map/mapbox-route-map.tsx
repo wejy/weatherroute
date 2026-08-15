@@ -11,6 +11,7 @@ import { useI18n } from "@/components/i18n/locale-provider";
 import { useResolvedTheme } from "@/components/theme/theme-provider";
 import { mapboxDarkBasemapClass, mapboxStyleForTheme } from "@/lib/theme";
 import {
+  escapeMarkerHtml,
   routeWarnBadgeHtml,
   routeWaypointChipHtml,
 } from "@/lib/map-marker-chrome";
@@ -20,11 +21,7 @@ import {
 } from "@/lib/mapbox-safe-remove";
 
 function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+  return escapeMarkerHtml(value);
 }
 
 function lineCoordinates(

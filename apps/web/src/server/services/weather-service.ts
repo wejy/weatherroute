@@ -469,13 +469,14 @@ export async function discoverDestinations(
         18,
       condition: originWeather?.current.condition ?? "partly_cloudy",
     },
-    ...destinationsWithImages.map((d) => ({
+    ...destinationsWithImages.map((d, index) => ({
       id: d.id,
       name: d.name,
       lat: d.lat,
       lon: d.lon,
       temperatureC: d.forecast.tempMaxC,
       condition: d.forecast.condition,
+      rank: index + 1,
       tomorrowTempC: d.current.temperatureC,
       tempMinC: d.forecast.tempMinC,
       tempMaxC: d.forecast.tempMaxC,

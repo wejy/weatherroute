@@ -217,6 +217,8 @@ export interface MapMarkerDto {
   lon: number;
   temperatureC: number;
   condition: WeatherCondition;
+  /** 1-based recommendation rank (same order as discover side list). */
+  rank?: number;
   /** Current / “now” temperature for hover preview. */
   tomorrowTempC?: number;
   tempMinC?: number;

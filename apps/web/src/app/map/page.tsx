@@ -15,6 +15,7 @@ import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { destinationHref, routesHref } from "@/lib/discover-query";
 import { MapNearbyCard } from "@/components/map/map-nearby-card";
 import { MapNearbyHeading } from "@/components/map/map-nearby-heading";
+import { MapConditionsLegend } from "@/components/map/map-conditions-legend";
 import {
   gateDiscoverAccess,
   isActiveDiscoverQuery,
@@ -222,10 +223,11 @@ export default async function MapPage({
               tier={tier}
             />
           </Suspense>
-          <div className="pointer-events-auto max-w-[45%] shrink-0 lg:max-w-none">
-            <p className="truncate rounded-full border border-outline-variant/30 bg-surface/90 px-3 py-2 text-xs font-medium text-on-surface-variant shadow-sm backdrop-blur-xl lg:rounded-xl">
+          <div className="pointer-events-auto flex max-w-[min(45%,16rem)] shrink-0 flex-col items-end gap-2 lg:max-w-xs">
+            <p className="w-full truncate rounded-full border border-outline-variant/30 bg-surface/90 px-3 py-2 text-xs font-medium text-on-surface-variant shadow-sm backdrop-blur-xl lg:rounded-xl">
               {hasOrigin ? result.origin.placeName : t("map.detecting")}
             </p>
+            {hasOrigin && !gate.paywalled ? <MapConditionsLegend /> : null}
           </div>
         </div>
 
