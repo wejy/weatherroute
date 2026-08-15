@@ -199,6 +199,8 @@ const en = {
     rainProbability: "Rain probability: {pct}%",
     rainAmount: "Rain amount: {mm} mm",
     generateRoute: "Generate Route",
+    rankedName: "{rank}. {name}",
+    rankingHint: "These destinations are ranked based on your preferences",
     filterWeather: "Filter Weather",
     hideFilters: "Hide filters",
     detecting: "Detecting your location…",
@@ -328,6 +330,7 @@ const en = {
     remove: "Remove",
     filterLabel: "Filter by travel mode",
     filterAll: "All",
+    departureWindow: "Departure {window}",
   },
   login: {
     title: "Sign in",

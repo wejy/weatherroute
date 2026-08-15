@@ -11,7 +11,7 @@ import {
   View,
 } from "react-native";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { Link, type Href } from "expo-router";
+import { Link, useLocalSearchParams, type Href } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "@/lib/i18n";
 import { apiGet, apiPost, getApiBaseUrl, ApiError, type PublicQuota } from "@/lib/api";
@@ -20,6 +20,7 @@ import {
   DEPARTURE_HOURS,
   formatHourOption,
   normalizeDepartureWindow,
+  parseDepartureHourParam,
 } from "@/lib/departure";
 import {
   appleMapsDirectionsUrl,
@@ -50,6 +51,7 @@ import type {
   RouteDto,
   TravelMode,
 } from "@/lib/types";
+import { isTravelMode } from "@/lib/types";
 import { fetchSession, type DiscoverTier } from "@/lib/session";
 import { createModuleLogger } from "@/lib/logger";
 
@@ -57,6 +59,13 @@ const log = createModuleLogger("routes");
 
 const DATE_PRESETS: DatePreset[] = ["today", "tomorrow", "weekend", "custom"];
 const TRAVEL_MODES: TravelMode[] = ["driving", "cycling"];
+
+function firstParam(
+  value: string | string[] | undefined,
+): string | undefined {
+  if (Array.isArray(value)) return value[0];
+  return value;
+}
 
 function alternativeTitle(
   alt: RouteAlternativeDto,
@@ -70,6 +79,20 @@ function alternativeTitle(
 
 export default function RoutesScreen() {
   const { t, translateCondition, locale } = useI18n();
+  const params = useLocalSearchParams<{
+    from?: string | string[];
+    to?: string | string[];
+    fromLat?: string | string[];
+    fromLon?: string | string[];
+    toLat?: string | string[];
+    toLon?: string | string[];
+    mode?: string | string[];
+    datePreset?: string | string[];
+    startDate?: string | string[];
+    endDate?: string | string[];
+    departureStartHour?: string | string[];
+    departureEndHour?: string | string[];
+  }>();
 
   const colors = useColors();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -78,19 +101,67 @@ export default function RoutesScreen() {
   const maxDate = maxForecastDateKey();
   const apiReady = Boolean(getApiBaseUrl());
 
-  const [fromQuery, setFromQuery] = useState("");
-  const [toQuery, setToQuery] = useState("");
-  const [fromPlace, setFromPlace] = useState<PlaceDto | null>(null);
-  const [toPlace, setToPlace] = useState<PlaceDto | null>(null);
+  const initialFrom = firstParam(params.from) ?? "";
+  const initialTo = firstParam(params.to) ?? "";
+  const initialModeRaw = firstParam(params.mode);
+  const initialMode = isTravelMode(initialModeRaw) ? initialModeRaw : "driving";
+  const initialPresetRaw = firstParam(params.datePreset);
+  const initialPreset: DatePreset =
+    initialPresetRaw === "today" ||
+    initialPresetRaw === "tomorrow" ||
+    initialPresetRaw === "weekend" ||
+    initialPresetRaw === "custom"
+      ? initialPresetRaw
+      : "weekend";
+  const initialStart = firstParam(params.startDate);
+  const initialEnd = firstParam(params.endDate);
+
+  const [fromQuery, setFromQuery] = useState(initialFrom);
+  const [toQuery, setToQuery] = useState(initialTo);
+  const [fromPlace, setFromPlace] = useState<PlaceDto | null>(() => {
+    const lat = Number(firstParam(params.fromLat));
+    const lon = Number(firstParam(params.fromLon));
+    if (!initialFrom || !Number.isFinite(lat) || !Number.isFinite(lon)) {
+      return null;
+    }
+    return {
+      id: `saved-from-${lat},${lon}`,
+      name: initialFrom,
+      placeName: initialFrom,
+      lat,
+      lon,
+    };
+  });
+  const [toPlace, setToPlace] = useState<PlaceDto | null>(() => {
+    const lat = Number(firstParam(params.toLat));
+    const lon = Number(firstParam(params.toLon));
+    if (!initialTo || !Number.isFinite(lat) || !Number.isFinite(lon)) {
+      return null;
+    }
+    return {
+      id: `saved-to-${lat},${lon}`,
+      name: initialTo,
+      placeName: initialTo,
+      lat,
+      lon,
+    };
+  });
   const [locatingFrom, setLocatingFrom] = useState(false);
-  const [mode, setMode] = useState<TravelMode>("driving");
+  const [mode, setMode] = useState<TravelMode>(initialMode);
   const [dateWindow, setDateWindow] = useState<DateWindow>(() =>
-    resolveDateWindow({ preset: "weekend", locale }),
+    resolveDateWindow({
+      preset: initialPreset,
+      startDate: initialStart && isDateKey(initialStart) ? initialStart : undefined,
+      endDate: initialEnd && isDateKey(initialEnd) ? initialEnd : undefined,
+      locale,
+    }),
   );
   const [departureStartHour, setDepartureStartHour] = useState<number | null>(
-    null,
+    () => parseDepartureHourParam(firstParam(params.departureStartHour)),
   );
-  const [departureEndHour, setDepartureEndHour] = useState<number | null>(null);
+  const [departureEndHour, setDepartureEndHour] = useState<number | null>(() =>
+    parseDepartureHourParam(firstParam(params.departureEndHour)),
+  );
   const [tier, setTier] = useState<DiscoverTier>("anon");
   const [canSaveTrip, setCanSaveTrip] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
@@ -732,6 +803,8 @@ export default function RoutesScreen() {
                       datePreset: dateWindow.preset,
                       startDate: dateWindow.startDate,
                       endDate: dateWindow.endDate,
+                      departureStartHour,
+                      departureEndHour,
                       distanceKm: route.distanceKm,
                       durationLabel: route.durationLabel,
                     });

@@ -57,6 +57,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
 
+    if (body && typeof body === "object") {
+      const raw = body as Record<string, unknown>;
+      if ("departureStartHour" in raw) {
+        raw.departureStartHour = parseJsonHour(raw.departureStartHour);
+      }
+      if ("departureEndHour" in raw) {
+        raw.departureEndHour = parseJsonHour(raw.departureEndHour);
+      }
+    }
+
     const parsed = saveTripInputSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
@@ -84,4 +94,11 @@ export async function POST(request: NextRequest) {
       throw err;
     }
   });
+}
+
+function parseJsonHour(value: unknown): number | null {
+  if (value == null || value === "" || value === "any") return null;
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isInteger(n) || n < 0 || n > 23) return null;
+  return n;
 }

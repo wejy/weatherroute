@@ -324,6 +324,10 @@ export interface TripDto {
   datePreset?: string | null;
   startDate?: string | null;
   endDate?: string | null;
+  /** Local hour 0–23; null/undefined = any start. */
+  departureStartHour?: number | null;
+  /** Local hour 0–23 inclusive; null/undefined = any end. */
+  departureEndHour?: number | null;
   distanceKm?: number | null;
   durationLabel?: string | null;
   createdAt: string;

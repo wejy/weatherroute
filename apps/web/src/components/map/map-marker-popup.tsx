@@ -33,13 +33,17 @@ function truncate(text: string, max = 220): string {
  */
 export function MapMarkerPopup({
   marker,
-  href,
+  destinationHref: destinationUrl,
+  routeHref,
   onClose,
   className,
   dense = false,
 }: {
   marker: MapMarkerDto;
-  href: string;
+  /** Destination detail page (city name link). */
+  destinationHref?: string;
+  /** Routes planner with filters preserved. */
+  routeHref: string;
   onClose: () => void;
   className?: string;
   dense?: boolean;
@@ -118,6 +122,23 @@ export function MapMarkerPopup({
     t,
   );
 
+  const titleClass = cn(
+    "m-0 font-semibold text-on-surface",
+    dense ? "truncate text-base leading-tight" : "text-lg leading-tight",
+  );
+  const titleLinkClass = cn(
+    titleClass,
+    "underline-offset-2 transition-colors hover:text-primary hover:underline",
+  );
+
+  const titleNode = destinationUrl ? (
+    <Link href={destinationUrl} className={titleLinkClass}>
+      {marker.name}
+    </Link>
+  ) : (
+    <span className={titleClass}>{marker.name}</span>
+  );
+
   return (
     <article
       role="region"
@@ -154,9 +175,7 @@ export function MapMarkerPopup({
         <div className={cn(dense ? "min-w-0 flex-1 pr-10" : "contents")}>
           {dense ? (
             <>
-              <h2 className="m-0 truncate text-base leading-tight font-semibold text-on-surface">
-                {marker.name}
-              </h2>
+              <h2 className="m-0">{titleNode}</h2>
               <p className="mt-0.5 truncate text-sm text-on-surface-variant">
                 {formatTemp(marker.temperatureC)}C
                 {marker.condition
@@ -185,9 +204,7 @@ export function MapMarkerPopup({
       <div className={cn("space-y-2", dense ? "p-3 pt-2" : "space-y-2.5 p-3.5")}>
         {!dense ? (
           <div>
-            <h2 className="m-0 text-lg leading-tight font-semibold text-on-surface">
-              {marker.name}
-            </h2>
+            <h2 className="m-0">{titleNode}</h2>
             {wiki?.description && (
               <p className="mt-0.5 text-xs text-on-surface-variant">
                 {wiki.description}
@@ -328,16 +345,23 @@ export function MapMarkerPopup({
             </a>
           )}
           <Link
-            href={href}
+            href={routeHref}
             className={cn(
-              "inline-flex items-center rounded-lg bg-primary px-3 text-sm font-semibold text-on-primary transition-colors hover:bg-primary-container hover:text-on-primary-container",
+              "inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 text-sm font-semibold text-on-accent transition-colors hover:bg-accent-container hover:text-on-accent-container",
               dense ? "min-h-11 flex-1 justify-center" : "min-h-10",
             )}
           >
-            {t("map.openDestination")}
+            <span
+              className="material-symbols-outlined text-[18px]"
+              aria-hidden="true"
+            >
+              route
+            </span>
+            {t("map.generateRoute")}
           </Link>
         </div>
       </div>
     </article>
   );
 }
+

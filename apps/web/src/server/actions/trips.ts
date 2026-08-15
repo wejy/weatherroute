@@ -113,6 +113,8 @@ export async function saveTripAction(formData: FormData) {
     datePreset: String(formData.get("datePreset") || "") || null,
     startDate: String(formData.get("startDate") || "") || null,
     endDate: String(formData.get("endDate") || "") || null,
+    departureStartHour: parseOptionalHour(formData.get("departureStartHour")),
+    departureEndHour: parseOptionalHour(formData.get("departureEndHour")),
     distanceKm: Number.isFinite(distanceKm) ? distanceKm : 0,
     durationLabel: String(formData.get("durationLabel") || "") || null,
   });
@@ -132,6 +134,16 @@ export async function saveTripAction(formData: FormData) {
 
   revalidatePath("/trips");
   redirect("/trips");
+}
+
+function parseOptionalHour(
+  raw: FormDataEntryValue | null,
+): number | null {
+  const s = String(raw ?? "").trim();
+  if (!s || s === "any") return null;
+  const n = Number(s);
+  if (!Number.isInteger(n) || n < 0 || n > 23) return null;
+  return n;
 }
 
 export async function deleteTripAction(formData: FormData) {

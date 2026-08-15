@@ -100,6 +100,12 @@ export type TravelMode = "driving" | "cycling";
 export type RoutePrefer = "fast" | "weather";
 export type WeatherTone = "clear" | "caution" | "warning";
 
+export function isTravelMode(
+  value: string | undefined | null,
+): value is TravelMode {
+  return value === "driving" || value === "cycling";
+}
+
 export interface WeatherAdvisoryDto {
   id: string;
   severity: "info" | "caution" | "warning";
@@ -219,6 +225,10 @@ export interface TripDto {
   datePreset?: string | null;
   startDate?: string | null;
   endDate?: string | null;
+  /** Local hour 0–23; null/undefined = any start. */
+  departureStartHour?: number | null;
+  /** Local hour 0–23 inclusive; null/undefined = any end. */
+  departureEndHour?: number | null;
   distanceKm?: number | null;
   durationLabel?: string | null;
   createdAt: string;

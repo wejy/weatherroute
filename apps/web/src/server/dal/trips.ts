@@ -22,6 +22,15 @@ const tripStore = new Map<string, TripDto[]>([
   [MOCK_USER.id, [...MOCK_TRIPS]],
 ]);
 
+function normalizeDepartureHour(
+  value: number | null | undefined,
+): number | null {
+  if (value == null || !Number.isInteger(value) || value < 0 || value > 23) {
+    return null;
+  }
+  return value;
+}
+
 function rowToDto(row: typeof trips.$inferSelect): TripDto {
   return {
     id: row.id,
@@ -37,6 +46,8 @@ function rowToDto(row: typeof trips.$inferSelect): TripDto {
     datePreset: row.datePreset,
     startDate: row.startDate,
     endDate: row.endDate,
+    departureStartHour: row.departureStartHour,
+    departureEndHour: row.departureEndHour,
     distanceKm: row.distanceKm ?? 0,
     durationLabel: row.durationLabel,
     createdAt: row.createdAt.toISOString(),
@@ -104,6 +115,8 @@ export async function createTrip(
     const trip: TripDto = {
       ...input,
       travelMode,
+      departureStartHour: normalizeDepartureHour(input.departureStartHour),
+      departureEndHour: normalizeDepartureHour(input.departureEndHour),
       id: nanoid(),
       createdAt: new Date().toISOString(),
     };
@@ -128,6 +141,8 @@ export async function createTrip(
     datePreset: input.datePreset ?? null,
     startDate: input.startDate ?? null,
     endDate: input.endDate ?? null,
+    departureStartHour: normalizeDepartureHour(input.departureStartHour),
+    departureEndHour: normalizeDepartureHour(input.departureEndHour),
     distanceKm:
       input.distanceKm != null ? Math.round(Number(input.distanceKm)) : null,
     durationLabel: input.durationLabel ?? null,

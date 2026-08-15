@@ -13,6 +13,7 @@ import { useI18n } from "@/lib/i18n";
 import { apiDelete, apiGet, getApiBaseUrl } from "@/lib/api";
 import { fetchSession } from "@/lib/session";
 import { formatDistanceKm } from "@/lib/distance";
+import { formatDepartureWindowLabel } from "@/lib/departure";
 import {
   formatDateKeyForLocale,
   formatIsoDateForLocale,
@@ -21,6 +22,7 @@ import {
 import type { AppColors } from "@/constants/Colors";
 import { useColors } from "@/lib/theme";
 import type { TripDto, TravelMode } from "@/lib/types";
+import { isTravelMode } from "@/lib/types";
 
 function formatTripDates(
   trip: {
@@ -43,6 +45,29 @@ function formatTripDates(
   if (trip.datePreset === "weekend")
     return locale === "fi" ? "Viikonloppu" : "Weekend";
   return null;
+}
+
+function tripRoutesHref(trip: TripDto): Href {
+  const mode = isTravelMode(trip.travelMode) ? trip.travelMode : "driving";
+  const params: Record<string, string> = {
+    from: trip.originName,
+    to: trip.destinationName,
+    mode,
+  };
+  if (trip.originLat != null) params.fromLat = String(trip.originLat);
+  if (trip.originLon != null) params.fromLon = String(trip.originLon);
+  if (trip.destinationLat != null) params.toLat = String(trip.destinationLat);
+  if (trip.destinationLon != null) params.toLon = String(trip.destinationLon);
+  if (trip.datePreset) params.datePreset = trip.datePreset;
+  if (trip.startDate) params.startDate = trip.startDate;
+  if (trip.endDate) params.endDate = trip.endDate;
+  if (trip.departureStartHour != null) {
+    params.departureStartHour = String(trip.departureStartHour);
+  }
+  if (trip.departureEndHour != null) {
+    params.departureEndHour = String(trip.departureEndHour);
+  }
+  return { pathname: "/(tabs)/routes", params } as Href;
 }
 
 export default function TripsScreen() {
@@ -121,6 +146,10 @@ export default function TripsScreen() {
         const mode = (trip.travelMode ?? "driving") as TravelMode;
         const datesLabel = formatTripDates(trip, locale);
         const savedLabel = formatIsoDateForLocale(trip.createdAt, locale);
+        const departureLabel = formatDepartureWindowLabel(
+          trip.departureStartHour,
+          trip.departureEndHour,
+        );
         return (
           <View key={trip.id} style={styles.card}>
             <Text style={styles.cardTitle}>{trip.title}</Text>
@@ -134,7 +163,7 @@ export default function TripsScreen() {
                 : ""}
               {trip.durationLabel ? ` · ${trip.durationLabel}` : ""}
             </Text>
-            {datesLabel || savedLabel ? (
+            {datesLabel || departureLabel || savedLabel ? (
               <View style={styles.metaRow}>
                 {datesLabel ? (
                   <View style={styles.metaItem}>
@@ -144,6 +173,18 @@ export default function TripsScreen() {
                       color={colors.onSurfaceVariant}
                     />
                     <Text style={styles.cardMeta}>{datesLabel}</Text>
+                  </View>
+                ) : null}
+                {departureLabel ? (
+                  <View style={styles.metaItem}>
+                    <MaterialIcons
+                      name="schedule"
+                      size={16}
+                      color={colors.onSurfaceVariant}
+                    />
+                    <Text style={styles.cardMeta}>
+                      {t("trips.departureWindow", { window: departureLabel })}
+                    </Text>
                   </View>
                 ) : null}
                 {savedLabel ? (
@@ -159,14 +200,7 @@ export default function TripsScreen() {
               </View>
             ) : null}
             <View style={styles.row}>
-              <Link
-                href={
-                  {
-                    pathname: "/(tabs)/routes",
-                  } as Href
-                }
-                style={styles.linkBtn}
-              >
+              <Link href={tripRoutesHref(trip)} style={styles.linkBtn}>
                 <Text style={styles.linkText}>{t("trips.openRoute")}</Text>
               </Link>
               <Pressable

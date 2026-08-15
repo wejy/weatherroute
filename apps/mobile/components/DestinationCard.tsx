@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
-import { Link } from "expo-router";
+import { Link, type Href } from "expo-router";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { useI18n } from "@/lib/i18n";
 import { formatDistanceKm } from "@/lib/distance";
@@ -20,8 +20,14 @@ function resolveImageUrl(url: string): string {
 
 export function DestinationCard({
   destination,
+  rank,
+  routeHref,
 }: {
   destination: DestinationDto;
+  /** 1-based recommendation rank (Map / ranked lists). */
+  rank?: number;
+  /** When set, shows Generate Route below the card body. */
+  routeHref?: Href;
 }) {
   const { t, translateCondition, locale } = useI18n();
 
@@ -29,6 +35,10 @@ export function DestinationCard({
   const styles = useMemo(() => createStyles(colors), [colors]);
   const forecast = destination.forecast;
   const imageUri = resolveImageUrl(destination.imageUrl);
+  const title =
+    rank != null
+      ? t("map.rankedName", { rank, name: destination.placeName })
+      : destination.placeName;
   const href = {
     pathname: "/destination/[slug]" as const,
     params: {
@@ -40,66 +50,85 @@ export function DestinationCard({
   };
 
   return (
-    <Link href={href} asChild>
-      <Pressable
-        accessibilityRole="link"
-        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-      >
-        <View style={styles.imageWrap}>
-          {imageUri ? (
-            <Image
-              source={{ uri: imageUri }}
-              style={styles.image}
-              contentFit="cover"
-              transition={200}
-            />
-          ) : (
-            <View style={[styles.image, styles.imageFallback]} />
-          )}
-          <View style={styles.imageBadge}>
-            <Text style={styles.imageBadgeText}>
-              {Math.round(forecast.tempMinC)}–{Math.round(forecast.tempMaxC)}°C
+    <View style={styles.card}>
+      <Link href={href} asChild>
+        <Pressable
+          accessibilityRole="link"
+          style={({ pressed }) => [styles.cardPress, pressed && styles.pressed]}
+        >
+          <View style={styles.imageWrap}>
+            {imageUri ? (
+              <Image
+                source={{ uri: imageUri }}
+                style={styles.image}
+                contentFit="cover"
+                transition={200}
+              />
+            ) : (
+              <View style={[styles.image, styles.imageFallback]} />
+            )}
+            <View style={styles.imageBadge}>
+              <Text style={styles.imageBadgeText}>
+                {Math.round(forecast.tempMinC)}–{Math.round(forecast.tempMaxC)}°C
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.body}>
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.meta}>
+              {translateCondition(forecast.condition)} ·{" "}
+              {t("card.rain", { pct: forecast.rainProbability })}
+              {destination.distanceKm > 0
+                ? ` · ${formatDistanceKm(destination.distanceKm, locale)}`
+                : ""}
+              {destination.driveDurationLabel
+                ? ` · ${destination.driveDurationLabel}`
+                : ""}
             </Text>
-          </View>
-        </View>
 
-        <View style={styles.body}>
-          <Text style={styles.title}>{destination.placeName}</Text>
-          <Text style={styles.meta}>
-            {translateCondition(forecast.condition)} ·{" "}
-            {t("card.rain", { pct: forecast.rainProbability })}
-            {destination.distanceKm > 0
-              ? ` · ${formatDistanceKm(destination.distanceKm, locale)}`
-              : ""}
-            {destination.driveDurationLabel
-              ? ` · ${destination.driveDurationLabel}`
-              : ""}
-          </Text>
-
-          <View style={styles.row}>
-            <View style={styles.pill}>
-              <Text style={styles.pillLabel}>{t("card.now")}</Text>
-              <Text style={styles.pillValue}>
-                <FontAwesome
-                  name="thermometer-half"
-                  size={12}
-                  color={colors.onSurface}
-                />{" "}
-                {Math.round(destination.current.temperatureC)}°C
-              </Text>
-            </View>
-            <View style={[styles.pill, styles.pillForecast]}>
-              <Text style={[styles.pillLabel, styles.pillForecastLabel]}>
-                {t("card.forecast")}
-              </Text>
-              <Text style={styles.pillValue}>
-                {Math.round(forecast.tempMaxC)}°C · {forecast.label}
-              </Text>
+            <View style={styles.row}>
+              <View style={styles.pill}>
+                <Text style={styles.pillLabel}>{t("card.now")}</Text>
+                <Text style={styles.pillValue}>
+                  <FontAwesome
+                    name="thermometer-half"
+                    size={12}
+                    color={colors.onSurface}
+                  />{" "}
+                  {Math.round(destination.current.temperatureC)}°C
+                </Text>
+              </View>
+              <View style={[styles.pill, styles.pillForecast]}>
+                <Text style={[styles.pillLabel, styles.pillForecastLabel]}>
+                  {t("card.forecast")}
+                </Text>
+                <Text style={styles.pillValue}>
+                  {Math.round(forecast.tempMaxC)}°C · {forecast.label}
+                </Text>
+              </View>
             </View>
           </View>
+        </Pressable>
+      </Link>
+
+      {routeHref ? (
+        <View style={styles.routeWrap}>
+          <Link href={routeHref} asChild>
+            <Pressable
+              accessibilityRole="link"
+              style={({ pressed }) => [
+                styles.routeBtn,
+                pressed && styles.routePressed,
+              ]}
+            >
+              <FontAwesome name="road" size={14} color={colors.onAccent} />
+              <Text style={styles.routeText}>{t("map.generateRoute")}</Text>
+            </Pressable>
+          </Link>
         </View>
-      </Pressable>
-    </Link>
+      ) : null}
+    </View>
   );
 }
 
@@ -117,6 +146,7 @@ function createStyles(colors: AppColors) {
     shadowOffset: { width: 0, height: 4 },
     elevation: 2,
   },
+  cardPress: { overflow: "hidden" },
   pressed: { opacity: 0.92, transform: [{ scale: 0.99 }] },
   imageWrap: {
     height: 140,
@@ -172,6 +202,27 @@ function createStyles(colors: AppColors) {
     fontSize: 14,
     fontWeight: "700",
     color: colors.onSurface,
+  },
+  routeWrap: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+  },
+  routeBtn: {
+    minHeight: 44,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 12,
+    backgroundColor: colors.accent,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  routePressed: { opacity: 0.9 },
+  routeText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.onAccent,
   },
 });
 }

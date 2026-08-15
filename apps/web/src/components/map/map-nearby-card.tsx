@@ -116,10 +116,16 @@ export function tempSeriesBarsHtml(
 export function MapNearbyCard({
   destination,
   href,
+  routeHref,
+  rank,
   compact = false,
 }: {
   destination: DestinationDto;
   href: string;
+  /** Per-card route planner link (below weather details). */
+  routeHref?: string;
+  /** 1-based recommendation rank. */
+  rank?: number;
   compact?: boolean;
 }) {
   const { t, dict, locale } = useI18n();
@@ -128,111 +134,121 @@ export function MapNearbyCard({
   const series = d.tempSeries ?? [];
   const dayLabels = d.tempDayLabels;
   const modeIcon = travelModeIcon(d.travelMode);
+  const title =
+    rank != null
+      ? t("map.rankedName", { rank, name: d.name })
+      : d.name;
 
   return (
-    <Link
-      href={href}
+    <article
       className={cn(
-        "group relative block cursor-pointer rounded-xl border border-surface-variant bg-surface-container-lowest shadow-[0px_4px_20px_rgba(0,0,0,0.05)] transition-colors hover:border-primary/50 focus-visible:border-primary/50",
+        "rounded-xl border border-surface-variant bg-surface-container-lowest shadow-[0px_4px_20px_rgba(0,0,0,0.05)] transition-colors",
         compact ? "min-w-[200px] max-w-[220px] shrink-0 p-3" : "p-4",
       )}
     >
-      <div className="mb-2 flex items-start justify-between gap-2">
-        <h3
-          className={cn(
-            "m-0 font-semibold text-on-surface",
-            compact ? "text-base" : "text-xl",
-          )}
-        >
-          {d.name}
-        </h3>
-        <span
-          className={`material-symbols-outlined fill-icon shrink-0 ${weatherIconClass(d.condition)}`}
-          aria-hidden="true"
-        >
-          {weatherIcon(d.condition)}
-        </span>
-      </div>
-      <p className="mb-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm text-on-surface-variant">
-        <span>{formatDistanceKm(d.distanceKm, locale)}</span>
-        {duration ? (
-          <span className="inline-flex items-center gap-0.5">
-            <span aria-hidden="true">·</span>
-            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">
-              {modeIcon}
-            </span>
-            ~{duration}
+      <Link
+        href={href}
+        className="group block cursor-pointer rounded-lg outline-offset-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
+      >
+        <div className="mb-2 flex items-start justify-between gap-2">
+          <h3
+            className={cn(
+              "m-0 font-semibold text-on-surface transition-colors group-hover:text-primary",
+              compact ? "text-base" : "text-xl",
+            )}
+          >
+            {title}
+          </h3>
+          <span
+            className={`material-symbols-outlined fill-icon shrink-0 ${weatherIconClass(d.condition)}`}
+            aria-hidden="true"
+          >
+            {weatherIcon(d.condition)}
           </span>
-        ) : null}
-        <span>· {formatTemp(d.temperatureC)}C</span>
-      </p>
-      {!compact && (
-        <div className="mb-2 flex flex-col gap-1">
-          <span className="rounded-full bg-surface-container px-2 py-1 text-sm text-secondary">
-            {t("map.rainProbability", { pct: d.rainProbability })}
-          </span>
-          {d.precipitationMm != null && (
-            <span className="rounded-full bg-surface-container px-2 py-1 text-sm text-on-surface-variant">
-              {t("map.rainAmount", { mm: d.precipitationMm })}
+        </div>
+        <p className="mb-2 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-sm text-on-surface-variant">
+          <span>{formatDistanceKm(d.distanceKm, locale)}</span>
+          {duration ? (
+            <span className="inline-flex items-center gap-0.5">
+              <span aria-hidden="true">·</span>
+              <span
+                className="material-symbols-outlined text-[16px]"
+                aria-hidden="true"
+              >
+                {modeIcon}
+              </span>
+              ~{duration}
             </span>
-          )}
-        </div>
-      )}
-
-      {series.length >= 2 && (
-        <div className="mt-2 rounded-lg border border-outline-variant/25 bg-surface-container/60 px-2 py-2">
-          <p className="mb-1 text-[11px] font-semibold tracking-wide text-on-surface-variant uppercase">
-            {t("map.hoverTempChart")}
-          </p>
-          <TempSparkline
-            values={series}
-            labels={dayLabels}
-            height={compact ? 60 : 68}
-          />
-        </div>
-      )}
-
-      {!compact && (
-        <div
-          className={cn(
-            "grid transition-[grid-template-rows,opacity] duration-200 ease-out",
-            "grid-rows-[0fr] opacity-0",
-            "[@media(hover:hover)_and_(pointer:fine)]:group-hover:grid-rows-[1fr]",
-            "[@media(hover:hover)_and_(pointer:fine)]:group-hover:opacity-100",
-            "[@media(hover:hover)_and_(pointer:fine)]:group-focus-visible:grid-rows-[1fr]",
-            "[@media(hover:hover)_and_(pointer:fine)]:group-focus-visible:opacity-100",
-          )}
-        >
-          <div className="overflow-hidden">
-            <div className="mt-3 border-t border-outline-variant/20 pt-3">
-              <p className="text-sm text-on-surface">
-                {t("map.hoverNow", {
-                  temp: formatTemp(d.current.temperatureC),
-                })}
-              </p>
-              <p className="text-sm font-semibold text-on-surface">
-                {t("map.hoverForecast", {
-                  label: d.forecast.rangeLabel || t("card.forecast"),
-                  min: formatTemp(d.forecast.tempMinC),
-                  max: formatTemp(d.forecast.tempMaxC),
-                })}
-              </p>
-              <p className="text-xs text-on-surface-variant">
-                {translateCondition(dict, d.forecast.condition)}
-              </p>
-              <p className="mt-2 text-xs text-on-surface-variant">
-                {t("map.hoverRain", { pct: d.rainProbability })}
-                {d.precipitationMm != null
-                  ? ` · ${t("map.hoverRainMm", { mm: d.precipitationMm })}`
-                  : ""}
-              </p>
-              <p className="text-xs text-on-surface-variant">
-                {t("map.hoverSun", { score: d.sunshineScore })}
-              </p>
-            </div>
+          ) : null}
+          <span>· {formatTemp(d.temperatureC)}C</span>
+        </p>
+        {!compact && (
+          <div className="mb-2 flex flex-col gap-1">
+            <span className="rounded-full bg-surface-container px-2 py-1 text-sm text-secondary">
+              {t("map.rainProbability", { pct: d.rainProbability })}
+            </span>
+            {d.precipitationMm != null && (
+              <span className="rounded-full bg-surface-container px-2 py-1 text-sm text-on-surface-variant">
+                {t("map.rainAmount", { mm: d.precipitationMm })}
+              </span>
+            )}
           </div>
-        </div>
-      )}
-    </Link>
+        )}
+
+        {series.length >= 2 && (
+          <div className="mt-2 rounded-lg border border-outline-variant/25 bg-surface-container/60 px-2 py-2">
+            <p className="mb-1 text-[11px] font-semibold tracking-wide text-on-surface-variant uppercase">
+              {t("map.hoverTempChart")}
+            </p>
+            <TempSparkline
+              values={series}
+              labels={dayLabels}
+              height={compact ? 60 : 68}
+            />
+          </div>
+        )}
+
+        {!compact && (
+          <div className="mt-3 border-t border-outline-variant/20 pt-3">
+            <p className="text-sm text-on-surface">
+              {t("map.hoverNow", {
+                temp: formatTemp(d.current.temperatureC),
+              })}
+            </p>
+            <p className="text-sm font-semibold text-on-surface">
+              {t("map.hoverForecast", {
+                label: d.forecast.rangeLabel || t("card.forecast"),
+                min: formatTemp(d.forecast.tempMinC),
+                max: formatTemp(d.forecast.tempMaxC),
+              })}
+            </p>
+            <p className="text-xs text-on-surface-variant">
+              {translateCondition(dict, d.forecast.condition)}
+            </p>
+            <p className="mt-2 text-xs text-on-surface-variant">
+              {t("map.hoverRain", { pct: d.rainProbability })}
+              {d.precipitationMm != null
+                ? ` · ${t("map.hoverRainMm", { mm: d.precipitationMm })}`
+                : ""}
+            </p>
+            <p className="text-xs text-on-surface-variant">
+              {t("map.hoverSun", { score: d.sunshineScore })}
+            </p>
+          </div>
+        )}
+      </Link>
+
+      {routeHref && !compact ? (
+        <Link
+          href={routeHref}
+          className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-accent px-3 py-2.5 text-center text-sm font-semibold text-on-accent shadow-sm transition-colors hover:bg-accent-container hover:text-on-accent-container"
+        >
+          <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+            route
+          </span>
+          {t("map.generateRoute")}
+        </Link>
+      ) : null}
+    </article>
   );
 }

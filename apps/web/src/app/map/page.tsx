@@ -14,6 +14,7 @@ import { createTranslator } from "@/i18n/translate";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { destinationHref, routesHref } from "@/lib/discover-query";
 import { MapNearbyCard } from "@/components/map/map-nearby-card";
+import { MapNearbyHeading } from "@/components/map/map-nearby-heading";
 import {
   gateDiscoverAccess,
   isActiveDiscoverQuery,
@@ -54,6 +55,9 @@ export default async function MapPage({
       origin: parsed.origin,
       weatherGoal: parsed.weatherGoal,
       path: "/map",
+      ...(Number.isFinite(parsed.lat) && Number.isFinite(parsed.lon)
+        ? { lat: parsed.lat, lon: parsed.lon }
+        : {}),
     },
   });
   const { tier } = await resolveDiscoverLimits();
@@ -116,9 +120,7 @@ export default async function MapPage({
     >
       <SideNav active="/map">
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-          <h1 className="mb-3 shrink-0 text-xl font-semibold text-on-surface">
-            {t("map.nearbyIdeal")}
-          </h1>
+          <MapNearbyHeading />
           <Suspense fallback={null}>
             <ShareTokenRedeemer />
           </Suspense>
@@ -147,13 +149,23 @@ export default async function MapPage({
                 </p>
               )}
               <div className="flex flex-col gap-3 pb-1">
-                {result.destinations.map((d) => (
+                {result.destinations.map((d, index) => (
                   <MapNearbyCard
                     key={d.id}
                     destination={d}
+                    rank={index + 1}
                     href={destinationHref(d.slug, {
                       ...originQuery,
                     })}
+                    routeHref={
+                      hasOrigin
+                        ? routesHref({
+                            from: routeFrom,
+                            to: d.name,
+                            ...filterDefaults,
+                          })
+                        : undefined
+                    }
                   />
                 ))}
               </div>

@@ -165,8 +165,22 @@ export const saveTripInputSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/)
     .nullable()
     .optional(),
+  departureStartHour: z.number().int().min(0).max(23).nullable().optional(),
+  departureEndHour: z.number().int().min(0).max(23).nullable().optional(),
   distanceKm: z.number().min(0).max(50000).default(0),
   durationLabel: z.string().max(120).nullable().optional(),
+}).superRefine((data, ctx) => {
+  if (
+    data.departureStartHour != null &&
+    data.departureEndHour != null &&
+    data.departureStartHour > data.departureEndHour
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      message: "departureStartHour must be <= departureEndHour",
+      path: ["departureStartHour"],
+    });
+  }
 });
 
 export type WeatherQuery = z.infer<typeof weatherQuerySchema>;

@@ -71,6 +71,13 @@
       "when": 1786000000000,
       "tag": "0009_cancel_at_period_end",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1787000000000,
+      "tag": "0010_trips_departure_window",
+      "breakpoints": true
     }
   ]
 }

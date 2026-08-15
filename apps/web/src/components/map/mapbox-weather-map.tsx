@@ -8,7 +8,7 @@ import { cn, formatTemp } from "@/lib/utils";
 import { formatDistanceKm } from "@/lib/distance";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { circlePolygon, type WeatherMapProps } from "@/components/map/geo";
-import { destinationHref } from "@/lib/discover-query";
+import { destinationHref, markerNavHrefs } from "@/lib/discover-query";
 import { MapMarkerPopup } from "@/components/map/map-marker-popup";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { useResolvedTheme } from "@/components/theme/theme-provider";
@@ -320,7 +320,7 @@ export function MapboxWeatherMap({
               <MapMarkerPopup
                 dense
                 marker={selectedMarker}
-                href={destinationHref(selectedMarker.id, locationQuery)}
+                {...markerNavHrefs(selectedMarker, locationQuery)}
                 onClose={() => setSelectedId(null)}
               />
             </div>
@@ -340,7 +340,7 @@ export function MapboxWeatherMap({
           <div className="pointer-events-auto max-h-[min(70vh,520px)] overflow-y-auto">
             <MapMarkerPopup
               marker={selectedMarker}
-              href={destinationHref(selectedMarker.id, locationQuery)}
+              {...markerNavHrefs(selectedMarker, locationQuery)}
               onClose={() => setSelectedId(null)}
             />
           </div>

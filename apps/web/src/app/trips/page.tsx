@@ -6,6 +6,7 @@ import { deleteTripAction } from "@/server/actions/trips";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { formatDistanceKm } from "@/lib/distance";
+import { formatDepartureWindowLabel } from "@/lib/departure";
 import {
   formatDateKeyForLocale,
   formatIsoDateForLocale,
@@ -42,6 +43,8 @@ function tripRouteHref(trip: {
   datePreset?: string | null;
   startDate?: string | null;
   endDate?: string | null;
+  departureStartHour?: number | null;
+  departureEndHour?: number | null;
 }): string {
   return withQuery("/routes", {
     from: trip.originName,
@@ -54,6 +57,10 @@ function tripRouteHref(trip: {
     datePreset: trip.datePreset ?? undefined,
     startDate: trip.startDate ?? undefined,
     endDate: trip.endDate ?? undefined,
+    departureStartHour:
+      trip.departureStartHour != null ? trip.departureStartHour : undefined,
+    departureEndHour:
+      trip.departureEndHour != null ? trip.departureEndHour : undefined,
   });
 }
 
@@ -206,6 +213,10 @@ export default async function TripsPage({
                 ? trip.travelMode
                 : "driving";
               const datesLabel = formatTripDates(trip, locale);
+              const departureLabel = formatDepartureWindowLabel(
+                trip.departureStartHour,
+                trip.departureEndHour,
+              );
               return (
                 <li
                   key={trip.id}
@@ -255,6 +266,17 @@ export default async function TripsPage({
                           calendar_month
                         </span>
                         {datesLabel}
+                      </span>
+                    ) : null}
+                    {departureLabel ? (
+                      <span className="flex items-center gap-1">
+                        <span
+                          className="material-symbols-outlined text-[18px]"
+                          aria-hidden="true"
+                        >
+                          departure_board
+                        </span>
+                        {t("trips.departureWindow", { window: departureLabel })}
                       </span>
                     ) : null}
                     <span className="flex items-center gap-1">

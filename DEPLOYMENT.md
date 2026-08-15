@@ -129,7 +129,8 @@ Without these, production **deny-alls** rate-limited routes (no in-memory fallba
 | `AUTH_TRUST_HOST` | `true` **only** behind nginx / Cloudflare that you control |
 | `CORS_ALLOWED_ORIGINS` | `https://solviax.app` (+ Expo origins only if needed; no localhost in prod) |
 | `EMAIL_FROM` | Verified sender, e.g. `Solviax.app <noreply@solviax.app>` (Mailgun/Resend domain) |
-| `CRON_ENABLED` | `true` in production (nightly weather cache warm) |
+| `CRON_ENABLED` | `true` in production (weather cache warm at 02:00/10:00/18:00 UTC) |
+| `CRON_WEATHER_WARM_LIMIT` | Max places per warm run (default `400`; usage + Nordic/Baltic/DE + global fill) |
 
 ### Stripe billing (required for `/pro` checkout)
 
@@ -196,6 +197,7 @@ NEXT_PUBLIC_MAPBOX_TOKEN=pk.xxxx
 MAPBOX_ACCESS_TOKEN=pk.xxxx
 
 CRON_ENABLED=true
+CRON_WEATHER_WARM_LIMIT=400
 ANON_DISCOVER_LIMIT=3
 ANON_IP_DISCOVER_LIMIT=10
 
@@ -815,7 +817,7 @@ Config and edge requirements before public traffic. (Smoke tests after deploy: [
 - [ ] Anon discover hits soft paywall after limit
 - [ ] `curl -sI --http2 https://solviax.app` shows HSTS / nosniff (nginx + middleware)
 - [ ] Logs: `pm2 logs solviax` — no boot errors about `AUTH_SECRET` / `EMAIL_MODE` / `USE_MOCKS` / Upstash
-- [ ] Cron: after boot, log line mentioning scheduled nightly weather warm when `CRON_ENABLED=true`
+- [ ] Cron: after boot, log line mentioning weather warm at 02:00/10:00/18:00 UTC when `CRON_ENABLED=true`
 - [ ] After reboot: `pm2 status` shows `solviax` online (`pm2 startup` + `pm2 save` done)
 - [ ] `unattended-upgrades` enabled; reboot window set; nginx + PM2 recover after test reboot
 - [ ] Stripe: `/pro` shows Buy / Subscribe (keys set); webhook endpoint healthy in Dashboard

@@ -37,6 +37,10 @@ export async function GET(request: NextRequest) {
         origin: parsed.data.origin,
         weatherGoal: parsed.data.weatherGoal,
         path: "/api/discover",
+        ...(Number.isFinite(parsed.data.lat) &&
+        Number.isFinite(parsed.data.lon)
+          ? { lat: parsed.data.lat, lon: parsed.data.lon }
+          : {}),
       },
     });
 

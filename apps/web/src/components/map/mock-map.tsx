@@ -5,7 +5,7 @@ import type { MapMarkerDto, PlaceDto } from "@/lib/types";
 import { weatherIcon, weatherIconClass } from "@/lib/weather-icons";
 import { formatTemp, cn } from "@/lib/utils";
 import { formatDistanceKm } from "@/lib/distance";
-import { destinationHref } from "@/lib/discover-query";
+import { destinationHref, markerNavHrefs } from "@/lib/discover-query";
 import { MapMarkerPopup } from "@/components/map/map-marker-popup";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { prefetchWikipediaForMarkers } from "@/lib/wikipedia-client";
@@ -246,7 +246,7 @@ export function MockMap({
               <MapMarkerPopup
                 dense
                 marker={selected}
-                href={destinationHref(selected.id, locationQuery)}
+                {...markerNavHrefs(selected, locationQuery)}
                 onClose={() => setSelectedId(null)}
               />
             </div>
@@ -265,7 +265,7 @@ export function MockMap({
         >
           <MapMarkerPopup
             marker={selected}
-            href={destinationHref(selected.id, locationQuery)}
+            {...markerNavHrefs(selected, locationQuery)}
             onClose={() => setSelectedId(null)}
           />
         </div>

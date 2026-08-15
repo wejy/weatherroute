@@ -7,10 +7,16 @@ import { getDb } from "@/db";
 import { weatherCache } from "@/db/schema";
 
 const log = createModuleLogger("server.dal.weather-cache");
-const DB_TTL_MS = 8 * 60 * 60 * 1000; // 8h
+/** Keep ≥ cron warm interval (8h) so overnight/daytime warms stay fresh. */
+const DB_TTL_MS = 12 * 60 * 60 * 1000; // 12h
 
 export function weatherGridKey(lat: number, lon: number): string {
   return `${lat.toFixed(2)},${lon.toFixed(2)}`;
+}
+
+/** Exposed for tests / diagnostics. */
+export function weatherCacheTtlMs(): number {
+  return DB_TTL_MS;
 }
 
 export async function readWeatherCache(

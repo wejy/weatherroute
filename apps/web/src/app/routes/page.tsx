@@ -418,6 +418,20 @@ export default async function RoutesPage({
                 <input type="hidden" name="datePreset" value={dateWindow.preset} />
                 <input type="hidden" name="startDate" value={dateWindow.startDate} />
                 <input type="hidden" name="endDate" value={dateWindow.endDate} />
+                {departure.startHour != null ? (
+                  <input
+                    type="hidden"
+                    name="departureStartHour"
+                    value={departure.startHour}
+                  />
+                ) : null}
+                {departure.endHour != null ? (
+                  <input
+                    type="hidden"
+                    name="departureEndHour"
+                    value={departure.endHour}
+                  />
+                ) : null}
                 <input type="hidden" name="distanceKm" value={route.distanceKm} />
                 <input
                   type="hidden"

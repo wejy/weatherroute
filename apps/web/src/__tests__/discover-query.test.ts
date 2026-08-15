@@ -3,7 +3,9 @@ import {
   isLinkableDestinationId,
   isMapboxFeatureId,
   locationFromParams,
+  markerNavHrefs,
   pickParams,
+  preserveDiscoverHref,
   routesHref,
   withQuery,
 } from "@/lib/discover-query";
@@ -91,6 +93,52 @@ describe("destinationHref / routesHref", () => {
   });
 });
 
+describe("preserveDiscoverHref", () => {
+  it("carries date filters from map to routes (not only location)", () => {
+    const current = new URLSearchParams(
+      "origin=Helsinki&lat=60.17&lon=24.94&datePreset=today&mode=cycling&distance=semi&weatherGoal=sun",
+    );
+    expect(preserveDiscoverHref("/routes", current)).toBe(
+      "/routes?origin=Helsinki&lat=60.17&lon=24.94&datePreset=today&distance=semi&weatherGoal=sun&mode=cycling&from=Helsinki",
+    );
+  });
+
+  it("keeps custom date range and departure window on routes nav", () => {
+    const current = new URLSearchParams(
+      "origin=Tampere&datePreset=custom&startDate=2026-07-28&endDate=2026-07-30&departureStartHour=8&departureEndHour=12",
+    );
+    const href = preserveDiscoverHref("/routes", current);
+    expect(href).toContain("datePreset=custom");
+    expect(href).toContain("startDate=2026-07-28");
+    expect(href).toContain("endDate=2026-07-30");
+    expect(href).toContain("departureStartHour=8");
+    expect(href).toContain("departureEndHour=12");
+    expect(href).toContain("from=Tampere");
+  });
+
+  it("maps routes from/to back onto discover and map", () => {
+    const current = new URLSearchParams(
+      "from=Oulu&to=Turku&datePreset=tomorrow&mode=driving",
+    );
+    expect(preserveDiscoverHref("/map", current)).toBe(
+      "/map?datePreset=tomorrow&mode=driving&origin=Oulu",
+    );
+    expect(preserveDiscoverHref("/", current)).toContain("origin=Oulu");
+    expect(preserveDiscoverHref("/", current)).toContain("datePreset=tomorrow");
+  });
+
+  it("preserves destination slug query and merges current filters", () => {
+    const current = new URLSearchParams(
+      "origin=Helsinki&datePreset=weekend&weatherGoal=dry",
+    );
+    expect(
+      preserveDiscoverHref("/destinations/gn%3A658225?mode=cycling", current),
+    ).toBe(
+      "/destinations/gn%3A658225?mode=cycling&origin=Helsinki&datePreset=weekend&weatherGoal=dry",
+    );
+  });
+});
+
 describe("isMapboxFeatureId / isLinkableDestinationId", () => {
   it("detects Mapbox feature ids", () => {
     expect(isMapboxFeatureId("place.2099272")).toBe(true);
@@ -103,6 +151,40 @@ describe("isMapboxFeatureId / isLinkableDestinationId", () => {
     expect(isLinkableDestinationId("helsinki")).toBe(true);
     expect(isLinkableDestinationId("place.1")).toBe(false);
     expect(isLinkableDestinationId("coord-60-24")).toBe(false);
+    expect(isLinkableDestinationId("origin-helsinki")).toBe(false);
     expect(isLinkableDestinationId(null)).toBe(false);
+  });
+});
+
+describe("markerNavHrefs", () => {
+  it("builds destination + routes links with filters", () => {
+    const { destinationHref: dest, routeHref } = markerNavHrefs(
+      { id: "gn:123", name: "Tampere" },
+      {
+        origin: "Helsinki",
+        lat: 60.17,
+        lon: 24.94,
+        datePreset: "today",
+        mode: "cycling",
+        weatherGoal: "sun",
+      },
+    );
+    expect(dest).toContain("/destinations/gn%3A123");
+    expect(dest).toContain("datePreset=today");
+    expect(dest).toContain("origin=Helsinki");
+    expect(routeHref).toContain("/routes?");
+    expect(routeHref).toContain("from=Helsinki");
+    expect(routeHref).toContain("to=Tampere");
+    expect(routeHref).toContain("datePreset=today");
+    expect(routeHref).toContain("mode=cycling");
+  });
+
+  it("omits destination link for origin markers", () => {
+    const { destinationHref: dest, routeHref } = markerNavHrefs(
+      { id: "origin-x", name: "Helsinki" },
+      { origin: "Helsinki", datePreset: "weekend" },
+    );
+    expect(dest).toBeUndefined();
+    expect(routeHref).toContain("to=Helsinki");
   });
 });

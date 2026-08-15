@@ -272,6 +272,10 @@ export const trips = pgTable(
     datePreset: text("date_preset"),
     startDate: text("start_date"),
     endDate: text("end_date"),
+    /** Pro departure window start hour 0–23; null = any. */
+    departureStartHour: integer("departure_start_hour"),
+    /** Pro departure window end hour 0–23 inclusive; null = any. */
+    departureEndHour: integer("departure_end_hour"),
     distanceKm: integer("distance_km"),
     durationLabel: text("duration_label"),
     snapshot: jsonb("snapshot"),

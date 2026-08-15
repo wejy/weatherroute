@@ -163,6 +163,11 @@ export const env = {
   useMocks: resolveUseMocks(),
   useMockWeather: resolveUseMockWeather(),
   cronEnabled: flag(process.env.CRON_ENABLED, isProduction),
+  /** Max places to warm into weather_cache per cron run (hybrid select). */
+  cronWeatherWarmLimit: Math.min(
+    2000,
+    Math.max(50, Number(process.env.CRON_WEATHER_WARM_LIMIT || 400)),
+  ),
   emailMode: resolveEmailMode(),
   emailFrom: process.env.EMAIL_FROM || "Solviax.app <noreply@localhost>",
   resendApiKey: process.env.RESEND_API_KEY || "",

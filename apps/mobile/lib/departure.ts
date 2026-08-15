@@ -51,3 +51,18 @@ export function hourInDepartureWindow(
   if (endHour != null && h > endHour) return false;
   return true;
 }
+
+/** Compact label for a saved window, or null when both sides are unbound. */
+export function formatDepartureWindowLabel(
+  startHour: number | null | undefined,
+  endHour: number | null | undefined,
+): string | null {
+  const start = parseDepartureHourParam(startHour ?? null);
+  const end = parseDepartureHourParam(endHour ?? null);
+  if (start == null && end == null) return null;
+  if (start != null && end != null) {
+    return `${formatHourOption(start)}–${formatHourOption(end)}`;
+  }
+  if (start != null) return `${formatHourOption(start)}–`;
+  return `–${formatHourOption(end!)}`;
+}

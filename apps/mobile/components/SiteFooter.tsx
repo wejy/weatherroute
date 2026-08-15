@@ -21,7 +21,7 @@ const FOOTER_LINKS: { href: Href; labelKey: string }[] = [
   { href: "/(tabs)", labelKey: "nav.discover" },
   { href: "/(tabs)/map", labelKey: "nav.map" },
   { href: "/(tabs)/routes", labelKey: "nav.routes" },
-  { href: "/trips", labelKey: "nav.trips" },
+  { href: "/trips" as Href, labelKey: "nav.trips" },
   { href: "/(tabs)/about", labelKey: "nav.about" },
   { href: "/pro", labelKey: "nav.subscription" },
   { href: "/(tabs)/settings", labelKey: "nav.sideSettings" },

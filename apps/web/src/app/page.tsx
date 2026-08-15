@@ -58,7 +58,14 @@ export default async function HomePage({
   const active = isActiveDiscoverQuery(parsed);
   const gate = await gateDiscoverAccess({
     consume: active,
-    meta: { origin: parsed.origin, weatherGoal: parsed.weatherGoal, path: "/" },
+    meta: {
+      origin: parsed.origin,
+      weatherGoal: parsed.weatherGoal,
+      path: "/",
+      ...(Number.isFinite(parsed.lat) && Number.isFinite(parsed.lon)
+        ? { lat: parsed.lat, lon: parsed.lon }
+        : {}),
+    },
   });
   const { tier } = await resolveDiscoverLimits();
 

@@ -201,6 +201,9 @@ const fi = {
     rainProbability: "Saateen todennäköisyys: {pct} %",
     rainAmount: "Sademäärä: {mm} mm",
     generateRoute: "Luo reitti",
+    rankedName: "{rank}. {name}",
+    rankingHint:
+      "Tässä parhaat ehdotuksemme sinulle säätavoitteen mukaan järjestettynä",
     filterWeather: "Suodata säätä",
     hideFilters: "Piilota suodattimet",
     detecting: "Paikannetaan…",
@@ -331,6 +334,7 @@ const fi = {
     remove: "Poista",
     filterLabel: "Suodata kulkuvälineen mukaan",
     filterAll: "Kaikki",
+    departureWindow: "Lähtö {window}",
   },
   login: {
     title: "Kirjaudu",
