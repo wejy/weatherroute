@@ -120,7 +120,12 @@ export function MapboxWeatherMap({
   useEffect(() => {
     const places = markers
       .filter((m) => !m.id.startsWith("origin-"))
-      .map((m) => ({ name: m.name, lat: m.lat, lon: m.lon }));
+      .map((m) => ({
+        name: m.name,
+        lat: m.lat,
+        lon: m.lon,
+        placeId: m.id,
+      }));
     if (places.length === 0) return;
 
     const ac = new AbortController();

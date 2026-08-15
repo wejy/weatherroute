@@ -92,16 +92,25 @@ export async function resolveDestinationImageUrl(input: {
   }
 
   const lang = input.locale === "fi" ? "fi" : "en";
-  const summary = await withTimeout(
-    fetchWikipediaPlaceSummary({
-      name: input.name || input.placeName,
-      lat: input.lat,
-      lon: input.lon,
-      lang,
-    }),
-    WIKI_FETCH_MS,
-    null,
+
+  // Already resolved Wikipedia text for this place — skip another live round-trip
+  // (thumb unlikely to appear later); prefer Mapbox static / placeholder.
+  const wikiAlreadyCached = Boolean(
+    extras?.wikipediaUrl && extras.extractShort,
   );
+
+  const summary = wikiAlreadyCached
+    ? null
+    : await withTimeout(
+        fetchWikipediaPlaceSummary({
+          name: input.name || input.placeName,
+          lat: input.lat,
+          lon: input.lon,
+          lang,
+        }),
+        WIKI_FETCH_MS,
+        null,
+      );
 
   if (summary) {
     void upsertPlaceExtrasFromWikipedia(input.id, summary).catch(() => {

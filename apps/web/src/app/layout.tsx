@@ -98,6 +98,7 @@ export default async function RootLayout({
   return (
     <html lang={locale} className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
+        {/* Allowlisted via CSP sha256 of THEME_BOOT_SCRIPT — no React nonce (avoids hydration mismatch). */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap"

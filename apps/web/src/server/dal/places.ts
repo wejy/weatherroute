@@ -235,3 +235,85 @@ export function placeIdCandidates(raw: string): string[] {
   if (id.startsWith("gn-")) out.push(`gn:${id.slice(3)}`);
   return [...new Set(out)];
 }
+
+/**
+ * Resolve a catalog place near lat/lon (optional name boost).
+ * Used to attach Wikipedia extras when the client omitted placeId.
+ */
+export async function findPlaceNear(input: {
+  lat: number;
+  lon: number;
+  name?: string;
+  maxKm?: number;
+}): Promise<{ id: string; name: string; lat: number; lon: number } | null> {
+  const maxKm = input.maxKm ?? 3;
+  const nameKey = input.name ? normalizePlaceName(primaryPlaceName(input.name)) : "";
+  const deg = Math.max(0.025, maxKm / 100);
+
+  type Candidate = { id: string; name: string; lat: number; lon: number };
+  let pool: Candidate[] = [];
+
+  const db = getDb();
+  if (db) {
+    try {
+      const rows = await db
+        .select({
+          id: places.id,
+          name: places.name,
+          lat: places.lat,
+          lon: places.lon,
+          country: places.country,
+          countryCode: places.countryCode,
+          placeName: places.placeName,
+        })
+        .from(places)
+        .where(
+          and(
+            gte(places.lat, input.lat - deg),
+            lte(places.lat, input.lat + deg),
+            gte(places.lon, input.lon - deg),
+            lte(places.lon, input.lon + deg),
+          ),
+        )
+        .limit(40);
+      pool = rows
+        .filter((r) =>
+          notBlockedCandidate({
+            country: r.country,
+            countryCode: r.countryCode,
+            placeName: r.placeName,
+          }),
+        )
+        .map((r) => ({ id: r.id, name: r.name, lat: r.lat, lon: r.lon }));
+    } catch {
+      pool = [];
+    }
+  }
+
+  if (pool.length === 0) {
+    pool = CITY_INDEX.filter((c) => {
+      if (!notBlockedCandidate(c)) return false;
+      return (
+        Math.abs(c.lat - input.lat) <= deg && Math.abs(c.lon - input.lon) <= deg
+      );
+    }).map((c) => ({ id: c.id, name: c.name, lat: c.lat, lon: c.lon }));
+  }
+
+  let best: { place: Candidate; score: number } | null = null;
+  for (const place of pool) {
+    const km = haversineKm(
+      { lat: input.lat, lon: input.lon },
+      { lat: place.lat, lon: place.lon },
+    );
+    if (km > maxKm) continue;
+    const nameMatch =
+      nameKey && normalizePlaceName(place.name) === nameKey ? 0 : 1;
+    const score = nameMatch * 1000 + km;
+    if (!best || score < best.score) best = { place, score };
+  }
+  return best?.place ?? null;
+}
+
+function primaryPlaceName(name: string): string {
+  return name.split(",")[0]?.trim() || name.trim();
+}

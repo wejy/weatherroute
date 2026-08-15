@@ -855,7 +855,7 @@ Config and edge requirements before public traffic. (Smoke tests after deploy: [
 - Keep `server_tokens off`, TLS 1.2+, HSTS, and HTTP→HTTPS redirect on nginx.
 - Enable **unattended-upgrades** (security pocket) + a quiet automatic reboot window; verify PM2 survives reboot.
 - `npm audit` CI gates **critical** issues; review Dependabot PRs for Next/Expo transitive CVEs.
-- CSP still allows `'unsafe-inline'` / `'unsafe-eval'` (Mapbox/Next) — treat XSS as high impact; prefer nonce CSP later.
+- CSP uses per-request **script nonces** + `'strict-dynamic'` (no `'unsafe-inline'` / `'unsafe-eval'` on scripts in production). `style-src` still allows `'unsafe-inline'` for Mapbox GL injected styles — treat style-injection XSS as residual risk.
 - OTP verify may return a session JWT in JSON for mobile — avoid logging response bodies.
 
 ---

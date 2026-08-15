@@ -16,6 +16,7 @@ import {
   type WikipediaSummaryClient,
 } from "@/lib/wikipedia-client";
 import { buildWeatherAdvisories } from "@/lib/weather-advisories";
+import { isLinkableDestinationId } from "@/lib/discover-query";
 
 export type { WikipediaSummaryClient };
 
@@ -50,7 +51,14 @@ export function MapMarkerPopup({
 }) {
   const { t, locale, dict } = useI18n();
   const lang = locale === "fi" ? "fi" : "en";
-  const cacheKey = wikipediaCacheKey(marker.name, marker.lat, marker.lon, lang);
+  const placeId = isLinkableDestinationId(marker.id) ? marker.id : undefined;
+  const cacheKey = wikipediaCacheKey(
+    marker.name,
+    marker.lat,
+    marker.lon,
+    lang,
+    placeId,
+  );
   const cached = getCachedWikipedia(cacheKey);
 
   const [wiki, setWiki] = useState<WikipediaSummaryClient | null>(
@@ -97,6 +105,7 @@ export function MapMarkerPopup({
       lat: marker.lat,
       lon: marker.lon,
       lang,
+      placeId,
     }).then((summary) => {
       if (cancelled) return;
       if (summary) {
@@ -110,7 +119,7 @@ export function MapMarkerPopup({
     return () => {
       cancelled = true;
     };
-  }, [cacheKey, marker.name, marker.lat, marker.lon, lang]);
+  }, [cacheKey, marker.name, marker.lat, marker.lon, lang, placeId]);
 
   const advisories = buildWeatherAdvisories(
     {

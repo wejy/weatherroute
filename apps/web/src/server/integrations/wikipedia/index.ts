@@ -29,7 +29,14 @@ const cache = new Map<
   string,
   { expiresAt: number; value: WikipediaSummary | null }
 >();
+/** Successful article lookups. */
 const CACHE_TTL_MS = 60 * 60 * 1000;
+/** Misses (no article / rejected) — shorter so new coverage can appear. */
+const NEGATIVE_TTL_MS = 15 * 60 * 1000;
+/** After Wikimedia 429, skip outbound calls for this long. */
+const RATE_LIMIT_COOLDOWN_MS = 90 * 1000;
+
+let rateLimitedUntil = 0;
 
 const wikidataCache = new Map<
   string,
@@ -53,6 +60,36 @@ function cacheKey(lang: WikiLang, name: string, lat?: number, lon?: number) {
   return `${CACHE_VERSION}:${lang}:${name.trim().toLowerCase()}:${geo}`;
 }
 
+function noteRateLimited(status: number): void {
+  if (status !== 429) return;
+  rateLimitedUntil = Date.now() + RATE_LIMIT_COOLDOWN_MS;
+  log.warn(
+    { cooldownMs: RATE_LIMIT_COOLDOWN_MS },
+    "[wikipedia] rate limited — cooling down",
+  );
+}
+
+function isRateLimited(): boolean {
+  return Date.now() < rateLimitedUntil;
+}
+
+/** @internal tests */
+export function __resetWikipediaCachesForTests(): void {
+  cache.clear();
+  wikidataCache.clear();
+  rateLimitedUntil = 0;
+}
+
+/** @internal tests */
+export function __noteWikipediaRateLimitForTests(): void {
+  noteRateLimited(429);
+}
+
+/** @internal tests */
+export function __isWikipediaRateLimitedForTests(): boolean {
+  return isRateLimited();
+}
+
 function wikiHeaders(): HeadersInit {
   return {
     "User-Agent": UA,
@@ -69,6 +106,8 @@ async function fetchSummary(
   lang: WikiLang,
   title: string,
 ): Promise<WikipediaSummary | null> {
+  if (isRateLimited()) return null;
+
   const encoded = encodeURIComponent(title.replaceAll(" ", "_"));
   const res = await fetch(
     `https://${lang}.wikipedia.org/api/rest_v1/page/summary/${encoded}`,
@@ -79,6 +118,10 @@ async function fetchSummary(
   );
 
   if (res.status === 404) return null;
+  if (res.status === 429) {
+    noteRateLimited(429);
+    return null;
+  }
   if (!res.ok) {
     log.warn(`[wikipedia] summary ${lang}/${title} → ${res.status}`);
     return null;
@@ -118,6 +161,8 @@ async function fetchPageMeta(
   lang: WikiLang,
   title: string,
 ): Promise<{ qid: string | null; lat: number | null; lon: number | null }> {
+  if (isRateLimited()) return { qid: null, lat: null, lon: null };
+
   const params = new URLSearchParams({
     action: "query",
     prop: "pageprops|coordinates",
@@ -131,6 +176,10 @@ async function fetchPageMeta(
     `https://${lang}.wikipedia.org/w/api.php?${params}`,
     { headers: wikiHeaders(), next: { revalidate: 3600 } },
   );
+  if (res.status === 429) {
+    noteRateLimited(429);
+    return { qid: null, lat: null, lon: null };
+  }
   if (!res.ok) return { qid: null, lat: null, lon: null };
   const data = (await res.json()) as {
     query?: {
@@ -169,6 +218,7 @@ async function fetchPageMeta(
 async function fetchWikidataInstanceOf(qid: string): Promise<string[]> {
   const cached = wikidataCache.get(qid);
   if (cached && cached.expiresAt > Date.now()) return cached.instanceOf;
+  if (isRateLimited()) return [];
 
   const params = new URLSearchParams({
     action: "wbgetentities",
@@ -181,6 +231,10 @@ async function fetchWikidataInstanceOf(qid: string): Promise<string[]> {
     headers: wikiHeaders(),
     next: { revalidate: 86400 },
   });
+  if (res.status === 429) {
+    noteRateLimited(429);
+    return [];
+  }
   if (!res.ok) return [];
 
   const data = (await res.json()) as {
@@ -269,6 +323,8 @@ async function searchTitles(
   query: string,
   limit: number,
 ): Promise<string[]> {
+  if (isRateLimited()) return [];
+
   const params = new URLSearchParams({
     action: "query",
     list: "search",
@@ -281,6 +337,10 @@ async function searchTitles(
     `https://${lang}.wikipedia.org/w/api.php?${params}`,
     { headers: wikiHeaders(), next: { revalidate: 3600 } },
   );
+  if (res.status === 429) {
+    noteRateLimited(429);
+    return [];
+  }
   if (!res.ok) return [];
   const data = (await res.json()) as {
     query?: { search?: Array<{ title?: string }> };
@@ -295,6 +355,8 @@ async function geosearchTitles(
   lat: number,
   lon: number,
 ): Promise<string[]> {
+  if (isRateLimited()) return [];
+
   const params = new URLSearchParams({
     action: "query",
     list: "geosearch",
@@ -308,6 +370,10 @@ async function geosearchTitles(
     `https://${lang}.wikipedia.org/w/api.php?${params}`,
     { headers: wikiHeaders(), next: { revalidate: 3600 } },
   );
+  if (res.status === 429) {
+    noteRateLimited(429);
+    return [];
+  }
   if (!res.ok) return [];
   const data = (await res.json()) as {
     query?: { geosearch?: Array<{ title?: string }> };
@@ -393,21 +459,38 @@ export async function fetchWikipediaPlaceSummary(input: {
     return cached.value;
   }
 
+  // Soft-serve stale positive hits while Wikimedia cools down.
+  if (isRateLimited()) {
+    if (cached?.value) return cached.value;
+    return null;
+  }
+
   let value: WikipediaSummary | null = null;
+  let hitRateLimit = false;
+  const before = rateLimitedUntil;
   try {
     value = await resolveForLang(lang, name, input.lat, input.lon);
-    if (!value && lang !== "en") {
+    if (!value && lang !== "en" && !isRateLimited()) {
       value = await resolveForLang("en", name, input.lat, input.lon);
     }
-    recordUsageEvent({
-      type: USAGE_TYPES.extWikipedia,
-      meta: { lang },
-    });
+    hitRateLimit = rateLimitedUntil > before;
+    if (!hitRateLimit) {
+      recordUsageEvent({
+        type: USAGE_TYPES.extWikipedia,
+        meta: { lang },
+      });
+    }
   } catch (error) {
     log.warn({ err: error }, "[wikipedia] fetch failed");
     value = null;
   }
 
-  cache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS });
+  const ttl =
+    value != null
+      ? CACHE_TTL_MS
+      : hitRateLimit || isRateLimited()
+        ? Math.min(NEGATIVE_TTL_MS, RATE_LIMIT_COOLDOWN_MS)
+        : NEGATIVE_TTL_MS;
+  cache.set(key, { value, expiresAt: Date.now() + ttl });
   return value;
 }

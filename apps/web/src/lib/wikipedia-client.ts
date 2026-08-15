@@ -1,5 +1,7 @@
 "use client";
 
+import { isLinkableDestinationId } from "@/lib/discover-query";
+
 export type WikipediaSummaryClient = {
   title: string;
   extract: string;
@@ -21,7 +23,11 @@ export function wikipediaCacheKey(
   lat: number,
   lon: number,
   lang: string,
+  placeId?: string,
 ): string {
+  if (placeId && isLinkableDestinationId(placeId)) {
+    return `${lang}:id:${placeId}`;
+  }
   return `${lang}:${name.trim().toLowerCase()}:${lat.toFixed(2)},${lon.toFixed(2)}`;
 }
 
@@ -36,8 +42,19 @@ export async function fetchWikipediaSummary(input: {
   lat: number;
   lon: number;
   lang: "en" | "fi";
+  placeId?: string;
 }): Promise<WikipediaSummaryClient | null> {
-  const key = wikipediaCacheKey(input.name, input.lat, input.lon, input.lang);
+  const placeId =
+    input.placeId && isLinkableDestinationId(input.placeId)
+      ? input.placeId
+      : undefined;
+  const key = wikipediaCacheKey(
+    input.name,
+    input.lat,
+    input.lon,
+    input.lang,
+    placeId,
+  );
   const hit = cache.get(key);
   if (hit) return hit.status === "ready" ? hit.summary : null;
 
@@ -50,6 +67,7 @@ export async function fetchWikipediaSummary(input: {
     lat: String(input.lat),
     lon: String(input.lon),
   });
+  if (placeId) params.set("placeId", placeId);
 
   const promise = fetch(`/api/wikipedia?${params}`)
     .then(async (res) => {
@@ -78,10 +96,15 @@ export async function fetchWikipediaSummary(input: {
 
 /**
  * Staggered background prefetch for map markers (~8 places).
- * Very light vs Wikimedia limits; server also caches for 1h.
+ * Passes placeId so the server can hit place_extras / persist results.
  */
 export function prefetchWikipediaForMarkers(
-  places: Array<{ name: string; lat: number; lon: number }>,
+  places: Array<{
+    name: string;
+    lat: number;
+    lon: number;
+    placeId?: string;
+  }>,
   lang: "en" | "fi",
   options?: { staggerMs?: number; signal?: AbortSignal },
 ): void {
@@ -96,7 +119,13 @@ export function prefetchWikipediaForMarkers(
   signal?.addEventListener("abort", clearTimers, { once: true });
 
   places.forEach((place, index) => {
-    const key = wikipediaCacheKey(place.name, place.lat, place.lon, lang);
+    const key = wikipediaCacheKey(
+      place.name,
+      place.lat,
+      place.lon,
+      lang,
+      place.placeId,
+    );
     if (cache.has(key) || inflight.has(key)) return;
 
     const delay = 80 + index * staggerMs;
