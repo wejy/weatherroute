@@ -64,7 +64,10 @@ export default async function LoginPage({
           </div>
 
           {error ? (
-            <p className="mb-4 rounded-lg bg-error-container/40 px-3 py-2 text-sm text-on-surface">
+            <p
+              role="alert"
+              className="mb-4 rounded-lg bg-error-container/40 px-3 py-2 text-sm text-on-surface"
+            >
               {error === "code"
                 ? t("login.errorCode")
                 : error === "send"

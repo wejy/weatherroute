@@ -20,7 +20,11 @@
   /* Borders/dividers only — never use as text (fails AA on surfaces). */
   --outline: #5f5e6e;
   --outline-variant: #c7c4d8;
-  --primary: #14b863;
+  /*
+   * Light primary must pass WCAG AA both as text on surfaces (~4.5:1) and as
+   * fill with white label text. #14b863 failed both (~2.5:1); #0b7a4a passes.
+   */
+  --primary: #0b7a4a;
   --on-primary: #ffffff;
   /* Filled accents: pair with on-primary-container, never text-primary on this fill. */
   --primary-container: #34d399;
@@ -53,7 +57,7 @@
   --on-error: #ffffff;
   --error-container: #ffdad6;
   --on-error-container: #93000a;
-  --focus-ring: #14b863;
+  --focus-ring: #0b7a4a;
   color-scheme: light;
 }
 

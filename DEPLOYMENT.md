@@ -796,14 +796,28 @@ pm2 save
 
 Config and edge requirements before public traffic. (Smoke tests after deploy: [Post-deploy smoke checklist](#post-deploy-smoke-checklist).)
 
-- [ ] `CORS_ALLOWED_ORIGINS=https://solviax.app` (no localhost / Expo ports)
-- [ ] `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` set; `curl …/ping` → `PONG`
+### Edge / identity (rate limits & anon quotas)
+
+- [ ] Reverse proxy **replaces** client IP headers (do not append untrusted `X-Forwarded-For`). nginx: `proxy_set_header X-Forwarded-For $remote_addr;` (+ `X-Real-IP` / Cloudflare `real_ip` as documented above).
+- [ ] Confirm spoofing fails: request with forged `X-Forwarded-For` still rate-limits on the real edge IP.
+
+### Config
+
+- [ ] `CORS_ALLOWED_ORIGINS=https://solviax.app` (no localhost / Expo ports in prod)
+- [ ] `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` set; `curl …/ping` → `PONG` (required — missing Redis = deny-all on limited routes)
+- [ ] Alert/monitor Upstash failures (prod without Redis looks like global 429)
 - [ ] `EMAIL_MODE=mailgun` + verified domain (or `resend`); **`LOG_OTP_CODE` unset**
 - [ ] Stripe live: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ONE_TIME` | `MONTHLY` | `YEARLY`
 - [ ] nginx / Cloudflare in front — **do not expose** Next.js `:3004` publicly
 - [ ] `AUTH_SECRET` ≥ 32 chars · `USE_MOCKS=false` · `AUTH_TRUST_HOST=true` only behind a trusted proxy
-- [ ] Mobile store / TestFlight builds: `EXPO_PUBLIC_API_URL=https://solviax.app`
+- [ ] Mapbox: `NEXT_PUBLIC_MAPBOX_TOKEN` is **`pk.`** only; URL restrictions on the token; `MAPBOX_ACCESS_TOKEN` `sk.` never in `NEXT_PUBLIC_*`
+- [ ] Mobile store / TestFlight builds: `EXPO_PUBLIC_API_URL=https://solviax.app` (HTTPS only)
 - [ ] Smoke: OTP email · checkout One-time / Monthly / Yearly · webhook updates `subscriptions.plan`
+
+### Accessibility (light theme)
+
+- [ ] Light primary token is AA-capable for both CTA fill (`text-on-primary`) and `text-primary` links (see `globals.css` light `--primary`)
+- [ ] Do **not** claim WCAG 2.2 AA until contrast is verified in the deployed theme (axe / manual)
 
 ---
 
@@ -833,12 +847,16 @@ Config and edge requirements before public traffic. (Smoke tests after deploy: [
 - Prefer **managed Postgres**; do not expose Postgres port publicly. **PgBouncer not required** for one PM2 instance.
 - Keep `AUTH_TRUST_HOST=true` only behind **nginx** (or Cloudflare + nginx) that you control.
 - Set `CORS_ALLOWED_ORIGINS` to your real origins (no `*`, no leftover localhost in prod).
-- **Upstash Redis REST is required in production** — without it, rate-limited routes deny all traffic.
-- nginx must set `X-Forwarded-For` / `X-Real-IP` from `$remote_addr` (or Cloudflare `real_ip`) so clients cannot spoof IPs used for quotas.
+- **Upstash Redis REST is required in production** — without it, rate-limited routes deny all traffic. Local `.env.local` may already have Upstash; prod must too.
+- nginx must set `X-Forwarded-For` / `X-Real-IP` from `$remote_addr` (or Cloudflare `real_ip`) so clients cannot spoof IPs used for quotas — **replace**, do not append client-supplied values.
+- Who can set `users.role = admin`? Only trusted DB/ops — seed scripts must not run against prod with open admin emails.
+- `/api/weather` (and similar) are public + IP rate-limited, not paywalled — accept cost risk or gate later.
 - Anon cookie rotation is mitigated with IP discover caps + per-IP session mint limits.
 - Keep `server_tokens off`, TLS 1.2+, HSTS, and HTTP→HTTPS redirect on nginx.
 - Enable **unattended-upgrades** (security pocket) + a quiet automatic reboot window; verify PM2 survives reboot.
 - `npm audit` CI gates **critical** issues; review Dependabot PRs for Next/Expo transitive CVEs.
+- CSP still allows `'unsafe-inline'` / `'unsafe-eval'` (Mapbox/Next) — treat XSS as high impact; prefer nonce CSP later.
+- OTP verify may return a session JWT in JSON for mobile — avoid logging response bodies.
 
 ---
 

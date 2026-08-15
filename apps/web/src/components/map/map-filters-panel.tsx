@@ -21,6 +21,9 @@ type Defaults = {
 
 const DESKTOP_MQ = "(min-width: 1024px)";
 
+const FOCUSABLE_SEL =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 export function MapFloatingFilters({
   defaults,
   weatherGoal,
@@ -38,6 +41,8 @@ export function MapFloatingFilters({
   const [isDesktop, setIsDesktop] = useState(false);
   const panelId = useId();
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
   const wasOpen = useRef(open);
 
   useEffect(() => {
@@ -60,15 +65,43 @@ export function MapFloatingFilters({
   }, [open]);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || isDesktop) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    const focusables = () =>
+      Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SEL)).filter(
+        (el) => el.getClientRects().length > 0,
+      );
+
+    // Move focus into the modal (close control is predictable).
+    queueMicrotask(() => {
+      closeBtnRef.current?.focus();
+    });
+
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
+        e.preventDefault();
         setOpen(false);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const list = focusables();
+      if (list.length === 0) return;
+      const first = list[0]!;
+      const last = list[list.length - 1]!;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
       }
     }
+
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, isDesktop]);
 
   useEffect(() => {
     if (!open || isDesktop) return;
@@ -114,6 +147,7 @@ export function MapFloatingFilters({
 
       {/* Panel stays mounted (hidden when closed) so aria-controls never breaks. */}
       <div
+        ref={panelRef}
         id={panelId}
         role={open ? "dialog" : undefined}
         aria-modal={open && !isDesktop ? true : undefined}
@@ -148,6 +182,7 @@ export function MapFloatingFilters({
               </h2>
             </div>
             <button
+              ref={closeBtnRef}
               type="button"
               onClick={() => setOpen(false)}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-on-surface-variant transition-colors hover:bg-surface-container hover:text-primary"

@@ -28,7 +28,7 @@ export const lightColors: AppColors = {
   onSurfaceVariant: "#464555",
   outline: "#5F5E6E",
   outlineVariant: "#C7C4D8",
-  primary: "#14B863",
+  primary: "#0B7A4A",
   onPrimary: "#FFFFFF",
   primaryContainer: "#34D399",
   accent: "#FFE566",

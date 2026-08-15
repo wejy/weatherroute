@@ -169,7 +169,7 @@ Quick env checklist before `NODE_ENV=production`:
 | `USE_MOCKS` | `false` (`true` is rejected at boot) |
 | `AUTH_TRUST_HOST` | `true` **only** behind a trusted reverse proxy |
 | `CORS_ALLOWED_ORIGINS` | Production web origin |
-| `UPSTASH_REDIS_REST_*` | Recommended for rate limits |
+| `UPSTASH_REDIS_REST_*` | Required in production for rate limits |
 | `NEXT_PUBLIC_APP_URL` / `AUTH_URL` | Canonical production URL (`https://solviax.app`) |
 | `DATABASE_URL` | Postgres connection string |
 | `NEXT_PUBLIC_MAPBOX_TOKEN` / `MAPBOX_ACCESS_TOKEN` | Mapbox `pk.` (+ optional `sk.` server-side) |

@@ -184,7 +184,10 @@ export default async function MapPage({
       </SideNav>
 
       <header className="fixed top-0 left-0 z-50 flex h-14 w-full items-center justify-between bg-surface/85 px-4 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl lg:hidden">
-        <p className="text-xl font-bold text-primary">{t("brand")}</p>
+        <div className="min-w-0">
+          <p className="truncate text-xl font-bold text-primary">{t("brand")}</p>
+          <h1 className="sr-only">{t("map.nearbyIdeal")}</h1>
+        </div>
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
           <Link
