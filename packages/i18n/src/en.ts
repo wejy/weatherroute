@@ -190,7 +190,7 @@ const en = {
     wikipediaTitle: "About {place}",
     wikipediaLink: "Read on Wikipedia",
     wikipediaLoading: "Loading Wikipedia…",
-    wikipediaUnavailable: "No Wikipedia article found for this place.",
+    wikipediaUnavailable: "Wikipedia summary isn’t available right now.",
   },
   map: {
     nearbyIdeal: "Best destinations for You",
@@ -217,7 +217,7 @@ const en = {
     openDestination: "Open destination",
     closePopup: "Close",
     wikipediaLoading: "Loading Wikipedia…",
-    wikipediaUnavailable: "No Wikipedia summary found for this place.",
+    wikipediaUnavailable: "Wikipedia summary isn’t available right now.",
     wikipediaNoImage: "No image",
     wikipediaLink: "Wikipedia",
     radiusKm: "{radius} radius",

@@ -192,7 +192,7 @@ const fi = {
     wikipediaTitle: "Tietoa kohteesta {place}",
     wikipediaLink: "Lue Wikipediassa",
     wikipediaLoading: "Ladataan Wikipediaa…",
-    wikipediaUnavailable: "Wikipedia-artikkelia ei löytynyt tälle kohteelle.",
+    wikipediaUnavailable: "Wikipedia-yhteenvetoa ei juuri nyt saatavilla.",
   },
   map: {
     nearbyIdeal: "Parhaat kohteet sinulle",
@@ -220,7 +220,7 @@ const fi = {
     openDestination: "Avaa kohde",
     closePopup: "Sulje",
     wikipediaLoading: "Ladataan Wikipediaa…",
-    wikipediaUnavailable: "Wikipedia-yhteenvetoa ei löytynyt tälle paikalle.",
+    wikipediaUnavailable: "Wikipedia-yhteenvetoa ei juuri nyt saatavilla.",
     wikipediaNoImage: "Ei kuvaa",
     wikipediaLink: "Wikipedia",
     radiusKm: "{radius} säde",
