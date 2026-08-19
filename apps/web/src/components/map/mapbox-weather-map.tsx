@@ -31,6 +31,12 @@ import {
   installMapboxTelemetryGuard,
   safeRemoveMap,
 } from "@/lib/mapbox-safe-remove";
+import {
+  clearMapboxBasemapLocaleCache,
+  isMapLanguageSynced,
+  mapboxLanguageCode,
+  syncMapboxBasemapLocale,
+} from "@/lib/mapbox-language";
 
 function addSearchRadiusLayers(
   map: mapboxgl.Map,
@@ -91,9 +97,12 @@ export function MapboxWeatherMap({
   const theme = useResolvedTheme();
   const mapStyle = mapboxStyleForTheme(theme);
   const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const appliedStyleRef = useRef(mapStyle);
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
   const locationQueryRef = useRef(locationQuery);
   locationQueryRef.current = locationQuery;
 
@@ -152,11 +161,44 @@ export function MapboxWeatherMap({
       center,
       zoom: origin ? 6 : 4.5,
       attributionControl: true,
+      language: mapboxLanguageCode(localeRef.current),
     });
 
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), "top-right");
     mapRef.current = map;
     appliedStyleRef.current = mapStyle;
+
+    const fitOriginView = () => {
+      if (showRadius && origin) {
+        addSearchRadiusLayers(map, origin, radiusKm);
+      } else if (origin) {
+        map.setCenter([origin.lon, origin.lat]);
+        map.setZoom(radiusKm >= 15000 ? 2 : 5);
+      }
+    };
+
+    const markLabelLocale = () => {
+      wrapperRef.current?.setAttribute(
+        "data-basemap-label-locale",
+        mapboxLanguageCode(localeRef.current),
+      );
+      wrapperRef.current?.setAttribute(
+        "data-basemap-labels-localized",
+        isMapLanguageSynced(map, localeRef.current) ? "1" : "0",
+      );
+    };
+
+    const onStyleLoad = () => {
+      syncMapboxBasemapLocale({
+        map,
+        locale: localeRef.current,
+        basemapStyle: appliedStyleRef.current,
+        onReady: () => {
+          fitOriginView();
+          markLabelLocale();
+        },
+      });
+    };
 
     const onMapClick = () => {
       // Marker clicks also fire the map click; ignore the immediate follow-up.
@@ -164,18 +206,12 @@ export function MapboxWeatherMap({
       setSelectedId(null);
     };
     map.on("click", onMapClick);
-
-    map.on("load", () => {
-      if (showRadius && origin) {
-        addSearchRadiusLayers(map, origin, radiusKm);
-      } else if (origin) {
-        map.setCenter([origin.lon, origin.lat]);
-        map.setZoom(radiusKm >= 15000 ? 2 : 5);
-      }
-    });
+    map.on("style.load", onStyleLoad);
+    if (map.isStyleLoaded()) onStyleLoad();
 
     return () => {
       map.off("click", onMapClick);
+      map.off("style.load", onStyleLoad);
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       safeRemoveMap(map);
@@ -191,18 +227,37 @@ export function MapboxWeatherMap({
     if (!map) return;
     if (appliedStyleRef.current === mapStyle) return;
     appliedStyleRef.current = mapStyle;
-
-    const onStyle = () => {
-      if (showRadius && origin) {
-        addSearchRadiusLayers(map, origin, radiusKm);
-      }
-    };
-    map.once("style.load", onStyle);
+    clearMapboxBasemapLocaleCache(map);
     map.setStyle(mapStyle);
-    return () => {
-      map.off("style.load", onStyle);
-    };
-  }, [mapStyle, origin, radiusKm, showRadius]);
+  }, [mapStyle]);
+
+  // Re-localize basemap labels when app language changes.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    clearMapboxBasemapLocaleCache(map);
+    syncMapboxBasemapLocale({
+      map,
+      locale,
+      basemapStyle: appliedStyleRef.current,
+      onReady: () => {
+        if (showRadius && origin) {
+          addSearchRadiusLayers(map, origin, radiusKm);
+        } else if (origin) {
+          map.setCenter([origin.lon, origin.lat]);
+          map.setZoom(radiusKm >= 15000 ? 2 : 5);
+        }
+        wrapperRef.current?.setAttribute(
+          "data-basemap-label-locale",
+          mapboxLanguageCode(locale),
+        );
+        wrapperRef.current?.setAttribute(
+          "data-basemap-labels-localized",
+          isMapLanguageSynced(map, locale) ? "1" : "0",
+        );
+      },
+    });
+  }, [locale, origin, radiusKm, showRadius]);
 
   // Sync marker pins when data changes (without recreating the map).
   useEffect(() => {
@@ -310,6 +365,8 @@ export function MapboxWeatherMap({
 
   return (
     <div
+      ref={wrapperRef}
+      data-testid="mapbox-weather-map"
       className={cn(
         "relative h-full w-full overflow-hidden",
         theme === "dark" && mapboxDarkBasemapClass,

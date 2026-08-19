@@ -19,6 +19,11 @@ import {
   installMapboxTelemetryGuard,
   safeRemoveMap,
 } from "@/lib/mapbox-safe-remove";
+import {
+  clearMapboxBasemapLocaleCache,
+  mapboxLanguageCode,
+  syncMapboxBasemapLocale,
+} from "@/lib/mapbox-language";
 
 function escapeHtml(value: string): string {
   return escapeMarkerHtml(value);
@@ -135,6 +140,129 @@ function coloredSegmentsGeoJSON(
   return { type: "FeatureCollection", features };
 }
 
+function ensureRouteLayersOnMap(
+  map: mapboxgl.Map,
+  params: {
+    from: PlaceDto;
+    to: PlaceDto;
+    waypoints: RouteWaypointDto[];
+    geometry?: [number, number][];
+    alternatives?: RouteAlternativeDto[];
+    drawRouteLine: boolean;
+    fitBounds?: boolean;
+  },
+): void {
+  const {
+    from,
+    to,
+    waypoints,
+    geometry,
+    alternatives,
+    drawRouteLine,
+    fitBounds = true,
+  } = params;
+  const coords = lineCoordinates(from, to, waypoints, geometry, {
+    drawRouteLine,
+  });
+  const altData = alternativesGeoJSON(drawRouteLine ? alternatives : undefined);
+  const segData =
+    coords.length >= 2
+      ? coloredSegmentsGeoJSON(coords, waypoints)
+      : { type: "FeatureCollection" as const, features: [] };
+
+  if (map.getSource("route-alts")) {
+    (map.getSource("route-alts") as mapboxgl.GeoJSONSource).setData(altData);
+  } else {
+    map.addSource("route-alts", {
+      type: "geojson",
+      data: altData,
+    });
+    map.addLayer({
+      id: "route-alts-casing",
+      type: "line",
+      source: "route-alts",
+      paint: {
+        "line-color": "#ffffff",
+        "line-width": 7,
+        "line-opacity": 0.95,
+        "line-dasharray": [1.2, 1.2],
+      },
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+      },
+    });
+    map.addLayer({
+      id: "route-alts",
+      type: "line",
+      source: "route-alts",
+      paint: {
+        "line-color": "#1b1b24",
+        "line-width": 4,
+        "line-opacity": 0.9,
+        "line-dasharray": [1.5, 1.2],
+      },
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+      },
+    });
+  }
+
+  if (map.getSource("route-segments")) {
+    (map.getSource("route-segments") as mapboxgl.GeoJSONSource).setData(segData);
+  } else {
+    map.addSource("route-segments", {
+      type: "geojson",
+      data: segData,
+    });
+    map.addLayer({
+      id: "route-line-casing",
+      type: "line",
+      source: "route-segments",
+      paint: {
+        "line-color": "#ffffff",
+        "line-width": 7,
+        "line-opacity": 0.9,
+      },
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+      },
+    });
+    map.addLayer({
+      id: "route-line",
+      type: "line",
+      source: "route-segments",
+      paint: {
+        "line-color": ["get", "color"],
+        "line-width": 4,
+        "line-opacity": 0.95,
+      },
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+      },
+    });
+  }
+
+  if (!fitBounds) return;
+
+  const bounds = new mapboxgl.LngLatBounds();
+  bounds.extend([from.lon, from.lat]);
+  bounds.extend([to.lon, to.lat]);
+  for (const c of coords) bounds.extend(c);
+  for (const wp of waypoints) {
+    bounds.extend([wp.lon, wp.lat]);
+  }
+  if (drawRouteLine) {
+    for (const a of alternatives ?? []) {
+      for (const c of a.geometry) bounds.extend(c);
+    }
+  }
+  map.fitBounds(bounds, { padding: 72, maxZoom: 10, duration: 0 });
+}
+
 function weatherMarkerEl(
   wp: RouteWaypointDto,
   selected: boolean,
@@ -194,19 +322,36 @@ export function MapboxRouteMap({
   /** When unreachable, do not draw a fake straight-line “route”. */
   routingStatus?: "routed" | "unreachable";
 }) {
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const theme = useResolvedTheme();
   const mapStyle = mapboxStyleForTheme(theme);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
   const appliedStyleRef = useRef(mapStyle);
+  const localeRef = useRef(locale);
+  localeRef.current = locale;
   const waypointsRef = useRef(waypoints);
   waypointsRef.current = waypoints;
+  const localeChangedRef = useRef(false);
   const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
 
   const drawRouteLine = routingStatus !== "unreachable";
+  const routeDataRef = useRef({
+    from,
+    to,
+    geometry,
+    alternatives,
+    drawRouteLine,
+  });
+  routeDataRef.current = {
+    from,
+    to,
+    geometry,
+    alternatives,
+    drawRouteLine,
+  };
   const geometryKey = !drawRouteLine
     ? "unreachable"
     : geometry?.length
@@ -238,16 +383,13 @@ export function MapboxRouteMap({
     mapboxgl.accessToken = token;
     setSelectedIdx(null);
 
-    const coords = lineCoordinates(from, to, waypointsRef.current, geometry, {
-      drawRouteLine,
-    });
-
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: mapStyle,
       center: [(from.lon + to.lon) / 2, (from.lat + to.lat) / 2],
       zoom: 6,
       attributionControl: true,
+      language: mapboxLanguageCode(localeRef.current),
     });
 
     map.addControl(
@@ -257,102 +399,30 @@ export function MapboxRouteMap({
     mapRef.current = map;
     appliedStyleRef.current = mapStyle;
 
-    const addRouteLayers = () => {
-      if (!map.getSource("route-alts")) {
-        map.addSource("route-alts", {
-          type: "geojson",
-          data: alternativesGeoJSON(drawRouteLine ? alternatives : undefined),
-        });
-        map.addLayer({
-          id: "route-alts-casing",
-          type: "line",
-          source: "route-alts",
-          paint: {
-            "line-color": "#ffffff",
-            "line-width": 7,
-            "line-opacity": 0.95,
-            "line-dasharray": [1.2, 1.2],
-          },
-          layout: {
-            "line-cap": "round",
-            "line-join": "round",
-          },
-        });
-        map.addLayer({
-          id: "route-alts",
-          type: "line",
-          source: "route-alts",
-          paint: {
-            "line-color": "#1b1b24",
-            "line-width": 4,
-            "line-opacity": 0.9,
-            "line-dasharray": [1.5, 1.2],
-          },
-          layout: {
-            "line-cap": "round",
-            "line-join": "round",
-          },
-        });
-      }
-
-      if (!map.getSource("route-segments")) {
-        map.addSource("route-segments", {
-          type: "geojson",
-          data:
-            coords.length >= 2
-              ? coloredSegmentsGeoJSON(coords, waypointsRef.current)
-              : { type: "FeatureCollection", features: [] },
-        });
-        map.addLayer({
-          id: "route-line-casing",
-          type: "line",
-          source: "route-segments",
-          paint: {
-            "line-color": "#ffffff",
-            "line-width": 7,
-            "line-opacity": 0.9,
-          },
-          layout: {
-            "line-cap": "round",
-            "line-join": "round",
-          },
-        });
-        map.addLayer({
-          id: "route-line",
-          type: "line",
-          source: "route-segments",
-          paint: {
-            "line-color": ["get", "color"],
-            "line-width": 4,
-            "line-opacity": 0.95,
-          },
-          layout: {
-            "line-cap": "round",
-            "line-join": "round",
-          },
-        });
-      }
-
-      const bounds = new mapboxgl.LngLatBounds();
-      bounds.extend([from.lon, from.lat]);
-      bounds.extend([to.lon, to.lat]);
-      for (const c of coords) bounds.extend(c);
-      for (const wp of waypointsRef.current) {
-        bounds.extend([wp.lon, wp.lat]);
-      }
-      if (drawRouteLine) {
-        for (const a of alternatives ?? []) {
-          for (const c of a.geometry) bounds.extend(c);
-        }
-      }
-      map.fitBounds(bounds, { padding: 72, maxZoom: 10, duration: 0 });
+    const syncRouteLayers = (fitBounds = true) => {
+      ensureRouteLayersOnMap(map, {
+        ...routeDataRef.current,
+        waypoints: waypointsRef.current,
+        fitBounds,
+      });
     };
 
-    map.on("load", addRouteLayers);
+    const onStyleLoad = () => {
+      syncRouteLayers();
+      syncMapboxBasemapLocale({
+        map,
+        locale: localeRef.current,
+        basemapStyle: appliedStyleRef.current,
+        onReady: () => syncRouteLayers(false),
+      });
+    };
 
+    map.on("style.load", onStyleLoad);
+    if (map.isStyleLoaded()) onStyleLoad();
     map.on("click", () => setSelectedIdx(null));
 
     return () => {
+      map.off("style.load", onStyleLoad);
       markersRef.current.forEach((m) => m.remove());
       markersRef.current = [];
       safeRemoveMap(map);
@@ -378,77 +448,32 @@ export function MapboxRouteMap({
     if (!map) return;
     if (appliedStyleRef.current === mapStyle) return;
     appliedStyleRef.current = mapStyle;
-
-    const coords = lineCoordinates(from, to, waypointsRef.current, geometry, {
-      drawRouteLine,
-    });
-
-    const onStyle = () => {
-      map.addSource("route-alts", {
-        type: "geojson",
-        data: alternativesGeoJSON(drawRouteLine ? alternatives : undefined),
-      });
-      map.addLayer({
-        id: "route-alts-casing",
-        type: "line",
-        source: "route-alts",
-        paint: {
-          "line-color": "#ffffff",
-          "line-width": 7,
-          "line-opacity": 0.95,
-          "line-dasharray": [1.2, 1.2],
-        },
-        layout: { "line-cap": "round", "line-join": "round" },
-      });
-      map.addLayer({
-        id: "route-alts",
-        type: "line",
-        source: "route-alts",
-        paint: {
-          "line-color": "#1b1b24",
-          "line-width": 4,
-          "line-opacity": 0.9,
-          "line-dasharray": [1.5, 1.2],
-        },
-        layout: { "line-cap": "round", "line-join": "round" },
-      });
-      map.addSource("route-segments", {
-        type: "geojson",
-        data:
-          coords.length >= 2
-            ? coloredSegmentsGeoJSON(coords, waypointsRef.current)
-            : { type: "FeatureCollection", features: [] },
-      });
-      map.addLayer({
-        id: "route-line-casing",
-        type: "line",
-        source: "route-segments",
-        paint: {
-          "line-color": "#ffffff",
-          "line-width": 7,
-          "line-opacity": 0.9,
-        },
-        layout: { "line-cap": "round", "line-join": "round" },
-      });
-      map.addLayer({
-        id: "route-line",
-        type: "line",
-        source: "route-segments",
-        paint: {
-          "line-color": ["get", "color"],
-          "line-width": 4,
-          "line-opacity": 0.95,
-        },
-        layout: { "line-cap": "round", "line-join": "round" },
-      });
-    };
-
-    map.once("style.load", onStyle);
+    clearMapboxBasemapLocaleCache(map);
     map.setStyle(mapStyle);
-    return () => {
-      map.off("style.load", onStyle);
-    };
-  }, [mapStyle, from, to, geometry, alternatives, drawRouteLine]);
+  }, [mapStyle]);
+
+  // Re-localize basemap labels when app language changes (skip initial mount).
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!localeChangedRef.current) {
+      localeChangedRef.current = true;
+      return;
+    }
+
+    clearMapboxBasemapLocaleCache(map);
+    syncMapboxBasemapLocale({
+      map,
+      locale,
+      basemapStyle: appliedStyleRef.current,
+      onReady: () =>
+        ensureRouteLayersOnMap(map, {
+          ...routeDataRef.current,
+          waypoints: waypointsRef.current,
+          fitBounds: false,
+        }),
+    });
+  }, [locale]);
 
   // Sync weather markers + segment colors when waypoints / selection change.
   useEffect(() => {
@@ -484,7 +509,18 @@ export function MapboxRouteMap({
             ? coloredSegmentsGeoJSON(coords, waypoints)
             : { type: "FeatureCollection", features: [] },
         );
+      } else if (map.isStyleLoaded()) {
+        ensureRouteLayersOnMap(map, {
+          from,
+          to,
+          waypoints,
+          geometry,
+          alternatives,
+          drawRouteLine,
+          fitBounds: false,
+        });
       }
+
       const altSrc = map.getSource("route-alts") as
         | mapboxgl.GeoJSONSource
         | undefined;
@@ -497,6 +533,11 @@ export function MapboxRouteMap({
 
     if (map.isStyleLoaded()) sync();
     else map.once("load", sync);
+    map.on("style.load", sync);
+
+    return () => {
+      map.off("style.load", sync);
+    };
   }, [
     waypoints,
     selectedIdx,

@@ -29,7 +29,7 @@
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.27.0",
-    "mapbox-gl": "^3.27.0",
+    "mapbox-gl": "^3.28.1",
     "nanoid": "^6.0.0",
     "next": "16.2.12",
     "next-auth": "^5.0.0-beta.32",
