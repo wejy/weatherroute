@@ -678,6 +678,10 @@ const fi = {
           title: "Joukkoliikenne reiteillä",
           body: "Junat ja bussit auton ja pyörän rinnalle.",
         },
+        measurementUnits: {
+          title: "Metriset ja imperiaaliset yksiköt",
+          body: "Valitse °C tai °F, kilometrit tai mailit ja muut yksiköt tilisi asetuksista — sama valinta kirjautuneena verkossa ja sovelluksessa.",
+        },
       },
     },
   },

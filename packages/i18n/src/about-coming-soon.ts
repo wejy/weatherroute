@@ -1,6 +1,7 @@
 /** Shared keys for the About “Coming soon” roadmap (web + mobile). */
 export const ABOUT_COMING_SOON_KEYS = [
   "mobileApps",
+  "measurementUnits",
   "mobileMap",
   "transit",
   "whyRanking",
@@ -21,4 +22,5 @@ export const ABOUT_COMING_SOON_ICONS: Record<AboutComingSoonKey, string> = {
   leaveBy: "departure_board",
   tripAlerts: "notifications_active",
   activityPresets: "hiking",
+  measurementUnits: "straighten",
 };

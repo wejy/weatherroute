@@ -673,6 +673,10 @@ const en = {
           title: "Activity presets",
           body: "Beach, terrace, hiking, and city-walk modes mapped to weather goals — without a separate product.",
         },
+        measurementUnits: {
+          title: "Metric & imperial units",
+          body: "Choose °C or °F, kilometres or miles, and related units in your account settings — synced when you’re signed in.",
+        },
       },
     },
   },
