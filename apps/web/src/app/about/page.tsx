@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { TopNav, BottomNav } from "@/components/layout/top-nav";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { AboutComingSoon } from "@/components/about/about-coming-soon";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { publicPageMeta } from "@/lib/seo-meta";
@@ -274,6 +275,8 @@ export default async function AboutPage() {
             </div>
           </div>
         </section>
+
+        <AboutComingSoon t={t} />
 
         <SiteFooter />
       </main>

@@ -516,15 +516,15 @@ const en = {
     highlights: {
       horizon: {
         title: "Up to 16 days ahead",
-        body: "Pick today, tomorrow, the weekend, or a custom window — forecasts stretch up to 16 days so you can plan with confidence.",
+        body: "Pick today, tomorrow, the weekend, or a custom window — Our forecasts stretch up to 16 days so you can plan with confidence. We use trusted weather data and forecasts.",
       },
       ranking: {
         title: "Weather-ranked destinations",
-        body: "Tell us what you want — sun, dry roads, mild air — and we match places that match your window, not just the closest town.",
+        body: "Tell us what you want — sun, dry roads, mild temperature — We match destinations that match your preferences, not just the closest town.",
       },
       corridor: {
         title: "Weather along the route",
-        body: "See the weather,dryness and conditions along the drive or ride, plus a Pro departure time window (start–end) for smarter suggestions.",
+        body: "See the weather, dryness and conditions along the drive or ride, plus a Pro departure time window (start–end) for smarter suggestions.",
       },
       trust: {
         title: "Fast, private sign-in",
@@ -533,7 +533,7 @@ const en = {
     },
     featuresTitle: "What you can do",
     featuresLead:
-      "Everything you need from “where the weather looks good?” to “how do I get there?” — plus speed and trust built in.",
+      "Everything you need from “where the weather looks good?” to “how do I get there?” — plus fast to use, secure by design.",
     features: {
       horizon: {
         title: "Plan up to 16 days out",
@@ -577,7 +577,7 @@ const en = {
       },
       fast: {
         title: "Built for snappy searches",
-        body: "Weather and map data is very complex. Discover and route checks are designed performace first - so they are fast.",
+        body: "Weather and map data is very complex. Discover and route checks are designed performance first - so they are fast.",
       },
       secure: {
         title: "Security-minded by design",
@@ -604,6 +604,46 @@ const en = {
     plansCtaManage: "Manage your subscription",
     plansHint: "Full price table and checkout live on the plans page.",
     ctaDiscover: "Start discovering",
+    comingSoon: {
+      title: "Coming soon…",
+      lead:
+        "We’re extending the weather-first planner — native apps, richer maps, and smarter routes.",
+      badge: "Soon",
+      items: {
+        mobileApps: {
+          title: "Android & iOS apps",
+          body: "Install Solviax.app from Google Play and the App Store — same account and saved trips as the web.",
+        },
+        mobileMap: {
+          title: "Interactive map on mobile",
+          body: "Full Mapbox weather map in the app, not just the nearby list from your last Discover.",
+        },
+        transit: {
+          title: "Public transit routes",
+          body: "Trains and buses alongside car and bike.",
+        },
+        whyRanking: {
+          title: "“Why this place?”",
+          body: "Plain-language reasons behind each ranked destination — sun hours, rain risk, temperature, and more.",
+        },
+        timeScrubber: {
+          title: "Time scrubber on the map",
+          body: "Slide through hours and days on the same pins to see how weather shifts before you leave.",
+        },
+        leaveBy: {
+          title: "Leave-by suggestions",
+          body: "A single recommendation for when to hit the road for the driest corridor on your route.",
+        },
+        tripAlerts: {
+          title: "Saved-trip weather alerts (Pro)",
+          body: "Get a nudge when a saved trip turns wetter or stormier before your departure window.",
+        },
+        activityPresets: {
+          title: "Activity presets",
+          body: "Beach, terrace, hiking, and city-walk modes mapped to weather goals — without a separate product.",
+        },
+      },
+    },
   },
   footer: {
     brand: "Solviax.app",

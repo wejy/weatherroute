@@ -204,7 +204,7 @@ const fi = {
     rankedName: "{rank}. {name}",
     rankingHint:
       "Tässä parhaat ehdotuksemme sinulle säätavoitteen mukaan järjestettynä",
-    filterWeather: "Suodata säätä",
+    filterWeather: "Räätälöi tuloksesi sään mukaan",
     hideFilters: "Piilota suodattimet",
     detecting: "Paikannetaan…",
     waitingPlaces: "Salli sijainti tai aseta lähtöpaikka Löydä-sivulla.",
@@ -520,8 +520,8 @@ const fi = {
     highlightsTitle: "Miksi käyttäjät pitävät siitä",
     highlights: {
       horizon: {
-        title: "Jopa 16 päivän päähän",
-        body: "Valitse tänään, huomenna, viikonloppu tai oma aikaväli — ennusteet yltävät jopa 16 päivään, jotta suunnittelu onnistuu ajoissa.",
+        title: "Ennusteet ylätävät jopa 16 päivän päähän",
+        body: "Valitse lähtöajankohta tänään, huomenna, tuleva viikonloppu tai oma aikavälisi — ennusteet yltävät jopa 16 päivän päähän. Käytämme vain oikeita sääennusteita.",
       },
       ranking: {
         title: "Sään mukaan arvotetut kohteet",
@@ -529,11 +529,11 @@ const fi = {
       },
       corridor: {
         title: "Sää reitin varrella",
-        body: "Näet reitin lämpötilan, kuivuuden ja olosuhteet ajon tai pyöräilyn varrella, sekä Pro-lähtöajan (Alku–Loppu) fiksummille ehdotuksille.",
+        body: "Näet reitin lämpötilan, sateen todennäköisyyden, mahdolliset sademääräennusteet ja olosuhteet ajon tai pyöräilyn varrella, sekä Pro-lähtöajan (Alku–Loppu) fiksummille ehdotuksille.",
       },
       trust: {
         title: "Nopea ja tietoturvallinen",
-        body: "Palvelussa on priorisoitu tietoturvallisuutta. Käyttöön tarvitset vain sähköpostin (ei salasanaa). Tallennetut reitit pysyvät tililläsi. Maksut hoitaa Stripe.",
+        body: "Palvelussa on priorisoitu tietoturvallisuutta. Käyttöön tarvitset vain sähköpostin (ei salasanaa). Tallennetut reitit pysyvät tililläsi. Maksut hoitaa Stripe. Emme tallenna luottokorttitietoja.",
       },
     },
     featuresTitle: "Mitä voit tehdä",
@@ -609,6 +609,46 @@ const fi = {
     plansCtaManage: "Hallitse tilaustasi",
     plansHint: "Täysi hinnasto ja maksutavat ovat tilaussivulla.",
     ctaDiscover: "Löydä paikkasi auringossa",
+    comingSoon: {
+      title: "Tulossa…",
+      lead:
+        "Laajennamme ja parannamme sääperustaista matkasuunnittelua — natiivisovellukset, rikkaammat kartat ja fiksummat reitit.",
+      badge: "Tulossa",
+      items: {
+        mobileApps: {
+          title: "Android- ja iOS-sovellukset",
+          body: "Asenna Solviax.app Google Playsta ja App Storesta — sama tili ja tallennetut reitit kuin verkossa.",
+        },
+        mobileMap: {
+          title: "Vuorovaikutteinen kartta mobiilissa",
+          body: "Täysi Mapbox-sääkartta sovelluksessa, ei pelkkä viimeisimmän haun lähistölista.",
+        },
+        whyRanking: {
+          title: "\"Miksi tämä paikka?\"",
+          body: "Selkeät perustelut jokaiselle suositellulle kohteelle — aurinko, sade, lämpötila ja muut tekijät.",
+        },
+        timeScrubber: {
+          title: "Ajan selaus kartalla",
+          body: "Liuku tuntien ja päivien välillä samoilla napeilla — näe miten sää muuttuu ennen lähtöä.",
+        },
+        leaveBy: {
+          title: "Lähtöaikasuositukset",
+          body: "Yksi selkeä ehdotus, milloin liikkeelle kuivimman matkan toivossa.",
+        },
+        tripAlerts: {
+          title: "Tallennetun matkan säähälytykset (Pro)",
+          body: "Ilmoitus, jos tallennetun matkan sää muuttuu huonommaksi ennen suunniteltua lähtöä.",
+        },
+        activityPresets: {
+          title: "Aktiviteettivalinnat",
+          body: "Ranta, terassi, retkeily ja kaupunkikävely tavoitelistallesi.",
+        },
+        transit: {
+          title: "Joukkoliikenne reiteillä",
+          body: "Junat ja bussit auton ja pyörän rinnalle.",
+        },
+      },
+    },
   },
   footer: {
     brand: "Solviax.app",

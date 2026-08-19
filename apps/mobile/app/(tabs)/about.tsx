@@ -1,6 +1,9 @@
 import { useCallback, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View, Pressable } from "react-native";
 import { Link, useFocusEffect, type Href } from "expo-router";
+import {
+  ABOUT_COMING_SOON_KEYS,
+} from "@solviax/i18n";
 import { useI18n } from "@/lib/i18n";
 import type { AppColors } from "@/constants/Colors";
 import { useColors } from "@/lib/theme";
@@ -136,6 +139,28 @@ export default function AboutScreen() {
           <Text style={styles.primaryText}>{t("about.ctaDiscover")}</Text>
         </Pressable>
       </Link>
+
+      <View style={styles.comingSoonSection}>
+        <Text style={styles.comingSoonTitle}>{t("about.comingSoon.title")}</Text>
+        <Text style={styles.comingSoonLead}>{t("about.comingSoon.lead")}</Text>
+        {ABOUT_COMING_SOON_KEYS.map((key) => (
+          <View key={key} style={styles.comingSoonCard}>
+            <View style={styles.comingSoonCardHeader}>
+              <Text style={styles.comingSoonItemTitle}>
+                {t(`about.comingSoon.items.${key}.title`)}
+              </Text>
+              <View style={styles.comingSoonBadge}>
+                <Text style={styles.comingSoonBadgeText}>
+                  {t("about.comingSoon.badge")}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.body}>
+              {t(`about.comingSoon.items.${key}.body`)}
+            </Text>
+          </View>
+        ))}
+      </View>
 
       <SiteFooter />
     </ScrollView>
@@ -334,5 +359,59 @@ function createStyles(colors: AppColors) {
     justifyContent: "center",
   },
   primaryText: { color: colors.onPrimary, fontWeight: "700" },
+  comingSoonSection: {
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderStyle: "dashed",
+    borderColor: "rgba(11, 122, 74, 0.35)",
+    backgroundColor: colors.surfaceContainer,
+    gap: 10,
+  },
+  comingSoonTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: colors.onSurface,
+  },
+  comingSoonLead: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: colors.onSurfaceVariant,
+    marginBottom: 4,
+  },
+  comingSoonCard: {
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceLowest,
+    borderWidth: 1,
+    borderColor: colors.border,
+    gap: 6,
+  },
+  comingSoonCardHeader: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+  },
+  comingSoonItemTitle: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "700",
+    color: colors.onSurface,
+  },
+  comingSoonBadge: {
+    backgroundColor: "rgba(255, 229, 102, 0.35)",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  comingSoonBadgeText: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    color: colors.onSurface,
+  },
 });
 }

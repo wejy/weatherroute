@@ -13,3 +13,8 @@ export {
   localeFromTag,
   resolveLocaleFromAcceptLanguage,
 } from "./locale";
+export {
+  ABOUT_COMING_SOON_ICONS,
+  ABOUT_COMING_SOON_KEYS,
+  type AboutComingSoonKey,
+} from "./about-coming-soon";
