@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useFormStatus } from "react-dom";
+import Script from "next/script";
 import {
   requestOtpAction,
   verifyOtpAction,
 } from "@/server/actions/trips";
 import { useI18n } from "@/components/i18n/locale-provider";
+import {
+  executeRecaptcha,
+  getRecaptchaSiteKeyClient,
+} from "@/lib/recaptcha-client";
+import { shouldShowOtpVerify } from "@/lib/login-otp-flow";
 
 const COOLDOWN_MS = 30_000;
 const STORAGE_KEY = "solviax_otp_cooldown";
@@ -34,28 +40,6 @@ function writeCooldown(email: string, until: number) {
   sessionStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({ email: email.toLowerCase().trim(), until }),
-  );
-}
-
-function SendSubmitButton({
-  disabled,
-  label,
-  waitLabel,
-}: {
-  disabled: boolean;
-  label: string;
-  waitLabel: string;
-}) {
-  const { pending } = useFormStatus();
-  const blocked = disabled || pending;
-  return (
-    <button
-      type="submit"
-      disabled={blocked}
-      className="w-full rounded-lg bg-primary py-3 font-semibold text-on-primary transition-opacity disabled:cursor-not-allowed disabled:opacity-55"
-    >
-      {pending ? waitLabel : label}
-    </button>
   );
 }
 
@@ -92,8 +76,13 @@ export function LoginOtpForm({
   const [cooldownUntil, setCooldownUntil] = useState(0);
   const [cooldownEmail, setCooldownEmail] = useState("");
   const [now, setNow] = useState(() => Date.now());
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
 
-  const showVerify = Boolean(initialSent || initialEmail);
+  const recaptchaSiteKey = getRecaptchaSiteKeyClient();
+  const [recaptchaReady, setRecaptchaReady] = useState(!recaptchaSiteKey);
+  /** Only after ?sent=1 — not when email is prefilled from a failed attempt. */
+  const showVerify = shouldShowOtpVerify(initialSent);
 
   useEffect(() => {
     const normalized = initialEmail.toLowerCase().trim();
@@ -138,9 +127,57 @@ export function LoginOtpForm({
       ? t("login.sendCodeAgain")
       : t("login.sendCode");
 
+  async function handleSendSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (sameEmailOnCooldown || sending) return;
+    if (recaptchaSiteKey && !recaptchaReady) {
+      setSendError(t("login.errorCaptcha"));
+      return;
+    }
+
+    setSendError(null);
+    setSending(true);
+    const formData = new FormData(event.currentTarget);
+
+    try {
+      if (recaptchaSiteKey) {
+        const token = await executeRecaptcha("request_otp");
+        formData.set("recaptchaToken", token);
+      }
+    } catch {
+      setSendError(t("login.errorCaptcha"));
+      setSending(false);
+      return;
+    }
+
+    try {
+      // Redirect throws NEXT_REDIRECT — finally resets button if navigation is delayed.
+      await requestOtpAction(formData);
+    } finally {
+      setSending(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <form action={requestOtpAction} className="space-y-3">
+      {recaptchaSiteKey ? (
+        <Script
+          src={`https://www.google.com/recaptcha/api.js?render=${encodeURIComponent(recaptchaSiteKey)}`}
+          strategy="afterInteractive"
+          onReady={() => setRecaptchaReady(true)}
+        />
+      ) : null}
+
+      {sendError ? (
+        <p
+          role="alert"
+          className="rounded-lg bg-error-container/40 px-3 py-2 text-sm text-on-surface"
+        >
+          {sendError}
+        </p>
+      ) : null}
+
+      <form onSubmit={handleSendSubmit} className="space-y-3">
         <input type="hidden" name="next" value={nextParam} />
         <label className="block text-sm font-medium text-on-surface">
           {t("login.emailLabel")}
@@ -155,11 +192,17 @@ export function LoginOtpForm({
             placeholder="you@example.com"
           />
         </label>
-        <SendSubmitButton
-          disabled={sameEmailOnCooldown}
-          label={sendLabel}
-          waitLabel={t("login.sendingCode")}
-        />
+        <button
+          type="submit"
+          disabled={
+            sameEmailOnCooldown ||
+            sending ||
+            (Boolean(recaptchaSiteKey) && !recaptchaReady)
+          }
+          className="w-full rounded-lg bg-primary py-3 font-semibold text-on-primary transition-opacity disabled:cursor-not-allowed disabled:opacity-55"
+        >
+          {sending ? t("login.sendingCode") : sendLabel}
+        </button>
         {sameEmailOnCooldown ? (
           <p className="text-xs text-on-surface-variant">
             {t("login.changeEmailHint")}

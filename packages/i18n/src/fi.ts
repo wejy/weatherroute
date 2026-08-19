@@ -364,6 +364,7 @@ const fi = {
     changeEmailHint: "Vaihda sähköposti yllä lähettääksesi koodin toiseen osoitteeseen.",
     errorEmail: "Anna kelvollinen sähköposti.",
     errorSend: "Koodin lähetys epäonnistui. Yritä uudelleen.",
+    errorCaptcha: "Varmennus epäonnistui. Päivitä sivu ja yritä uudelleen.",
     errorCode: "Virheellinen tai vanhentunut koodi.",
     goTrips: "Siirry tallennettuihin",
     goSettings: "Avaa asetukset",
@@ -371,6 +372,7 @@ const fi = {
     continueDemo: "Jatka demotilillä",
     supabaseHint: "Aseta DATABASE_URL ja USE_MOCKS=false email-OTP:lle.",
     otpFooter: "",
+    recaptchaNotice: "Sivusto on suojattu reCAPTCHA:lla.",
   },
   email: {
     otpSubject: "Solviax.app-kirjautumiskoodisi",
@@ -718,10 +720,10 @@ const fi = {
       departure:
         "Jokaisella reitillä voit asettaa lähtöajan rajauksen (Alku ja/tai Loppu), jotta ehdotukset sopivat aikatauluusi.",
       sameCountry:
-        "Pidä Löydä yhdessä maassa — valinnainen asetus, koskee kaikkia hakuja.",
+        "Rajoita Löydä-tulokset yhteen maahan, joskus on kiva pysytellä tutustussa ympäristössä — valinnainen asetus, koskee kaikkia hakuja.",
       routes:
         "Tallenna reittejä — 2 Kerta-tilauksella, rajattomasti Jatkuvalla ja Vuodella.",
-      discovers: "Satoja Löydä-hakuja Pro-jakson ajan.",
+      discovers: "Satoja Löydä-hakuja Pro-tilauksen ajan.",
       future: "Tulevat Pro-ominaisuudet sitä mukaa kun ne julkaistaan...",
     },
     freeNoteTitle: "Mitä Ilmainen jo sisältää",

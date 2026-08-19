@@ -316,3 +316,8 @@ select optgroup {
     animation: none !important;
   }
 }
+
+/* reCAPTCHA v3 badge — hidden per Google FAQ when disclosure text is shown in UI. */
+.grecaptcha-badge {
+  visibility: hidden;
+}

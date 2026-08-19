@@ -32,11 +32,12 @@ export function buildContentSecurityPolicy(
     // Next applies this nonce to framework scripts when CSP is on the request.
     // Theme boot is allowlisted by hash so layout need not set nonce={...}.
     // 'unsafe-eval' only for React Refresh / dev tooling — not required in prod or for Mapbox v11.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'sha256-${themeBootScriptHash}'${isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'sha256-${themeBootScriptHash}' https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com https://www.gstatic.com${isDev ? " 'unsafe-eval'" : ""}`,
     // Keep unsafe-inline for styles; do not add style nonces (CSP3 would ignore unsafe-inline).
     "style-src 'self' 'unsafe-inline' https://api.mapbox.com https://fonts.googleapis.com",
-    "img-src 'self' data: blob: https:",
-    "connect-src 'self' https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com wss:",
+    "img-src 'self' data: blob: https: https://www.google-analytics.com https://www.googletagmanager.com",
+    "connect-src 'self' https://api.mapbox.com https://events.mapbox.com https://*.tiles.mapbox.com wss: https://www.google-analytics.com https://*.google-analytics.com https://www.googletagmanager.com https://www.google.com",
+    "frame-src 'self' https://www.google.com https://www.recaptcha.net",
     "worker-src 'self' blob:",
     // Safari still falls back to child-src for Mapbox blob workers.
     "child-src 'self' blob:",

@@ -9,6 +9,7 @@ import { getCurrentUser } from "@/server/auth/session";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { env, hasDatabase } from "@/lib/env";
+import { isRecaptchaEnabled } from "@/lib/recaptcha";
 import { noIndexPageMeta } from "@/lib/seo-meta";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,7 @@ export default async function LoginPage({
   const locale = await getLocale();
   const t = createTranslator(getDictionary(locale));
   const mode = hasDatabase() && !env.useMocks ? "otp" : "demo";
+  const showRecaptchaNotice = mode === "otp" && isRecaptchaEnabled();
   const raw = await searchParams;
   const emailParam = typeof raw.email === "string" ? raw.email : "";
   const sent = raw.sent === "1";
@@ -70,9 +72,11 @@ export default async function LoginPage({
             >
               {error === "code"
                 ? t("login.errorCode")
-                : error === "send"
-                  ? t("login.errorSend")
-                  : t("login.errorEmail")}
+                : error === "captcha"
+                  ? t("login.errorCaptcha")
+                  : error === "send"
+                    ? t("login.errorSend")
+                    : t("login.errorEmail")}
             </p>
           ) : null}
 
@@ -119,6 +123,11 @@ export default async function LoginPage({
           <p className="mt-6 text-center text-sm text-on-surface-variant">
             {mode === "otp" ? t("login.otpFooter") : t("login.supabaseHint")}
           </p>
+          {showRecaptchaNotice ? (
+            <p className="mt-2 text-center text-xs text-on-surface-variant/80">
+              {t("login.recaptchaNotice")}
+            </p>
+          ) : null}
         </div>
       </main>
     </>

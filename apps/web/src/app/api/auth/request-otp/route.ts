@@ -8,10 +8,17 @@ import { rateLimit } from "@/lib/rate-limit";
 import { requestEmailOtp } from "@/server/auth/otp";
 import { withApiLog } from "@/lib/api-log";
 import { isLocale, LOCALE_COOKIE, defaultLocale } from "@/i18n/config";
+import {
+  RecaptchaVerificationError,
+  isMobileAppClient,
+  isRecaptchaEnabled,
+  verifyRecaptchaToken,
+} from "@/lib/recaptcha";
 
 const bodySchema = z.object({
   email: z.string().email(),
   locale: z.enum(["en", "fi"]).optional(),
+  recaptchaToken: z.string().min(1).optional(),
 });
 
 function localeFromRequest(request: Request, bodyLocale?: Locale): Locale {
@@ -49,9 +56,26 @@ export async function POST(request: Request) {
     const locale = localeFromRequest(request, parsed.data.locale);
 
     try {
+      if (
+        isRecaptchaEnabled() &&
+        !isMobileAppClient(request.headers)
+      ) {
+        await verifyRecaptchaToken(parsed.data.recaptchaToken, {
+          remoteIp: ip,
+          expectedAction: "request_otp",
+        });
+      }
+
       await requestEmailOtp(parsed.data.email, { clientKey: ip, locale });
       log.info({ email: parsed.data.email, locale }, "otp sent");
     } catch (error) {
+      if (error instanceof RecaptchaVerificationError) {
+        log.warn({ email: parsed.data.email }, "recaptcha failed");
+        return NextResponse.json(
+          { error: "Recaptcha verification failed" },
+          { status: 403 },
+        );
+      }
       log.error({ err: error }, "otp send failed");
       const message =
         error instanceof Error && error.message === "Rate limit exceeded"

@@ -14,6 +14,11 @@ import { createTrip, deleteTrip, TripSaveLimitError } from "@/server/dal/trips";
 import { haversineKm } from "@/server/integrations/mocks/data";
 import { getClientIpFromHeaders } from "@/lib/client-ip";
 import { saveTripInputSchema } from "@/lib/validation/schemas";
+import {
+  RecaptchaVerificationError,
+  isRecaptchaEnabled,
+  verifyRecaptchaToken,
+} from "@/lib/recaptcha";
 
 export async function loginDemoAction() {
   await signInDemo();
@@ -31,9 +36,22 @@ export async function requestOtpAction(formData: FormData) {
     const clientKey = getClientIpFromHeaders(h);
     const { getLocale } = await import("@/i18n/get-dictionary");
     const locale = await getLocale();
+    if (isRecaptchaEnabled()) {
+      await verifyRecaptchaToken(
+        String(formData.get("recaptchaToken") || ""),
+        { remoteIp: clientKey, expectedAction: "request_otp" },
+      );
+    }
     await requestEmailOtp(email, { clientKey, locale });
-  } catch {
-    redirect(`/login?error=send${next ? `&next=${encodeURIComponent(next)}` : ""}`);
+  } catch (error) {
+    if (error instanceof RecaptchaVerificationError) {
+      redirect(
+        `/login?error=captcha&email=${encodeURIComponent(email)}${next ? `&next=${encodeURIComponent(next)}` : ""}`,
+      );
+    }
+    redirect(
+      `/login?error=send&email=${encodeURIComponent(email)}${next ? `&next=${encodeURIComponent(next)}` : ""}`,
+    );
   }
   redirect(
     `/login?email=${encodeURIComponent(email)}&sent=1${next ? `&next=${encodeURIComponent(next)}` : ""}`,

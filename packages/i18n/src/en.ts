@@ -359,6 +359,7 @@ const en = {
     changeEmailHint: "Change the email above to send a code to a different address.",
     errorEmail: "Please enter a valid email.",
     errorSend: "Could not send the code. Try again.",
+    errorCaptcha: "Verification failed. Refresh the page and try again.",
     errorCode: "Invalid or expired code.",
     goTrips: "Go to Saved Trips",
     goSettings: "Open settings",
@@ -366,6 +367,7 @@ const en = {
     continueDemo: "Continue with demo account",
     supabaseHint: "Set DATABASE_URL and USE_MOCKS=false for email OTP.",
     otpFooter: "",
+    recaptchaNotice: "This site is protected by reCAPTCHA.",
   },
   email: {
     otpSubject: "Your Solviax.app sign-in code",

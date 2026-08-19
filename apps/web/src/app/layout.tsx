@@ -6,6 +6,7 @@ import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SkipLink } from "@/components/a11y/skip-link";
 import { SiteJsonLd } from "@/components/seo/site-json-ld";
+import { AppGoogleAnalytics } from "@/components/analytics/google-analytics";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import {
   parseThemePreference,
@@ -113,6 +114,7 @@ export default async function RootLayout({
             {children}
           </LocaleProvider>
         </ThemeProvider>
+        <AppGoogleAnalytics />
       </body>
     </html>
   );
