@@ -417,6 +417,10 @@ const en = {
     themeLight: "Light",
     themeDark: "Dark",
     themeHint: "Choose light, dark, or match your device.",
+    consentTitle: "Cookie preferences",
+    consentHint:
+      "Control optional analytics cookies. Essential cookies for login, theme, and quotas stay on.",
+    consentSaved: "Cookie preferences saved.",
     subscriptionTitle: "Subscription",
     subscriptionBody:
       "Unlock wider search radii, more discover results, 500 route lookups/month, a departure time window on routes, same-country filtering, and saved routes with One-time, Monthly, or Yearly Pro.",
@@ -604,6 +608,33 @@ const en = {
     plansCtaManage: "Manage your subscription",
     plansHint: "Full price table and checkout live on the plans page.",
     ctaDiscover: "Start discovering",
+    cookiesTitle: "Cookies & privacy",
+    cookiesBody:
+      "We use a small set of cookies to run Solviax.app, protect login, and — only if you agree — measure anonymous site usage with Google Analytics.",
+    cookiesTable: {
+      name: "Cookie",
+      purpose: "Purpose",
+      duration: "Duration",
+      necessary: {
+        name: "Session, wt_anon, wt_theme, locale",
+        purpose:
+          "Keep you signed in, remember theme and language, and apply fair free-tier limits.",
+        duration: "Session or up to 1 year",
+      },
+      analytics: {
+        name: "_ga, _ga_* (Google Analytics 4)",
+        purpose:
+          "Anonymous usage statistics — page views and interactions — to improve the product.",
+        duration: "Up to 2 years (Google)",
+      },
+      recaptcha: {
+        name: "Google reCAPTCHA (login only)",
+        purpose:
+          "Bot protection when you request a login code. Loaded only on the sign-in page.",
+        duration: "Set by Google",
+      },
+    },
+    cookiesGooglePrivacy: "Google privacy & terms",
     comingSoon: {
       title: "Coming soon…",
       lead:
@@ -645,11 +676,30 @@ const en = {
       },
     },
   },
+  consent: {
+    title: "Cookies on Solviax.app",
+    description:
+      "We use essential cookies to run the site. With your permission we also use Google Analytics to understand how the product is used.",
+    acceptAll: "Accept all",
+    rejectNonEssential: "Reject non-essential",
+    customize: "Customize",
+    save: "Save preferences",
+    preferencesTitle: "Cookie preferences",
+    analyticsLabel: "Analytics",
+    analyticsDescription:
+      "Google Analytics 4 — anonymous page views and interactions to improve Solviax.app.",
+    necessaryLabel: "Strictly necessary",
+    necessaryDescription:
+      "Sign-in, theme, language, and freemium limits. Always active.",
+    settingsLink: "Cookie settings",
+    policyLink: "Cookie policy",
+  },
   footer: {
     brand: "Solviax.app",
     tagline1: "Weather-first trip planning",
     tagline2: "Weather based routing",
     linksLabel: "Explore",
+    cookieSettings: "Cookie settings",
     copyright: "© Whitefield Ltd, Oulu Finland",
     contactAria: "Email Solviax.app",
   },

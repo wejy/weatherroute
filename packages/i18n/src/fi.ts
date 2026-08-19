@@ -63,7 +63,7 @@ const fi = {
     bestWeather: "Paras sää",
     waitingLocation: "Odotetaan sijaintia tulosten lataamiseksi…",
     withinOf: "{radius} säteellä paikasta {place}",
-    places: "{count} paikkaa",
+    places: "{count} kohdetta",
     nowIn: "Nyt: {name}",
     forecastIn: "{label}: {name}",
     rain: "sade {pct} %",
@@ -83,7 +83,7 @@ const fi = {
     pendingUpdate:
       "Suodattimia muutettu — päivitä haku nähdäksesi uudet kohteet.",
     chooseOrigin: "Valitse ensin lähtöpaikka.",
-    placeNotFound: "Paikkaa ei löytynyt. Valitse ehdotuksista tai kirjoita uusi osoite.",
+    placeNotFound: "Kohdetta ei löytynyt. Valitse ehdotuksista tai kirjoita uusi osoite.",
     distances: {
       near: "Lähialue · 30 km",
       semi: "Lähiympäristö · 60 km",
@@ -422,6 +422,10 @@ const fi = {
     themeLight: "Vaalea",
     themeDark: "Tumma",
     themeHint: "Valitse vaalea, tumma tai seuraa laitteen asetusta.",
+    consentTitle: "Evästeasetukset",
+    consentHint:
+      "Hallitse valinnaisia analytiikkaevästeitä. Kirjautumiseen, teemaan ja rajoihin tarvittavat evästeet pysyvät päällä.",
+    consentSaved: "Evästeasetukset tallennettu.",
     subscriptionTitle: "Tilaus",
     subscriptionBody:
       "Avaa laajemmat säteet, enemmän Löydä-tuloksia, 500 reittihakua/kk, lähtöajan valinta reiteillä, saman maan rajaus ja tallennetut reitit Kerta-, Jatkuva- tai Vuosi-Prolla.",
@@ -609,6 +613,33 @@ const fi = {
     plansCtaManage: "Hallitse tilaustasi",
     plansHint: "Täysi hinnasto ja maksutavat ovat tilaussivulla.",
     ctaDiscover: "Löydä paikkasi auringossa",
+    cookiesTitle: "Evästeet ja tietosuoja",
+    cookiesBody:
+      "Käytämme vain tarpeellisia evästeitä palvelun toimintaan, kirjautumisen suojaukseen ja — vain suostumuksellasi — anonyymiin kävijätilastointiin Google Analyticsilla.",
+    cookiesTable: {
+      name: "Eväste",
+      purpose: "Tarkoitus",
+      duration: "Kesto",
+      necessary: {
+        name: "Istunto, wt_anon, wt_theme, kieli",
+        purpose:
+          "Kirjautuminen, teema ja kieli muistissa sekä ilmaisen tason rajat.",
+        duration: "Istunto tai enintään 1 vuosi",
+      },
+      analytics: {
+        name: "_ga, _ga_* (Google Analytics 4)",
+        purpose:
+          "Anonyymi käyttötilasto — sivulataukset ja toiminnot — tuotteen kehittämiseen.",
+        duration: "Enintään 2 vuotta (Google)",
+      },
+      recaptcha: {
+        name: "Google reCAPTCHA (vain kirjautuminen)",
+        purpose:
+          "Bot-suojaus kirjautumiskoodin lähetyksessä. Ladataan vain kirjautumissivulla.",
+        duration: "Googlen asettama",
+      },
+    },
+    cookiesGooglePrivacy: "Googlen tietosuoja ja ehdot",
     comingSoon: {
       title: "Tulossa…",
       lead:
@@ -650,11 +681,30 @@ const fi = {
       },
     },
   },
+  consent: {
+    title: "Evästeet Solviax.appissa",
+    description:
+      "Käytämme välttämättömiä evästeitä sivuston toimintaan. Suostumuksellasi käytämme myös analytiikkaa palvelun käytön seuraamiseen.",
+    acceptAll: "Hyväksy kaikki",
+    rejectNonEssential: "Hylkää ei-välttämättömät",
+    customize: "Muokkaa",
+    save: "Tallenna valinnat",
+    preferencesTitle: "Evästeasetukset",
+    analyticsLabel: "Analytiikka",
+    analyticsDescription:
+      "Google Analytics 4 — anonyymit sivulataukset ja toiminnot Solviax.appin kehittämiseen.",
+    necessaryLabel: "Välttämättömät",
+    necessaryDescription:
+      "Kirjautuminen, teema, kieli ja ilmaisen tason rajat. Aina päällä.",
+    settingsLink: "Evästeasetukset",
+    policyLink: "Evästekäytäntö",
+  },
   footer: {
     brand: "Solviax.app",
     tagline1: "Suunnittele matkasi sään mukaan",
     tagline2: "Löydä aurinkoiset paikat ympärilläsi",
     linksLabel: "Sivusto",
+    cookieSettings: "Evästeasetukset",
     copyright: "© Whitefield Ltd, Oulu Finland",
     contactAria: "Lähetä sähköpostia Solviax.appiin",
   },

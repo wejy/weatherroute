@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useI18n } from "@/components/i18n/locale-provider";
+import { useConsentOptional } from "@/components/consent/consent-provider";
 import { DiscoverQueryLink } from "@/components/discover/discover-query-link";
 import { ObfuscatedContactEmail } from "@/components/layout/obfuscated-contact-email";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ const linkClassName =
 
 export function SiteFooter({ className }: { className?: string }) {
   const { t } = useI18n();
+  const consent = useConsentOptional();
 
   return (
     <footer
@@ -54,6 +56,15 @@ export function SiteFooter({ className }: { className?: string }) {
               )}
             </li>
           ))}
+          <li>
+            <button
+              type="button"
+              onClick={() => consent?.openPreferences()}
+              className={linkClassName}
+            >
+              {t("footer.cookieSettings")}
+            </button>
+          </li>
         </ul>
       </nav>
       <p className="mt-5 text-xs text-on-surface-variant">

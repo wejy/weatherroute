@@ -278,6 +278,66 @@ export default async function AboutPage() {
 
         <AboutComingSoon t={t} />
 
+        <section
+          id="cookies"
+          className="relative mt-14 scroll-mt-28"
+          aria-labelledby="about-cookies"
+        >
+          <h2
+            id="about-cookies"
+            className="text-lg font-semibold text-on-surface md:text-xl"
+          >
+            {t("about.cookiesTitle")}
+          </h2>
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-on-surface-variant md:text-base">
+            {t("about.cookiesBody")}
+          </p>
+          <div className="mt-6 overflow-x-auto rounded-2xl border border-outline-variant/25 bg-surface-container-lowest">
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-outline-variant/25 bg-surface-container/50">
+                  <th className="px-4 py-3 font-semibold text-on-surface">
+                    {t("about.cookiesTable.name")}
+                  </th>
+                  <th className="px-4 py-3 font-semibold text-on-surface">
+                    {t("about.cookiesTable.purpose")}
+                  </th>
+                  <th className="px-4 py-3 font-semibold text-on-surface">
+                    {t("about.cookiesTable.duration")}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/20">
+                {(["necessary", "analytics", "recaptcha"] as const).map(
+                  (row) => (
+                    <tr key={row}>
+                      <td className="px-4 py-3 align-top font-medium text-on-surface">
+                        {t(`about.cookiesTable.${row}.name`)}
+                      </td>
+                      <td className="px-4 py-3 align-top text-on-surface-variant">
+                        {t(`about.cookiesTable.${row}.purpose`)}
+                      </td>
+                      <td className="px-4 py-3 align-top text-on-surface-variant">
+                        {t(`about.cookiesTable.${row}.duration`)}
+                      </td>
+                    </tr>
+                  ),
+                )}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-4 text-sm text-on-surface-variant">
+            <a
+              href="https://policies.google.com/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-primary underline-offset-2 hover:underline"
+            >
+              {t("about.cookiesGooglePrivacy")}
+            </a>
+          </p>
+        </section>
+
         <SiteFooter />
       </main>
       <BottomNav active="/about" />

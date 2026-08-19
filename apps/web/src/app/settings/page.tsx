@@ -26,6 +26,7 @@ import { isStripeBillingConfigured } from "@/server/billing/plans";
 import { getUserRole } from "@/server/dal/roles";
 import { formatIsoDateForLocale } from "@/lib/dates";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { CookiePreferencesPanel } from "@/components/consent/cookie-preferences-panel";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { noIndexPageMeta } from "@/lib/seo-meta";
 
@@ -255,6 +256,18 @@ export default async function SettingsPage({
               {t("settings.themeHint")}
             </p>
             <ThemeToggle />
+          </div>
+        </section>
+
+        <section className="mt-10 space-y-4">
+          <h2 className="text-lg font-semibold text-on-surface">
+            {t("settings.consentTitle")}
+          </h2>
+          <p className="text-sm text-on-surface-variant">
+            {t("settings.consentHint")}
+          </p>
+          <div className="rounded-2xl border border-outline-variant/25 bg-surface-container-lowest p-5">
+            <CookiePreferencesPanel />
           </div>
         </section>
 

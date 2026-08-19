@@ -6,13 +6,19 @@ import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 import { SkipLink } from "@/components/a11y/skip-link";
 import { SiteJsonLd } from "@/components/seo/site-json-ld";
-import { AppGoogleAnalytics } from "@/components/analytics/google-analytics";
+import { ConsentRoot } from "@/components/consent/consent-root";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import {
   parseThemePreference,
   THEME_BOOT_SCRIPT,
   THEME_COOKIE,
 } from "@/lib/theme";
+import {
+  CONSENT_COOKIE,
+  CONSENT_MODE_DEFAULT_SCRIPT,
+  parseConsentCookie,
+} from "@/lib/consent";
+import { isGoogleAnalyticsEnabled } from "@/lib/analytics";
 import { getSiteUrl } from "@/lib/site-url";
 
 const inter = Inter({
@@ -95,12 +101,19 @@ export default async function RootLayout({
   const themePreference = parseThemePreference(
     jar.get(THEME_COOKIE)?.value,
   );
+  const initialConsent = parseConsentCookie(jar.get(CONSENT_COOKIE)?.value);
+  const gaEnabled = isGoogleAnalyticsEnabled();
 
   return (
     <html lang={locale} className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         {/* Allowlisted via CSP sha256 of THEME_BOOT_SCRIPT — no React nonce (avoids hydration mismatch). */}
         <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        {gaEnabled ? (
+          <script
+            dangerouslySetInnerHTML={{ __html: CONSENT_MODE_DEFAULT_SCRIPT }}
+          />
+        ) : null}
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0..1,0&display=swap"
           rel="stylesheet"
@@ -110,11 +123,12 @@ export default async function RootLayout({
         <SiteJsonLd name={dict.brand} description={dict.meta.description} />
         <ThemeProvider initialPreference={themePreference}>
           <LocaleProvider locale={locale} dict={dict}>
-            <SkipLink />
-            {children}
+            <ConsentRoot initialConsent={initialConsent}>
+              <SkipLink />
+              {children}
+            </ConsentRoot>
           </LocaleProvider>
         </ThemeProvider>
-        <AppGoogleAnalytics />
       </body>
     </html>
   );

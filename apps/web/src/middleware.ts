@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isCorsOriginAllowed } from "@/lib/env";
 import { THEME_BOOT_SCRIPT } from "@/lib/theme";
+import { CONSENT_MODE_DEFAULT_SCRIPT } from "@/lib/consent";
 
 /** Must match apps/web/src/server/dal/quota.ts */
 export const ANON_COOKIE = "wt_anon";
@@ -24,15 +25,16 @@ export async function sha256Base64(text: string): Promise<string> {
  */
 export function buildContentSecurityPolicy(
   nonce: string,
-  themeBootScriptHash: string,
+  scriptHashes: string[],
 ): string {
   const isDev = process.env.NODE_ENV === "development";
+  const hashAllowlist = scriptHashes.map((h) => `'sha256-${h}'`).join(" ");
   const directives = [
     "default-src 'self'",
     // Next applies this nonce to framework scripts when CSP is on the request.
     // Theme boot is allowlisted by hash so layout need not set nonce={...}.
     // 'unsafe-eval' only for React Refresh / dev tooling — not required in prod or for Mapbox v11.
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' 'sha256-${themeBootScriptHash}' https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com https://www.gstatic.com${isDev ? " 'unsafe-eval'" : ""}`,
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${hashAllowlist} https://www.googletagmanager.com https://www.google-analytics.com https://www.google.com https://www.gstatic.com${isDev ? " 'unsafe-eval'" : ""}`,
     // Keep unsafe-inline for styles; do not add style nonces (CSP3 would ignore unsafe-inline).
     "style-src 'self' 'unsafe-inline' https://api.mapbox.com https://fonts.googleapis.com",
     "img-src 'self' data: blob: https: https://www.google-analytics.com https://www.googletagmanager.com",
@@ -101,7 +103,11 @@ export async function middleware(request: NextRequest) {
 
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
   const themeBootScriptHash = await sha256Base64(THEME_BOOT_SCRIPT);
-  const csp = buildContentSecurityPolicy(nonce, themeBootScriptHash);
+  const consentModeScriptHash = await sha256Base64(CONSENT_MODE_DEFAULT_SCRIPT);
+  const csp = buildContentSecurityPolicy(nonce, [
+    themeBootScriptHash,
+    consentModeScriptHash,
+  ]);
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);

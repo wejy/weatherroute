@@ -165,6 +165,9 @@ See **[Stripe (production)](#stripe-production)** below for Dashboard steps. Pro
 | `PORT` | `3004` | Must match reverse proxy upstream |
 | `LOG_LEVEL` | `info` (prod) / `debug` (dev) | Pino via `@solviax/logger` — JSON stdout in production |
 | `LOG_PRETTY` | pretty on in dev | Set `0` to force JSON locally |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | *(unset)* | GA4 id `G-…` — loads **only after** cookie consent (see [docs/COOKIE_CONSENT_PLAN.md](./docs/COOKIE_CONSENT_PLAN.md)) |
+| `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | *(unset)* | reCAPTCHA v3 site key (login OTP) |
+| `RECAPTCHA_SECRET_KEY` | *(unset)* | reCAPTCHA secret (server verify) |
 
 ### Example production env file
 
@@ -811,6 +814,7 @@ Config and edge requirements before public traffic. (Smoke tests after deploy: [
 - [ ] nginx / Cloudflare in front — **do not expose** Next.js `:3004` publicly
 - [ ] `AUTH_SECRET` ≥ 32 chars · `USE_MOCKS=false` · `AUTH_TRUST_HOST=true` only behind a trusted proxy
 - [ ] Mapbox: `NEXT_PUBLIC_MAPBOX_TOKEN` is **`pk.`** only; URL restrictions on the token; `MAPBOX_ACCESS_TOKEN` `sk.` never in `NEXT_PUBLIC_*`
+- [ ] **EU analytics:** if `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set, cookie banner + Consent Mode v2 must be live (GA loads only after opt-in; reject → no `_ga` cookies)
 - [ ] Mobile store / TestFlight builds: `EXPO_PUBLIC_API_URL=https://solviax.app` (HTTPS only)
 - [ ] Smoke: OTP email · checkout One-time / Monthly / Yearly · webhook updates `subscriptions.plan`
 
@@ -855,7 +859,7 @@ Config and edge requirements before public traffic. (Smoke tests after deploy: [
 - Keep `server_tokens off`, TLS 1.2+, HSTS, and HTTP→HTTPS redirect on nginx.
 - Enable **unattended-upgrades** (security pocket) + a quiet automatic reboot window; verify PM2 survives reboot.
 - `npm audit` CI gates **critical** issues; review Dependabot PRs for Next/Expo transitive CVEs.
-- CSP uses per-request **script nonces** + `'strict-dynamic'` (no `'unsafe-inline'` / `'unsafe-eval'` on scripts in production). `style-src` still allows `'unsafe-inline'` for Mapbox GL injected styles — treat style-injection XSS as residual risk.
+- CSP uses per-request **script nonces** + `'strict-dynamic'` (no `'unsafe-inline'` / `'unsafe-eval'` on scripts in production). Theme boot and Google Consent Mode default scripts are allowlisted via **sha256** hashes. `style-src` still allows `'unsafe-inline'` for Mapbox GL injected styles — treat style-injection XSS as residual risk.
 - OTP verify may return a session JWT in JSON for mobile — avoid logging response bodies.
 
 ---

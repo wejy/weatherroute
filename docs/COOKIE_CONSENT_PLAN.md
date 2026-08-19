@@ -1,81 +1,58 @@
 # Cookie consent plan (EU / GDPR)
 
-Solviax.app ships Google Analytics 4 when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set. Until consent is implemented, **treat analytics as “best effort / pre-consent”** and complete the steps below before scaling EU traffic.
+Solviax.app ships Google Analytics 4 when `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set. **Consent is implemented** — GA loads only after analytics opt-in; Google Consent Mode v2 defaults to deny.
 
-## Current state (after GA4 integration)
+## Current state
 
 | Cookie / storage | Purpose | Consent needed? |
 |---|---|---|
 | `wt_anon` | Freemium quotas (httpOnly) | Strictly necessary — no banner |
-| `wt_theme` / locale | UI preference | Strictly necessary or “functional” |
+| `wt_theme` / locale | UI preference | Strictly necessary |
 | Auth.js session | Login | Strictly necessary when signed in |
-| `_ga`, `_ga_*` | GA4 analytics | **Yes — marketing/analytics** |
-| reCAPTCHA (`_GRECAPTCHA`, etc.) | Bot protection on OTP | **Yes — functional / security** (Google third party) |
+| `wt_consent` | Analytics preference (JSON, client-readable) | Set by banner / settings |
+| `_ga`, `_ga_*` | GA4 analytics | **Yes — only after opt-in** |
+| reCAPTCHA (`_GRECAPTCHA`, etc.) | Bot protection on OTP | Disclosed in policy; login-only |
 
-GA loads from `layout.tsx` via `@next/third-parties/google` when the env var is set. There is **no consent gate yet**.
+GA loads from `ConsentRoot` via `@next/third-parties/google` only when `wt_consent.analytics === true`. Consent Mode v2 default-deny runs in `layout.tsx` before any GA script.
 
-## Recommended approach (simple → robust)
+## Implemented (Phase 1–3)
 
-### Phase 1 — Document + privacy policy (quick)
+### Phase 1 — Policy / About ✅
 
-1. Update privacy policy / about page to list:
-   - GA4 (Google), purpose: usage statistics
-   - reCAPTCHA (Google), purpose: abuse prevention on login
-   - Link to [Google’s policy](https://policies.google.com/privacy)
-2. Add “Cookie settings” link in footer (can point to `/about#cookies` until banner exists).
+- About page `#cookies` section with cookie table (EN/FI)
+- Footer **Cookie settings** opens preferences dialog
+- Link to [Google privacy policy](https://policies.google.com/privacy)
 
-**Effort:** ~1 h content + i18n (EN/FI).
+### Phase 2 — Consent banner (web) ✅
 
-### Phase 2 — Consent banner (web)
+1. **Categories:** `necessary` (always on), `analytics` (GA4), `marketing` reserved
+2. **Storage:** Cookie `wt_consent` (JSON, max-age 365d, SameSite=Lax)
+3. **UI:** Bottom banner (Accept all | Reject non-essential | Customize) — EN/FI via `@solviax/i18n`
+4. **GA4:** Consent Mode v2 default deny + conditional `<AppGoogleAnalytics enabled={…} />`
+5. **reCAPTCHA:** Login-only; disclosed in policy, no toggle
 
-1. **Cookie categories**
-   - `necessary` — always on (cannot toggle)
-   - `analytics` — GA4
-   - `marketing` — none today (reserve for ads later)
+### Phase 3 — Preferences ✅
 
-2. **Storage**
-   - Cookie `wt_consent` (JSON or `analytics=0|1`, max-age 365d, SameSite=Lax)
-   - Or `localStorage` + mirror to cookie for SSR (prefer cookie for simplicity)
-
-3. **UI**
-   - Bottom banner on first visit (EN/FI via `@solviax/i18n`)
-   - Buttons: **Accept all** | **Reject non-essential** | **Customize**
-   - Link to privacy / cookie policy
-
-4. **Wire GA4 to consent**
-   - **Option A (simplest):** Do not render `<AppGoogleAnalytics />` until `analytics=1`.
-   - **Option B (Google Consent Mode v2):** Default deny, update on accept — better if you need conversion modeling; slightly more setup.
-
-5. **reCAPTCHA**
-   - Usually allowed under “strictly necessary” / security when only on login OTP.
-   - Still disclose in policy; no toggle required unless legal counsel says otherwise.
-
-**Effort:** ~4–8 h (web component + i18n + tests).
-
-### Phase 3 — Consent persistence & admin
-
-1. Log consent version (`consentPolicyVersion: 1`) inside `wt_consent` so you can re-prompt after policy changes.
-2. Settings page: “Cookie preferences” to change analytics opt-in/out.
-3. On reject: delete GA cookies (`_ga`, `_ga_*`) via client script.
+1. Consent version `v: 1` in `wt_consent`
+2. Settings → Cookie preferences (analytics toggle)
+3. On reject: `clearGaCookies()` removes `_ga`, `_ga_*`
 
 ### Phase 4 — Mobile
 
 | App | GA | Consent |
 |---|---|---|
-| `apps/web` | GA4 tag | Banner (Phase 2) |
-| `apps/mobile-lite` (WebView) | Inherits web | Same banner as web |
-| `apps/mobile` (native) | Not wired yet | If Firebase/GA added later, use OS ATT + in-app consent |
+| `apps/web` | GA4 tag | Banner + settings |
+| `apps/mobile-lite` (WebView) | Inherits web | Same as web |
+| `apps/mobile` (native) | Not wired | No banner until native analytics |
 
-Native Expo app does not load web GA today — no mobile banner needed until native analytics is added.
+## Implementation checklist
 
-## Implementation checklist (when building Phase 2)
-
-- [ ] Keys in `packages/i18n`: `consent.title`, `consent.description`, `consent.acceptAll`, `consent.reject`, `consent.analyticsLabel`, …
-- [ ] `ConsentProvider` + `ConsentBanner` in `apps/web/src/components/consent/`
-- [ ] Read `wt_consent` in `RootLayout`; pass to `AppGoogleAnalytics` (`enabled={consent.analytics}`)
-- [ ] Middleware: no change required for consent cookie
-- [ ] E2E: banner shows once; reject → no `_ga` cookie; accept → GA network requests
-- [ ] DEPLOYMENT.md: note that prod EU launch should ship Phase 1+2
+- [x] Keys in `packages/i18n`: `consent.*`, `about.cookies*`, `footer.cookieSettings`
+- [x] `ConsentProvider` + `ConsentBanner` + preferences dialog in `apps/web/src/components/consent/`
+- [x] Read `wt_consent` in `RootLayout`; pass to `ConsentRoot` / `AppGoogleAnalytics`
+- [x] CSP sha256 hash for Consent Mode boot script in `middleware.ts`
+- [ ] E2E: banner shows once; reject → no `_ga`; accept → GA requests (optional Playwright)
+- [x] DEPLOYMENT.md: EU prod should ship with consent before GA traffic
 
 ## Env vars (analytics)
 
@@ -84,7 +61,7 @@ Native Expo app does not load web GA today — no mobile banner needed until nat
 NEXT_PUBLIC_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 ```
 
-Leave unset in dev if you do not want hits in GA.
+Leave unset in dev if you do not want hits in GA. When set, users must opt in before GA loads.
 
 ## Legal note
 
