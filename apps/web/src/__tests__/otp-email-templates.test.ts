@@ -17,6 +17,8 @@ describe("buildOtpEmail", () => {
     expect(msg.html).toContain("123456");
     expect(msg.html).toContain("Welcome to Solviax.app");
     expect(msg.html).toContain("expires in 10 minutes");
+    expect(msg.html).toContain('src="cid:icon.png"');
+    expect(msg.html).toMatch(/href="[^"]+".*>Solviax\.app</);
   });
 
   it("builds sign-in copy for returning users (EN)", () => {

@@ -5,6 +5,8 @@ import {
   getDictionary,
   type Locale,
 } from "@solviax/i18n";
+import { env } from "@/lib/env";
+import { EMAIL_BRAND_ICON_CID } from "@/server/email/brand-assets";
 
 export type OtpEmailContent = {
   subject: string;
@@ -20,6 +22,10 @@ function escapeHtml(value: string): string {
     .replace(/"/g, "&quot;");
 }
 
+function appOrigin(): string {
+  return env.appUrl.replace(/\/$/, "");
+}
+
 /** Build subject + plain text + HTML for OTP (welcome or returning). */
 export function buildOtpEmail(opts: {
   locale: Locale;
@@ -29,6 +35,9 @@ export function buildOtpEmail(opts: {
   const t = createTranslator(getDictionary(opts.locale));
   const code = opts.code.trim();
   const safeCode = escapeHtml(code);
+  // Embedded via Mailgun `inline` / Resend content_id (see send.ts)
+  const iconSrc = `cid:${EMAIL_BRAND_ICON_CID}`;
+  const siteUrl = escapeHtml(appOrigin());
 
   const subject = opts.isNewUser
     ? t("email.otpSubjectWelcome")
@@ -71,8 +80,21 @@ export function buildOtpEmail(opts: {
         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:480px;background:#ffffff;border-radius:16px;overflow:hidden;border:1px solid #d8e5dd;">
           <tr>
             <td style="padding:28px 28px 8px;background:#0f7a45;">
-              <p style="margin:0;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#d8f5e6;">Solviax.app</p>
-              <h1 style="margin:10px 0 0;font-size:22px;line-height:1.3;color:#ffffff;">${escapeHtml(title)}</h1>
+              <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                <tr>
+                  <td style="vertical-align:middle;padding-right:10px;">
+                    <a href="${siteUrl}" style="text-decoration:none;">
+                      <img src="${iconSrc}" width="32" height="32" alt="Solviax.app" style="display:block;border:0;outline:none;border-radius:8px;" />
+                    </a>
+                  </td>
+                  <td style="vertical-align:middle;">
+                    <p style="margin:0;font-size:13px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">
+                      <a href="${siteUrl}" style="color:#d8f5e6;text-decoration:none;">Solviax.app</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+              <h1 style="margin:12px 0 0;font-size:22px;line-height:1.3;color:#ffffff;">${escapeHtml(title)}</h1>
             </td>
           </tr>
           <tr>

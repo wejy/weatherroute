@@ -2,6 +2,11 @@ import "server-only";
 
 import { createModuleLogger } from "@/lib/logger";
 import { env } from "@/lib/env";
+import {
+  EMAIL_BRAND_ICON_CID,
+  loadEmailBrandIcon,
+  type EmailInlineFile,
+} from "@/server/email/brand-assets";
 
 const log = createModuleLogger("server.email");
 
@@ -10,9 +15,27 @@ export type TransactionalEmail = {
   subject: string;
   text: string;
   html: string;
+  /** Extra inline images (CID = filename). Brand icon is attached automatically when HTML uses cid:icon.png. */
+  inline?: EmailInlineFile[];
 };
 
+function resolveInlineFiles(msg: TransactionalEmail): EmailInlineFile[] {
+  const files = [...(msg.inline ?? [])];
+  if (
+    msg.html.includes(`cid:${EMAIL_BRAND_ICON_CID}`) &&
+    !files.some((f) => f.filename === EMAIL_BRAND_ICON_CID)
+  ) {
+    try {
+      files.push(loadEmailBrandIcon());
+    } catch (err) {
+      log.warn({ err }, "email brand icon missing from public/ — skipping inline");
+    }
+  }
+  return files;
+}
+
 async function sendViaResend(msg: TransactionalEmail): Promise<void> {
+  const inline = resolveInlineFiles(msg);
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -26,6 +49,16 @@ async function sendViaResend(msg: TransactionalEmail): Promise<void> {
       subject: msg.subject,
       text: msg.text,
       html: msg.html,
+      ...(inline.length > 0
+        ? {
+            attachments: inline.map((file) => ({
+              filename: file.filename,
+              content: file.content.toString("base64"),
+              content_id: file.filename,
+              content_type: file.contentType,
+            })),
+          }
+        : {}),
     }),
   });
   if (!res.ok) {
@@ -69,6 +102,7 @@ async function sendViaMailgun(msg: TransactionalEmail): Promise<void> {
   const base = env.mailgunApiBaseUrl.replace(/\/$/, "");
   const url = `${base}/v3/${domain}/messages`;
   const from = mailgunFromAddress();
+  const inline = resolveInlineFiles(msg);
 
   const form = new FormData();
   form.set("from", from);
@@ -77,6 +111,16 @@ async function sendViaMailgun(msg: TransactionalEmail): Promise<void> {
   form.set("subject", msg.subject);
   form.set("text", msg.text);
   form.set("html", msg.html);
+
+  for (const file of inline) {
+    // Mailgun maps Content-ID to the uploaded filename → <img src="cid:icon.png">
+    const bytes = new Uint8Array(file.content);
+    form.append(
+      "inline",
+      new Blob([bytes], { type: file.contentType }),
+      file.filename,
+    );
+  }
 
   const auth = Buffer.from(`api:${env.mailgunApiKey}`).toString("base64");
   const res = await fetch(url, {
@@ -95,6 +139,7 @@ async function sendViaMailgun(msg: TransactionalEmail): Promise<void> {
     throw new Error("Failed to send code");
   }
 }
+
 /** Send transactional email via configured provider (mailgun | resend | console). */
 export async function sendTransactionalEmail(
   msg: TransactionalEmail,
