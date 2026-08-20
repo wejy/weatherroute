@@ -22,6 +22,7 @@ async function sendViaResend(msg: TransactionalEmail): Promise<void> {
     body: JSON.stringify({
       from: env.emailFrom,
       to: [msg.to],
+      reply_to: env.emailReplyTo,
       subject: msg.subject,
       text: msg.text,
       html: msg.html,
@@ -72,6 +73,7 @@ async function sendViaMailgun(msg: TransactionalEmail): Promise<void> {
   const form = new FormData();
   form.set("from", from);
   form.set("to", msg.to);
+  form.set("h:Reply-To", env.emailReplyTo);
   form.set("subject", msg.subject);
   form.set("text", msg.text);
   form.set("html", msg.html);

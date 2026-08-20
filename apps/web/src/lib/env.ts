@@ -170,6 +170,8 @@ export const env = {
   ),
   emailMode: resolveEmailMode(),
   emailFrom: process.env.EMAIL_FROM || "Solviax.app <noreply@localhost>",
+  /** Where replies go (Mailgun/Resend From stays on send domain). */
+  emailReplyTo: process.env.EMAIL_REPLY_TO?.trim() || "info@solviax.app",
   resendApiKey: process.env.RESEND_API_KEY || "",
   mailgunApiKey: process.env.MAILGUN_API_KEY || "",
   mailgunDomain: process.env.MAILGUN_DOMAIN || "",
