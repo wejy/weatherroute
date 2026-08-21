@@ -76,14 +76,14 @@ export function routeWaypointChipHtml(opts: {
   selected: boolean;
 }): string {
   const scale = opts.selected ? "scale(1.08)" : "none";
-  return `<div style="position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;transform:${scale};">
-    <div style="position:relative;display:flex;align-items:center;gap:6px;background:var(--surface);border-radius:14px;padding:8px 10px;font:600 12px/1.1 system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.14);border:2px solid ${opts.toneBorder};color:var(--on-surface);white-space:nowrap;">
+  return `<div style="position:relative;display:inline-flex;flex-direction:column;align-items:stretch;transform:${scale};background:var(--surface);border-radius:18px;padding:7px 11px 6px;font:600 12px/1.1 system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.14);border:2px solid ${opts.toneBorder};color:var(--on-surface);white-space:nowrap;">
+    <div style="display:flex;align-items:center;justify-content:center;gap:6px;">
       <span style="font-size:15px;font-variant-numeric:tabular-nums;">${opts.tempLabel}</span>
       <span style="width:1px;height:14px;background:color-mix(in srgb, var(--on-surface) 12%, transparent);"></span>
       <span style="font-size:10px;font-weight:600;color:var(--on-surface-variant);">${opts.rainPct}%</span>
-      ${opts.warnBadgeHtml}
     </div>
-    <span style="max-width:110px;overflow:hidden;text-overflow:ellipsis;font:600 10px/1.2 system-ui,sans-serif;color:var(--on-surface-variant);background:var(--surface-container-lowest);padding:2px 6px;border-radius:6px;box-shadow:0 1px 4px rgba(0,0,0,.08);">${opts.nameHtml}</span>
+    <span style="display:block;margin-top:4px;padding-top:4px;border-top:1px solid color-mix(in srgb, var(--on-surface) 10%, transparent);max-width:120px;overflow:hidden;text-overflow:ellipsis;font:600 10px/1.2 system-ui,sans-serif;color:var(--on-surface-variant);text-align:center;">${opts.nameHtml}</span>
+    ${opts.warnBadgeHtml}
   </div>`;
 }
 

@@ -932,12 +932,22 @@ export default function RoutesScreen() {
                 });
                 void Linking.openURL(href);
               }}
-              style={styles.shareBtn}
+              style={styles.gmapsBtn}
+              accessibilityRole="link"
+              accessibilityLabel={t("routes.shareGoogleMaps")}
             >
-              <FontAwesome name="map" size={14} color={colors.onSurface} />
-              <Text style={styles.shareBtnText}>
-                {t("routes.shareGoogleMaps")}
-              </Text>
+              <View style={styles.gmapsStripeRow} pointerEvents="none">
+                <View style={[styles.gmapsStripe, { backgroundColor: "#4285F4" }]} />
+                <View style={[styles.gmapsStripe, { backgroundColor: "#EA4335" }]} />
+                <View style={[styles.gmapsStripe, { backgroundColor: "#FBBC05" }]} />
+                <View style={[styles.gmapsStripe, { backgroundColor: "#34A853" }]} />
+              </View>
+              <View style={styles.gmapsBtnInner}>
+                <FontAwesome name="map" size={14} color="#ffffff" />
+                <Text style={styles.gmapsBtnText}>
+                  {t("routes.shareGoogleMaps")}
+                </Text>
+              </View>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -952,12 +962,22 @@ export default function RoutesScreen() {
                 });
                 void Linking.openURL(href);
               }}
-              style={styles.shareBtn}
+              style={styles.gmapsBtn}
+              accessibilityRole="link"
+              accessibilityLabel={t("routes.shareAppleMaps")}
             >
-              <FontAwesome name="apple" size={14} color={colors.onSurface} />
-              <Text style={styles.shareBtnText}>
-                {t("routes.shareAppleMaps")}
-              </Text>
+              <View style={styles.gmapsStripeRow} pointerEvents="none">
+                <View style={[styles.gmapsStripe, { backgroundColor: "#0066CC" }]} />
+                <View style={[styles.gmapsStripe, { backgroundColor: "#0066CC" }]} />
+                <View style={[styles.gmapsStripe, { backgroundColor: "#1D1D1F" }]} />
+                <View style={[styles.gmapsStripe, { backgroundColor: "#1D1D1F" }]} />
+              </View>
+              <View style={styles.amapsBtnInner}>
+                <FontAwesome name="apple" size={14} color="#ffffff" />
+                <Text style={styles.gmapsBtnText}>
+                  {t("routes.shareAppleMaps")}
+                </Text>
+              </View>
             </Pressable>
           </View>
           {shareMessage ? (
@@ -1264,6 +1284,49 @@ function createStyles(colors: AppColors) {
     color: colors.onSurface,
     fontWeight: "700",
     fontSize: 14,
+  },
+  gmapsBtn: {
+    minHeight: 48,
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  gmapsStripeRow: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    flexDirection: "row",
+  },
+  gmapsStripe: {
+    flex: 1,
+  },
+  gmapsBtnInner: {
+    flex: 1,
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    // Dark scrim over Google brand colors → white text WCAG AA
+    backgroundColor: "rgba(0, 0, 0, 0.48)",
+  },
+  gmapsBtnText: {
+    color: "#ffffff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  // Lighter scrim than Google — Apple Science Blue/Shark already contrast well with white
+  amapsBtnInner: {
+    flex: 1,
+    minHeight: 48,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingHorizontal: 14,
+    backgroundColor: "rgba(29, 29, 31, 0.28)",
   },
   disabled: { opacity: 0.55 },
   error: { color: colors.error, fontWeight: "600" },

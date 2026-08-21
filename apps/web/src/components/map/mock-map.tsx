@@ -212,21 +212,21 @@ export function MockMap({
                 </span>
               </div>
             ) : (
-              <>
-                <div
-                  className={cn(
-                    "relative flex items-center gap-1.5 rounded-[14px] border-2 bg-surface/95 px-2.5 py-2 shadow-lg backdrop-blur-md",
-                    isSelected
-                      ? "border-primary"
-                      : severe
-                        ? "border-error/60"
-                        : tone === "warning"
-                          ? "border-secondary/60"
-                          : tone === "caution"
-                            ? "border-amber-400/70"
-                            : "border-outline-variant/30",
-                  )}
-                >
+              <div
+                className={cn(
+                  "relative flex flex-col items-stretch rounded-[18px] border-2 bg-surface/95 px-2.5 pt-2 pb-1.5 shadow-lg backdrop-blur-md",
+                  isSelected
+                    ? "border-primary"
+                    : severe
+                      ? "border-error/60"
+                      : tone === "warning"
+                        ? "border-secondary/60"
+                        : tone === "caution"
+                          ? "border-amber-400/70"
+                          : "border-outline-variant/30",
+                )}
+              >
+                <div className="flex items-center justify-center gap-1.5">
                   <span className="text-[15px] font-semibold tabular-nums text-on-surface">
                     {Math.round(marker.temperatureC)}°
                   </span>
@@ -237,26 +237,26 @@ export function MockMap({
                   <span className="text-[10px] font-semibold text-on-surface-variant">
                     {rainPct}%
                   </span>
-                  {showWarn ? (
-                    <span
-                      className={cn(
-                        "absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-surface text-[9px] font-bold text-white",
-                        severe
-                          ? "bg-error"
-                          : tone === "warning"
-                            ? "bg-secondary"
-                            : "bg-amber-500",
-                      )}
-                      aria-hidden="true"
-                    >
-                      !
-                    </span>
-                  ) : null}
                 </div>
-                <span className="max-w-[110px] truncate rounded-md bg-surface-container-lowest px-1.5 py-0.5 text-[10px] font-semibold text-on-surface-variant shadow-sm">
+                <span className="mt-1 max-w-[120px] truncate border-t border-on-surface/10 pt-1 text-center text-[10px] font-semibold text-on-surface-variant">
                   {displayName}
                 </span>
-              </>
+                {showWarn ? (
+                  <span
+                    className={cn(
+                      "absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full border-2 border-surface text-[9px] font-bold text-white",
+                      severe
+                        ? "bg-error"
+                        : tone === "warning"
+                          ? "bg-secondary"
+                          : "bg-amber-500",
+                    )}
+                    aria-hidden="true"
+                  >
+                    !
+                  </span>
+                ) : null}
+              </div>
             )}
           </button>
         );
