@@ -41,6 +41,7 @@ export function PlaceAutocomplete({
   proximity,
   inputClassName,
   id,
+  autoFocus = false,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -52,6 +53,7 @@ export function PlaceAutocomplete({
   proximity?: { lat: number; lon: number } | null;
   inputClassName?: string;
   id?: string;
+  autoFocus?: boolean;
 }) {
   const { t, locale } = useI18n();
   const listId = useId();
@@ -291,6 +293,7 @@ export function PlaceAutocomplete({
           )}
           placeholder={placeholder ?? t("location.placeholder")}
           value={value}
+          autoFocus={autoFocus}
           onChange={(e) => {
             const next = e.target.value;
             onChange(next);

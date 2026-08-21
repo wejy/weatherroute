@@ -54,6 +54,9 @@ export function DestinationCard({
       <Link href={href} asChild>
         <Pressable
           accessibilityRole="link"
+          accessibilityLabel={t("card.viewDestination", {
+            name: destination.placeName,
+          })}
           style={({ pressed }) => [styles.cardPress, pressed && styles.pressed]}
         >
           <View style={styles.imageWrap}>

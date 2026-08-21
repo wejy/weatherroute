@@ -20,6 +20,7 @@ function isRemoteImage(url: string): boolean {
 
 export function DestinationCard({
   destination,
+  rank,
   datePreset,
   startDate,
   endDate,
@@ -32,6 +33,8 @@ export function DestinationCard({
   mode,
 }: {
   destination: DestinationDto;
+  /** 1-based recommendation rank (discover / map lists). */
+  rank?: number;
   datePreset?: string;
   startDate?: string;
   endDate?: string;
@@ -46,6 +49,10 @@ export function DestinationCard({
   const { t, dict, locale } = useI18n();
   const forecast = destination.forecast;
   const current = destination.current;
+  const title =
+    rank != null
+      ? t("map.rankedName", { rank, name: destination.placeName })
+      : destination.placeName;
   const dateLabel = resolveDateWindow({
     preset: (forecast.preset as DatePreset) || "custom",
     startDate: forecast.startDate,
@@ -59,6 +66,9 @@ export function DestinationCard({
   }, [destination.id, destination.imageUrl]);
 
   const remote = isRemoteImage(imageSrc);
+  const viewLabel = t("card.viewDestination", {
+    name: destination.placeName,
+  });
 
   return (
     <Link
@@ -74,6 +84,8 @@ export function DestinationCard({
         lon,
         mode,
       })}
+      title={viewLabel}
+      aria-label={viewLabel}
     >
       <article className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-outline-variant/20 bg-surface-container-lowest shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-[0px_10px_30px_rgba(0,0,0,0.08)]">
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-surface-container">
@@ -109,7 +121,7 @@ export function DestinationCard({
         <div className="flex flex-col gap-3 p-5">
           <div>
             <h3 className="mb-1 text-xl font-semibold text-on-surface">
-              {destination.placeName}
+              {title}
             </h3>
             <p className="text-sm text-on-surface-variant">
               {translateCondition(dict, forecast.condition)} ·{" "}

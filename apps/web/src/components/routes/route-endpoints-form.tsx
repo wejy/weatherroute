@@ -50,6 +50,7 @@ export function RouteEndpointsForm({
   initialDepartureStartHour = null,
   initialDepartureEndHour = null,
   isPro = false,
+  highlightEmptyTo = false,
 }: {
   initialFrom: string;
   initialTo: string;
@@ -62,6 +63,8 @@ export function RouteEndpointsForm({
   initialDepartureStartHour?: number | null;
   initialDepartureEndHour?: number | null;
   isPro?: boolean;
+  /** Emphasize empty destination (e.g. origin outside Finland). */
+  highlightEmptyTo?: boolean;
 }) {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -97,6 +100,7 @@ export function RouteEndpointsForm({
     [initialDatePreset, initialStartDate, initialEndDate, locale],
   );
   const [when, setWhen] = useState<DateWindow>(initialWhen);
+  const showToHighlight = highlightEmptyTo && !to && !toText.trim();
 
   async function resolveSelectedPlace(
     place: PlaceDto | null,
@@ -317,7 +321,14 @@ export function RouteEndpointsForm({
             </Link>
           ) : null}
         </div>
-        <div className="rounded-lg border border-outline-variant/30 bg-surface px-3 py-2">
+        <div
+          className={cn(
+            "rounded-lg border bg-surface px-3 py-2 transition-shadow",
+            showToHighlight
+              ? "border-primary bg-primary/5 ring-2 ring-primary/40 ring-offset-2 ring-offset-surface-bright"
+              : "border-outline-variant/30",
+          )}
+        >
           <PlaceAutocomplete
             id="route-to"
             value={toText}
@@ -329,8 +340,14 @@ export function RouteEndpointsForm({
             ariaLabelledBy={toLabelId}
             proximity={from ? { lat: from.lat, lon: from.lon } : null}
             inputClassName="text-base"
+            autoFocus={showToHighlight}
           />
         </div>
+        {showToHighlight ? (
+          <p className="mt-1.5 text-sm text-primary" role="status">
+            {t("routes.toNeededHint")}
+          </p>
+        ) : null}
       </div>
 
       {error && (

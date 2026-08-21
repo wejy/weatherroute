@@ -271,11 +271,16 @@ export function DiscoverSearch({
         when?: DateWindow;
         mode?: TravelMode;
       },
+      opts?: {
+        /** Omit URL hash (e.g. coarse auto-detect should not jump to #results). */
+        skipHash?: boolean;
+      },
     ) => {
-      const url = `${basePath}?${buildParams(resolved, overrides).toString()}${hash || ""}`;
+      const hashPart = opts?.skipHash ? "" : hash || "";
+      const url = `${basePath}?${buildParams(resolved, overrides).toString()}${hashPart}`;
       setFiltersDirty(false);
       startTransition(() => {
-        if (replace) router.replace(url);
+        if (replace) router.replace(url, { scroll: false });
         else router.push(url);
       });
     },
@@ -303,6 +308,8 @@ export function DiscoverSearch({
         detected,
         true,
         distanceOverride ? { distance: distanceOverride } : undefined,
+        // Keep the hero/search in view when IP/coarse geo fills the origin.
+        meta.mode === "coarse" ? { skipHash: true } : undefined,
       );
     },
     [hasCoords, isPro, navigateWith],

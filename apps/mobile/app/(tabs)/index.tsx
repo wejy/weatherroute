@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -782,6 +783,18 @@ export default function DiscoverScreen() {
                 : ""}
             </Text>
 
+            <Pressable
+              style={styles.rankingHint}
+              accessibilityRole="button"
+              accessibilityLabel={t("map.rankingHint")}
+              onPress={() =>
+                Alert.alert(t("home.bestWeather"), t("map.rankingHint"))
+              }
+            >
+              <FontAwesome name="question-circle-o" size={16} color={colors.secondary} />
+              <Text style={styles.rankingHintText}>{t("map.rankingHint")}</Text>
+            </Pressable>
+
             {(result.originCurrent || result.originForecast) && (
               <View style={styles.originChips}>
                 {result.originCurrent && (
@@ -819,8 +832,12 @@ export default function DiscoverScreen() {
           {result.destinations.length === 0 ? (
             <Text style={styles.empty}>{t("home.noDestinations")}</Text>
           ) : (
-            result.destinations.map((dest) => (
-              <DestinationCard key={dest.id} destination={dest} />
+            result.destinations.map((dest, index) => (
+              <DestinationCard
+                key={dest.id}
+                destination={dest}
+                rank={index + 1}
+              />
             ))
           )}
         </View>
@@ -1078,6 +1095,24 @@ function createStyles(colors: AppColors) {
     color: colors.onSurface,
   },
   resultsMeta: { color: colors.onSurfaceVariant, lineHeight: 20 },
+  rankingHint: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    marginTop: 2,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceContainer,
+  },
+  rankingHintText: {
+    flex: 1,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.onSurfaceVariant,
+  },
   originChips: { gap: 8, marginTop: 4 },
   originChip: {
     borderRadius: 14,

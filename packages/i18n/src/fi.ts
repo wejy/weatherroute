@@ -151,6 +151,7 @@ const fi = {
     now: "Nyt",
     forecast: "Ennuste",
     rain: "sade {pct} %",
+    viewDestination: "Tarkastele kohdetta {name}",
   },
   destination: {
     currentConditions: "Nykyinen sää",
@@ -267,6 +268,8 @@ const fi = {
     to: "Minne",
     fromPlaceholder: "Osoite, maamerkki tai kaupunki…",
     toPlaceholder: "Osoite, maamerkki tai kaupunki…",
+    toNeededLead: "Valitse minne olet menossa, niin näet sään matkan varrella.",
+    toNeededHint: "Valitse kohde, jotta reitti voidaan suunnitella.",
     updateRoute: "Näytä reitti",
     alternativesTitle: "Vertailtavat reitit",
     alternativeFastest: "Nopein reitti",

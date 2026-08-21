@@ -32,6 +32,8 @@ import { getBillingEntitlement } from "@/server/dal/subscriptions";
 import { headers } from "next/headers";
 import { getClientIpFromHeaders } from "@/lib/client-ip";
 import { publicPageMeta } from "@/lib/seo-meta";
+import { isLikelyFinlandOrigin } from "@/lib/finland-geo";
+import type { PlaceDto } from "@/lib/types";
 
 export async function generateMetadata() {
   const locale = await getLocale();
@@ -83,21 +85,44 @@ export default async function RoutesPage({
   const fromRaw = first(raw.from)?.trim() || first(raw.origin)?.trim() || "";
   const toRaw = first(raw.to)?.trim() || "";
 
+  const fromLatEarly =
+    parseCoord(first(raw.fromLat)) ?? parseCoord(first(raw.lat));
+  const fromLonEarly =
+    parseCoord(first(raw.fromLon)) ?? parseCoord(first(raw.lon));
+
+  const originInFinland = isLikelyFinlandOrigin({
+    name: fromRaw,
+    lat: fromLatEarly,
+    lon: fromLonEarly,
+  });
+
   let from = fromRaw || DEFAULT_FROM;
-  let to = toRaw || DEFAULT_TO;
-  // Avoid Helsinki→Helsinki when only origin was carried from Discover.
-  if (!toRaw && fromRaw && looksLikeHelsinki(fromRaw)) {
-    to = DEFAULT_FROM;
-  } else if (!fromRaw && toRaw && looksLikeOulu(toRaw)) {
+  let to = toRaw;
+  let highlightEmptyTo = false;
+
+  if (!toRaw) {
+    if (!fromRaw) {
+      // Empty `/routes` demo corridor — Oulu → Helsinki (Finland).
+      to = DEFAULT_TO;
+    } else if (originInFinland) {
+      // Avoid Helsinki→Helsinki when only origin was carried from Discover.
+      to = looksLikeHelsinki(fromRaw) ? DEFAULT_FROM : DEFAULT_TO;
+    } else {
+      // Outside Finland: leave destination empty and prompt the user.
+      to = "";
+      highlightEmptyTo = true;
+    }
+  }
+
+  if (!fromRaw && toRaw && looksLikeOulu(toRaw)) {
     from = DEFAULT_TO;
   }
 
   const fromNeedsDefaultCoords = !fromRaw;
-  const toNeedsDefaultCoords = !toRaw;
+  const toNeedsDefaultCoords = Boolean(to) && !toRaw;
 
   const fromLat =
-    parseCoord(first(raw.fromLat)) ??
-    parseCoord(first(raw.lat)) ??
+    fromLatEarly ??
     (fromNeedsDefaultCoords
       ? looksLikeOulu(from)
         ? DEFAULT_FROM_LAT
@@ -106,8 +131,7 @@ export default async function RoutesPage({
           : undefined
       : undefined);
   const fromLon =
-    parseCoord(first(raw.fromLon)) ??
-    parseCoord(first(raw.lon)) ??
+    fromLonEarly ??
     (fromNeedsDefaultCoords
       ? looksLikeOulu(from)
         ? DEFAULT_FROM_LON
@@ -180,16 +204,28 @@ export default async function RoutesPage({
 
   const h = await headers();
   const clientIp = getClientIpFromHeaders(h);
+  const needsDestination = !to.trim();
   const gate = await gateRouteAccess({
-    consume: true,
+    consume: !needsDestination,
     clientKey: clientIp !== "local" ? clientIp : undefined,
     meta: {
       from,
-      to,
+      to: to || "(empty)",
       mode,
       path: "/routes",
     },
   });
+
+  const fromPlaceSeed: PlaceDto | undefined =
+    fromLat != null && fromLon != null
+      ? {
+          id: fromId || `route-from-${fromLat},${fromLon}`,
+          name: from.split(",")[0]?.trim() || from,
+          placeName: from,
+          lat: fromLat,
+          lon: fromLon,
+        }
+      : undefined;
 
   if (gate.paywalled) {
     return (
@@ -225,6 +261,7 @@ export default async function RoutesPage({
               <RouteEndpointsForm
                 initialFrom={from}
                 initialTo={to}
+                fromPlace={fromPlaceSeed}
                 initialMode={mode}
                 initialDatePreset={dateWindow.preset}
                 initialStartDate={dateWindow.startDate}
@@ -232,6 +269,7 @@ export default async function RoutesPage({
                 initialDepartureStartHour={departure.startHour}
                 initialDepartureEndHour={departure.endHour}
                 isPro={isPro}
+                highlightEmptyTo={highlightEmptyTo}
               />
             </Suspense>
             <SoftPaywall
@@ -249,6 +287,63 @@ export default async function RoutesPage({
                   : null
               }
             />
+          </div>
+        </main>
+        <BottomNav active="/routes" />
+      </div>
+    );
+  }
+
+  if (needsDestination) {
+    return (
+      <div
+        data-testid="routes-page-need-destination"
+        className="flex h-screen w-full overflow-hidden bg-background"
+      >
+        <SideNav active="/routes" />
+        <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between bg-surface/80 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl md:hidden">
+          <p className="text-2xl font-bold text-primary">{t("brand")}</p>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <Link
+              href="/settings"
+              aria-label={t("nav.sideSettings")}
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/30 bg-surface-container-low text-on-surface-variant"
+            >
+              <span className="material-symbols-outlined text-2xl" aria-hidden="true">
+                settings
+              </span>
+            </Link>
+          </div>
+        </header>
+        <main
+          id="main-content"
+          className="relative flex h-full w-full flex-1 flex-col overflow-y-auto pt-16 md:pt-0 lg:ml-96"
+        >
+          <div className="mx-auto flex w-full max-w-xl flex-col gap-6 px-6 py-10 md:px-8">
+            <div>
+              <h1 className="text-[32px] leading-10 font-semibold text-on-surface">
+                {t("nav.routes")}
+              </h1>
+              <p className="mt-2 text-on-surface-variant">
+                {t("routes.toNeededLead")}
+              </p>
+            </div>
+            <Suspense fallback={null}>
+              <RouteEndpointsForm
+                initialFrom={from}
+                initialTo=""
+                fromPlace={fromPlaceSeed}
+                initialMode={mode}
+                initialDatePreset={dateWindow.preset}
+                initialStartDate={dateWindow.startDate}
+                initialEndDate={dateWindow.endDate}
+                initialDepartureStartHour={departure.startHour}
+                initialDepartureEndHour={departure.endHour}
+                isPro={isPro}
+                highlightEmptyTo
+              />
+            </Suspense>
           </div>
         </main>
         <BottomNav active="/routes" />

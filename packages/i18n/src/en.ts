@@ -150,6 +150,7 @@ const en = {
     now: "Now",
     forecast: "Forecast",
     rain: "rain {pct}%",
+    viewDestination: "View destination {name}",
   },
   destination: {
     currentConditions: "Current conditions",
@@ -264,6 +265,8 @@ const en = {
     to: "To",
     fromPlaceholder: "Address, landmark, or city…",
     toPlaceholder: "Address, landmark, or city…",
+    toNeededLead: "Choose where you’re headed to see weather along the route.",
+    toNeededHint: "Pick a destination to plan the route.",
     updateRoute: "Show route",
     alternativesTitle: "Compared routes",
     alternativeFastest: "Fastest route",

@@ -6,6 +6,7 @@ import { TopNav, BottomNav } from "@/components/layout/top-nav";
 import { DiscoverSearch } from "@/components/discover/search-island";
 import { DestinationCard } from "@/components/discover/destination-card";
 import { WeatherFilters } from "@/components/discover/weather-filters";
+import { RankingHint } from "@/components/discover/ranking-hint";
 import { DiscoverMap } from "@/components/map/discover-map";
 import {
   SoftPaywall,
@@ -230,6 +231,7 @@ export default async function HomePage({
                       </>
                     )}
                   </p>
+                  <RankingHint className="mt-3" />
 
                   {(result.originCurrent || result.originForecast) && (
                     <div className="mt-4 flex flex-wrap gap-3">
@@ -293,10 +295,11 @@ export default async function HomePage({
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8">
-                  {result.destinations.map((dest) => (
+                  {result.destinations.map((dest, index) => (
                     <DestinationCard
                       key={dest.id}
                       destination={dest}
+                      rank={index + 1}
                       datePreset={parsed.datePreset}
                       startDate={result.startDate}
                       endDate={result.endDate}

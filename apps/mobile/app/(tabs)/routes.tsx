@@ -54,6 +54,7 @@ import type {
 import { isTravelMode } from "@/lib/types";
 import { fetchSession, type DiscoverTier } from "@/lib/session";
 import { createModuleLogger } from "@/lib/logger";
+import { isLikelyFinlandOrigin } from "@/lib/finland-geo";
 
 const log = createModuleLogger("routes");
 
@@ -174,6 +175,16 @@ export default function RoutesScreen() {
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const [saveBusy, setSaveBusy] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  const highlightEmptyTo =
+    !toPlace &&
+    !toQuery.trim() &&
+    Boolean(fromPlace) &&
+    !isLikelyFinlandOrigin({
+      name: fromPlace?.placeName ?? fromQuery,
+      lat: fromPlace?.lat,
+      lon: fromPlace?.lon,
+    });
 
   useEffect(() => {
     void fetchSession().then((s) => {
@@ -411,7 +422,11 @@ export default function RoutesScreen() {
                 : null
           }
           editable={apiReady}
+          containerStyle={highlightEmptyTo ? styles.toHighlight : undefined}
         />
+        {highlightEmptyTo ? (
+          <Text style={styles.toNeededHint}>{t("routes.toNeededHint")}</Text>
+        ) : null}
 
         <Text style={styles.label}>{t("routes.travelMode")}</Text>
         <View style={styles.modeRow}>
@@ -1095,6 +1110,18 @@ function createStyles(colors: AppColors) {
     letterSpacing: 0.4,
     color: colors.onSurfaceVariant,
     textTransform: "uppercase",
+  },
+  toHighlight: {
+    borderColor: colors.primary,
+    borderWidth: 2,
+    backgroundColor: "rgba(11, 122, 74, 0.06)",
+  },
+  toNeededHint: {
+    marginTop: -4,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.primary,
+    fontWeight: "600",
   },
   subLabel: {
     marginTop: 2,
