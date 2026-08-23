@@ -25,7 +25,7 @@ Internet
          ├──────────► Upstash Redis REST (rate limits — required in prod)
          ├──────────► Mailgun (OTP email; Resend optional)
          ├──────────► Mapbox (maps / geocoding / directions)
-         └──────────► Open-Meteo (weather, no API key)
+         └──────────► Open-Meteo (weather; commercial key → customer-api)
 ```
 
 **Single Node process** is enough for MVP (`instances: 1` in PM2). Cron jobs (`CRON_ENABLED`) run inside the Next.js process via `instrumentation.ts` — do not run multiple app replicas unless you accept duplicate cron or move jobs out.
@@ -36,24 +36,28 @@ Internet
 
 ### Minimum (Ubuntu 24.04 LTS example)
 
-| Software | Why |
-|---|---|
-| **Node.js 20+** (22 LTS recommended) | Next.js runtime |
-| **npm** | Comes with Node |
-| **git** | Deploy from repo |
-| **PM2** | Process manager, auto-restart, boot start, logs |
-| **PostgreSQL 16** | App DB — *or* use a managed DB and skip local install |
-| **nginx** | Reverse proxy + TLS + HTTP/2 |
-| **certbot** | Let’s Encrypt certificates (`python3-certbot-nginx`) |
-| **ufw** (or equivalent) | Firewall: 22, 80, 443 |
-| **build tools** | `build-essential` / `python3` — needed for native deps (e.g. `sharp`) |
+
+| Software                             | Why                                                                   |
+| ------------------------------------ | --------------------------------------------------------------------- |
+| **Node.js 20+** (22 LTS recommended) | Next.js runtime                                                       |
+| **npm**                              | Comes with Node                                                       |
+| **git**                              | Deploy from repo                                                      |
+| **PM2**                              | Process manager, auto-restart, boot start, logs                       |
+| **PostgreSQL 16**                    | App DB — *or* use a managed DB and skip local install                 |
+| **nginx**                            | Reverse proxy + TLS + HTTP/2                                          |
+| **certbot**                          | Let’s Encrypt certificates (`python3-certbot-nginx`)                  |
+| **ufw** (or equivalent)              | Firewall: 22, 80, 443                                                 |
+| **build tools**                      | `build-essential` / `python3` — needed for native deps (e.g. `sharp`) |
+
 
 Optional:
 
-| Software | Why |
-|---|---|
+
+| Software                | Why                                                                                                            |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------- |
 | **unattended-upgrades** | Automatic security patches (+ optional reboot) — see [Automatic security updates](#automatic-security-updates) |
-| **fail2ban** | SSH brute-force hardening |
+| **fail2ban**            | SSH brute-force hardening                                                                                      |
+
 
 External (not installed on the VPS): **Upstash Redis REST** — required for production rate limits (see [Upstash Redis](#upstash-redis-required)). **PgBouncer is not required** for the documented single-instance setup (see [PostgreSQL & pooling](#postgresql--pooling)).
 
@@ -97,52 +101,61 @@ chmod 600 /var/www/solviax/apps/web/.env.production
 
 ### Required in production
 
-| Variable | Example / notes |
-|---|---|
-| `NODE_ENV` | `production` (set by `next start` / PM2) |
-| `DATABASE_URL` | `postgresql://USER:PASS@HOST:5432/solviax?sslmode=require` |
-| `AUTH_SECRET` | Random ≥ **32** chars (`openssl rand -base64 48`) |
-| `AUTH_URL` | `https://solviax.app` (canonical public URL) |
-| `NEXT_PUBLIC_APP_URL` | Same as `AUTH_URL` |
-| `EMAIL_MODE` | `mailgun` (or `resend`; `console` is **rejected** at boot) |
-| `MAILGUN_API_KEY` | Required when `EMAIL_MODE=mailgun` — [Mailgun](https://www.mailgun.com/) private API key |
-| `MAILGUN_DOMAIN` | Verified sending domain (e.g. `mg.solviax.app`) |
-| `MAILGUN_API_BASE_URL` | Default `https://api.eu.mailgun.net` (EU); use `https://api.mailgun.net` for US |
-| `RESEND_API_KEY` | Only if `EMAIL_MODE=resend` |
-| `USE_MOCKS` | `false` (`true` is **rejected** at boot) |
-| `NEXT_PUBLIC_MAPBOX_TOKEN` | Public token starting with `pk.` (browser map) |
-| `MAPBOX_ACCESS_TOKEN` | Server token (`pk.` or `sk.`) for geocoding / directions |
+
+| Variable                   | Example / notes                                                                               |
+| -------------------------- | --------------------------------------------------------------------------------------------- |
+| `NODE_ENV`                 | `production` (set by `next start` / PM2)                                                      |
+| `DATABASE_URL`             | `postgresql://USER:PASS@HOST:5432/solviax?sslmode=require`                                    |
+| `AUTH_SECRET`              | Random ≥ **32** chars (`openssl rand -base64 48`)                                             |
+| `AUTH_URL`                 | `https://solviax.app` (canonical public URL)                                                  |
+| `NEXT_PUBLIC_APP_URL`      | Same as `AUTH_URL`                                                                            |
+| `EMAIL_MODE`               | `mailgun` (or `resend`; `console` is **rejected** at boot)                                    |
+| `MAILGUN_API_KEY`          | Required when `EMAIL_MODE=mailgun` — [Mailgun](https://www.mailgun.com/) private API key      |
+| `MAILGUN_DOMAIN`           | Verified sending domain (e.g. `mg.solviax.app`)                                               |
+| `MAILGUN_API_BASE_URL`     | Default `https://api.eu.mailgun.net` (EU); use `https://api.mailgun.net` for US               |
+| `RESEND_API_KEY`           | Only if `EMAIL_MODE=resend`                                                                   |
+| `USE_MOCKS`                | `false` (`true` is **rejected** at boot)                                                      |
+| `NEXT_PUBLIC_MAPBOX_TOKEN` | Public token starting with `pk.` (browser map)                                                |
+| `MAPBOX_ACCESS_TOKEN`      | Server token (`pk.` or `sk.`) for geocoding / directions                                      |
+| `OPEN_METEO_API_KEY`       | Open-Meteo **commercial** API key — switches weather to `https://customer-api.open-meteo.com` |
+
 
 ### Required for rate limits (production)
 
 Without these, production **deny-alls** rate-limited routes (no in-memory fallback).
 
-| Variable | Notes |
-|---|---|
-| `UPSTASH_REDIS_REST_URL` | From Upstash console → Redis → REST API (see [Upstash Redis](#upstash-redis-required)) |
-| `UPSTASH_REDIS_REST_TOKEN` | Pair with URL above |
+
+| Variable                   | Notes                                                                                  |
+| -------------------------- | -------------------------------------------------------------------------------------- |
+| `UPSTASH_REDIS_REST_URL`   | From Upstash console → Redis → REST API (see [Upstash Redis](#upstash-redis-required)) |
+| `UPSTASH_REDIS_REST_TOKEN` | Pair with URL above                                                                    |
+
 
 ### Strongly recommended
 
-| Variable | Notes |
-|---|---|
-| `AUTH_TRUST_HOST` | `true` **only** behind nginx / Cloudflare that you control |
-| `CORS_ALLOWED_ORIGINS` | `https://solviax.app` (+ Expo origins only if needed; no localhost in prod) |
-| `EMAIL_FROM` | Verified sender, e.g. `Solviax.app <noreply@solviax.app>` (Mailgun/Resend domain) |
-| `CRON_ENABLED` | `true` in production (weather cache warm at 02:00/10:00/18:00 UTC) |
-| `CRON_WEATHER_WARM_LIMIT` | Max places per warm run (default `400`; usage + Nordic/Baltic/DE + global fill) |
+
+| Variable                  | Notes                                                                             |
+| ------------------------- | --------------------------------------------------------------------------------- |
+| `AUTH_TRUST_HOST`         | `true` **only** behind nginx / Cloudflare that you control                        |
+| `CORS_ALLOWED_ORIGINS`    | `https://solviax.app` (+ Expo origins only if needed; no localhost in prod)       |
+| `EMAIL_FROM`              | Verified sender, e.g. `Solviax.app <noreply@solviax.app>` (Mailgun/Resend domain) |
+| `CRON_ENABLED`            | `true` in production (weather cache warm at 02:00/10:00/18:00 UTC)                |
+| `CRON_WEATHER_WARM_LIMIT` | Max places per warm run (default `400`; usage + Nordic/Baltic/DE + global fill)   |
+
 
 ### Stripe billing (required for `/pro` checkout)
 
 Without these, the Pro page shows plans but checkout stays disabled.
 
-| Variable | Notes |
-|---|---|
-| `STRIPE_SECRET_KEY` | **Live** secret `sk_live_…` (Dashboard → Developers → API keys) |
-| `STRIPE_WEBHOOK_SECRET` | Signing secret for the **production** webhook endpoint (`whsec_…`) |
+
+| Variable                | Notes                                                                         |
+| ----------------------- | ----------------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`     | **Live** secret `sk_live_…` (Dashboard → Developers → API keys)               |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret for the **production** webhook endpoint (`whsec_…`)            |
 | `STRIPE_PRICE_ONE_TIME` | Live Price id for **€1.99** one-time Pro (`mode=payment`, 60 days, VAT incl.) |
-| `STRIPE_PRICE_MONTHLY` | Live Price id for **€2.99 / month** Pro (`mode=subscription`, VAT incl.) |
-| `STRIPE_PRICE_YEARLY` | Live Price id for **€30 / year** Pro (`mode=subscription`, VAT incl.) |
+| `STRIPE_PRICE_MONTHLY`  | Live Price id for **€2.99 / month** Pro (`mode=subscription`, VAT incl.)      |
+| `STRIPE_PRICE_YEARLY`   | Live Price id for **€30 / year** Pro (`mode=subscription`, VAT incl.)         |
+
 
 See **[Stripe (production)](#stripe-production)** below for Dashboard steps. Product details: [PAID_FEATURES.md](./PAID_FEATURES.md).
 
@@ -152,22 +165,25 @@ See **[Stripe (production)](#stripe-production)** below for Dashboard steps. Pro
 
 ### Optional / defaults
 
-| Variable | Default | Notes |
-|---|---|---|
-| `ANON_DISCOVER_LIMIT` | `3` | Soft paywall credits per anon cookie |
-| `ANON_SHARE_BONUS_CAP` | `2` | Share redeem bonus cap |
-| `ANON_IP_DISCOVER_LIMIT` | `10` | Per-IP discover cap / 24h (layered with cookie) |
-| `ANON_SESSION_MINT_LIMIT` | `20` | New anon sessions per IP / 24h |
-| `FREE_MONTHLY_DISCOVER_LIMIT` | `50` | Signed-in Free discovers per UTC calendar month |
-| `PRO_MONTHLY_DISCOVER_LIMIT` | `200` | Monthly Pro fair-use discovers / UTC month |
-| `PRO_ONE_TIME_DISCOVER_LIMIT` | `400` | One-time Pro fair-use discovers / 60-day window |
-| `USE_MOCK_WEATHER` | `false` | Keep `false` in prod |
-| `PORT` | `3004` | Must match reverse proxy upstream |
-| `LOG_LEVEL` | `info` (prod) / `debug` (dev) | Pino via `@solviax/logger` — JSON stdout in production |
-| `LOG_PRETTY` | pretty on in dev | Set `0` to force JSON locally |
-| `NEXT_PUBLIC_GA_MEASUREMENT_ID` | *(unset)* | GA4 id `G-…` — loads **only after** cookie consent (see [docs/COOKIE_CONSENT_PLAN.md](./docs/COOKIE_CONSENT_PLAN.md)) |
-| `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | *(unset)* | reCAPTCHA v3 site key (login OTP) |
-| `RECAPTCHA_SECRET_KEY` | *(unset)* | reCAPTCHA secret (server verify) |
+
+| Variable                         | Default                       | Notes                                                                                                                 |
+| -------------------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `ANON_DISCOVER_LIMIT`            | `3`                           | Soft paywall credits per anon cookie                                                                                  |
+| `ANON_SHARE_BONUS_CAP`           | `2`                           | Share redeem bonus cap                                                                                                |
+| `ANON_IP_DISCOVER_LIMIT`         | `10`                          | Per-IP discover cap / 24h (layered with cookie)                                                                       |
+| `ANON_SESSION_MINT_LIMIT`        | `20`                          | New anon sessions per IP / 24h                                                                                        |
+| `FREE_MONTHLY_DISCOVER_LIMIT`    | `50`                          | Signed-in Free discovers per UTC calendar month                                                                       |
+| `PRO_MONTHLY_DISCOVER_LIMIT`     | `200`                         | Monthly Pro fair-use discovers / UTC month                                                                            |
+| `PRO_ONE_TIME_DISCOVER_LIMIT`    | `400`                         | One-time Pro fair-use discovers / 60-day window                                                                       |
+| `USE_MOCK_WEATHER`               | `false`                       | Keep `false` in prod                                                                                                  |
+| `OPEN_METEO_API_BASE_URL`        | *(auto)*                      | Override forecast host; default is `customer-api` when key is set, else `api.open-meteo.com`                          |
+| `PORT`                           | `3004`                        | Must match reverse proxy upstream                                                                                     |
+| `LOG_LEVEL`                      | `info` (prod) / `debug` (dev) | Pino via `@solviax/logger` — JSON stdout in production                                                                |
+| `LOG_PRETTY`                     | pretty on in dev              | Set `0` to force JSON locally                                                                                         |
+| `NEXT_PUBLIC_GA_MEASUREMENT_ID`  | *(unset)*                     | GA4 id `G-…` — loads **only after** cookie consent (see [docs/COOKIE_CONSENT_PLAN.md](./docs/COOKIE_CONSENT_PLAN.md)) |
+| `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | *(unset)*                     | reCAPTCHA v3 site key (login OTP)                                                                                     |
+| `RECAPTCHA_SECRET_KEY`           | *(unset)*                     | reCAPTCHA secret (server verify)                                                                                      |
+
 
 ### Example production env file
 
@@ -182,6 +198,10 @@ AUTH_TRUST_HOST=true
 
 USE_MOCKS=false
 USE_MOCK_WEATHER=false
+
+# Open-Meteo commercial (required for production commercial use)
+OPEN_METEO_API_KEY=REPLACE_WITH_OPEN_METEO_KEY
+# OPEN_METEO_API_BASE_URL=https://customer-api.open-meteo.com
 
 DATABASE_URL=postgresql://solviax:SECRET@db.example.com:5432/solviax?sslmode=require
 
@@ -418,11 +438,13 @@ timedatectl
 
 ### 3. What happens after a reboot
 
-| Unit | Expected |
-|---|---|
-| **nginx** | `systemd` enables it by default → listens 80/443 |
-| **PM2** | `pm2 startup` systemd unit → restores `solviax` from last `pm2 save` |
-| **Postgres** | Managed DB: always on; self-hosted: `postgresql` systemd unit |
+
+| Unit         | Expected                                                             |
+| ------------ | -------------------------------------------------------------------- |
+| **nginx**    | `systemd` enables it by default → listens 80/443                     |
+| **PM2**      | `pm2 startup` systemd unit → restores `solviax` from last `pm2 save` |
+| **Postgres** | Managed DB: always on; self-hosted: `postgresql` systemd unit        |
+
 
 After the first reboot, check:
 
@@ -451,12 +473,14 @@ Do **not** enable fully automatic upgrades of Node.js from NodeSource without te
 
 The app uses `postgres.js` with a small shared pool (`max: 5` by default in `apps/web/src/db/index.ts`, override with `DATABASE_POOL_MAX`). One Node process × ~5 connections fits small managed plans (~25 `max_connections`, some reserved for SUPERUSER).
 
-| Situation | Recommendation |
-|---|---|
-| Single PM2 instance + managed Postgres | **No PgBouncer** — current pool is enough |
+
+| Situation                                                                 | Recommendation                                                                                                                                                        |
+| ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Single PM2 instance + managed Postgres                                    | **No PgBouncer** — current pool is enough                                                                                                                             |
 | Managed DB with built-in pooler (Neon pooler, Supabase pooler, RDS Proxy) | Use the provider’s **pooled** connection string if they recommend it for serverless/short-lived clients; for a long-lived Node process the direct URL is usually fine |
-| Many app replicas / high connection count | Then add PgBouncer (transaction mode) or a managed pooler — and move cron out of the app first |
-| Self-hosted Postgres on the same VPS | Still skip PgBouncer until you scale; prefer managed DB instead |
+| Many app replicas / high connection count                                 | Then add PgBouncer (transaction mode) or a managed pooler — and move cron out of the app first                                                                        |
+| Self-hosted Postgres on the same VPS                                      | Still skip PgBouncer until you scale; prefer managed DB instead                                                                                                       |
+
 
 Tips:
 
@@ -645,8 +669,8 @@ You do **not** install Redis on the VPS. The app talks to Upstash over HTTPS RES
 3. Type: **Regional** is fine for MVP. Enable **TLS** (default).
 4. After create, open the database → **REST API** tab.
 5. Copy:
-   - `UPSTASH_REDIS_REST_URL` — looks like `https://<id>.upstash.io`
-   - `UPSTASH_REDIS_REST_TOKEN` — long secret token
+  - `UPSTASH_REDIS_REST_URL` — looks like `https://<id>.upstash.io`
+  - `UPSTASH_REDIS_REST_TOKEN` — long secret token
 
 ### 2. Put credentials in production env
 
@@ -683,9 +707,10 @@ If Upstash env vars are missing in production, expect rate-limited endpoints to 
 1. **Postgres** — create DB + user; run migrations; prefer TLS (`sslmode=require`).
 2. **Upstash Redis REST** — create DB; set URL + token ([steps above](#upstash-redis-required)).
 3. **Mailgun** — verify domain (SPF/DKIM), set `EMAIL_MODE=mailgun` + `MAILGUN_API_KEY` + `MAILGUN_DOMAIN` (+ EU base URL if needed). OTP emails are HTML+text; first-time users get a welcome blurb. Resend remains supported via `EMAIL_MODE=resend`.
-4. **Mapbox** — create tokens; restrict `pk.` by URL; never expose `sk.` to the client (`NEXT_PUBLIC_*` must stay `pk.`).
-5. **Stripe** — live products/prices, webhook to `https://…/api/stripe/webhook`, Customer Portal (see below).
-6. **DNS** — point domain at VPS; wait for propagation before TLS.
+4. **Mapbox** — create tokens; restrict `pk.` by URL; never expose `sk.` to the client (`NEXT_PUBLIC_`* must stay `pk.`).
+5. **Open-Meteo** — for commercial production set `OPEN_METEO_API_KEY` (uses `https://customer-api.open-meteo.com`). Leave unset only for local/non-commercial free API.
+6. **Stripe** — live products/prices, webhook to `https://…/api/stripe/webhook`, Customer Portal (see below).
+7. **DNS** — point domain at VPS; wait for propagation before TLS.
 
 ---
 
@@ -697,11 +722,13 @@ Paid plans (VAT-inclusive 25.5%): **One-time €1.99** (60 days, max 2 saved rou
 
 In [Stripe Dashboard](https://dashboard.stripe.com) (toggle **Live** mode):
 
-| Product | Price | Checkout mode |
-|---|---|---|
-| Solviax.app Pro — One-time | €1.99 EUR, one-time | `payment` |
-| Solviax.app Pro — Monthly | €2.99 EUR, recurring monthly | `subscription` |
-| Solviax.app Pro — Yearly | €30.00 EUR, recurring yearly | `subscription` |
+
+| Product                    | Price                        | Checkout mode  |
+| -------------------------- | ---------------------------- | -------------- |
+| Solviax.app Pro — One-time | €1.99 EUR, one-time          | `payment`      |
+| Solviax.app Pro — Monthly  | €2.99 EUR, recurring monthly | `subscription` |
+| Solviax.app Pro — Yearly   | €30.00 EUR, recurring yearly | `subscription` |
+
 
 Or from a machine with the **live** secret key:
 
@@ -810,11 +837,12 @@ Config and edge requirements before public traffic. (Smoke tests after deploy: [
 - [ ] `CORS_ALLOWED_ORIGINS=https://solviax.app` (no localhost / Expo ports in prod)
 - [ ] `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` set; `curl …/ping` → `PONG` (required — missing Redis = deny-all on limited routes)
 - [ ] Alert/monitor Upstash failures (prod without Redis looks like global 429)
-- [ ] `EMAIL_MODE=mailgun` + verified domain (or `resend`); **`LOG_OTP_CODE` unset**
+- [ ] `EMAIL_MODE=mailgun` + verified domain (or `resend`); `**LOG_OTP_CODE` unset**
 - [ ] Stripe live: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ONE_TIME` | `MONTHLY` | `YEARLY`
 - [ ] nginx / Cloudflare in front — **do not expose** Next.js `:3004` publicly
 - [ ] `AUTH_SECRET` ≥ 32 chars · `USE_MOCKS=false` · `AUTH_TRUST_HOST=true` only behind a trusted proxy
-- [ ] Mapbox: `NEXT_PUBLIC_MAPBOX_TOKEN` is **`pk.`** only; URL restrictions on the token; `MAPBOX_ACCESS_TOKEN` `sk.` never in `NEXT_PUBLIC_*`
+- [ ] Mapbox: `NEXT_PUBLIC_MAPBOX_TOKEN` is `**pk.**` only; URL restrictions on the token; `MAPBOX_ACCESS_TOKEN` `sk.` never in `NEXT_PUBLIC_*`
+- [ ] Open-Meteo: `OPEN_METEO_API_KEY` set for commercial production (`customer-api.open-meteo.com`)
 - [ ] **EU analytics:** if `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set, cookie banner + Consent Mode v2 must be live (GA loads only after opt-in; reject → no `_ga` cookies)
 - [ ] Mobile store / TestFlight builds: `EXPO_PUBLIC_API_URL=https://solviax.app` (HTTPS only)
 - [ ] Smoke: OTP email · checkout One-time / Monthly / Yearly · webhook updates `subscriptions.plan`
@@ -829,10 +857,10 @@ Config and edge requirements before public traffic. (Smoke tests after deploy: [
 ## Post-deploy smoke checklist
 
 - [ ] `https://solviax.app` loads (valid TLS, **HTTP/2**)
-- [ ] Upstash: `ping` works; discover/search are not globally deny-all’d
-- [ ] Discover search returns places (DB + Mapbox / places seed)
-- [ ] Map loads with `pk.` token
-- [ ] Login OTP: HTML email arrives via Mailgun (or Resend; not console); `LOG_OTP_CODE` not set
+- [x] Upstash: `ping` works; discover/search are not globally deny-all’d
+- [x] Discover search returns places (DB + Mapbox / places seed)
+- [x] Map loads with `pk.` token
+- [x] Login OTP: HTML email arrives via Mailgun (or Resend; not console); `LOG_OTP_CODE` not set
 - [ ] Anon discover hits soft paywall after limit
 - [ ] `curl -sI --http2 https://solviax.app` shows HSTS / nosniff (nginx + middleware)
 - [ ] Logs: `pm2 logs solviax` — no boot errors about `AUTH_SECRET` / `EMAIL_MODE` / `USE_MOCKS` / Upstash
@@ -867,12 +895,14 @@ Config and edge requirements before public traffic. (Smoke tests after deploy: [
 
 ## What is *not* covered yet
 
-| Item | Status |
-|---|---|
-| Production Dockerfile / Compose stack | Not shipped — VPS + **PM2** is the documented path |
-| Blue/green / zero-downtime multi-instance | Out of scope; cron assumes one instance |
-| Mobile store release (EAS) | Separate from this guide |
-| CDN / object storage for images | App uses Mapbox / remote URLs today |
+
+| Item                                      | Status                                             |
+| ----------------------------------------- | -------------------------------------------------- |
+| Production Dockerfile / Compose stack     | Not shipped — VPS + **PM2** is the documented path |
+| Blue/green / zero-downtime multi-instance | Out of scope; cron assumes one instance            |
+| Mobile store release (EAS)                | Separate from this guide                           |
+| CDN / object storage for images           | App uses Mapbox / remote URLs today                |
 | Stripe Tax / invoices / VAT ID collection | Not configured — enable in Stripe if you need them |
+
 
 See also [TODO.md](./TODO.md) (ops + product backlog) and the short checklist in [README.md](./README.md#production-checklist).

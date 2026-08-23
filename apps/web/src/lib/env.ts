@@ -212,11 +212,47 @@ export const env = {
   adminCostOtherEur: Number(process.env.ADMIN_COST_OTHER_EUR || 5),
   mapboxToken: getMapboxServerToken(),
   mapboxPublicToken: getMapboxPublicToken(),
+  /**
+   * Open-Meteo commercial API key. When set, weather uses
+   * https://customer-api.open-meteo.com with `apikey` (+ X-Api-Key).
+   * Leave unset for the free https://api.open-meteo.com endpoint.
+   */
+  openMeteoApiKey: process.env.OPEN_METEO_API_KEY?.trim() || "",
+  /** Override forecast host (default free vs customer based on key). */
+  openMeteoApiBaseUrl: process.env.OPEN_METEO_API_BASE_URL?.trim() || "",
   supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || "",
   supabaseAnonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "",
   databaseUrl: process.env.DATABASE_URL || "",
   isProduction,
 };
+
+/** True when commercial Open-Meteo credentials are configured. */
+export function hasOpenMeteoCommercial(): boolean {
+  return Boolean(env.openMeteoApiKey);
+}
+
+/** Pure host resolver — free vs customer (or explicit override). */
+export function resolveOpenMeteoForecastBaseUrl(opts: {
+  apiKey: string;
+  baseUrlOverride?: string;
+}): string {
+  const override = (opts.baseUrlOverride || "").trim().replace(/\/$/, "");
+  if (override) return override;
+  return opts.apiKey.trim()
+    ? "https://customer-api.open-meteo.com"
+    : "https://api.open-meteo.com";
+}
+
+/**
+ * Forecast API origin (no trailing slash, no path).
+ * Commercial: customer-api.open-meteo.com · Free: api.open-meteo.com
+ */
+export function getOpenMeteoForecastBaseUrl(): string {
+  return resolveOpenMeteoForecastBaseUrl({
+    apiKey: env.openMeteoApiKey,
+    baseUrlOverride: env.openMeteoApiBaseUrl,
+  });
+}
 
 /** Server geocoding / Mapbox APIs — available whenever any Mapbox token is set. */
 export function hasMapbox(): boolean {

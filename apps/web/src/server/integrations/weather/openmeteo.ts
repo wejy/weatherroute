@@ -13,6 +13,11 @@ import type { WeatherProvider } from "./types";
 import { weekdayShort } from "@/lib/dates";
 import { recordUsageEvent } from "@/server/dal/usage";
 import { USAGE_TYPES } from "@/server/dal/usage-types";
+import {
+  env,
+  getOpenMeteoForecastBaseUrl,
+  hasOpenMeteoCommercial,
+} from "@/lib/env";
 
 interface OpenMeteoResponse {
   latitude: number;
@@ -151,7 +156,7 @@ function forecastParams(
   latitudes: number[],
   longitudes: number[],
 ): URLSearchParams {
-  return new URLSearchParams({
+  const params = new URLSearchParams({
     latitude: latitudes.map(String).join(","),
     longitude: longitudes.map(String).join(","),
     current:
@@ -164,23 +169,43 @@ function forecastParams(
     forecast_days: "16",
     forecast_hours: "168",
   });
+  if (hasOpenMeteoCommercial()) {
+    params.set("apikey", env.openMeteoApiKey);
+  }
+  return params;
+}
+
+function forecastFetchInit(): RequestInit & { next: { revalidate: number } } {
+  const headers: Record<string, string> = { Accept: "application/json" };
+  // Prefer header auth when commercial (also send apikey query per Open-Meteo docs).
+  if (hasOpenMeteoCommercial()) {
+    headers["X-Api-Key"] = env.openMeteoApiKey;
+  }
+  return {
+    headers,
+    next: { revalidate: 600 },
+  };
+}
+
+function forecastUrl(params: URLSearchParams): string {
+  return `${getOpenMeteoForecastBaseUrl()}/v1/forecast?${params}`;
 }
 
 export const openMeteoProvider: WeatherProvider = {
   name: "open-meteo",
   async getForecast({ lat, lon, name }) {
     const params = forecastParams([lat], [lon]);
-    const res = await fetch(
-      `https://api.open-meteo.com/v1/forecast?${params}`,
-      { next: { revalidate: 600 } },
-    );
+    const res = await fetch(forecastUrl(params), forecastFetchInit());
 
     if (!res.ok) {
       throw new Error(`Open-Meteo error: ${res.status}`);
     }
     recordUsageEvent({
       type: USAGE_TYPES.extOpenMeteo,
-      meta: { locations: 1 },
+      meta: {
+        locations: 1,
+        commercial: hasOpenMeteoCommercial(),
+      },
     });
 
     const data = (await res.json()) as OpenMeteoResponse;
@@ -209,16 +234,16 @@ export async function openMeteoForecastBatch(
     places.map((p) => p.lat),
     places.map((p) => p.lon),
   );
-  const res = await fetch(
-    `https://api.open-meteo.com/v1/forecast?${params}`,
-    { next: { revalidate: 600 } },
-  );
+  const res = await fetch(forecastUrl(params), forecastFetchInit());
   if (!res.ok) {
     throw new Error(`Open-Meteo batch error: ${res.status}`);
   }
   recordUsageEvent({
     type: USAGE_TYPES.extOpenMeteo,
-    meta: { locations: places.length },
+    meta: {
+      locations: places.length,
+      commercial: hasOpenMeteoCommercial(),
+    },
   });
 
   const raw = (await res.json()) as OpenMeteoResponse | OpenMeteoResponse[];
