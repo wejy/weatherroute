@@ -1,5 +1,9 @@
 import { getClientIpFromHeaders } from "@/lib/client-ip";
-import { peekRateLimit, rateLimit } from "@/lib/rate-limit";
+import {
+  parseUpstashPipelineResponse,
+  peekRateLimit,
+  rateLimit,
+} from "@/lib/rate-limit";
 
 describe("rateLimit peek vs consume", () => {
   it("peek does not increment count", async () => {
@@ -12,6 +16,30 @@ describe("rateLimit peek vs consume", () => {
 
     const second = await rateLimit(key, 2, 60_000);
     expect(second.count).toBe(2);
+  });
+});
+
+describe("parseUpstashPipelineResponse", () => {
+  it("parses Upstash array-of-result objects", () => {
+    expect(
+      parseUpstashPipelineResponse([{ result: 1 }, { result: -1 }]),
+    ).toEqual({ count: 1, ttl: -1 });
+    expect(
+      parseUpstashPipelineResponse([{ result: 41 }, { result: 58 }]),
+    ).toEqual({ count: 41, ttl: 58 });
+  });
+
+  it("accepts a legacy wrapped { result: [count, ttl] } shape", () => {
+    expect(parseUpstashPipelineResponse({ result: [3, 12] })).toEqual({
+      count: 3,
+      ttl: 12,
+    });
+  });
+
+  it("rejects malformed bodies", () => {
+    expect(parseUpstashPipelineResponse(null)).toBeNull();
+    expect(parseUpstashPipelineResponse([])).toBeNull();
+    expect(parseUpstashPipelineResponse([{ error: "ERR" }, { result: -1 }])).toBeNull();
   });
 });
 

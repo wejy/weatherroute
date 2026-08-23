@@ -44,6 +44,38 @@ function denyAll(limit: number): { ok: boolean; remaining: number; count: number
   return { ok: false, remaining: 0, count: limit };
 }
 
+/**
+ * Upstash `/pipeline` returns a JSON array of `{ result }` / `{ error }` objects.
+ * Older code incorrectly expected `{ result: [count, ttl] }`, which made every
+ * production rate-limit call fail closed (immediate 429).
+ */
+export function parseUpstashPipelineResponse(
+  data: unknown,
+): { count: number; ttl: number } | null {
+  const rows = Array.isArray(data)
+    ? data
+    : data &&
+        typeof data === "object" &&
+        Array.isArray((data as { result?: unknown }).result)
+      ? ((data as { result: unknown[] }).result)
+      : null;
+  if (!rows || rows.length < 2) return null;
+
+  const unwrap = (entry: unknown): unknown => {
+    if (entry && typeof entry === "object" && "result" in entry) {
+      return (entry as { result?: unknown }).result;
+    }
+    return entry;
+  };
+
+  const count = Number(unwrap(rows[0]));
+  const ttl = Number(unwrap(rows[1]));
+  if (!Number.isFinite(count) || count < 1 || !Number.isFinite(ttl)) {
+    return null;
+  }
+  return { count, ttl };
+}
+
 /** Upstash Redis REST counter (required in production). */
 async function upstashRateLimit(
   key: string,
@@ -89,11 +121,9 @@ async function upstashRateLimit(
     });
     if (!res.ok) return null;
 
-    const data = (await res.json()) as { result?: unknown[] };
-    const count = Number(data.result?.[0]);
-    const ttl = Number(data.result?.[1]);
-
-    if (!Number.isFinite(count) || count < 1) return null;
+    const parsed = parseUpstashPipelineResponse(await res.json());
+    if (!parsed) return null;
+    const { count, ttl } = parsed;
 
     if (ttl < 0) {
       await fetch(`${baseUrl}/expire/${encodeURIComponent(redisKey)}/${windowSec}`, {
