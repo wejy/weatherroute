@@ -449,7 +449,7 @@ Do **not** enable fully automatic upgrades of Node.js from NodeSource without te
 
 **You do not need PgBouncer** for the recommended MVP topology (one PM2 process → managed Postgres).
 
-The app uses `postgres.js` with a small pool (`max: 10` in `apps/web/src/db/index.ts`). One Node process × ~10 connections is well within typical managed-plan limits (often 50–100+).
+The app uses `postgres.js` with a small shared pool (`max: 5` by default in `apps/web/src/db/index.ts`, override with `DATABASE_POOL_MAX`). One Node process × ~5 connections fits small managed plans (~25 `max_connections`, some reserved for SUPERUSER).
 
 | Situation | Recommendation |
 |---|---|
@@ -462,7 +462,8 @@ Tips:
 
 - Prefer `?sslmode=require` (or provider equivalent) on `DATABASE_URL`.
 - Do not expose Postgres `5432` on the public internet (`ufw` / security group).
-- If a managed plan warns about connection saturation, lower `max` in `db/index.ts` or upgrade the plan before introducing PgBouncer.
+- If a managed plan warns about connection saturation (`remaining connection slots are reserved for roles with the SUPERUSER attribute`), restart the app so leaked clients drop, lower `DATABASE_POOL_MAX` (default `5`), or upgrade the plan before introducing PgBouncer.
+- Ensure only **one** PM2 process talks to the DB while cron runs in-process (`instances: 1`).
 
 ---
 
