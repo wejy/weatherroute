@@ -40,6 +40,9 @@ const fi = {
     signIn: "Kirjaudu",
     accountMenu: "Tili ja asetukset",
     signedInAs: "Kirjautunut: {name}",
+    sideMenuLabel: "Siirry",
+    sideMenuExpand: "Näytä koko valikko",
+    sideMenuCollapse: "Pienennä valikko",
   },
   language: {
     label: "Kieli",

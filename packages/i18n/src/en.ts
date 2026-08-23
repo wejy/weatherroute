@@ -40,6 +40,9 @@ const en = {
     signIn: "Sign in",
     accountMenu: "Account and settings",
     signedInAs: "Signed in as {name}",
+    sideMenuLabel: "Navigate",
+    sideMenuExpand: "Show full menu",
+    sideMenuCollapse: "Collapse menu",
   },
   language: {
     label: "Language",

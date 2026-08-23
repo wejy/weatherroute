@@ -829,21 +829,21 @@ Config and edge requirements before public traffic. (Smoke tests after deploy: [
 
 ### Edge / identity (rate limits & anon quotas)
 
-- [ ] Reverse proxy **replaces** client IP headers (do not append untrusted `X-Forwarded-For`). nginx: `proxy_set_header X-Forwarded-For $remote_addr;` (+ `X-Real-IP` / Cloudflare `real_ip` as documented above).
-- [ ] Confirm spoofing fails: request with forged `X-Forwarded-For` still rate-limits on the real edge IP.
+- [x] Reverse proxy **replaces** client IP headers (do not append untrusted `X-Forwarded-For`). nginx: `proxy_set_header X-Forwarded-For $remote_addr;` (+ `X-Real-IP` / Cloudflare `real_ip` as documented above).
+- [x] Confirm spoofing fails: request with forged `X-Forwarded-For` still rate-limits on the real edge IP.
 
 ### Config
 
-- [ ] `CORS_ALLOWED_ORIGINS=https://solviax.app` (no localhost / Expo ports in prod)
-- [ ] `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` set; `curl …/ping` → `PONG` (required — missing Redis = deny-all on limited routes)
-- [ ] Alert/monitor Upstash failures (prod without Redis looks like global 429)
-- [ ] `EMAIL_MODE=mailgun` + verified domain (or `resend`); `**LOG_OTP_CODE` unset**
-- [ ] Stripe live: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ONE_TIME` | `MONTHLY` | `YEARLY`
-- [ ] nginx / Cloudflare in front — **do not expose** Next.js `:3004` publicly
-- [ ] `AUTH_SECRET` ≥ 32 chars · `USE_MOCKS=false` · `AUTH_TRUST_HOST=true` only behind a trusted proxy
-- [ ] Mapbox: `NEXT_PUBLIC_MAPBOX_TOKEN` is `**pk.**` only; URL restrictions on the token; `MAPBOX_ACCESS_TOKEN` `sk.` never in `NEXT_PUBLIC_*`
-- [ ] Open-Meteo: `OPEN_METEO_API_KEY` set for commercial production (`customer-api.open-meteo.com`)
-- [ ] **EU analytics:** if `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set, cookie banner + Consent Mode v2 must be live (GA loads only after opt-in; reject → no `_ga` cookies)
+- [x] `CORS_ALLOWED_ORIGINS=https://solviax.app` (no localhost / Expo ports in prod)
+- [x] `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` set; `curl …/ping` → `PONG` (required — missing Redis = deny-all on limited routes)
+- [x] Alert/monitor Upstash failures (prod without Redis looks like global 429)
+- [x] `EMAIL_MODE=mailgun` + verified domain (or `resend`); `**LOG_OTP_CODE` unset**
+- [x] Stripe live: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ONE_TIME` | `MONTHLY` | `YEARLY`
+- [x] nginx / Cloudflare in front — **do not expose** Next.js `:3004` publicly
+- [x] `AUTH_SECRET` ≥ 32 chars · `USE_MOCKS=false` · `AUTH_TRUST_HOST=true` only behind a trusted proxy
+- [x] Mapbox: `NEXT_PUBLIC_MAPBOX_TOKEN` is `**pk.**` only; URL restrictions on the token; `MAPBOX_ACCESS_TOKEN` `sk.` never in `NEXT_PUBLIC_*`
+- [x] Open-Meteo: `OPEN_METEO_API_KEY` set for commercial production (`customer-api.open-meteo.com`)
+- [x] **EU analytics:** if `NEXT_PUBLIC_GA_MEASUREMENT_ID` is set, cookie banner + Consent Mode v2 must be live (GA loads only after opt-in; reject → no `_ga` cookies)
 - [ ] Mobile store / TestFlight builds: `EXPO_PUBLIC_API_URL=https://solviax.app` (HTTPS only)
 - [ ] Smoke: OTP email · checkout One-time / Monthly / Yearly · webhook updates `subscriptions.plan`
 
