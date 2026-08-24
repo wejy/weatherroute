@@ -37,6 +37,7 @@ import {
 import { DateWhenField } from "@/components/discover/date-when-field";
 import { FieldSelect } from "@/components/discover/field-select";
 import { TravelModeSelector } from "@/components/travel/travel-mode-selector";
+import { scheduleScrollToDiscoverResults } from "@/lib/scroll-to-results";
 import { DiscoverPendingUpdate } from "@/components/discover/discover-pending-update";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
@@ -276,13 +277,18 @@ export function DiscoverSearch({
         skipHash?: boolean;
       },
     ) => {
-      const hashPart = opts?.skipHash ? "" : hash || "";
+      const shouldScrollToResults = !opts?.skipHash && Boolean(hash);
+      const hashPart = shouldScrollToResults ? hash || "" : "";
       const url = `${basePath}?${buildParams(resolved, overrides).toString()}${hashPart}`;
       setFiltersDirty(false);
       startTransition(() => {
+        // Always scroll:false — default hash jump is abrupt and ignores sticky nav.
         if (replace) router.replace(url, { scroll: false });
-        else router.push(url);
+        else router.push(url, { scroll: false });
       });
+      if (shouldScrollToResults) {
+        scheduleScrollToDiscoverResults();
+      }
     },
     [basePath, buildParams, hash, router],
   );
@@ -388,8 +394,10 @@ export function DiscoverSearch({
     startTransition(() => {
       router.replace(
         `${basePath}?${params.toString()}${hash || ""}`,
+        { scroll: false },
       );
     });
+    if (hash) scheduleScrollToDiscoverResults();
   }
 
   function onTravelModeChange(next: TravelMode) {

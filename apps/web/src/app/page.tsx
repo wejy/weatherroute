@@ -184,7 +184,7 @@ export default async function HomePage({
           </Suspense>
 
           {gate.paywalled ? (
-            <section id="results" className="relative z-30 mx-auto mb-12 w-full">
+            <section id="results" className="relative z-30 mx-auto mb-12 w-full scroll-mt-24">
               <SoftPaywall
                 quota={
                   gate.quota
@@ -209,7 +209,7 @@ export default async function HomePage({
 
               <section
                 id="results"
-                className="relative z-30 mx-auto mb-12 w-full max-w-5xl"
+                className="relative z-30 mx-auto mb-12 w-full max-w-5xl scroll-mt-24"
               >
                 <div className="mb-6 rounded-2xl border border-outline-variant/30 bg-surface/95 p-5 shadow-[0px_4px_20px_rgba(0,0,0,0.06)] backdrop-blur-xl md:p-6">
                   <h2 className="text-2xl font-semibold text-on-surface md:text-[32px] md:leading-10">

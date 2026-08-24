@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/components/i18n/locale-provider";
 import { DiscoverQueryLink } from "@/components/discover/discover-query-link";
+import { scheduleScrollToDiscoverResults } from "@/lib/scroll-to-results";
 
 const FILTERS = [
   { value: "best", key: "best", icon: "auto_awesome" },
@@ -73,12 +74,7 @@ export function WeatherFilters({
     if (basePath === "/") {
       // Prefer explicit scroll over embedding #hash in router.push (App Router
       // can drop the search string when only the hash changes on `/`).
-      requestAnimationFrame(() => {
-        document.getElementById("results")?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      });
+      scheduleScrollToDiscoverResults();
     }
   }
 

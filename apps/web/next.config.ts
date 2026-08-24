@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   transpilePackages: ["mapbox-gl", "@solviax/i18n", "@solviax/logger"],
   // Pino uses worker threads / thread-stream — keep them external to the bundle.
   serverExternalPackages: ["pino", "pino-pretty", "thread-stream"],

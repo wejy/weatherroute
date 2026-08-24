@@ -520,7 +520,7 @@ const fi = {
     eyebrow: "Suunnittele matkasi sään mukaan",
     headline: "Löydä paras sää seuraavaa reissuasi varten",
     lead:
-      "Solviax.app auttaa löytämään, missä on poutaisempi sää — ja suunnittelemaan reitin sään perusteella. Ennusteet ulottuvat jopa 16 päivään, joten voit varmistaa tulevan viikonlopun tai muun matkustusajankohdan hyvän sään aikana.",
+      "Solviax.app auttaa löytämään, missä on haluamasilainen sää — ja suunnittelemaan reitin sään perusteella. Ennusteet ulottuvat jopa 16 päivään, joten voit varmistaa tulevan viikonlopun tai muun matkustusajankohdan hyvän sään aikana.",
     purposeTitle: "Miten Solviax.app toimii",
     purposeBody:
       "Arvotamme lähialueen kohteet sääennusteen mukaan valitsemillesi päiville, jotta pystyt nauttimaan paremman sään aikana enemmän.",
@@ -535,15 +535,15 @@ const fi = {
       },
       ranking: {
         title: "Sään mukaan arvotetut kohteet",
-        body: "Kerro mitä etsit — aurinkoa, kuivaa tietä, leutoa säätä — ja nostamme esiin päiviisi sopivat paikat, ei vain lähintä kaupunkia.",
+        body: "Kerro mitä etsit — aurinkoa, kuivaa tietä, leutoa säätä — ja nostamme esiin päiviisi sopivat paikat, joista voit valita haluamasi.",
       },
       corridor: {
         title: "Sää reitin varrella",
-        body: "Näet reitin lämpötilan, sateen todennäköisyyden, mahdolliset sademääräennusteet ja olosuhteet ajon tai pyöräilyn varrella, sekä Pro-lähtöajan (Alku–Loppu) fiksummille ehdotuksille.",
+        body: "Näet reitin lämpötilan, sateen todennäköisyyden, mahdolliset sademääräennusteet ja olosuhteet ajon tai pyöräilyn varrella. Pro-tilauksella voit asettaa lähtöajan (Alku–Loppu) fiksummille ehdotuksille.",
       },
       trust: {
         title: "Nopea ja tietoturvallinen",
-        body: "Palvelussa on priorisoitu tietoturvallisuutta. Käyttöön tarvitset vain sähköpostin (ei salasanaa). Tallennetut reitit pysyvät tililläsi. Maksut hoitaa Stripe. Emme tallenna luottokorttitietoja.",
+        body: "Palvelu on tehty tietoturva edellä. Käyttönotto on erittäin nopeaa — tarvitset vain sähköpostin (ei salasanaa). Tallennetut reitit pysyvät tililläsi. Maksut hoitaa Stripe. Emme tallenna luottokorttitietoja.",
       },
     },
     featuresTitle: "Mitä voit tehdä",
@@ -559,7 +559,7 @@ const fi = {
         body: "Hae paikkoja lähialueeltasi ja anna Solviax.appin nostaa parhaat paikat esiin haluamillesi päiville.",
       },
       goals: {
-        title: "Tavoitteet jotka sopivat reissuun",
+        title: "Minälaisen paikan haluat?",
         body: "Paras paikka auringolle, kuivalle säälle, leudolle lämpötilalle — sekä sopivuusvinkit ulkoiluun.",
       },
       map: {
@@ -572,7 +572,7 @@ const fi = {
       },
       routes: {
         title: "Reittivertailut",
-        body: "Vertaa vaihtoehtoja, kulkutapoja (auto ja polkupyörä) ja aseta lähtöaikasi (Pro) — näet sään matkan varrelta.",
+        body: "Vertaa vaihtoehtoja, kulkutapoja (auto tai moottoripyörä ja polkupyörä) ja aseta lähtöaikasi (Pro) — näet sään matkan varrelta.",
       },
       save: {
         title: "Reittien tallennus",
@@ -592,7 +592,7 @@ const fi = {
       },
       fast: {
         title: "Rakennettu nopeisiin hakuihin",
-        body: "Sää- ja karttadata on erittäin monimutkaista. Me olemme ottaneet sen huomioon. Paikkasuositukset ja reittitarkistukset pysyvät nopeina ja tehokkaina.",
+        body: "Sää- ja karttadata on erittäin monimutkaista. Me olemme ottaneet sen huomioon. Paikkasuositukset ja reititykset pysyvät nopeina ja tehokkaina.",
       },
       secure: {
         title: "Tietoturva mukana suunnittelussa",
@@ -712,7 +712,7 @@ const fi = {
   footer: {
     brand: "Solviax.app",
     tagline1: "Suunnittele matkasi sään mukaan",
-    tagline2: "Löydä aurinkoiset paikat ympärilläsi",
+    tagline2: "Karttapohjainen matkasuunnittelu sääennusteilla",
     linksLabel: "Sivusto",
     cookieSettings: "Evästeasetukset",
     copyright: "© Whitefield Ltd, Oulu Finland",

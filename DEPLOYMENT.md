@@ -32,7 +32,11 @@ Internet
 
 ---
 
+
+
 ## Server software
+
+
 
 ### Minimum (Ubuntu 24.04 LTS example)
 
@@ -89,6 +93,8 @@ Managed Postgres (UpCloud / Neon / RDS / etc.) is preferred over installing Post
 
 ---
 
+
+
 ## Environment variables
 
 Put secrets in `apps/web/.env.production` on the server. Next.js loads that file automatically when `NODE_ENV=production`. **Never** commit secrets.
@@ -98,6 +104,8 @@ Restrict permissions after editing:
 ```bash
 chmod 600 /var/www/solviax/apps/web/.env.production
 ```
+
+
 
 ### Required in production
 
@@ -120,6 +128,8 @@ chmod 600 /var/www/solviax/apps/web/.env.production
 | `OPEN_METEO_API_KEY`       | Open-Meteo **commercial** API key — switches weather to `https://customer-api.open-meteo.com` |
 
 
+
+
 ### Required for rate limits (production)
 
 Without these, production **deny-alls** rate-limited routes (no in-memory fallback).
@@ -129,6 +139,8 @@ Without these, production **deny-alls** rate-limited routes (no in-memory fallba
 | -------------------------- | -------------------------------------------------------------------------------------- |
 | `UPSTASH_REDIS_REST_URL`   | From Upstash console → Redis → REST API (see [Upstash Redis](#upstash-redis-required)) |
 | `UPSTASH_REDIS_REST_TOKEN` | Pair with URL above                                                                    |
+
+
 
 
 ### Strongly recommended
@@ -141,6 +153,8 @@ Without these, production **deny-alls** rate-limited routes (no in-memory fallba
 | `EMAIL_FROM`              | Verified sender, e.g. `Solviax.app <noreply@solviax.app>` (Mailgun/Resend domain) |
 | `CRON_ENABLED`            | `true` in production (weather cache warm at 02:00/10:00/18:00 UTC)                |
 | `CRON_WEATHER_WARM_LIMIT` | Max places per warm run (default `400`; usage + Nordic/Baltic/DE + global fill)   |
+
+
 
 
 ### Stripe billing (required for `/pro` checkout)
@@ -183,6 +197,8 @@ See **[Stripe (production)](#stripe-production)** below for Dashboard steps. Pro
 | `NEXT_PUBLIC_GA_MEASUREMENT_ID`  | *(unset)*                     | GA4 id `G-…` — loads **only after** cookie consent (see [docs/COOKIE_CONSENT_PLAN.md](./docs/COOKIE_CONSENT_PLAN.md)) |
 | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | *(unset)*                     | reCAPTCHA v3 site key (login OTP)                                                                                     |
 | `RECAPTCHA_SECRET_KEY`           | *(unset)*                     | reCAPTCHA secret (server verify)                                                                                      |
+
+
 
 
 ### Example production env file
@@ -239,7 +255,11 @@ openssl rand -base64 48   # AUTH_SECRET
 
 ---
 
+
+
 ## Deploy steps
+
+
 
 ### 1. Clone and install
 
@@ -252,6 +272,8 @@ cd solviax
 npm install
 ```
 
+
+
 ### 2. Configure env
 
 ```bash
@@ -259,6 +281,8 @@ cp apps/web/.env.example apps/web/.env.production
 # edit apps/web/.env.production with production values
 chmod 600 apps/web/.env.production
 ```
+
+
 
 ### 3. Database migrate (+ optional seed)
 
@@ -275,12 +299,16 @@ npm run db:seed -w @solviax/web
 # npm run db:seed:geonames -w @solviax/web
 ```
 
+
+
 ### 4. Build
 
 ```bash
 cd /var/www/solviax
 npm run build -w @solviax/web
 ```
+
+
 
 ### 5. Process manager (PM2)
 
@@ -343,6 +371,8 @@ pm2 set pm2-logrotate:compress true
 pm2 set pm2-logrotate:workerInterval 3600
 ```
 
+
+
 #### Start and survive reboots
 
 ```bash
@@ -379,6 +409,8 @@ curl -sI http://127.0.0.1:3004 | head
 
 ---
 
+
+
 ## Automatic security updates
 
 On Ubuntu, use **unattended-upgrades** so security patches land without waiting for a manual SSH session. Configure a controlled reboot window so kernel updates apply safely; PM2 + nginx come back via systemd.
@@ -404,6 +436,8 @@ Expected `20auto-upgrades`:
 APT::Periodic::Update-Package-Lists "1";
 APT::Periodic::Unattended-Upgrade "1";
 ```
+
+
 
 ### 2. Security-only + automatic reboot
 
@@ -436,6 +470,8 @@ sudo timedatectl set-timezone Europe/Helsinki
 timedatectl
 ```
 
+
+
 ### 3. What happens after a reboot
 
 
@@ -457,6 +493,8 @@ pm2 status
 curl -sI https://solviax.app | head
 ```
 
+
+
 ### 4. Optional dry-run
 
 ```bash
@@ -466,6 +504,8 @@ sudo unattended-upgrade --dry-run --debug 2>&1 | tail -40
 Do **not** enable fully automatic upgrades of Node.js from NodeSource without testing — stick to Ubuntu **security** origins for the OS, and bump Node / app deps via your redeploy process.
 
 ---
+
+
 
 ## PostgreSQL & pooling
 
@@ -490,6 +530,8 @@ Tips:
 - Ensure only **one** PM2 process talks to the DB while cron runs in-process (`instances: 1`).
 
 ---
+
+
 
 ## Reverse proxy (nginx)
 
@@ -640,6 +682,8 @@ curl -sI --http2 https://solviax.app | head -20
 # Expect: HTTP/2 200  (or 3xx), and HSTS / nosniff
 ```
 
+
+
 ### Cloudflare (optional)
 
 If Cloudflare sits in front of nginx, enable **Authenticated Origin Pulls** or at least restrict origin to CF IPs, and use nginx `real_ip` so rate limits see the visitor IP:
@@ -656,6 +700,8 @@ Then set `proxy_set_header X-Forwarded-For $remote_addr;` as above (after `real_
 
 ---
 
+
+
 ## Upstash Redis (required)
 
 Production rate limiting uses **Upstash Redis REST** (`UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`). There is **no** in-memory fallback when `NODE_ENV=production`: missing or unreachable Upstash causes limited routes to **deny** (fail-closed).
@@ -671,6 +717,8 @@ You do **not** install Redis on the VPS. The app talks to Upstash over HTTPS RES
 5. Copy:
   - `UPSTASH_REDIS_REST_URL` — looks like `https://<id>.upstash.io`
   - `UPSTASH_REDIS_REST_TOKEN` — long secret token
+
+
 
 ### 2. Put credentials in production env
 
@@ -702,6 +750,8 @@ If Upstash env vars are missing in production, expect rate-limited endpoints to 
 
 ---
 
+
+
 ## External services checklist
 
 1. **Postgres** — create DB + user; run migrations; prefer TLS (`sslmode=require`).
@@ -713,6 +763,8 @@ If Upstash env vars are missing in production, expect rate-limited endpoints to 
 7. **DNS** — point domain at VPS; wait for propagation before TLS.
 
 ---
+
+
 
 ## Stripe (production)
 
@@ -756,10 +808,10 @@ Reverse proxy already forwards `/` to Next.js — no extra nginx location is req
 
 Dashboard → **Settings → Billing → Customer portal**:
 
-- [ ] Enable portal for customers
-- [ ] **Cancel subscriptions** ON
-- [ ] **Invoice history** / download invoices ON
-- [ ] Return URL / branding: `https://solviax.app/pro` (app opens portal from Pro & Settings → **Manage billing**)
+- [x] Enable portal for customers
+- [x] **Cancel subscriptions** ON
+- [x] **Invoice history** / download invoices ON
+- [x] Return URL / branding: `https://solviax.app/pro` (app opens portal from Pro & Settings → **Manage billing**)
 
 Users with a `stripe_customer_id` (one-time or monthly) can open the portal for cancel + receipts.
 
@@ -776,6 +828,8 @@ set -a && source apps/web/.env.production && set +a
 npm run db:migrate -w @solviax/web
 ```
 
+
+
 ### 6. Smoke-test payments
 
 1. Use a live card only after you are ready to charge — prefer Stripe **test mode** on staging first.
@@ -785,6 +839,8 @@ npm run db:migrate -w @solviax/web
 5. Cancel Monthly via Customer Portal → user should fall back to One-time if they bought it earlier, else Free.
 
 ---
+
+
 
 ## Mobile (Expo)
 
@@ -800,6 +856,8 @@ Rebuild the Expo app after changing this. CORS must allow the origins your mobil
 Full mobile release process (EAS, stores, token rules): **[EXPO_DEPLOYMENT.md](./EXPO_DEPLOYMENT.md)**.
 
 ---
+
+
 
 ## Updates (redeploy)
 
@@ -823,6 +881,8 @@ pm2 save
 
 ---
 
+
+
 ## Production checklist (security go-live)
 
 Config and edge requirements before public traffic. (Smoke tests after deploy: [Post-deploy smoke checklist](#post-deploy-smoke-checklist).)
@@ -831,6 +891,8 @@ Config and edge requirements before public traffic. (Smoke tests after deploy: [
 
 - [x] Reverse proxy **replaces** client IP headers (do not append untrusted `X-Forwarded-For`). nginx: `proxy_set_header X-Forwarded-For $remote_addr;` (+ `X-Real-IP` / Cloudflare `real_ip` as documented above).
 - [x] Confirm spoofing fails: request with forged `X-Forwarded-For` still rate-limits on the real edge IP.
+
+
 
 ### Config
 
@@ -847,12 +909,16 @@ Config and edge requirements before public traffic. (Smoke tests after deploy: [
 - [ ] Mobile store / TestFlight builds: `EXPO_PUBLIC_API_URL=https://solviax.app` (HTTPS only)
 - [ ] Smoke: OTP email · checkout One-time / Monthly / Yearly · webhook updates `subscriptions.plan`
 
+
+
 ### Accessibility (light theme)
 
 - [ ] Light primary token is AA-capable for both CTA fill (`text-on-primary`) and `text-primary` links (see `globals.css` light `--primary`)
 - [ ] Do **not** claim WCAG 2.2 AA until contrast is verified in the deployed theme (axe / manual)
 
 ---
+
+
 
 ## Post-deploy smoke checklist
 
@@ -875,6 +941,8 @@ Config and edge requirements before public traffic. (Smoke tests after deploy: [
 
 ---
 
+
+
 ## Security notes (ops)
 
 - Prefer **managed Postgres**; do not expose Postgres port publicly. **PgBouncer not required** for one PM2 instance.
@@ -892,6 +960,8 @@ Config and edge requirements before public traffic. (Smoke tests after deploy: [
 - OTP verify may return a session JWT in JSON for mobile — avoid logging response bodies.
 
 ---
+
+
 
 ## What is *not* covered yet
 
