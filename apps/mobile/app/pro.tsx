@@ -216,13 +216,22 @@ export default function ProMarketingScreen() {
         {showStatus ? (
           <View style={styles.statusCard}>
             <Text style={styles.statusEyebrow}>{t("pro.statusTitle")}</Text>
-            <Text style={styles.statusTitle}>
-              {isPro
-                ? cancelAtPeriodEnd
-                  ? t("pro.statusCanceling")
-                  : t("pro.statusActive")
-                : t("pro.currentPlan", { plan: planLabel })}
-            </Text>
+            <View style={styles.statusTitleRow}>
+              <Text style={styles.statusTitle}>
+                {isPro
+                  ? cancelAtPeriodEnd
+                    ? t("pro.statusCanceling")
+                    : t("pro.statusActive")
+                  : t("pro.currentPlan", { plan: planLabel })}
+              </Text>
+              {isPro ? (
+                <View style={styles.activeBadge}>
+                  <Text style={styles.activeBadgeText}>
+                    {t("settings.activeBadge")}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
             {isPro ? (
               <Text style={styles.currentPlan}>
                 {t("pro.currentPlan", { plan: planLabel })}
@@ -535,6 +544,28 @@ function createStyles(colors: AppColors) {
     fontSize: 17,
     fontWeight: "800",
     color: colors.onSurface,
+    flexShrink: 1,
+  },
+  statusTitleRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+  },
+  activeBadge: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(11, 122, 74, 0.35)",
+    backgroundColor: "rgba(11, 122, 74, 0.15)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  activeBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    color: colors.primary,
   },
   statusLine: {
     fontSize: 13,
@@ -711,7 +742,11 @@ function createStyles(colors: AppColors) {
     justifyContent: "center",
     marginTop: 4,
   },
-  secondaryText: { color: colors.onSurfaceVariant, fontWeight: "700" },
+  secondaryText: {
+    color: colors.onSurfaceVariant,
+    fontWeight: "700",
+    textAlign: "center",
+  },
   primaryBtn: {
     minHeight: 44,
     borderRadius: 12,
@@ -720,6 +755,10 @@ function createStyles(colors: AppColors) {
     justifyContent: "center",
     marginTop: 4,
   },
-  primaryText: { color: colors.onPrimary, fontWeight: "700" },
+  primaryText: {
+    color: colors.onPrimary,
+    fontWeight: "700",
+    textAlign: "center",
+  },
 });
 }

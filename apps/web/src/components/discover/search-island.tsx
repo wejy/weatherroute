@@ -503,7 +503,7 @@ export function DiscoverSearch({
       <div
         className={cn(
           fieldClass,
-          !stack && "max-w-[11rem] flex-[0.85]",
+          !stack && "w-full lg:max-w-[11rem] lg:flex-[0.85]",
           !stack &&
             !showGoalField &&
             "rounded-b-2xl lg:rounded-r-2xl lg:rounded-bl-none lg:border-r-0",

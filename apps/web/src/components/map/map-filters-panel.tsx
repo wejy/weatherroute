@@ -156,7 +156,7 @@ export function MapFloatingFilters({
         inert={!open ? true : undefined}
         className={cn(
           "pointer-events-auto z-40 flex flex-col overflow-hidden border border-outline-variant/25 bg-surface/98 shadow-[0px_10px_30px_rgba(0,0,0,0.16)] backdrop-blur-xl",
-          "fixed inset-x-0 bottom-[4.75rem] max-h-[min(68vh,28rem)] w-full rounded-t-2xl border-b-0",
+          "fixed inset-x-0 bottom-[var(--map-filters-sheet-offset)] max-h-[min(calc(100dvh-var(--map-filters-sheet-offset)-3.5rem),36rem)] w-full rounded-t-2xl border-b-0",
           "lg:relative lg:inset-auto lg:bottom-auto lg:max-h-[min(78vh,40rem)] lg:w-[min(100%,22.5rem)] lg:rounded-2xl lg:border-b lg:shadow-[0px_10px_30px_rgba(0,0,0,0.12)]",
           !open && "hidden",
           open && className,

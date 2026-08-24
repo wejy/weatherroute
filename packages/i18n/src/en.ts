@@ -398,6 +398,7 @@ const en = {
     notSignedIn: "You’re not signed in.",
     tierFree: "Plan: Free",
     tierPro: "Plan: Pro",
+    activeBadge: "Active",
     discoverTitle: "Discover results",
     discoverHint:
       "How many destinations to show after ranking. Higher values fetch more weather data and may load a bit slower.",
@@ -832,7 +833,7 @@ const en = {
     ctaSignIn: "Sign in to purchase",
     buyOneTime: "Buy One-time · €1.99",
     buyMonthly: "Subscribe Monthly · €2.99",
-    buyYearly: "Subscribe Yearly · €30",
+    buyYearly: "Subscribe Yearly ·\n€30",
     manageBilling: "Manage billing",
     manageBillingCanceling: "Manage or resume subscription",
     manageBillingHint:

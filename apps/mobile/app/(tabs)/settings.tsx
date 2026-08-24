@@ -177,7 +177,16 @@ export default function SettingsScreen() {
           <>
             <Text style={styles.cardTitle}>{user.displayName}</Text>
             <Text style={styles.cardBody}>{user.email}</Text>
-            <Text style={styles.tier}>{planLabel}</Text>
+            <View style={styles.tierRow}>
+              <Text style={styles.tier}>{planLabel}</Text>
+              {isPro ? (
+                <View style={styles.activeBadge}>
+                  <Text style={styles.activeBadgeText}>
+                    {t("settings.activeBadge")}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
             <Pressable
               onPress={() => void onSignOut()}
               disabled={signingOut}
@@ -258,7 +267,16 @@ export default function SettingsScreen() {
         <Text style={styles.cardBody}>{t("settings.subscriptionBody")}</Text>
         {user ? (
           <>
-            <Text style={styles.tier}>{planLabel}</Text>
+            <View style={styles.tierRow}>
+              <Text style={styles.tier}>{planLabel}</Text>
+              {isPro ? (
+                <View style={styles.activeBadge}>
+                  <Text style={styles.activeBadgeText}>
+                    {t("settings.activeBadge")}
+                  </Text>
+                </View>
+              ) : null}
+            </View>
             {isPro && startedLabel ? (
               <Text style={styles.hint}>
                 {t("pro.startedOn", { date: startedLabel })}
@@ -384,7 +402,28 @@ function createStyles(colors: AppColors) {
   },
   cardTitle: { fontSize: 16, fontWeight: "700", color: colors.primary },
   cardBody: { fontSize: 14, color: colors.onSurface },
+  tierRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: 8,
+  },
   tier: { fontSize: 13, color: colors.onSurfaceVariant, fontWeight: "600" },
+  activeBadge: {
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(11, 122, 74, 0.35)",
+    backgroundColor: "rgba(11, 122, 74, 0.15)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  activeBadgeText: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+    color: colors.primary,
+  },
   hint: { fontSize: 13, color: colors.onSurfaceVariant },
   switchRow: {
     flexDirection: "row",

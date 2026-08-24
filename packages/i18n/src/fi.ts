@@ -403,6 +403,7 @@ const fi = {
     notSignedIn: "Et ole kirjautunut sisään.",
     tierFree: "Tilaus: Ilmainen",
     tierPro: "Tilaus: Pro",
+    activeBadge: "Aktiivinen",
     discoverTitle: "Löydä-tulokset",
     discoverHint:
       "Kuinka monta kohdetta näytetään Solviax.appin rankingin jälkeen. Isompi määrä hakee enemmän säätietoja ja voi olla hieman hitaampi.",
@@ -837,7 +838,7 @@ const fi = {
     ctaSignIn: "Kirjaudu tilataksesi",
     buyOneTime: "Osta Kerta · 1,99 €",
     buyMonthly: "Tilaa Jatkuva · 2,99 €",
-    buyYearly: "Tilaa Vuosi · 30 €",
+    buyYearly: "Tilaa Vuosi ·\n30 €",
     manageBilling: "Hallitse tilausta",
     manageBillingCanceling: "Hallitse tai jatka tilausta",
     manageBillingHint:

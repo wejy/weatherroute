@@ -12,6 +12,7 @@ import { getMapboxPublicToken, getMapboxServerToken } from "@/lib/env";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import { DiscoverQueryLink } from "@/components/discover/discover-query-link";
 import { destinationHref, routesHref } from "@/lib/discover-query";
 import { MapNearbyCard } from "@/components/map/map-nearby-card";
 import { MapNearbyHeading } from "@/components/map/map-nearby-heading";
@@ -185,7 +186,14 @@ export default async function MapPage({
 
       <header className="fixed top-0 left-0 z-50 flex h-14 w-full items-center justify-between bg-surface/85 px-4 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl lg:hidden">
         <div className="min-w-0">
-          <p className="truncate text-xl font-bold text-primary">{t("brand")}</p>
+          <Suspense fallback={null}>
+            <DiscoverQueryLink
+              href="/"
+              className="block truncate text-xl font-bold text-primary no-underline hover:cursor-pointer"
+            >
+              {t("brand")}
+            </DiscoverQueryLink>
+          </Suspense>
           <h1 className="sr-only">{t("map.nearbyIdeal")}</h1>
         </div>
         <div className="flex items-center gap-2">
@@ -204,7 +212,7 @@ export default async function MapPage({
 
       <main
         id="main-content"
-        className="relative z-0 h-full w-full pt-14 pb-[4.5rem] lg:pt-0 lg:pb-0 lg:pl-96"
+        className="relative z-0 h-full w-full pt-14 pb-[var(--bottom-nav-offset)] lg:pt-0 lg:pb-0 lg:pl-96"
       >
         <DiscoverMap
           markers={hasOrigin ? result.mapMarkers : []}
@@ -235,7 +243,7 @@ export default async function MapPage({
         </div>
 
         {gate.paywalled ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-[4.75rem] z-20 px-3 lg:hidden">
+          <div className="pointer-events-none absolute inset-x-0 bottom-[calc(var(--bottom-nav-offset)+var(--map-route-cta-gap))] z-20 px-3 lg:hidden">
             <div className="pointer-events-auto max-h-[50vh] overflow-y-auto rounded-2xl border border-outline-variant/25 bg-surface/95 p-3 shadow-lg backdrop-blur-xl">
               <SoftPaywall
                 quota={
@@ -255,7 +263,7 @@ export default async function MapPage({
         ) : null}
 
         {hasOrigin && !gate.paywalled ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-[4.75rem] z-20 px-3 lg:hidden">
+          <div className="pointer-events-none absolute inset-x-0 bottom-[calc(var(--bottom-nav-offset)+var(--map-route-cta-gap))] z-20 px-3 lg:hidden">
             <Link
               href={routeHref}
               className="pointer-events-auto flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-accent px-4 text-base font-semibold text-on-accent shadow-[0px_8px_24px_rgba(0,0,0,0.18)] transition-colors hover:bg-accent-container"
@@ -269,7 +277,7 @@ export default async function MapPage({
         ) : null}
 
         {!hasOrigin && !gate.paywalled ? (
-          <div className="pointer-events-none absolute inset-x-0 bottom-[5.5rem] z-20 px-4 lg:hidden">
+          <div className="pointer-events-none absolute inset-x-0 bottom-[calc(var(--bottom-nav-offset)+var(--map-route-cta-gap)+0.75rem)] z-20 px-4 lg:hidden">
             <p className="pointer-events-auto rounded-xl border border-outline-variant/30 bg-surface/95 px-4 py-3 text-center text-sm text-on-surface-variant shadow-md backdrop-blur-xl">
               {t("map.detecting")}
               <span className="mt-1 block text-xs">{t("map.waitingPlaces")}</span>

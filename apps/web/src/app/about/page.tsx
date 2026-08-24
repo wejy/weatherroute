@@ -61,7 +61,7 @@ export default async function AboutPage() {
       <TopNav active="/about" />
       <main
         id="main-content"
-        className="relative mx-auto min-h-screen max-w-4xl overflow-hidden px-margin-mobile pt-24 pb-28 md:px-margin-desktop"
+        className="relative mx-auto min-h-screen w-full min-w-0 max-w-4xl overflow-x-hidden px-margin-mobile pt-24 pb-28 md:px-margin-desktop"
       >
         <div
           aria-hidden="true"
@@ -292,17 +292,49 @@ export default async function AboutPage() {
           <p className="mt-3 max-w-2xl text-sm leading-relaxed text-on-surface-variant md:text-base">
             {t("about.cookiesBody")}
           </p>
-          <div className="mt-6 overflow-x-auto rounded-2xl border border-outline-variant/25 bg-surface-container-lowest">
-            <table className="min-w-full text-left text-sm">
+          {/* Mobile: stacked cards — avoids horizontal page scroll from wide table. */}
+          <ul className="mt-6 space-y-3 md:hidden">
+            {(["necessary", "analytics", "recaptcha"] as const).map((row) => (
+              <li
+                key={row}
+                className="rounded-2xl border border-outline-variant/25 bg-surface-container-lowest p-4"
+              >
+                <p className="font-semibold break-words text-on-surface">
+                  {t(`about.cookiesTable.${row}.name`)}
+                </p>
+                <dl className="mt-3 space-y-2 text-sm">
+                  <div>
+                    <dt className="text-xs font-medium tracking-wide text-on-surface-variant uppercase">
+                      {t("about.cookiesTable.purpose")}
+                    </dt>
+                    <dd className="mt-0.5 break-words text-on-surface-variant">
+                      {t(`about.cookiesTable.${row}.purpose`)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-medium tracking-wide text-on-surface-variant uppercase">
+                      {t("about.cookiesTable.duration")}
+                    </dt>
+                    <dd className="mt-0.5 break-words text-on-surface-variant">
+                      {t(`about.cookiesTable.${row}.duration`)}
+                    </dd>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+
+          <div className="mt-6 hidden overflow-x-auto rounded-2xl border border-outline-variant/25 bg-surface-container-lowest md:block">
+            <table className="w-full min-w-0 table-fixed text-left text-sm">
               <thead>
                 <tr className="border-b border-outline-variant/25 bg-surface-container/50">
-                  <th className="px-4 py-3 font-semibold text-on-surface">
+                  <th className="w-[28%] px-4 py-3 font-semibold break-words text-on-surface">
                     {t("about.cookiesTable.name")}
                   </th>
-                  <th className="px-4 py-3 font-semibold text-on-surface">
+                  <th className="px-4 py-3 font-semibold break-words text-on-surface">
                     {t("about.cookiesTable.purpose")}
                   </th>
-                  <th className="px-4 py-3 font-semibold text-on-surface">
+                  <th className="w-[22%] px-4 py-3 font-semibold break-words text-on-surface">
                     {t("about.cookiesTable.duration")}
                   </th>
                 </tr>
@@ -311,13 +343,13 @@ export default async function AboutPage() {
                 {(["necessary", "analytics", "recaptcha"] as const).map(
                   (row) => (
                     <tr key={row}>
-                      <td className="px-4 py-3 align-top font-medium text-on-surface">
+                      <td className="px-4 py-3 align-top font-medium break-words text-on-surface">
                         {t(`about.cookiesTable.${row}.name`)}
                       </td>
-                      <td className="px-4 py-3 align-top text-on-surface-variant">
+                      <td className="px-4 py-3 align-top break-words text-on-surface-variant">
                         {t(`about.cookiesTable.${row}.purpose`)}
                       </td>
-                      <td className="px-4 py-3 align-top text-on-surface-variant">
+                      <td className="px-4 py-3 align-top break-words text-on-surface-variant">
                         {t(`about.cookiesTable.${row}.duration`)}
                       </td>
                     </tr>

@@ -17,6 +17,7 @@ import {
   startCheckoutAction,
 } from "@/server/actions/billing";
 import { BillingPortalButton } from "@/components/billing/billing-portal-button";
+import { ActiveSubscriptionBadge } from "@/components/billing/active-subscription-badge";
 import { publicPageMeta } from "@/lib/seo-meta";
 
 export const dynamic = "force-dynamic";
@@ -142,16 +143,21 @@ export default async function ProMarketingPage({
             <p className="text-xs font-semibold uppercase tracking-wide text-primary">
               {t("pro.statusTitle")}
             </p>
-            <h2
-              id="pro-status-heading"
-              className="mt-1 text-lg font-bold text-on-surface"
-            >
-              {isPro
-                ? cancelScheduled
-                  ? t("pro.statusCanceling")
-                  : t("pro.statusActive")
-                : t("pro.currentPlan", { plan: planLabel })}
-            </h2>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <h2
+                id="pro-status-heading"
+                className="text-lg font-bold text-on-surface"
+              >
+                {isPro
+                  ? cancelScheduled
+                    ? t("pro.statusCanceling")
+                    : t("pro.statusActive")
+                  : t("pro.currentPlan", { plan: planLabel })}
+              </h2>
+              {isPro ? (
+                <ActiveSubscriptionBadge label={t("settings.activeBadge")} />
+              ) : null}
+            </div>
             {isPro ? (
               <p className="mt-1 text-sm font-semibold text-on-surface">
                 {t("pro.currentPlan", { plan: planLabel })}
@@ -529,8 +535,8 @@ function CheckoutButton({
   primary?: boolean;
 }) {
   const className = primary
-    ? "inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-on-primary"
-    : "inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-on-surface transition-colors hover:border-primary/40 hover:text-primary";
+    ? "inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-center text-sm font-semibold whitespace-pre-line text-on-primary"
+    : "inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 text-center text-sm font-semibold whitespace-pre-line text-on-surface transition-colors hover:border-primary/40 hover:text-primary";
 
   if (!signedIn) {
     return (

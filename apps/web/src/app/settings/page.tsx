@@ -14,6 +14,7 @@ import {
   settingsSignOutAction,
 } from "@/server/actions/settings";
 import { BillingPortalButton } from "@/components/billing/billing-portal-button";
+import { ActiveSubscriptionBadge } from "@/components/billing/active-subscription-badge";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import {
@@ -113,9 +114,12 @@ export default async function SettingsPage({
                 <div>
                   <p className="font-medium text-on-surface">{user.displayName}</p>
                   <p className="text-sm text-on-surface-variant">{user.email}</p>
-                  <p className="mt-1 text-xs text-on-surface-variant">
-                    {planLabel}
-                  </p>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <p className="m-0 text-xs text-on-surface-variant">{planLabel}</p>
+                    {isPro ? (
+                      <ActiveSubscriptionBadge label={t("settings.activeBadge")} />
+                    ) : null}
+                  </div>
                   {isAdmin ? (
                     <p className="mt-3">
                       <Link
@@ -281,14 +285,17 @@ export default async function SettingsPage({
             </p>
             {user && billing.tier === "pro" ? (
               <ul className="mb-4 space-y-1 text-sm text-on-surface">
-                <li className="font-semibold">
-                  {billing.plan === "one_time"
-                    ? t("settings.planOneTime")
-                    : billing.plan === "monthly"
-                      ? t("settings.planMonthly")
-                      : billing.plan === "yearly"
-                        ? t("settings.planYearly")
-                        : t("pro.statusActive")}
+                <li className="flex flex-wrap items-center gap-2 font-semibold">
+                  <span>
+                    {billing.plan === "one_time"
+                      ? t("settings.planOneTime")
+                      : billing.plan === "monthly"
+                        ? t("settings.planMonthly")
+                        : billing.plan === "yearly"
+                          ? t("settings.planYearly")
+                          : t("pro.statusActive")}
+                  </span>
+                  <ActiveSubscriptionBadge label={t("settings.activeBadge")} />
                 </li>
                 {formatIsoDateForLocale(
                   billing.proSince ?? billing.oneTimePaidAt,

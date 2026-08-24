@@ -13,6 +13,7 @@ import { getMapboxPublicToken } from "@/lib/env";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
+import { DiscoverQueryLink } from "@/components/discover/discover-query-link";
 import { saveTripAction } from "@/server/actions/trips";
 import { getCurrentUser } from "@/server/auth/session";
 import {
@@ -235,7 +236,14 @@ export default async function RoutesPage({
       >
         <SideNav active="/routes" />
         <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between bg-surface/80 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl md:hidden">
-          <p className="text-2xl font-bold text-primary">{t("brand")}</p>
+          <Suspense fallback={null}>
+            <DiscoverQueryLink
+              href="/"
+              className="text-2xl font-bold text-primary no-underline hover:cursor-pointer"
+            >
+              {t("brand")}
+            </DiscoverQueryLink>
+          </Suspense>
           <div className="flex items-center gap-3">
             <LanguageSwitcher />
             <Link
@@ -302,7 +310,14 @@ export default async function RoutesPage({
       >
         <SideNav active="/routes" />
         <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between bg-surface/80 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl md:hidden">
-          <p className="text-2xl font-bold text-primary">{t("brand")}</p>
+          <Suspense fallback={null}>
+            <DiscoverQueryLink
+              href="/"
+              className="text-2xl font-bold text-primary no-underline hover:cursor-pointer"
+            >
+              {t("brand")}
+            </DiscoverQueryLink>
+          </Suspense>
           <div className="flex items-center gap-3">
             <LanguageSwitcher />
             <Link
@@ -408,7 +423,14 @@ export default async function RoutesPage({
       <SideNav active="/routes" />
 
       <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between bg-surface/80 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl md:hidden">
-        <p className="text-2xl font-bold text-primary">{t("brand")}</p>
+        <Suspense fallback={null}>
+          <DiscoverQueryLink
+            href="/"
+            className="text-2xl font-bold text-primary no-underline hover:cursor-pointer"
+          >
+            {t("brand")}
+          </DiscoverQueryLink>
+        </Suspense>
         <div className="flex items-center gap-3">
           <LanguageSwitcher />
           <Link

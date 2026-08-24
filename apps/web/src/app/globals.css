@@ -117,6 +117,23 @@
   color-scheme: dark;
 }
 
+/*
+ * BottomNav height ≈ pt-2 + min-h-12 + pb-[max(1rem,safe-area)].
+ * Use for map sheet / CTAs so chrome clears the tab bar on tall phones.
+ *
+ * Filter sheet also clears the floating “Generate route” bar (min-h-12 + gap).
+ */
+:root {
+  --bottom-nav-offset: calc(
+    3.5rem + max(1rem, env(safe-area-inset-bottom, 0px))
+  );
+  /* Extra lift so the route CTA clears the tab bar (~12px). */
+  --map-route-cta-gap: 0.75rem;
+  --map-filters-sheet-offset: calc(
+    var(--bottom-nav-offset) + var(--map-route-cta-gap) + 3.75rem
+  );
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

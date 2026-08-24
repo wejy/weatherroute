@@ -4,6 +4,7 @@ import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { getCurrentUser } from "@/server/auth/session";
 import { getBillingEntitlement } from "@/server/dal/subscriptions";
+import { DiscoverQueryLink } from "@/components/discover/discover-query-link";
 import {
   SideNavMenu,
   type SideNavMenuItem,
@@ -75,6 +76,8 @@ export async function SideNav({
     },
   ];
 
+  const brandLabel = subtitle ?? t("brand");
+
   return (
     <nav
       data-testid="map-side-nav"
@@ -82,14 +85,20 @@ export async function SideNav({
       aria-label={t("nav.sideTripPlanner")}
     >
       <div className="flex shrink-0 items-center gap-3 border-b border-surface-variant px-4 py-3.5">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-container/20 text-primary">
-          <span
-            className="material-symbols-outlined fill-icon text-2xl"
-            aria-hidden="true"
+        <Suspense fallback={null}>
+          <DiscoverQueryLink
+            href="/"
+            aria-label={brandLabel}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-container/20 text-primary hover:cursor-pointer"
           >
-            partly_cloudy_day
-          </span>
-        </div>
+            <span
+              className="material-symbols-outlined fill-icon text-2xl"
+              aria-hidden="true"
+            >
+              partly_cloudy_day
+            </span>
+          </DiscoverQueryLink>
+        </Suspense>
         <div className="min-w-0">
           <p
             className={cn(
@@ -99,9 +108,14 @@ export async function SideNav({
           >
             {title ?? t("nav.sideTripPlanner")}
           </p>
-          <p className="m-0 truncate text-xs text-on-surface-variant">
-            {subtitle ?? t("brand")}
-          </p>
+          <Suspense fallback={null}>
+            <DiscoverQueryLink
+              href="/"
+              className="m-0 block truncate text-xs text-on-surface-variant no-underline hover:cursor-pointer"
+            >
+              {brandLabel}
+            </DiscoverQueryLink>
+          </Suspense>
         </div>
       </div>
 
