@@ -3,7 +3,7 @@
  * never a contiguous `user@host` string in source.
  */
 export function resolveContactEmail(): string {
-  const local = [105, 110, 102, 111];
+  const local = [104, 101, 108, 108, 111];
   const host = [115, 111, 108, 118, 105, 97, 120, 46, 97, 112, 112];
   return (
     String.fromCharCode(...local) +
