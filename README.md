@@ -36,6 +36,28 @@ Confirm `DATABASE_URL` in `apps/web/.env.local` matches Docker defaults:
 
 For a physical phone, set `EXPO_PUBLIC_API_URL` in `apps/mobile/.env` to your machine’s LAN IP (e.g. `http://192.168.1.10:3004`).
 
+## E2E (Playwright)
+
+Smoke tests live in `apps/web/e2e/`. They spin a **mocked** Next server on port **3100** (`USE_MOCKS=true`) — stop any other Next process in this repo first (Next keeps a per-directory dev lock; a running `:3004` will block e2e).
+
+```bash
+# Once per machine / CI image
+cd apps/web && npx playwright install chromium
+
+# From repo root
+npm run test:e2e
+```
+
+Guest vs signed-in header checks use the demo cookie (`wt_session=demo`) only while mocks are on — not real OTP/Mailgun.
+
+Map basemap locale tests skip unless `NEXT_PUBLIC_MAPBOX_TOKEN` or `PLAYWRIGHT_MAPBOX_TOKEN` is a `pk.` token.
+
+Against an already-running app (no mock injection from config):
+
+```bash
+PLAYWRIGHT_SKIP_WEBSERVER=1 PLAYWRIGHT_BASE_URL=http://127.0.0.1:3004 npm run test:e2e
+```
+
 ## Local database
 
 Docker Compose runs Postgres 16 on host port **5433** (user / password / db: `solviax`). Commands below are from the **repo root**.

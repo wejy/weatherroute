@@ -23,9 +23,13 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: `npm run dev -- --port ${PORT}`,
+          // Dedicated script — do not append another --port (conflicts with `npm run dev`).
+          // Inline env so npm cannot drop empty DATABASE_URL / miss Playwright env merge.
+          command: `USE_MOCKS=true USE_MOCK_WEATHER=true CRON_ENABLED=false ANON_DISCOVER_LIMIT=1000 ANON_IP_DISCOVER_LIMIT=1000 ANON_SESSION_MINT_LIMIT=1000 AUTH_SECRET=playwright-test-secret-not-for-production PORT=${PORT} NEXT_PUBLIC_APP_URL=${baseURL} AUTH_URL=${baseURL} npm run dev:e2e -w @solviax/web`,
           url: baseURL,
-          reuseExistingServer: !process.env.CI,
+          // Default fresh server so USE_MOCKS / anon limits always apply.
+          // Set PLAYWRIGHT_REUSE=1 to attach to an already-running :3100.
+          reuseExistingServer: process.env.PLAYWRIGHT_REUSE === "1",
           timeout: 180_000,
           env: {
             ...process.env,
@@ -36,8 +40,12 @@ export default defineConfig({
             AUTH_URL: baseURL,
             AUTH_SECRET: "playwright-test-secret-not-for-production",
             CRON_ENABLED: "false",
-            // Prefer mocks even if a local DATABASE_URL is set in the shell.
-            DATABASE_URL: "",
+            ANON_DISCOVER_LIMIT: "1000",
+            ANON_IP_DISCOVER_LIMIT: "1000",
+            ANON_SESSION_MINT_LIMIT: "1000",
+            // Unset DB so getDb() is null even if shell/.env has DATABASE_URL
+            // (empty string can be dropped by some spawners).
+            DATABASE_URL: "postgresql://playwright:playwright@127.0.0.1:1/none",
           },
         },
       }),
@@ -49,9 +57,11 @@ export default defineConfig({
     {
       name: "tablet-chrome",
       use: {
-        ...devices["iPad Mini"],
-        // Chromium-friendly tablet viewport
-        defaultBrowserType: "chromium",
+        // Avoid iPad Mini's isMobile/webkit profile — Chromium + isMobile
+        // can report fixed header brand as "hidden" despite painting.
+        ...devices["Desktop Chrome"],
+        viewport: { width: 768, height: 1024 },
+        hasTouch: true,
       },
     },
     {

@@ -1,5 +1,6 @@
 import "server-only";
 
+import { env } from "@/lib/env";
 import { getCurrentUser } from "@/server/auth/session";
 import { resolveUserTier } from "@/server/dal/user-prefs";
 import { getBillingEntitlement } from "@/server/dal/subscriptions";
@@ -135,6 +136,13 @@ export async function gateDiscoverAccess(opts: {
         paywalled: true,
         quota: toPublicQuota(consumed.quota),
       };
+    }
+    // USE_MOCKS / no DB: quota layer reports no_session|no_db — allow UI smoke.
+    if (
+      (consumed.reason === "no_db" || consumed.reason === "no_session") &&
+      env.useMocks
+    ) {
+      return { ok: true, paywalled: false, quota: null };
     }
     if (consumed.reason === "no_session" || consumed.reason === "no_db") {
       return { ok: false, paywalled: true, quota: null };

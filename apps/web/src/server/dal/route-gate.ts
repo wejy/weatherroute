@@ -1,5 +1,6 @@
 import "server-only";
 
+import { env } from "@/lib/env";
 import { getCurrentUser } from "@/server/auth/session";
 import { resolveUserTier } from "@/server/dal/user-prefs";
 import { isAdminUser } from "@/server/dal/roles";
@@ -96,6 +97,12 @@ export async function gateRouteAccess(opts: {
         paywalled: true,
         quota: toPublicQuota(consumed.quota),
       };
+    }
+    if (
+      (consumed.reason === "no_db" || consumed.reason === "no_session") &&
+      env.useMocks
+    ) {
+      return { ok: true, paywalled: false, quota: null };
     }
     if (consumed.reason === "no_session" || consumed.reason === "no_db") {
       return { ok: false, paywalled: true, quota: null };

@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { seedConsentCookie } from "./helpers/consent";
 
 const hasMapbox =
   Boolean(process.env.NEXT_PUBLIC_MAPBOX_TOKEN?.trim().startsWith("pk.")) ||
@@ -6,6 +7,10 @@ const hasMapbox =
 
 test.describe("map basemap locale", () => {
   test.skip(!hasMapbox, "requires NEXT_PUBLIC_MAPBOX_TOKEN=pk.…");
+
+  test.beforeEach(async ({ context, baseURL }) => {
+    await seedConsentCookie(context, baseURL ?? "http://127.0.0.1:3100");
+  });
 
   test("localizes country-label to Finnish when wt_locale=fi", async ({
     page,

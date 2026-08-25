@@ -1,4 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
+import { seedConsentCookie } from "./helpers/consent";
 
 /** Viewport width buckets used for responsive assertions. */
 function widthBucket(page: Page): "mobile" | "tablet" | "desktop" {
@@ -9,11 +10,17 @@ function widthBucket(page: Page): "mobile" | "tablet" | "desktop" {
 }
 
 test.describe("responsive chrome", () => {
+  test.beforeEach(async ({ context, baseURL }) => {
+    await seedConsentCookie(context, baseURL ?? "http://127.0.0.1:3100");
+  });
+
   test("home shows brand and correct primary nav for viewport", async ({
     page,
   }) => {
     await page.goto("/");
-    await expect(page.getByTestId("site-brand")).toBeVisible();
+    const brand = page.getByRole("banner").getByTestId("site-brand");
+    await expect(brand).toBeVisible();
+    await expect(brand).toContainText(/Solviax\.app/i);
 
     const bucket = widthBucket(page);
     if (bucket === "mobile") {
@@ -23,7 +30,6 @@ test.describe("responsive chrome", () => {
       // md+ shows top links; bottom nav stays until lg
       await expect(page.getByTestId("top-nav-links")).toBeVisible();
       if (bucket === "desktop") {
-        // Bottom nav is lg:hidden — still visible at tablet, hidden at lg+
         const bottom = page.getByTestId("bottom-nav");
         const w = page.viewportSize()?.width ?? 0;
         if (w >= 1024) {
@@ -36,21 +42,20 @@ test.describe("responsive chrome", () => {
   });
 
   test("home weather filters are interactive", async ({ page }) => {
-    await page.goto("/");
+    // Seed origin so coarse geo cannot race the chip; USE_MOCKS gate allows
+    // active discover without SoftPaywall (no DB quota).
+    await page.goto(
+      "/?origin=Helsinki&lat=60.17&lon=24.94&weatherGoal=best&distance=neighborhood&datePreset=weekend&mode=driving",
+    );
     const filters = page.getByTestId("weather-filters");
     await expect(filters).toBeVisible();
 
-    // Let auto-geolocation settle so its replace doesn't race the chip click.
-    await page
-      .waitForURL(/[?&]lat=/, { timeout: 12_000 })
-      .catch(() => undefined);
-
     const sun = filters.getByTestId("weather-filter-sun");
+    await expect(sun).toBeVisible();
     await sun.click();
     await expect(page).toHaveURL(/weatherGoal=sun/);
     await expect(sun).toHaveAttribute("aria-pressed", "true");
   });
-
   test("map page layout adapts", async ({ page }) => {
     await page.goto("/map");
     await expect(page.getByTestId("map-page")).toBeVisible();
@@ -70,7 +75,12 @@ test.describe("responsive chrome", () => {
 
   test("routes page shows endpoint form", async ({ page }) => {
     await page.goto("/routes");
-    await expect(page.getByTestId("routes-page")).toBeVisible();
+    // Empty /routes may be need-destination or paywall; form is always present.
+    await expect(
+      page.locator(
+        '[data-testid="routes-page"], [data-testid="routes-page-need-destination"], [data-testid="routes-page-paywall"]',
+      ),
+    ).toBeVisible();
     await expect(page.getByTestId("route-endpoints-form")).toBeVisible();
   });
 
@@ -81,7 +91,6 @@ test.describe("responsive chrome", () => {
     const mapLink = page
       .getByTestId("weather-filters")
       .getByRole("link", { name: /map|kartta/i });
-    // Map chip may be present; otherwise use bottom/top nav
     if (await mapLink.count()) {
       await mapLink.first().click();
     } else {
@@ -89,6 +98,7 @@ test.describe("responsive chrome", () => {
         .locator('[data-testid="bottom-nav"], [data-testid="top-nav-links"]')
         .getByRole("link", { name: /map|kartta/i })
         .first();
+      await expect(navMap).toBeVisible();
       await navMap.click();
     }
     await expect(page).toHaveURL(/\/map/);

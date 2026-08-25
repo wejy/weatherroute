@@ -21,7 +21,7 @@ function NavLinks({
   return (
     <nav
       data-testid="top-nav-links"
-      className="hidden items-center gap-8 md:flex"
+      className="hidden min-w-0 items-center gap-4 overflow-x-auto md:flex lg:gap-8"
       aria-label={brand}
     >
       {links.map((link) => {
@@ -84,7 +84,7 @@ export async function TopNav({ active }: { active?: string }) {
         <DiscoverQueryLink
           href="/"
           data-testid="site-brand"
-          className="group flex min-w-0 items-center gap-2 text-xl font-bold text-primary md:text-[32px] md:leading-10"
+          className="group flex shrink-0 items-center gap-2 text-xl font-bold text-primary md:text-[32px] md:leading-10"
         >
           <span
             className="material-symbols-outlined fill-icon shrink-0 text-3xl transition-transform duration-300 group-hover:scale-110 motion-reduce:transition-none"
@@ -92,7 +92,7 @@ export async function TopNav({ active }: { active?: string }) {
           >
             partly_cloudy_day
           </span>
-          <span className="truncate md:overflow-visible md:whitespace-normal">
+          <span className="whitespace-nowrap">
             {t("brand")}
           </span>
         </DiscoverQueryLink>
