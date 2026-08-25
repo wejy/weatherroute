@@ -365,6 +365,7 @@ const en = {
     changeEmailHint: "Change the email above to send a code to a different address.",
     errorEmail: "Please enter a valid email.",
     errorSend: "Could not send the code. Try again.",
+    errorRate: "Too many attempts. Wait a minute and try again.",
     errorCaptcha: "Verification failed. Refresh the page and try again.",
     errorCode: "Invalid or expired code.",
     goTrips: "Go to Saved Trips",

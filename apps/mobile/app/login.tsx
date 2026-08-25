@@ -74,7 +74,7 @@ export default function LoginScreen() {
       setCode("");
     } catch (e) {
       if (e instanceof ApiError && e.status === 429) {
-        setError(t("login.errorSend"));
+        setError(t("login.errorRate"));
       } else {
         setError(t("login.errorSend"));
       }

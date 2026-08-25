@@ -34,6 +34,10 @@ function resolveInlineFiles(msg: TransactionalEmail): EmailInlineFile[] {
   return files;
 }
 
+function isSimpleEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
 async function sendViaResend(msg: TransactionalEmail): Promise<void> {
   const inline = resolveInlineFiles(msg);
   const res = await fetch("https://api.resend.com/emails", {
@@ -45,7 +49,9 @@ async function sendViaResend(msg: TransactionalEmail): Promise<void> {
     body: JSON.stringify({
       from: env.emailFrom,
       to: [msg.to],
-      reply_to: env.emailReplyTo,
+      ...(isSimpleEmail(env.emailReplyTo)
+        ? { reply_to: env.emailReplyTo }
+        : {}),
       subject: msg.subject,
       text: msg.text,
       html: msg.html,
@@ -84,52 +90,71 @@ function mailgunFromAddress(): string {
   if (fromHost && fromHost === domain.toLowerCase()) {
     return configured;
   }
-  // Sandbox / unverified custom domain: From must be on MAILGUN_DOMAIN
+  // Sandbox / root domain From: Mailgun requires From on MAILGUN_DOMAIN
   const display =
     configured.includes("<") && configured.indexOf("<") > 0
       ? configured.slice(0, configured.indexOf("<")).trim() || "Solviax.app"
       : "Solviax.app";
-  const rewritten = `${display} <postmaster@${domain}>`;
+  const rewritten = `${display} <noreply@${domain}>`;
   log.warn(
     { configured, rewritten, domain },
-    "EMAIL_FROM host does not match MAILGUN_DOMAIN — using sandbox-safe From",
+    "EMAIL_FROM host does not match MAILGUN_DOMAIN — using domain-safe From",
   );
   return rewritten;
 }
 
-async function sendViaMailgun(msg: TransactionalEmail): Promise<void> {
+async function postMailgunMessage(
+  msg: TransactionalEmail,
+  inline: EmailInlineFile[],
+): Promise<Response> {
   const domain = env.mailgunDomain;
   const base = env.mailgunApiBaseUrl.replace(/\/$/, "");
   const url = `${base}/v3/${domain}/messages`;
   const from = mailgunFromAddress();
-  const inline = resolveInlineFiles(msg);
 
   const form = new FormData();
   form.set("from", from);
   form.set("to", msg.to);
-  form.set("h:Reply-To", env.emailReplyTo);
+  if (isSimpleEmail(env.emailReplyTo)) {
+    form.set("h:Reply-To", env.emailReplyTo);
+  }
   form.set("subject", msg.subject);
   form.set("text", msg.text);
   form.set("html", msg.html);
 
   for (const file of inline) {
-    // Mailgun maps Content-ID to the uploaded filename → <img src="cid:icon.png">
+    // File (not bare Blob) keeps a stable filename for Mailgun cid: mapping.
     const bytes = new Uint8Array(file.content);
     form.append(
       "inline",
-      new Blob([bytes], { type: file.contentType }),
-      file.filename,
+      new File([bytes], file.filename, { type: file.contentType }),
     );
   }
 
   const auth = Buffer.from(`api:${env.mailgunApiKey}`).toString("base64");
-  const res = await fetch(url, {
+  return fetch(url, {
     method: "POST",
     headers: {
       Authorization: `Basic ${auth}`,
     },
     body: form,
   });
+}
+
+async function sendViaMailgun(msg: TransactionalEmail): Promise<void> {
+  const inline = resolveInlineFiles(msg);
+  const from = mailgunFromAddress();
+
+  let res = await postMailgunMessage(msg, inline);
+  if (!res.ok && inline.length > 0) {
+    const text = await res.text().catch(() => "");
+    log.warn(
+      { status: res.status, body: text.slice(0, 400), from, to: msg.to },
+      "Mailgun failed with inline attachments — retrying without them",
+    );
+    res = await postMailgunMessage(msg, []);
+  }
+
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     log.error(

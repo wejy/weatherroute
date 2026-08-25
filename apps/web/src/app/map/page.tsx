@@ -11,8 +11,7 @@ import { ShareTokenRedeemer } from "@/components/discover/share-token-redeemer";
 import { getMapboxPublicToken, getMapboxServerToken } from "@/lib/env";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
-import { LanguageSwitcher } from "@/components/i18n/language-switcher";
-import { DiscoverQueryLink } from "@/components/discover/discover-query-link";
+import { MobileSiteHeader } from "@/components/layout/mobile-site-header";
 import { destinationHref, routesHref } from "@/lib/discover-query";
 import { MapNearbyCard } from "@/components/map/map-nearby-card";
 import { MapNearbyHeading } from "@/components/map/map-nearby-heading";
@@ -23,6 +22,7 @@ import {
 } from "@/server/dal/discover-gate";
 import { resolveDiscoverLimits } from "@/server/dal/discover-limits";
 import { publicPageMeta } from "@/lib/seo-meta";
+import { getCurrentUser } from "@/server/auth/session";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +74,7 @@ export default async function MapPage({
   const mapboxToken = getMapboxPublicToken();
   const serverToken = getMapboxServerToken();
   const t = createTranslator(getDictionary(locale));
+  const user = await getCurrentUser();
   const hasOrigin = result.origin.id !== "pending" && !gate.paywalled;
   const routeFrom = hasOrigin ? result.origin.name : "";
   const routeTo = result.destinations[0]?.name ?? "";
@@ -184,35 +185,23 @@ export default async function MapPage({
         ) : null}
       </SideNav>
 
-      <header className="fixed top-0 left-0 z-50 flex h-14 w-full items-center justify-between bg-surface/85 px-4 shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl lg:hidden">
-        <div className="min-w-0">
-          <Suspense fallback={null}>
-            <DiscoverQueryLink
-              href="/"
-              className="block truncate text-xl font-bold text-primary no-underline hover:cursor-pointer"
-            >
-              {t("brand")}
-            </DiscoverQueryLink>
-          </Suspense>
-          <h1 className="sr-only">{t("map.nearbyIdeal")}</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <LanguageSwitcher />
-          <Link
-            href="/settings"
-            aria-label={t("nav.sideSettings")}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/30 bg-surface-container-low text-on-surface-variant"
-          >
-            <span className="material-symbols-outlined text-2xl" aria-hidden="true">
-              settings
-            </span>
-          </Link>
-        </div>
-      </header>
+      <MobileSiteHeader
+        brand={t("brand")}
+        signedIn={Boolean(user)}
+        loginNext="/map"
+        settingsLabel={t("nav.sideSettings")}
+        signInLabel={t("nav.signIn")}
+        displayName={user?.displayName}
+        signedInAsTitle={
+          user ? t("nav.signedInAs", { name: user.displayName }) : undefined
+        }
+        hideFrom="lg:hidden"
+        srOnlyTitle={<h1 className="sr-only">{t("map.nearbyIdeal")}</h1>}
+      />
 
       <main
         id="main-content"
-        className="relative z-0 h-full w-full pt-14 pb-[var(--bottom-nav-offset)] lg:pt-0 lg:pb-0 lg:pl-96"
+        className="relative z-0 h-full w-full pt-16 pb-[var(--bottom-nav-offset)] lg:pt-0 lg:pb-0 lg:pl-96"
       >
         <DiscoverMap
           markers={hasOrigin ? result.mapMarkers : []}
@@ -226,7 +215,7 @@ export default async function MapPage({
         />
 
         {/* Map chrome: filters + origin (one instance for mobile + desktop) */}
-        <div className="pointer-events-none absolute inset-x-0 top-14 z-20 flex items-start justify-between gap-2 px-3 pt-3 lg:top-0 lg:right-14 lg:left-[25rem] lg:pt-2.5">
+        <div className="pointer-events-none absolute inset-x-0 top-16 z-20 flex items-start justify-between gap-2 px-3 pt-3 lg:top-0 lg:right-14 lg:left-[25rem] lg:pt-2.5">
           <Suspense fallback={null}>
             <MapFloatingFilters
               defaults={filterDefaults}

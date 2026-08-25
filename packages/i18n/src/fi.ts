@@ -370,6 +370,7 @@ const fi = {
     changeEmailHint: "Vaihda sähköposti yllä lähettääksesi koodin toiseen osoitteeseen.",
     errorEmail: "Anna kelvollinen sähköposti.",
     errorSend: "Koodin lähetys epäonnistui. Yritä uudelleen.",
+    errorRate: "Liian monta yritystä. Odota hetki ja yritä uudelleen.",
     errorCaptcha: "Varmennus epäonnistui. Päivitä sivu ja yritä uudelleen.",
     errorCode: "Virheellinen tai vanhentunut koodi.",
     goTrips: "Siirry tallennettuihin",

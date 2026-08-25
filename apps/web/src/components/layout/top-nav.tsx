@@ -3,6 +3,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { LanguageSwitcher } from "@/components/i18n/language-switcher";
 import { DiscoverQueryLink } from "@/components/discover/discover-query-link";
+import { MobileChromeAuth } from "@/components/layout/mobile-chrome-auth";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
 import { getCurrentUser } from "@/server/auth/session";
@@ -76,7 +77,6 @@ export async function TopNav({ active }: { active?: string }) {
       ? [{ href: "/pro", label: t("nav.subscription") }]
       : []),
   ];
-  const loginHref = `/login?next=${encodeURIComponent(active && active !== "/login" ? active : "/settings")}`;
 
   return (
     <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between border-b border-outline-variant/20 bg-surface/90 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl transition-all duration-300 md:px-margin-desktop">
@@ -84,15 +84,17 @@ export async function TopNav({ active }: { active?: string }) {
         <DiscoverQueryLink
           href="/"
           data-testid="site-brand"
-          className="group flex items-center gap-2 text-xl font-bold text-primary md:text-[32px] md:leading-10"
+          className="group flex min-w-0 items-center gap-2 text-xl font-bold text-primary md:text-[32px] md:leading-10"
         >
           <span
-            className="material-symbols-outlined fill-icon text-3xl transition-transform duration-300 group-hover:scale-110 motion-reduce:transition-none"
+            className="material-symbols-outlined fill-icon shrink-0 text-3xl transition-transform duration-300 group-hover:scale-110 motion-reduce:transition-none"
             aria-hidden="true"
           >
             partly_cloudy_day
           </span>
-          {t("brand")}
+          <span className="truncate md:overflow-visible md:whitespace-normal">
+            {t("brand")}
+          </span>
         </DiscoverQueryLink>
       </Suspense>
 
@@ -100,58 +102,21 @@ export async function TopNav({ active }: { active?: string }) {
         <NavLinks active={active} links={links} brand={t("brand")} />
       </Suspense>
 
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex shrink-0 items-center gap-2">
         <LanguageSwitcher />
-        {user ? (
-          <Link
-            href="/settings"
-            aria-label={t("nav.accountMenu")}
-            title={t("nav.signedInAs", { name: user.displayName })}
-            aria-current={active === "/settings" ? "page" : undefined}
-            data-testid="nav-account"
-            className={cn(
-              "flex h-11 max-w-[12rem] items-center gap-2 rounded-full border px-2.5 shadow-sm transition-colors sm:px-3",
-              active === "/settings"
-                ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-primary/25 bg-primary/5 text-on-surface hover:bg-primary/10 hover:text-primary",
-            )}
-          >
-            <span className="relative flex h-8 w-8 shrink-0 items-center justify-center">
-              <span
-                className="material-symbols-outlined fill-icon text-[28px] text-primary"
-                aria-hidden="true"
-              >
-                account_circle
-              </span>
-              <span
-                className="absolute right-0 bottom-0 h-2.5 w-2.5 rounded-full border-2 border-surface bg-secondary"
-                aria-hidden="true"
-              />
-            </span>
-            <span className="hidden min-w-0 flex-col leading-tight sm:flex">
-              <span className="truncate text-xs font-semibold text-on-surface">
-                {user.displayName}
-              </span>
-              <span className="text-[10px] font-medium text-secondary">
-                {t("nav.sideSettings")}
-              </span>
-            </span>
-            <span
-              className="material-symbols-outlined hidden text-[20px] text-on-surface-variant sm:inline"
-              aria-hidden="true"
-            >
-              settings
-            </span>
-          </Link>
-        ) : (
-          <Link
-            href={loginHref}
-            data-testid="nav-sign-in"
-            className="inline-flex h-11 items-center justify-center rounded-full bg-primary px-4 text-sm font-semibold text-on-primary shadow-sm transition-colors hover:bg-primary-container hover:text-on-primary-container"
-          >
-            {t("nav.signIn")}
-          </Link>
-        )}
+        <MobileChromeAuth
+          signedIn={Boolean(user)}
+          loginNext={active && active !== "/login" ? active : "/settings"}
+          settingsLabel={t("nav.sideSettings")}
+          signInLabel={t("nav.signIn")}
+          displayName={user?.displayName}
+          signedInAsTitle={
+            user
+              ? t("nav.signedInAs", { name: user.displayName })
+              : undefined
+          }
+          settingsActive={active === "/settings"}
+        />
       </div>
     </header>
   );

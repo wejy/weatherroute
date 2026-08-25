@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+html {
+  /* Keep fixed headers stable when some pages scroll and others hide the scrollbar. */
+  scrollbar-gutter: stable;
+}
+
 :root,
 [data-theme="light"] {
   --background: #fcf8ff;

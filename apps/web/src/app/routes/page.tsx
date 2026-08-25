@@ -12,8 +12,7 @@ import { travelModeIcon } from "@/lib/types";
 import { getMapboxPublicToken } from "@/lib/env";
 import { getDictionary, getLocale } from "@/i18n/get-dictionary";
 import { createTranslator } from "@/i18n/translate";
-import { LanguageSwitcher } from "@/components/i18n/language-switcher";
-import { DiscoverQueryLink } from "@/components/discover/discover-query-link";
+import { MobileSiteHeader } from "@/components/layout/mobile-site-header";
 import { saveTripAction } from "@/server/actions/trips";
 import { getCurrentUser } from "@/server/auth/session";
 import {
@@ -235,28 +234,18 @@ export default async function RoutesPage({
         className="flex h-screen w-full overflow-hidden bg-background"
       >
         <SideNav active="/routes" />
-        <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between bg-surface/80 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl md:hidden">
-          <Suspense fallback={null}>
-            <DiscoverQueryLink
-              href="/"
-              className="text-2xl font-bold text-primary no-underline hover:cursor-pointer"
-            >
-              {t("brand")}
-            </DiscoverQueryLink>
-          </Suspense>
-          <div className="flex items-center gap-3">
-            <LanguageSwitcher />
-            <Link
-              href="/settings"
-              aria-label={t("nav.sideSettings")}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/30 bg-surface-container-low text-on-surface-variant"
-            >
-              <span className="material-symbols-outlined text-2xl" aria-hidden="true">
-                settings
-              </span>
-            </Link>
-          </div>
-        </header>
+        <MobileSiteHeader
+          brand={t("brand")}
+          signedIn={Boolean(user)}
+          loginNext="/routes"
+          settingsLabel={t("nav.sideSettings")}
+          signInLabel={t("nav.signIn")}
+          displayName={user?.displayName}
+          signedInAsTitle={
+            user ? t("nav.signedInAs", { name: user.displayName }) : undefined
+          }
+          hideFrom="md:hidden"
+        />
         <main
           id="main-content"
           className="relative flex h-full w-full flex-1 flex-col overflow-y-auto pt-16 md:pt-0 lg:ml-96"
@@ -309,28 +298,18 @@ export default async function RoutesPage({
         className="flex h-screen w-full overflow-hidden bg-background"
       >
         <SideNav active="/routes" />
-        <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between bg-surface/80 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl md:hidden">
-          <Suspense fallback={null}>
-            <DiscoverQueryLink
-              href="/"
-              className="text-2xl font-bold text-primary no-underline hover:cursor-pointer"
-            >
-              {t("brand")}
-            </DiscoverQueryLink>
-          </Suspense>
-          <div className="flex items-center gap-3">
-            <LanguageSwitcher />
-            <Link
-              href="/settings"
-              aria-label={t("nav.sideSettings")}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/30 bg-surface-container-low text-on-surface-variant"
-            >
-              <span className="material-symbols-outlined text-2xl" aria-hidden="true">
-                settings
-              </span>
-            </Link>
-          </div>
-        </header>
+        <MobileSiteHeader
+          brand={t("brand")}
+          signedIn={Boolean(user)}
+          loginNext="/routes"
+          settingsLabel={t("nav.sideSettings")}
+          signInLabel={t("nav.signIn")}
+          displayName={user?.displayName}
+          signedInAsTitle={
+            user ? t("nav.signedInAs", { name: user.displayName }) : undefined
+          }
+          hideFrom="md:hidden"
+        />
         <main
           id="main-content"
           className="relative flex h-full w-full flex-1 flex-col overflow-y-auto pt-16 md:pt-0 lg:ml-96"
@@ -422,28 +401,18 @@ export default async function RoutesPage({
     >
       <SideNav active="/routes" />
 
-      <header className="fixed top-0 left-0 z-50 flex h-16 w-full items-center justify-between bg-surface/80 px-margin-mobile shadow-[0px_4px_20px_rgba(0,0,0,0.05)] backdrop-blur-xl md:hidden">
-        <Suspense fallback={null}>
-          <DiscoverQueryLink
-            href="/"
-            className="text-2xl font-bold text-primary no-underline hover:cursor-pointer"
-          >
-            {t("brand")}
-          </DiscoverQueryLink>
-        </Suspense>
-        <div className="flex items-center gap-3">
-          <LanguageSwitcher />
-          <Link
-            href="/settings"
-            aria-label={t("nav.sideSettings")}
-            className="flex h-11 w-11 items-center justify-center rounded-full border border-outline-variant/30 bg-surface-container-low text-on-surface-variant"
-          >
-            <span className="material-symbols-outlined text-2xl" aria-hidden="true">
-              settings
-            </span>
-          </Link>
-        </div>
-      </header>
+      <MobileSiteHeader
+        brand={t("brand")}
+        signedIn={Boolean(user)}
+        loginNext="/routes"
+        settingsLabel={t("nav.sideSettings")}
+        signInLabel={t("nav.signIn")}
+        displayName={user?.displayName}
+        signedInAsTitle={
+          user ? t("nav.signedInAs", { name: user.displayName }) : undefined
+        }
+        hideFrom="md:hidden"
+      />
 
       <main id="main-content" className="relative flex h-full w-full flex-1 flex-col pt-16 md:flex-row md:pt-0 lg:ml-96">
         <section className="relative z-20 flex max-h-[48vh] w-full shrink-0 flex-col overflow-y-auto bg-surface-bright shadow-[10px_0_30px_rgba(0,0,0,0.03)] md:max-h-none md:h-full md:w-2/5 lg:w-[450px]">

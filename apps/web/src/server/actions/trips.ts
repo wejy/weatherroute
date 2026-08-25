@@ -49,6 +49,11 @@ export async function requestOtpAction(formData: FormData) {
         `/login?error=captcha&email=${encodeURIComponent(email)}${next ? `&next=${encodeURIComponent(next)}` : ""}`,
       );
     }
+    if (error instanceof Error && error.message === "Rate limit exceeded") {
+      redirect(
+        `/login?error=rate&email=${encodeURIComponent(email)}${next ? `&next=${encodeURIComponent(next)}` : ""}`,
+      );
+    }
     redirect(
       `/login?error=send&email=${encodeURIComponent(email)}${next ? `&next=${encodeURIComponent(next)}` : ""}`,
     );

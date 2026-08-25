@@ -74,9 +74,11 @@ export default async function LoginPage({
                 ? t("login.errorCode")
                 : error === "captcha"
                   ? t("login.errorCaptcha")
-                  : error === "send"
-                    ? t("login.errorSend")
-                    : t("login.errorEmail")}
+                  : error === "rate"
+                    ? t("login.errorRate")
+                    : error === "send"
+                      ? t("login.errorSend")
+                      : t("login.errorEmail")}
             </p>
           ) : null}
 
