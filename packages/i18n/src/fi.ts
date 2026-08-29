@@ -721,6 +721,8 @@ const fi = {
     contactAria: "Lähetä sähköpostia Solviax.appiin",
     x: "X",
     xAria: "Solviax.app X:ssä",
+    facebook: "Facebook",
+    facebookAria: "Solviax.app Facebookissa",
   },
   errors: {
     genericTitle: "Jokin meni pieleen",

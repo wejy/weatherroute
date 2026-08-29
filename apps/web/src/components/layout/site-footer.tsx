@@ -76,6 +76,17 @@ export function SiteFooter({ className }: { className?: string }) {
               {t("footer.x")}
             </a>
           </li>
+          <li>
+            <a
+              href="https://www.facebook.com/solviaxapp"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={linkClassName}
+              aria-label={t("footer.facebookAria")}
+            >
+              {t("footer.facebook")}
+            </a>
+          </li>
         </ul>
       </nav>
       <p className="mt-5 text-xs text-on-surface-variant">

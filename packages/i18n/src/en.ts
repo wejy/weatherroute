@@ -716,6 +716,8 @@ const en = {
     contactAria: "Email Solviax.app",
     x: "X",
     xAria: "Solviax.app on X",
+    facebook: "Facebook",
+    facebookAria: "Solviax.app on Facebook",
   },
   errors: {
     genericTitle: "Something went wrong",
