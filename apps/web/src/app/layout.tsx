@@ -60,18 +60,20 @@ export async function generateMetadata(): Promise<Metadata> {
       alternateLocale: locale === "fi" ? ["en_GB"] : ["fi_FI"],
       images: [
         {
-          url: "/icon.png",
-          width: 512,
-          height: 512,
+          url: "/og-share-image.png",
+          width: 1376,
+          height: 768,
           alt: dict.brand,
         },
       ],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
+      site: "@solviaxapp",
+      creator: "@solviaxapp",
       title: dict.meta.titleDefault,
       description,
-      images: ["/icon.png"],
+      images: ["/og-share-image.png"],
     },
     robots: {
       index: true,

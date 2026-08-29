@@ -65,6 +65,17 @@ export function SiteFooter({ className }: { className?: string }) {
               {t("footer.cookieSettings")}
             </button>
           </li>
+          <li>
+            <a
+              href="https://x.com/solviaxapp"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={linkClassName}
+              aria-label={t("footer.xAria")}
+            >
+              {t("footer.x")}
+            </a>
+          </li>
         </ul>
       </nav>
       <p className="mt-5 text-xs text-on-surface-variant">

@@ -719,6 +719,8 @@ const fi = {
     cookieSettings: "Evästeasetukset",
     copyright: "© Whitefield Ltd, Oulu Finland",
     contactAria: "Lähetä sähköpostia Solviax.appiin",
+    x: "X",
+    xAria: "Solviax.app X:ssä",
   },
   errors: {
     genericTitle: "Jokin meni pieleen",

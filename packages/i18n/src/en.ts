@@ -714,6 +714,8 @@ const en = {
     cookieSettings: "Cookie settings",
     copyright: "© Whitefield Ltd, Oulu Finland",
     contactAria: "Email Solviax.app",
+    x: "X",
+    xAria: "Solviax.app on X",
   },
   errors: {
     genericTitle: "Something went wrong",

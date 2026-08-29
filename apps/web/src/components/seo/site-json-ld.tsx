@@ -27,6 +27,7 @@ export function SiteJsonLd({
         addressCountry: "FI",
       },
       logo: `${site}/icon.png`,
+      sameAs: ["https://x.com/solviaxapp"],
     },
     {
       "@type": "WebSite",
