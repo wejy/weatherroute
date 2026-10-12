@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "pino": "^10.1.0"
+    "pino": "^10.4.0"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
